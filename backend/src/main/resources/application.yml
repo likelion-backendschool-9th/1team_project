@@ -1,0 +1,22 @@
+spring:
+  application:
+    name: dipsource
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/dipsource
+    username: dipsource
+    password: dipsource
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: true
+
+  jackson:
+    default-property-inclusion: non_null
+
+server:
+  port: 8080
