@@ -6,7 +6,8 @@ import {
 } from "@/app/_components/ui/Icons";
 import type { DemoSummary } from "@/app/_lib/types/demo";
 import { DemoThumb } from "../../_components/DemoThumb";
-import { DemoCarousel, VISIBLE_CARDS } from "./DemoCarousel";
+import { VISIBLE_CARDS } from "../_lib/carousel";
+import { DemoCarousel } from "./DemoCarousel";
 import styles from "./HotDemos.module.css";
 
 type Props = {
