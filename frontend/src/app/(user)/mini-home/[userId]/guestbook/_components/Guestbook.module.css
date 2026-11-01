@@ -1,0 +1,54 @@
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 18px;
+  margin-bottom: 20px;
+  border: 1px solid #f7e6b8;
+  border-radius: 18px;
+  background: #fffaeb;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+}
+
+.entry {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 16px 4px;
+  border-bottom: 1px dashed #e9e1d1;
+}
+
+.entry:last-child {
+  border-bottom: 0;
+}
+
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+}
+
+.meta time {
+  color: var(--ink-faint);
+  font-size: 12px;
+  user-select: none;
+}
+
+.content {
+  margin-top: 4px;
+  font-size: 15px;
+  overflow-wrap: anywhere;
+}
+
+.hidden {
+  margin-top: 4px;
+  color: var(--ink-faint);
+  font-size: 14px;
+  font-style: italic;
+}

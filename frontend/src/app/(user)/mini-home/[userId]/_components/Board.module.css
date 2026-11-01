@@ -1,0 +1,165 @@
+.board {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 24px;
+  border: 1px solid #ece6db;
+  border-radius: 24px;
+  background: var(--surface);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #ece6db;
+}
+
+.title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.aside {
+  user-select: none;
+  color: var(--ink-faint);
+  font-family: ui-monospace, "SFMono-Regular", Menlo, monospace;
+  font-size: 13px;
+}
+
+.total {
+  user-select: none;
+  color: var(--ink-faint);
+  font-size: 13px;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1px solid #ece6db;
+  border-radius: 12px;
+  background: var(--surface);
+  font-size: 15px;
+}
+
+a.row:hover {
+  background: #fffaeb;
+}
+
+.text {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.author {
+  margin-inline-end: 10px;
+  font-weight: 800;
+}
+
+.member,
+.free {
+  user-select: none;
+  flex: none;
+  font-size: 12px;
+}
+
+.member {
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: #fff3cf;
+  color: #b45f06;
+}
+
+.free {
+  padding: 2px 6px;
+  color: var(--ink-faint);
+}
+
+.time {
+  user-select: none;
+  flex: none;
+  color: var(--ink-faint);
+  font-size: 12px;
+}
+
+.lock {
+  user-select: none;
+  flex: none;
+  font-size: 13px;
+}
+
+.form {
+  display: flex;
+  gap: 10px;
+}
+
+.input {
+  min-width: 0;
+  flex: 1;
+  padding: 9px 16px;
+  border: 1px solid #e6dfd3;
+  border-radius: 12px;
+  background: #fbfaf7;
+  font-size: 15px;
+}
+
+.input::placeholder {
+  color: var(--ink-faint);
+}
+
+.submit {
+  user-select: none;
+  flex: none;
+  padding: 9px 18px;
+  border-radius: 12px;
+  background: #ffc21a;
+  font-weight: 700;
+}
+
+.submit:hover:not(:disabled) {
+  background: #ffb800;
+}
+
+.submit:disabled {
+  opacity: 0.6;
+}
+
+.error,
+.status {
+  margin-top: -8px;
+  font-size: 13px;
+}
+
+.error {
+  color: var(--danger);
+}
+
+.status {
+  color: var(--ink-soft);
+}
+
+.error:empty,
+.status:empty {
+  display: none;
+}
+
+.empty {
+  padding: 24px 0;
+  color: var(--ink-soft);
+  text-align: center;
+}
