@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { Suspense } from "react";
 import { Brand } from "../_components/Brand";
 import { NavLinks } from "../_components/NavLinks";
+import { PresenceHeartbeat } from "../_components/PresenceHeartbeat";
 import { ArticleRanking } from "./_components/ArticleRanking";
 import { BlogAside } from "./_components/BlogAside";
 import styles from "./layout.module.css";
@@ -23,6 +24,7 @@ export default function BlogLayout({ children }: { children: ReactNode }) {
         {children}
       </main>
       <BlogAside />
+      <PresenceHeartbeat />
     </div>
   );
 }

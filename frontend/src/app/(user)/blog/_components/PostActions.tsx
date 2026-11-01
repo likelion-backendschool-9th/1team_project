@@ -1,13 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import {
   BookmarkIcon,
   CommentIcon,
   HeartIcon,
   RepostIcon,
 } from "@/app/_components/ui/Icons";
+import { togglePostBookmark } from "../_actions";
 import styles from "./PostActions.module.css";
 
 type Props = {
@@ -19,7 +20,7 @@ type Props = {
   readMinutes: number;
 };
 
-// 글 좋아요·북마크 API가 정해지기 전까지는 화면 상태만 바꾼다 (프론트엔드-청사진 11장).
+// 글 좋아요 API는 아직 없어 화면 상태만 바꾼다. 북마크는 posts/{postId}/bookmark로 보낸다.
 export function PostActions({
   postId,
   likeCount,
@@ -30,6 +31,16 @@ export function PostActions({
 }: Props) {
   const [like, setLike] = useState(liked);
   const [bookmarked, setBookmarked] = useState(false);
+  const [, startTransition] = useTransition();
+
+  function handleBookmark() {
+    const next = !bookmarked;
+    setBookmarked(next);
+    startTransition(async () => {
+      const result = await togglePostBookmark(postId, next);
+      if (!result.ok) setBookmarked(!next);
+    });
+  }
 
   return (
     <div className={styles.actions}>
@@ -57,7 +68,7 @@ export function PostActions({
         className={styles.action}
         aria-pressed={bookmarked}
         aria-label="북마크"
-        onClick={() => setBookmarked((value) => !value)}
+        onClick={handleBookmark}
       >
         <BookmarkIcon filled={bookmarked} />
       </button>

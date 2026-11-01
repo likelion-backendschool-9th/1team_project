@@ -1,22 +1,26 @@
 import Link from "next/link";
+import { connection } from "next/server";
 import { Suspense } from "react";
 import { ArrowRightIcon, GearIcon } from "@/app/_components/ui/Icons";
-import { getMe, getUnreadCount } from "@/app/(user)/_lib/api";
+import { getMe, getNotifications, getServerTime, getUnreadCount } from "@/app/(user)/_lib/api";
 import { getSubscribedAuthors } from "../_lib/api";
 import { BlogProfileCard } from "./BlogProfileCard";
 import { SubscribedAuthors } from "./SubscribedAuthors";
 import styles from "./BlogAside.module.css";
 
 async function BlogAsideContent() {
-  const [me, unreadCount, authors] = await Promise.all([
+  await connection();
+  const [me, unreadCount, authors, notifications, now] = await Promise.all([
     getMe(),
     getUnreadCount(),
     getSubscribedAuthors(),
+    getNotifications(),
+    getServerTime(),
   ]);
 
   return (
     <>
-      <BlogProfileCard me={me} unreadCount={unreadCount} />
+      <BlogProfileCard me={me} unreadCount={unreadCount} notifications={notifications} now={now} />
       <SubscribedAuthors authors={authors} />
     </>
   );

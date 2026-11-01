@@ -4,7 +4,7 @@ import { connection } from "next/server";
 import { Avatar } from "@/app/_components/ui/Avatar";
 import { ConfirmButton } from "@/app/_components/ui/ConfirmButton";
 import kit from "@/app/_components/ui/kit.module.css";
-import { formatCount } from "@/app/_lib/format";
+import { formatCount, formatWon } from "@/app/_lib/format";
 import { getMe } from "@/app/(user)/_lib/api";
 import { subscribeBlog } from "../../_actions";
 import { ArticleCard } from "../../_components/ArticleCard";
@@ -63,9 +63,9 @@ export async function AuthorBlog({ params }: Props) {
             <span className={kit.pillSuccess}>✓ 구독 중</span>
           ) : (
             <ConfirmButton
-              label={`구독하기 · 월 ${owner.subscriptionPrice}칩`}
+              label={`구독하기 · 월 ${formatWon(owner.subscriptionPrice)}`}
               title={`${owner.user.nickname}님의 블로그를 구독할까요?`}
-              description={`매달 ${owner.subscriptionPrice}칩이 차감되고, 모든 유료 글을 볼 수 있어요.`}
+              description={`매달 ${formatWon(owner.subscriptionPrice)}이 자동이체돼요. 칩은 차감되지 않아요.`}
               confirmLabel="구독하기"
               className={kit.btnPrimary}
               onConfirm={subscribeBlog.bind(null, userId)}

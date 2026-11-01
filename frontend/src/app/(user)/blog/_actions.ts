@@ -91,7 +91,7 @@ export async function unlockPost(postId: number) {
 
 export async function subscribeBlog(userId: number) {
   if (!isId(userId)) return { ok: false, message: "잘못된 요청이에요." };
-  return mutate("/api/v1/subscriptions", "POST", { authorId: userId }, "구독했어요. 다음 달부터 매달 칩이 차감돼요.");
+  return mutate("/api/v1/subscriptions", "POST", { authorId: userId }, "구독했어요. 매달 같은 날 자동이체돼요.");
 }
 
 export async function createPostComment(
@@ -108,4 +108,19 @@ export async function createPostComment(
   );
   if (state.ok) revalidatePath(`/blog/posts/${postId}`);
   return state.ok ? { ...state, values: {} } : state;
+}
+
+export async function togglePostBookmark(postId: number, bookmark: boolean) {
+  if (!isId(postId)) return { ok: false, message: "잘못된 요청이에요." };
+  return mutate(`/api/v1/posts/${postId}/bookmark`, bookmark ? "POST" : "DELETE", undefined, bookmark ? "북마크했어요." : "북마크를 해제했어요.");
+}
+
+export async function updatePostComment(commentId: number, content: string) {
+  const text = content.trim();
+  if (!text || text.length > 300) return { ok: false, message: "1~300자로 입력해 주세요." };
+  return mutate(`/api/v1/posts/comments/${commentId}`, "PUT", { content: text }, "댓글을 수정했어요.");
+}
+
+export async function deletePostComment(commentId: number) {
+  return mutate(`/api/v1/posts/comments/${commentId}`, "DELETE", undefined, "댓글을 삭제했어요.");
 }

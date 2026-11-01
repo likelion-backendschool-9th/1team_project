@@ -1,4 +1,6 @@
 .aside {
+  position: relative;
+  z-index: 20;
   grid-area: right;
   display: flex;
   flex-direction: column;
