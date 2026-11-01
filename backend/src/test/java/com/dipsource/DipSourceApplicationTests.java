@@ -1,4 +1,4 @@
-package com.dipsource.backend;
+package com.dipsource;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
