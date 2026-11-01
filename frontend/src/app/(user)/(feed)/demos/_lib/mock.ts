@@ -23,27 +23,44 @@ const rows: Row[] = [
 const NOW = Date.UTC(2026, 10, 2, 9);
 const HOUR = 3_600_000;
 
-export const mockDemos: DemoDetail[] = rows.map(
-  ([title, description, techTags, author, likeCount, playCount, hoursAgo], index) => {
-    const runtime: DemoDetail["runtime"] = techTags.includes("unity") ? "unity" : "web";
-    return {
-      id: index + 1,
-      title,
-      description,
-      thumbnail: null,
-      techTags,
-      author,
-      likeCount,
-      playCount,
-      commentCount: (likeCount % 7) + 3,
-      createdAt: new Date(NOW - hoursAgo * HOUR).toISOString(),
-      runtime,
-      sizeMb: runtime === "unity" ? 9.4 : 1.2 + (index % 4) * 0.6,
-      liked: false,
-      bookmarked: false,
-    };
-  },
-);
+function toDetail(
+  [title, description, techTags, author, likeCount, playCount, hoursAgo]: Row,
+  id: number,
+): DemoDetail {
+  const runtime: DemoDetail["runtime"] = techTags.includes("unity") ? "unity" : "web";
+  const index = id - 1;
+  return {
+    id,
+    title,
+    description,
+    thumbnail: null,
+    techTags,
+    author,
+    likeCount,
+    playCount,
+    commentCount: (likeCount % 7) + 3,
+    createdAt: new Date(NOW - hoursAgo * HOUR).toISOString(),
+    runtime,
+    sizeMb: runtime === "unity" ? 9.4 : 1.2 + (index % 4) * 0.6,
+    liked: false,
+    bookmarked: false,
+  };
+}
+
+// 정시우 미니홈피 데모. 미니홈피 목 데이터와 같은 id(101~)를 쓴다.
+const siwooRows: Row[] = [
+  ["Interactive Neon Particle Swarm", "마우스 반발력과 물리 기반 가속도를 시뮬레이션한 파티클 인터랙션 데모입니다.", ["canvas", "webgl"], mockUsers.jung, 42, 318, 70],
+  ["실시간 WebAudio 스펙트럼 뷰어", "마이크 입력 주파수를 파티클로 전환하는 시각화 도구", ["webaudio"], mockUsers.jung, 29, 214, 120],
+  ["초경량 글래스모피즘 컴포넌트", "Zero-dependency 반응형 CSS 블러 디자인 킷", ["css"], mockUsers.jung, 53, 502, 200],
+  ["GLSL 노이즈 셰이더 놀이터", "Perlin·Simplex 노이즈 파라미터를 실시간으로 조절해 보는 셰이더 데모", ["glsl"], mockUsers.jung, 21, 156, 260],
+  ["드래그 앤 드롭 칸반 보드", "의존성 없이 Pointer Events로 만든 칸반 보드", ["typescript"], mockUsers.jung, 18, 133, 300],
+  ["CSS 3D 카드 플립 갤러리", "transform-style: preserve-3d로 만든 카드 갤러리", ["css"], mockUsers.jung, 14, 97, 340],
+];
+
+export const mockDemos: DemoDetail[] = [
+  ...rows.map((row, index) => toDetail(row, index + 1)),
+  ...siwooRows.map((row, index) => toDetail(row, 101 + index)),
+];
 
 export const mockDemoTags = ["spring", "react", "typescript", "unity", "game", "canvas", "css", "webaudio"];
 
@@ -52,6 +69,7 @@ export function createMockDemoComments(demoId: number, now: number): DemoComment
     [mockUsers.kwak, "praise", "인터랙션이 정말 부드러워요. 코드 구조도 궁금합니다!", 30, 6],
     [mockUsers.jinyeop, "question", "모바일 사파리에서도 동작하나요?", 75, 2],
     [mockUsers.junha, "bug", "창 크기를 줄이면 오른쪽 패널이 잘려 보여요.", 180, 1],
+    [mockUsers.me, "question", "Unity 버전은 몇 쓰셨어요?", 240, 0],
   ];
   return rows.map(([author, type, content, minutesAgo, likeCount], index) => ({
     id: demoId * 100 + index,

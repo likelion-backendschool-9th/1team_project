@@ -92,7 +92,8 @@ export function createMockFeeds(now: number): Feed[] {
       repostCount: 5,
       liked: false,
       reposted: false,
-      following: false,
+      bookmarked: false,
+      following: true,
     },
     {
       id: 2,
@@ -105,6 +106,7 @@ export function createMockFeeds(now: number): Feed[] {
       repostCount: 1,
       liked: false,
       reposted: false,
+      bookmarked: false,
       following: false,
     },
     {
@@ -122,6 +124,7 @@ export function createMockFeeds(now: number): Feed[] {
       repostCount: 3,
       liked: false,
       reposted: false,
+      bookmarked: false,
       following: true,
     },
     {
@@ -136,6 +139,7 @@ export function createMockFeeds(now: number): Feed[] {
       repostCount: 2,
       liked: false,
       reposted: false,
+      bookmarked: false,
       following: false,
     },
     {
@@ -153,6 +157,22 @@ export function createMockFeeds(now: number): Feed[] {
       repostCount: 6,
       liked: false,
       reposted: false,
+      bookmarked: false,
+      following: false,
+    },
+    {
+      id: 6,
+      author: mockUsers.me,
+      content:
+        "Spring Batch 잡 실행 이력을 실시간으로 보는 모니터 데모 올렸어요. SSE로 진행률을 밀어주고, 실패한 스텝은 바로 재시도할 수 있게 만들었습니다.",
+      createdAt: new Date(now - 30 * HOUR).toISOString(),
+      demo: null,
+      likeCount: 22,
+      commentCount: 5,
+      repostCount: 2,
+      liked: false,
+      reposted: false,
+      bookmarked: true,
       following: false,
     },
   ];
@@ -165,6 +185,7 @@ export function createMockFeedComments(feedId: number, now: number): FeedComment
     [mockUsers.kwak, "STOMP 구독 경로를 /topic/room.{id}로 나눈 이유가 궁금해요!", 20, 4],
     [mockUsers.seungjo, "찍먹해봤는데 재접속할 때 메시지 유실 없이 잘 붙네요 👍", 45, 2],
     [mockUsers.jinyeop, "하트비트 주기는 몇 초로 두셨어요?", 90, 1],
+    [mockUsers.me, "저도 비슷하게 만들어 봤는데 재연결 로직 참고할게요!", 120, 0],
   ];
   return rows.map(([author, content, minutesAgo, likeCount], index) => ({
     id: feedId * 100 + index,

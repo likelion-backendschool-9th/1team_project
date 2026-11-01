@@ -4,12 +4,12 @@ import { FeedDetail } from "./_components/FeedDetail";
 
 export const metadata: Metadata = { title: "피드" };
 
-export default function FeedDetailPage({ params }: PageProps<"/feeds/[feedId]">) {
+export default function FeedDetailPage({ params, searchParams }: PageProps<"/feeds/[feedId]">) {
   return (
     <>
       <h1 className="sr-only">피드 상세</h1>
       <Suspense fallback={<p role="status" aria-busy="true">불러오는 중…</p>}>
-        <FeedDetail params={params} />
+        <FeedDetail params={params} searchParams={searchParams} />
       </Suspense>
     </>
   );

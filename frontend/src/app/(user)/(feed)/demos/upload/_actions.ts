@@ -1,6 +1,6 @@
 "use server";
 
-import { isMockMode } from "@/app/_lib/api/client";
+import { apiFetch, isMockMode, type ApiResponse } from "@/app/_lib/api/client";
 import { readValues, type FormState } from "@/app/_lib/formState";
 import { MAX_DEMO_MB } from "./_lib/rules";
 
@@ -28,7 +28,22 @@ export async function uploadDemo(previous: FormState, formData: FormData): Promi
     ok: true,
     message: "업로드했어요. 파일 검사가 끝나면 데모가 공개돼요. (백엔드 연결 전이라 실제로 저장되지는 않아요)",
     errors: {},
-    values: {},
+    // 검사 진행률 조회에 쓸 데모 id. 목 모드에서는 시작 시각으로 진행률을 흉내 낸다.
+    values: { demoId: "999", startedAt: String(Date.now()) },
     attempt,
   };
+}
+
+export type UploadStatus = { step: number; done: boolean; failed: boolean };
+
+const STEP_MS = 1500;
+const TOTAL_STEPS = 4;
+
+export async function getUploadStatus(demoId: number, startedAt: number): Promise<UploadStatus> {
+  if (isMockMode) {
+    const step = Math.min(TOTAL_STEPS, Math.floor((Date.now() - startedAt) / STEP_MS) + 1);
+    return { step, done: step >= TOTAL_STEPS, failed: false };
+  }
+  const { data } = await apiFetch<ApiResponse<UploadStatus>>(`/api/v1/demos/${demoId}/status`);
+  return data;
 }

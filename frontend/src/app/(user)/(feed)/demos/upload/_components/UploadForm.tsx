@@ -1,10 +1,10 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useState } from "react";
 import { FormMessage } from "@/app/_components/ui/FormMessage";
 import kit from "@/app/_components/ui/kit.module.css";
 import { initialFormState } from "@/app/_lib/formState";
-import { uploadDemo } from "../_actions";
+import { getUploadStatus, uploadDemo, type UploadStatus } from "../_actions";
 import { MAX_DEMO_MB } from "../_lib/rules";
 import styles from "./UploadForm.module.css";
 
@@ -17,8 +17,34 @@ function checkFile(file: File | undefined) {
   return null;
 }
 
-export function UploadForm() {
+type Props = {
+  used: number;
+  capacity: number;
+};
+
+export function UploadForm({ used, capacity }: Props) {
   const [state, formAction, pending] = useActionState(uploadDemo, initialFormState);
+  const [status, setStatus] = useState<UploadStatus | null>(null);
+  const full = used >= capacity;
+  const demoId = Number(state.values.demoId);
+  const startedAt = Number(state.values.startedAt);
+
+  // 업로드가 끝나면 검사 진행률을 1.5초마다 확인한다 (GET demos/{demoId}/status).
+  useEffect(() => {
+    if (!state.ok || !demoId) return;
+    let stopped = false;
+    async function poll() {
+      const next = await getUploadStatus(demoId, startedAt);
+      if (stopped) return;
+      setStatus(next);
+      if (!next.done && !next.failed) timer = window.setTimeout(poll, 1500);
+    }
+    let timer = window.setTimeout(poll, 0);
+    return () => {
+      stopped = true;
+      window.clearTimeout(timer);
+    };
+  }, [state.ok, demoId, startedAt]);
   const [file, setFile] = useState<{ name: string; size: number; error: string | null } | null>(null);
   const [seenAttempt, setSeenAttempt] = useState(state.attempt);
   // 제출하면 폼이 초기화되므로 선택한 파일 표시도 비운다.
@@ -143,7 +169,7 @@ export function UploadForm() {
 
         <div className={kit.between}>
           <FormMessage ok={state.ok} message={state.message} />
-          <button type="submit" className={kit.btnPrimary} disabled={pending || Boolean(file?.error)}>
+          <button type="submit" className={kit.btnPrimary} disabled={pending || full || Boolean(file?.error)}>
             {pending ? "올리는 중…" : "업로드"}
           </button>
         </div>
@@ -151,17 +177,25 @@ export function UploadForm() {
 
       <aside className={kit.stack} aria-label="업로드 안내">
         <section className={kit.card}>
+          <h2 className={kit.cardTitle}>데모 인벤토리</h2>
+          <p className={full ? kit.error : kit.muted} style={{ marginTop: 8 }}>
+            {used}/{capacity}칸 사용 중
+            {full && " · 칸이 가득 찼어요. 미니홈피 데모 탭에서 칸을 늘리거나 데모를 지워 주세요."}
+          </p>
+        </section>
+        <section className={kit.card} aria-live="polite">
           <h2 className={kit.cardTitle}>검사 진행 상황</h2>
           <ol className={styles.steps}>
             {steps.map((step, index) => {
-              const done = state.ok === true && index < 2;
+              const done = status !== null && (status.done || index < status.step - 1);
+              const running = status !== null && !status.done && index === status.step - 1;
               return (
                 <li key={step} className={done ? styles.done : undefined}>
                   <span className={styles.stepMark} aria-hidden="true">
-                    {done ? "✓" : index + 1}
+                    {done ? "✓" : running ? "…" : index + 1}
                   </span>
                   {step}
-                  <span className="sr-only">{done ? " 완료" : " 대기"}</span>
+                  <span className="sr-only">{done ? " 완료" : running ? " 진행 중" : " 대기"}</span>
                 </li>
               );
             })}

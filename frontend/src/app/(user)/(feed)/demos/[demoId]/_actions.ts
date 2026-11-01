@@ -36,3 +36,21 @@ export async function createDemoComment(
   if (state.ok) revalidatePath(`/demos/${demoId}`);
   return state.ok ? { ...state, values: { type: values.type } } : state;
 }
+
+export async function toggleDemoBookmark(demoId: number, bookmark: boolean) {
+  return mutate(`/api/v1/demos/${demoId}/bookmark`, bookmark ? "POST" : "DELETE", undefined, bookmark ? "나중에 해보기에 담았어요." : "나중에 해보기에서 뺐어요.");
+}
+
+export async function deleteDemo(demoId: number) {
+  return mutate(`/api/v1/demos/${demoId}`, "DELETE", undefined, "데모를 삭제했어요. 인벤토리 1칸이 비었어요.");
+}
+
+export async function updateDemoComment(commentId: number, content: string) {
+  const text = content.trim();
+  if (!text || text.length > 300) return { ok: false, message: "1~300자로 입력해 주세요." };
+  return mutate(`/api/v1/demos/comments/${commentId}`, "PUT", { content: text }, "피드백을 수정했어요.");
+}
+
+export async function deleteDemoComment(commentId: number) {
+  return mutate(`/api/v1/demos/comments/${commentId}`, "DELETE", undefined, "피드백을 삭제했어요.");
+}
