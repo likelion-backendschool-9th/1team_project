@@ -14,6 +14,8 @@ type Props = {
   className?: string;
   danger?: boolean;
   onConfirm: () => Promise<Result>;
+  /** 결과를 부모가 직접 보여 줄 때 쓴다. 넘기면 버튼 옆 안내는 생략한다. */
+  onDone?: (result: Result) => void;
 };
 
 // 삭제·제재처럼 되돌리기 어려운 작업 전에 확인 대화상자를 띄운다.
@@ -25,6 +27,7 @@ export function ConfirmButton({
   className = kit.btnGhost,
   danger = false,
   onConfirm,
+  onDone,
 }: Props) {
   const titleId = useId();
   const dialogRef = useRef<HTMLDialogElement>(null);
@@ -39,7 +42,9 @@ export function ConfirmButton({
 
   function handleConfirm() {
     startTransition(async () => {
-      setResult(await onConfirm());
+      const next = await onConfirm();
+      if (onDone) onDone(next);
+      else setResult(next);
       close();
     });
   }

@@ -1,21 +1,31 @@
 import Link from "next/link";
+import { connection } from "next/server";
 import { Suspense } from "react";
 import { GearIcon } from "@/app/_components/ui/Icons";
-import { getFollowings, getMe, getUnreadCount } from "../_lib/api";
+import {
+  getFollowings,
+  getMe,
+  getNotifications,
+  getServerTime,
+  getUnreadCount,
+} from "../_lib/api";
 import { FollowingList } from "./FollowingList";
 import { ProfileCard } from "./ProfileCard";
 import styles from "./RightAside.module.css";
 
 async function RightAsideContent() {
-  const [me, followings, unreadCount] = await Promise.all([
+  await connection();
+  const [me, followings, unreadCount, notifications, now] = await Promise.all([
     getMe(),
     getFollowings(),
     getUnreadCount(),
+    getNotifications(),
+    getServerTime(),
   ]);
 
   return (
     <>
-      <ProfileCard me={me} unreadCount={unreadCount} />
+      <ProfileCard me={me} unreadCount={unreadCount} notifications={notifications} now={now} />
       <FollowingList followings={followings} />
     </>
   );

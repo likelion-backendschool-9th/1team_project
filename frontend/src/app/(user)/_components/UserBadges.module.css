@@ -66,3 +66,14 @@
 .violet {
   --tone: #a78bfa;
 }
+
+.sm .badge {
+  padding: 0 6px;
+  border-radius: 5px;
+  font-size: 10.5px;
+  line-height: 16px;
+}
+
+.sm .icon {
+  font-size: 11px;
+}

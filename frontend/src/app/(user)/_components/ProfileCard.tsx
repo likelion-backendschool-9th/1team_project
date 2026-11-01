@@ -1,28 +1,28 @@
 import Link from "next/link";
 import { Avatar } from "@/app/_components/ui/Avatar";
-import {
-  ArrowRightIcon,
-  BellIcon,
-  UserIcon,
-} from "@/app/_components/ui/Icons";
+import { ArrowRightIcon, UserIcon } from "@/app/_components/ui/Icons";
 import { formatCount } from "@/app/_lib/format";
+import type { AppNotification } from "@/app/_lib/types/notification";
 import type { MyProfile } from "@/app/_lib/types/user";
+import { NotificationBell } from "./NotificationBell";
 import { UserBadges } from "./UserBadges";
 import styles from "./ProfileCard.module.css";
 
 type Props = {
   me: MyProfile;
   unreadCount: number;
+  notifications: AppNotification[];
+  now: number;
 };
 
-export function ProfileCard({ me, unreadCount }: Props) {
+export function ProfileCard({ me, unreadCount, notifications, now }: Props) {
   return (
     <section className={styles.card} aria-label="내 프로필">
       <div className={styles.profile}>
         <Avatar name={me.nickname} size={56} />
         <p className={styles.name}>{me.nickname}</p>
       </div>
-      <UserBadges badges={me.badges} />
+      {me.plus && <UserBadges badges={me.badges} />}
       <dl className={styles.stats}>
         <div>
           <dt>팔로워</dt>
@@ -46,16 +46,12 @@ export function ProfileCard({ me, unreadCount }: Props) {
           <UserIcon />
           내 정보
         </Link>
-        <Link href="/notifications" className={styles.action}>
-          <BellIcon />
-          알림
-          {unreadCount > 0 && (
-            <span className={styles.badge}>
-              {unreadCount}
-              <span className="sr-only">건 읽지 않음</span>
-            </span>
-          )}
-        </Link>
+        <NotificationBell
+          notifications={notifications}
+          unreadCount={unreadCount}
+          now={now}
+          className={styles.action}
+        />
       </div>
     </section>
   );

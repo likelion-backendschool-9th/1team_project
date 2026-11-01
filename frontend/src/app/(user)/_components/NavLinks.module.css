@@ -28,14 +28,7 @@
   background: var(--accent-soft);
 }
 
-.disabled {
-  color: var(--ink-soft);
-  cursor: not-allowed;
-}
 
-.disabled:hover {
-  background: none;
-}
 
 @media (max-width: 760px) {
   .list {

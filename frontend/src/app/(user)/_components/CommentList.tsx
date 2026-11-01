@@ -4,6 +4,7 @@ import { Avatar } from "@/app/_components/ui/Avatar";
 import { HeartIcon } from "@/app/_components/ui/Icons";
 import { formatRelativeTime } from "@/app/_lib/format";
 import type { UserSummary } from "@/app/_lib/types/user";
+import { CommentEditor } from "./CommentEditor";
 import styles from "./CommentList.module.css";
 
 type Comment = {
@@ -15,12 +16,17 @@ type Comment = {
   label?: ReactNode;
 };
 
+type Result = { ok: boolean; message: string };
+
 type Props = {
   comments: Comment[];
   now: number;
+  myId?: number;
+  updateComment?: (commentId: number, content: string) => Promise<Result>;
+  deleteComment?: (commentId: number) => Promise<Result>;
 };
 
-export function CommentList({ comments, now }: Props) {
+export function CommentList({ comments, now, myId, updateComment, deleteComment }: Props) {
   if (comments.length === 0)
     return <p className={styles.empty}>아직 댓글이 없어요. 첫 댓글을 남겨 보세요.</p>;
 
@@ -39,7 +45,16 @@ export function CommentList({ comments, now }: Props) {
               {comment.label}
               <time dateTime={comment.createdAt}>{formatRelativeTime(comment.createdAt, now)}</time>
             </p>
-            <p className={styles.content}>{comment.content}</p>
+            {comment.author.id === myId && updateComment && deleteComment ? (
+              <CommentEditor
+                commentId={comment.id}
+                content={comment.content}
+                updateComment={updateComment}
+                deleteComment={deleteComment}
+              />
+            ) : (
+              <p className={styles.content}>{comment.content}</p>
+            )}
           </div>
           <span className={styles.likes}>
             <HeartIcon />

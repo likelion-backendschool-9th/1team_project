@@ -60,3 +60,43 @@
   color: var(--ink-soft);
   text-align: center;
 }
+
+.editBox {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.mine {
+  display: flex;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.mineButton {
+  color: var(--ink-faint);
+  font-size: 12px;
+  font-weight: 700;
+  user-select: none;
+}
+
+.mineButton:hover {
+  color: var(--ink);
+}
+
+.deleted {
+  margin-top: 2px;
+  color: var(--ink-faint);
+  font-size: 14px;
+  font-style: italic;
+}
+
+.note {
+  color: var(--ink-faint);
+  font-size: 12px;
+}
+
+.note:empty {
+  display: none;
+}
