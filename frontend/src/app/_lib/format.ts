@@ -14,3 +14,19 @@ export function formatRelativeTime(iso: string, now: number): string {
 export function formatCount(value: number): string {
   return value.toLocaleString("ko-KR");
 }
+
+const pad = (value: number) => String(value).padStart(2, "0");
+
+export function formatDate(iso: string): string {
+  const date = new Date(iso);
+  return `${date.getFullYear()}.${pad(date.getMonth() + 1)}.${pad(date.getDate())}`;
+}
+
+export function formatDateTime(iso: string): string {
+  const date = new Date(iso);
+  return `${formatDate(iso)} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
+export function formatWon(value: number): string {
+  return `${value.toLocaleString("ko-KR")}원`;
+}

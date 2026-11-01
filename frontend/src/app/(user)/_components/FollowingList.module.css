@@ -12,6 +12,7 @@
 }
 
 .more {
+  user-select: none;
   display: inline-flex;
   align-items: center;
   gap: 2px;
@@ -37,8 +38,15 @@
   background: var(--surface-muted);
 }
 
-.name {
+.info {
+  display: flex;
+  min-width: 0;
   flex: 1;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.name {
   font-weight: 700;
 }
 

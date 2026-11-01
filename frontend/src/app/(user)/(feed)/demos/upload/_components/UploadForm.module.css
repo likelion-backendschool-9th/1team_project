@@ -1,0 +1,93 @@
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 280px;
+  align-items: start;
+  gap: 20px;
+}
+
+.drop {
+  display: flex;
+  min-height: 120px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 20px;
+  border: 2px dashed #f0d58f;
+  border-radius: 18px;
+  background: #fffaeb;
+  text-align: center;
+  cursor: pointer;
+}
+
+.drop:hover {
+  background: #fff3cf;
+}
+
+input:focus-visible + .drop,
+.drop:has(+ input:focus-visible) {
+  outline: 2px solid var(--accent-ink);
+}
+
+.dropError {
+  border-color: var(--danger);
+  background: #fff5f7;
+}
+
+.dropIcon {
+  font-size: 30px;
+}
+
+.steps {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 14px;
+  font-size: 14px;
+}
+
+.steps li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--ink-soft);
+}
+
+.stepMark {
+  display: inline-flex;
+  width: 24px;
+  height: 24px;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--surface-muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.done {
+  color: var(--ink) !important;
+  font-weight: 700;
+}
+
+.done .stepMark {
+  background: #ffc21a;
+}
+
+.rules {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 12px;
+  padding-left: 18px;
+  color: var(--ink-soft);
+  font-size: 14px;
+  list-style: disc;
+}
+
+@media (max-width: 1280px) {
+  .layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

@@ -1,0 +1,65 @@
+.list {
+  display: flex;
+  gap: 8px;
+  padding: 4px;
+  margin: -4px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.list::-webkit-scrollbar {
+  display: none;
+}
+
+.tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.count {
+  font-size: 12px;
+  opacity: 0.7;
+}
+
+.chip .tab {
+  padding: 8px 18px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-muted);
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.chip .tab:hover {
+  background: #e9e6e0;
+}
+
+.chip .active,
+.chip .active:hover {
+  background: var(--accent);
+}
+
+.line {
+  gap: 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+.line .tab {
+  padding: 10px 2px;
+  margin-bottom: -1px;
+  border-bottom: 2px solid transparent;
+  color: var(--ink-faint);
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.line .tab:hover {
+  color: var(--ink-soft);
+}
+
+.line .active,
+.line .active:hover {
+  border-bottom-color: var(--ink);
+  color: var(--ink);
+}

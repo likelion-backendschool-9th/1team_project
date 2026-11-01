@@ -1,0 +1,82 @@
+.skins {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.skin {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.skin:has(input:checked) {
+  border-color: #f5b72a;
+  background: #fffaeb;
+  box-shadow: 0 0 0 2px rgb(255 194 26 / 35%);
+}
+
+.skin input,
+.demo input {
+  position: absolute;
+  opacity: 0;
+}
+
+.skin:has(input:focus-visible),
+.demo:has(input:focus-visible) {
+  outline: 2px solid var(--accent-ink);
+  outline-offset: 2px;
+}
+
+.swatch {
+  height: 56px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+.demos {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.demo {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  cursor: pointer;
+}
+
+.demo::before {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  border: 2px solid #d9d2c4;
+  border-radius: 50%;
+  content: "";
+}
+
+.demo:has(input:checked) {
+  border-color: #f5b72a;
+  background: #fffaeb;
+}
+
+.demo:has(input:checked)::before {
+  border: 5px solid #ffc21a;
+}
+
+@media (max-width: 760px) {
+  .skins {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

@@ -19,12 +19,6 @@
   font-weight: 700;
 }
 
-.stacks {
-  color: var(--ink-soft);
-  font-weight: 500;
-  font-size: 14px;
-}
-
 .stats {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -60,6 +54,7 @@
 }
 
 .home {
+  user-select: none;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -81,6 +76,7 @@
 }
 
 .action {
+  user-select: none;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -93,6 +89,7 @@
 }
 
 .badge {
+  user-select: none;
   display: inline-flex;
   min-width: 22px;
   height: 22px;

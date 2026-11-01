@@ -19,3 +19,11 @@ export type Tag = {
   id: number;
   name: string;
 };
+
+export type FeedComment = {
+  id: number;
+  author: UserSummary;
+  content: string;
+  createdAt: string;
+  likeCount: number;
+};

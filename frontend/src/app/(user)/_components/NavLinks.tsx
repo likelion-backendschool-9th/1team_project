@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { Suspense } from "react";
 import {
   BookIcon,
   GridIcon,
@@ -17,15 +18,15 @@ const items = [
   { href: null, label: "이벤트", Icon: TicketIcon },
 ] as const;
 
-export function NavLinks() {
-  const pathname = usePathname();
-
+function NavList({ pathname }: { pathname: string | null }) {
   return (
     <nav aria-label="주 메뉴">
       <ul className={styles.list}>
         {items.map(({ href, label, Icon }) => {
           const active =
-            href !== null && (pathname === href || pathname.startsWith(`${href}/`));
+            href !== null &&
+            pathname !== null &&
+            (pathname === href || pathname.startsWith(`${href}/`));
           return (
             <li key={label}>
               {href ? (
@@ -48,5 +49,18 @@ export function NavLinks() {
         })}
       </ul>
     </nav>
+  );
+}
+
+function ActiveNavList() {
+  return <NavList pathname={usePathname()} />;
+}
+
+// 동적 경로에서는 주소를 런타임에만 알 수 있어, 먼저 표시 없는 메뉴를 그리고 현재 위치를 이어서 채운다.
+export function NavLinks() {
+  return (
+    <Suspense fallback={<NavList pathname={null} />}>
+      <ActiveNavList />
+    </Suspense>
   );
 }

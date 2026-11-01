@@ -11,13 +11,32 @@
   font-weight: 700;
 }
 
-.more {
-  display: inline-flex;
+.tabs {
+  display: flex;
   align-items: center;
-  gap: 2px;
-  color: var(--ink-soft);
-  font-size: 14px;
+}
+
+.tab + .tab::before {
+  margin-inline: 5px;
+  color: var(--border);
+  content: "|";
+}
+
+.tab {
+  padding: 2px 0;
+  color: var(--ink-faint);
+  font-size: 13px;
   font-weight: 500;
+}
+
+.tab:hover {
+  color: var(--ink-soft);
+}
+
+.activeTab,
+.activeTab:hover {
+  color: var(--ink);
+  font-weight: 800;
 }
 
 .list {

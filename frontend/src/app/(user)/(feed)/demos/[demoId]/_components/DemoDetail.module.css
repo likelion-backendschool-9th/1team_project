@@ -1,0 +1,145 @@
+.hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+  gap: 24px;
+}
+
+.stageWrap {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.stage {
+  aspect-ratio: 16 / 10;
+  overflow: hidden;
+  border-radius: 16px;
+  background: #1f1b17;
+}
+
+.thumb,
+.frame {
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.liked {
+  border-color: #f9c3ce;
+  background: #fff5f7;
+  color: var(--danger);
+}
+
+.saved {
+  border-color: #f5d27a;
+  background: #fffaeb;
+  color: var(--accent-ink);
+}
+
+.plays {
+  margin-inline-start: auto;
+  color: var(--ink-faint);
+  font-size: 13px;
+  user-select: none;
+}
+
+.info {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.title {
+  font-size: 24px;
+  font-weight: 800;
+  line-height: 1.3;
+}
+
+.meta {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  padding: 14px;
+  border-radius: 14px;
+  background: #fbfaf7;
+}
+
+.meta dt {
+  color: var(--ink-faint);
+  font-size: 12px;
+}
+
+.meta dd {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.author {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+
+.authorLink {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.report {
+  align-self: flex-start;
+  color: var(--ink-faint);
+  font-size: 13px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.types {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 0;
+  border: 0;
+}
+
+.type {
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  user-select: none;
+}
+
+.type input {
+  position: absolute;
+  opacity: 0;
+}
+
+.type:has(input:checked) {
+  border-color: #f5b72a;
+  background: #fff3cf;
+}
+
+.type:has(input:focus-visible) {
+  outline: 2px solid var(--accent-ink);
+}
+
+@media (max-width: 1280px) {
+  .hero {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

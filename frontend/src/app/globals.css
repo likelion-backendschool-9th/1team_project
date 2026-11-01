@@ -67,6 +67,15 @@ ol {
   list-style: none;
 }
 
+/* 누르는 요소는 글자 선택을 막는다. 본문·제목·닉네임처럼 읽는 내용은 복사할 수 있게 둔다.
+   링크로 만든 버튼과 배지는 각 CSS 모듈에서 user-select: none을 준다. */
+button,
+kbd,
+[role="tab"],
+nav a {
+  user-select: none;
+}
+
 :focus-visible {
   outline: 2px solid var(--accent-ink);
   outline-offset: 2px;

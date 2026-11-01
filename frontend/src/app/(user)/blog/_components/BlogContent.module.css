@@ -1,0 +1,50 @@
+.header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.title {
+  font-size: 22px;
+  font-weight: 800;
+}
+
+.sorts {
+  display: flex;
+  align-items: center;
+}
+
+.sorts li + li::before {
+  margin-inline: 8px;
+  color: var(--ink-faint);
+  content: "·";
+}
+
+.sort {
+  color: var(--ink-faint);
+  font-size: 14px;
+}
+
+.sort:hover {
+  color: var(--ink);
+}
+
+.activeSort {
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.empty {
+  padding: 48px 0;
+  color: var(--ink-soft);
+  text-align: center;
+}

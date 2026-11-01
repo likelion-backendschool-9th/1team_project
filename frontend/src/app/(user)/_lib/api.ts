@@ -5,7 +5,12 @@ import {
   type ApiResponse,
   type PageResponse,
 } from "@/app/_lib/api/client";
-import type { Following, MyProfile, RankingEntry } from "@/app/_lib/types/user";
+import type {
+  Following,
+  MyProfile,
+  RankingEntry,
+  RankingPeriod,
+} from "@/app/_lib/types/user";
 import {
   mockFollowings,
   mockMe,
@@ -27,10 +32,10 @@ export async function getFollowings(): Promise<Following[]> {
   return data.content;
 }
 
-export async function getWeeklyRanking(): Promise<RankingEntry[]> {
-  if (isMockMode) return mockRanking;
+export async function getRanking(period: RankingPeriod): Promise<RankingEntry[]> {
+  if (isMockMode) return mockRanking[period];
   const { data } = await apiFetch<ApiResponse<RankingEntry[]>>(
-    "/api/v1/rankings?type=follower&period=weekly",
+    `/api/v1/rankings?type=follower&period=${period}`,
   );
   return data;
 }
