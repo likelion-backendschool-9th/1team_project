@@ -9,6 +9,10 @@
   font-weight: 700;
 }
 
+.square {
+  border-radius: 28%;
+}
+
 .light {
   background: var(--surface-muted);
   color: var(--ink);

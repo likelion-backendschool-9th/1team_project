@@ -9,3 +9,26 @@ export type DemoSummary = {
   author: UserSummary;
   likeCount: number;
 };
+
+export type DemoSort = "trending" | "latest" | "popular";
+
+export type DemoDetail = DemoSummary & {
+  playCount: number;
+  commentCount: number;
+  createdAt: string;
+  runtime: "web" | "unity";
+  sizeMb: number;
+  liked: boolean;
+  bookmarked: boolean;
+};
+
+export type DemoFeedbackType = "question" | "bug" | "praise";
+
+export type DemoComment = {
+  id: number;
+  author: UserSummary;
+  type: DemoFeedbackType;
+  content: string;
+  createdAt: string;
+  likeCount: number;
+};
