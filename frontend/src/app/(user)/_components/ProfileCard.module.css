@@ -1,0 +1,105 @@
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px;
+  border-radius: var(--radius-card);
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
+}
+
+.profile {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.name {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.stacks {
+  color: var(--ink-soft);
+  font-weight: 500;
+  font-size: 14px;
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+  text-align: center;
+}
+
+.stats > div + div {
+  border-inline-start: 1px solid var(--border);
+}
+
+.stats dd {
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.stats dt {
+  order: 2;
+  color: var(--ink-faint);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.stats > div {
+  display: flex;
+  flex-direction: column;
+}
+
+.chip dd,
+.chip dt {
+  color: var(--accent-ink);
+}
+
+.home {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  font-weight: 700;
+}
+
+.home:hover,
+.action:hover {
+  background: var(--surface-muted);
+}
+
+.actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 12px 8px;
+  border-radius: 14px;
+  background: var(--surface-muted);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.badge {
+  display: inline-flex;
+  min-width: 22px;
+  height: 22px;
+  align-items: center;
+  justify-content: center;
+  padding: 0 6px;
+  border-radius: var(--radius-pill);
+  background: var(--accent);
+  font-size: 13px;
+}

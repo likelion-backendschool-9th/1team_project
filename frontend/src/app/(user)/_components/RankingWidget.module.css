@@ -1,0 +1,61 @@
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.title {
+  color: var(--ink-soft);
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.more {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  color: var(--ink-soft);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 4px;
+  border-radius: 12px;
+}
+
+.row:hover {
+  background: var(--surface-muted);
+}
+
+.rank {
+  width: 16px;
+  color: var(--ink-soft);
+  font-weight: 700;
+  text-align: center;
+}
+
+.first {
+  color: var(--accent-ink);
+}
+
+.name {
+  flex: 1;
+  font-weight: 700;
+}
+
+.score {
+  color: var(--ink-soft);
+  font-size: 15px;
+  font-weight: 500;
+}

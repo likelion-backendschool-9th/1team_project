@@ -1,0 +1,15 @@
+.button {
+  padding: 12px 24px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-muted);
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.button:hover {
+  background: #e9e6e0;
+}
+
+.following {
+  background: var(--accent-soft);
+}
