@@ -1,0 +1,39 @@
+.unread {
+  margin: 0 -12px;
+  padding-inline: 16px;
+  border-radius: 14px;
+  background: #fffaeb;
+}
+
+.avatar {
+  position: relative;
+  flex: none;
+}
+
+.icon {
+  position: absolute;
+  right: -4px;
+  bottom: -4px;
+  display: inline-flex;
+  width: 22px;
+  height: 22px;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  background: #fff;
+  font-size: 12px;
+}
+
+.text {
+  display: block;
+  font-size: 15px;
+}
+
+.dot {
+  width: 9px;
+  height: 9px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--accent-ink);
+}
