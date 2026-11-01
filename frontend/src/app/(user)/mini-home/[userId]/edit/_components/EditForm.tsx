@@ -4,8 +4,10 @@ import { useActionState } from "react";
 import { FormMessage } from "@/app/_components/ui/FormMessage";
 import kit from "@/app/_components/ui/kit.module.css";
 import { initialFormState } from "@/app/_lib/formState";
+import { showcaseLimit } from "@/app/_lib/policy";
 import type { MiniHomeDemo, MiniHomeProfile } from "@/app/_lib/types/miniHome";
 import { saveMiniHome } from "../../_actions";
+import { BGM_TRACKS } from "../../_lib/bgm";
 import styles from "./EditForm.module.css";
 
 const skins = [
@@ -22,6 +24,9 @@ type Props = {
 
 export function EditForm({ profile, demos }: Props) {
   const [state, formAction, pending] = useActionState(saveMiniHome, initialFormState);
+  const limit = showcaseLimit(profile.plus);
+  const showcase = state.values.showcaseDemoIds?.split(",").map(Number) ?? profile.showcaseDemoIds;
+  const featured = Number(state.values.featuredDemoId ?? profile.featuredDemoId);
   const value = (key: string, fallback: string) => state.values[key] ?? fallback;
   const fieldError = (key: string) =>
     state.errors[key]
@@ -35,8 +40,10 @@ export function EditForm({ profile, demos }: Props) {
         <p className={kit.faint}>스킨, 대표 데모, 소개 문구를 바꿀 수 있어요.</p>
       </div>
 
-      <fieldset className={kit.fieldset}>
-        <legend className={kit.label}>스킨</legend>
+      <fieldset className={kit.fieldset} disabled={!profile.plus}>
+        <legend className={kit.label}>
+          스킨 {!profile.plus && <span className={styles.lock}>🔒 딥소스 플러스 전용</span>}
+        </legend>
         <div className={styles.skins}>
           {skins.map((skin) => (
             <label key={skin.value} className={styles.skin}>
@@ -44,7 +51,7 @@ export function EditForm({ profile, demos }: Props) {
                 type="radio"
                 name="skin"
                 value={skin.value}
-                defaultChecked={value("skin", "cream") === skin.value}
+                defaultChecked={value("skin", profile.skin) === skin.value}
               />
               <span
                 className={styles.swatch}
@@ -57,25 +64,39 @@ export function EditForm({ profile, demos }: Props) {
         </div>
       </fieldset>
 
-      <fieldset className={kit.fieldset}>
-        <legend className={kit.label}>대표 데모</legend>
-        <p className={kit.hint}>공개된 데모 중 하나를 홈 화면에 크게 보여 줘요.</p>
+      <fieldset
+        className={kit.fieldset}
+        aria-describedby={state.errors.showcase ? "edit-showcase-error" : "edit-showcase-hint"}
+      >
+        <legend className={kit.label}>미니홈피에 보여 줄 데모</legend>
+        <p id="edit-showcase-hint" className={kit.hint}>
+          최대 {limit}개까지 공개해요{!profile.plus && " (딥소스 플러스는 6개)"}. 대표 데모는 공개한 데모 중 하나를 골라요.
+        </p>
         <div className={styles.demos}>
           {demos.map((demo) => (
-            <label key={demo.id} className={styles.demo}>
-              <input
-                type="radio"
-                name="featuredDemoId"
-                value={demo.id}
-                defaultChecked={demo.id === profile.featuredDemoId}
-              />
-              <span>
-                <strong>{demo.title}</strong>
-                <span className={kit.faint}> · ♥ {demo.likeCount} · 실행 {demo.playCount}</span>
-              </span>
-            </label>
+            <div key={demo.id} className={styles.demo}>
+              <label className={styles.demoCheck}>
+                <input
+                  type="checkbox"
+                  name="showcaseDemoIds"
+                  value={demo.id}
+                  defaultChecked={showcase.includes(demo.id)}
+                />
+                <span>
+                  <strong>{demo.title}</strong>
+                  <span className={kit.faint}> · ♥ {demo.likeCount} · 실행 {demo.playCount}</span>
+                </span>
+              </label>
+              <label className={styles.featuredPick}>
+                <input type="radio" name="featuredDemoId" value={demo.id} defaultChecked={demo.id === featured} />
+                대표
+              </label>
+            </div>
           ))}
         </div>
+        <p id="edit-showcase-error" className={kit.error}>
+          {state.errors.showcase}
+        </p>
       </fieldset>
 
       <div className={kit.grid2}>
@@ -111,15 +132,25 @@ export function EditForm({ profile, demos }: Props) {
 
       <div className={kit.field}>
         <label htmlFor="edit-bgm" className={kit.label}>
-          배경음악
+          배경음악 {!profile.plus && <span className={styles.lock}>🔒 딥소스 플러스 전용</span>}
         </label>
-        <input
+        <select
           id="edit-bgm"
           name="bgm"
           defaultValue={value("bgm", profile.bgm ?? "")}
-          placeholder="아티스트 - 곡 제목"
-          className={kit.input}
-        />
+          disabled={!profile.plus}
+          className={kit.select}
+        >
+          <option value="">사용 안 함</option>
+          {BGM_TRACKS.map((track) => (
+            <option key={track.id} value={track.id}>
+              {track.title}
+            </option>
+          ))}
+        </select>
+        <p id="edit-bgm-error" className={kit.error}>
+          {state.errors.bgm}
+        </p>
       </div>
 
       <div className={kit.field}>

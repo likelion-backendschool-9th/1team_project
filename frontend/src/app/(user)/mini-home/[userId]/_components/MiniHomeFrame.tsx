@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import type { ReactNode } from "react";
+import { getMe } from "@/app/(user)/_lib/api";
 import {
   getContributions,
   getLanguages,
@@ -12,6 +13,7 @@ import { parseUserId } from "../_lib/parse";
 import { MiniHomeHeader } from "./MiniHomeHeader";
 import { MiniHomeTabs } from "./MiniHomeTabs";
 import { ProfilePanel } from "./ProfilePanel";
+import { VisitCounter } from "./VisitCounter";
 import styles from "./MiniHomeFrame.module.css";
 
 type Props = {
@@ -28,7 +30,8 @@ export async function MiniHomeFrame({ params, children }: Props) {
   const profile = await getProfile(userId);
   if (!profile) notFound();
 
-  const [visitors, languages, contributions, repos] = await Promise.all([
+  const [me, visitors, languages, contributions, repos] = await Promise.all([
+    getMe(),
     getVisitors(userId),
     getLanguages(userId),
     getContributions(userId),
@@ -38,8 +41,15 @@ export async function MiniHomeFrame({ params, children }: Props) {
   return (
     <div className={styles.wrap}>
       <MiniHomeTabs userId={userId} />
-      <div className={styles.frame}>
-        <MiniHomeHeader profile={profile} visitors={visitors} />
+      {me.id !== userId && <VisitCounter userId={userId} />}
+      {/* 스킨은 딥소스 플러스 전용이라 일반 회원은 기본 스킨으로 보인다. */}
+      <div className={styles.frame} data-skin={profile.plus ? profile.skin : "cream"}>
+        <MiniHomeHeader
+          profile={profile}
+          visitors={visitors}
+          isOwner={me.id === userId}
+          chipBalance={me.chipBalance}
+        />
         <div className={styles.grid}>
           <ProfilePanel
             profile={profile}

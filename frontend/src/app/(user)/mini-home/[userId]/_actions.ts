@@ -11,6 +11,9 @@ import {
 import { runForm } from "@/app/_lib/api/formAction";
 import { mutate } from "@/app/_lib/api/mutate";
 import { readValues, type FormState } from "@/app/_lib/formState";
+import { showcaseLimit } from "@/app/_lib/policy";
+import { getMe } from "@/app/(user)/_lib/api";
+import { BGM_TRACKS } from "./_lib/bgm";
 import { MAX_COMMENT_LENGTH, type CommentState } from "./_lib/commentState";
 import { pickRandomMockUserId } from "./_lib/mock";
 
@@ -110,15 +113,32 @@ export async function deleteGuestbook(guestbookId: number) {
 }
 
 export async function saveMiniHome(previous: FormState, formData: FormData): Promise<FormState> {
+  const me = await getMe();
   const values = readValues(formData, ["skin", "headline", "domain", "bgm", "quote", "stackTags"]);
+  const showcase = formData.getAll("showcaseDemoIds").map(Number).filter(isId);
   const featuredDemoId = Number(formData.get("featuredDemoId"));
+  values.showcaseDemoIds = showcase.join(",");
+  values.featuredDemoId = String(featuredDemoId || "");
   const errors: Record<string, string> = {};
   if (!values.headline) errors.headline = "한 줄 소개를 입력해 주세요.";
   else if (values.headline.length > 30) errors.headline = "30자 이하로 입력해 주세요.";
   if (values.quote.length > 80) errors.quote = "80자 이하로 입력해 주세요.";
+  if (showcase.length === 0) errors.showcase = "공개할 데모를 1개 이상 골라 주세요.";
+  else if (showcase.length > showcaseLimit(me.plus))
+    errors.showcase = `공개할 데모는 ${showcaseLimit(me.plus)}개까지 고를 수 있어요.`;
+  if (isId(featuredDemoId) && !showcase.includes(featuredDemoId))
+    errors.showcase = "대표 데모는 공개할 데모 중에서 골라 주세요.";
+  // 스킨·BGM은 딥소스 플러스 전용이다.
+  if (!me.plus) {
+    values.skin = "cream";
+    values.bgm = "";
+  } else if (values.bgm && !BGM_TRACKS.some((track) => track.id === values.bgm)) {
+    errors.bgm = "목록에 있는 곡만 고를 수 있어요.";
+  }
 
-  const state = await runForm(previous, values, errors, async () => {
-    const saved = await mutate("/api/v1/mini-homes/me", "PUT", values, "미니홈피를 저장했어요.");
+  return runForm(previous, values, errors, async () => {
+    const body = { ...values, showcaseDemoIds: showcase };
+    const saved = await mutate("/api/v1/mini-homes/me", "PUT", body, "미니홈피를 저장했어요.");
     if (!saved.ok || !isId(featuredDemoId)) return saved;
     const featured = await mutate(
       "/api/v1/mini-homes/me/featured-demo",
@@ -128,5 +148,60 @@ export async function saveMiniHome(previous: FormState, formData: FormData): Pro
     );
     return featured.ok ? saved : featured;
   });
-  return state;
+}
+
+// 칩 사용 API는 기획 후 결정된다 (WBS 10.3). 정해지기 전까지는 목 응답만 준다.
+export async function sponsorChips(userId: number, previous: FormState, formData: FormData): Promise<FormState> {
+  const values = readValues(formData, ["amount", "message"]);
+  const amount = Number(values.amount);
+  const errors: Record<string, string> = {};
+  if (!isId(userId)) errors.amount = "잘못된 요청이에요.";
+  else if (!Number.isInteger(amount) || amount < 1) errors.amount = "1칩 이상 입력해 주세요.";
+  else if (amount > 10_000) errors.amount = "한 번에 10,000칩까지 후원할 수 있어요.";
+  if (values.message.length > 50) errors.message = "50자 이하로 입력해 주세요.";
+  return runForm(previous, values, errors, async () =>
+    isMockMode
+      ? { ok: true, message: `${amount}칩을 후원했어요. (목업이라 실제로 차감되지는 않아요)` }
+      : { ok: false, message: "칩 사용 API 연결 전이에요." },
+  );
+}
+
+export async function expandInventory() {
+  if (!isMockMode) return { ok: false, message: "칩 사용 API 연결 전이에요." };
+  return { ok: true, message: "인벤토리를 1칸 늘렸어요. (목업이라 실제로 차감되지는 않아요)" };
+}
+
+export async function recordVisit(userId: number) {
+  if (!isId(userId)) return { ok: false, message: "잘못된 요청이에요." };
+  return mutate(`/api/v1/mini-homes/${userId}/visits`, "POST", undefined, "방문을 기록했어요.");
+}
+
+export async function toggleDemoLike(demoId: number, like: boolean): Promise<ActionResult> {
+  if (!isId(demoId)) return { ok: false, message: "잘못된 요청이에요." };
+  return mutate(`/api/v1/demos/${demoId}/like`, like ? "POST" : "DELETE", undefined, "좋아요를 반영했어요.");
+}
+
+export async function createDemoComment(
+  demoId: number,
+  previous: FormState,
+  formData: FormData,
+): Promise<FormState> {
+  const values = readValues(formData, ["content"]);
+  const errors: Record<string, string> = {};
+  if (!values.content) errors.content = "댓글을 입력해 주세요.";
+  else if (values.content.length > 300) errors.content = "300자 이하로 입력해 주세요.";
+  const state = await runForm(previous, values, errors, () =>
+    mutate(`/api/v1/demos/${demoId}/comments`, "POST", { ...values, type: "praise" }, "댓글을 남겼어요."),
+  );
+  return state.ok ? { ...state, values: {} } : state;
+}
+
+export async function updateDemoComment(commentId: number, content: string) {
+  const text = content.trim();
+  if (!text || text.length > 300) return { ok: false, message: "1~300자로 입력해 주세요." };
+  return mutate(`/api/v1/demos/comments/${commentId}`, "PUT", { content: text }, "댓글을 수정했어요.");
+}
+
+export async function deleteDemoComment(commentId: number) {
+  return mutate(`/api/v1/demos/comments/${commentId}`, "DELETE", undefined, "댓글을 삭제했어요.");
 }

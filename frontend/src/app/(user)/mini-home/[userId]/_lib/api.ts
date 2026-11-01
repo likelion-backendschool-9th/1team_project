@@ -20,6 +20,7 @@ import type {
 import {
   createMockComments,
   findMockProfile,
+  createMockDemoComments,
   createMockGuestbook,
   mockContributions,
   mockDemos,
@@ -107,6 +108,14 @@ export async function getGuestbook(userId: number): Promise<MiniHomeComment[]> {
   if (isMockMode) return createMockGuestbook(Date.now());
   const { data } = await apiFetch<ApiResponse<PageResponse<MiniHomeComment>>>(
     `/api/v1/mini-homes/${userId}/guestbook`,
+  );
+  return data.content;
+}
+
+export async function getDemoComments(demoId: number): Promise<MiniHomeComment[]> {
+  if (isMockMode) return createMockDemoComments(demoId, Date.now());
+  const { data } = await apiFetch<ApiResponse<PageResponse<MiniHomeComment>>>(
+    `/api/v1/demos/${demoId}/comments`,
   );
   return data.content;
 }

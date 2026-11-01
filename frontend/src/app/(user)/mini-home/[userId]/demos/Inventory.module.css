@@ -1,0 +1,23 @@
+.meter {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
+}
+
+.slots {
+  display: flex;
+  gap: 6px;
+  margin: 10px 0 6px;
+}
+
+.slots span {
+  width: 28px;
+  height: 12px;
+  border-radius: 4px;
+  background: #ece6db;
+}
+
+.slots .filled {
+  background: #ffc21a;
+}

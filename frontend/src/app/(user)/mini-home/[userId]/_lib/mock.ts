@@ -1,4 +1,4 @@
-import { mockBadges, mockUsers } from "@/app/(user)/_lib/mock";
+import { mockBadges, mockCompanies, mockPlusUserIds, mockUsers } from "@/app/(user)/_lib/mock";
 import type { UserSummary } from "@/app/_lib/types/user";
 import type {
   GithubContributions,
@@ -14,15 +14,22 @@ import type {
 const siwooProfile: MiniHomeProfile = {
   ...mockUsers.jung,
   badges: mockBadges[6],
+  plus: true,
+  company: mockCompanies[6],
+  skin: "cream",
+  showcaseDemoIds: [101, 102, 103],
+  extraInventorySlots: 0,
   headline: "Interactivity Explorer",
   domain: "siwoo.dev",
-  bgm: "NewJeans - Ditto (8-bit lofi remix)",
+  bgm: "pixel-morning",
   quote: "“픽셀은 거짓말을 안 한다.\n프레임레이트는 감동이다.” ⚡",
   stackTags: ["WebGL", "ThreeJS", "TypeScript", "React", "GLSL"],
-  featuredDemoId: 11,
+  featuredDemoId: 101,
   featuredPostId: 302,
   following: false,
 };
+
+const skins: Record<number, MiniHomeProfile["skin"]> = { 2: "mint", 3: "cherry" };
 
 // 목 모드에서는 정시우 홈피를 기준으로, 다른 회원은 이름과 소개만 바꿔 보여준다.
 export function findMockProfile(userId: number): MiniHomeProfile | null {
@@ -33,6 +40,12 @@ export function findMockProfile(userId: number): MiniHomeProfile | null {
     ...siwooProfile,
     ...user,
     badges: mockBadges[user.id] ?? [],
+    plus: mockPlusUserIds.includes(user.id),
+    company: mockCompanies[user.id] ?? null,
+    bgm: mockPlusUserIds.includes(user.id) ? "lofi-coding" : null,
+    skin: skins[user.id] ?? "cream",
+    showcaseDemoIds: mockPlusUserIds.includes(user.id) ? [101, 102, 103, 104] : [101, 102, 103],
+    extraInventorySlots: user.id === 1 ? 1 : 0,
     headline: "Dip Source Maker",
     domain: null,
   };
@@ -67,7 +80,7 @@ export const mockRepos: GithubRepo[] = [
 
 export const mockDemos: MiniHomeDemo[] = [
   {
-    id: 11,
+    id: 101,
     title: "Interactive Neon Particle Swarm",
     description:
       "마우스 반발력과 물리 기반 가속도를 시뮬레이션한 파티클 인터랙션 데모입니다.",
@@ -80,7 +93,7 @@ export const mockDemos: MiniHomeDemo[] = [
     commentCount: 12,
   },
   {
-    id: 12,
+    id: 102,
     title: "실시간 WebAudio 스펙트럼 뷰어",
     description: "마이크 입력 주파수를 파티클로 전환하는 시각화 도구",
     thumbnail: null,
@@ -92,7 +105,7 @@ export const mockDemos: MiniHomeDemo[] = [
     commentCount: 8,
   },
   {
-    id: 13,
+    id: 103,
     title: "초경량 글래스모피즘 컴포넌트",
     description: "Zero-dependency 반응형 CSS 블러 디자인 킷",
     thumbnail: null,
@@ -104,7 +117,7 @@ export const mockDemos: MiniHomeDemo[] = [
     commentCount: 5,
   },
   {
-    id: 14,
+    id: 104,
     title: "GLSL 노이즈 셰이더 놀이터",
     description: "Perlin·Simplex 노이즈 파라미터를 실시간으로 조절해 보는 셰이더 데모",
     thumbnail: null,
@@ -116,7 +129,7 @@ export const mockDemos: MiniHomeDemo[] = [
     commentCount: 3,
   },
   {
-    id: 15,
+    id: 105,
     title: "드래그 앤 드롭 칸반 보드",
     description: "의존성 없이 Pointer Events로 만든 칸반 보드",
     thumbnail: null,
@@ -128,7 +141,7 @@ export const mockDemos: MiniHomeDemo[] = [
     commentCount: 2,
   },
   {
-    id: 16,
+    id: 106,
     title: "CSS 3D 카드 플립 갤러리",
     description: "transform-style: preserve-3d로 만든 카드 갤러리",
     thumbnail: null,
@@ -203,4 +216,19 @@ export function pickRandomMockUserId(exceptId: number): number {
     .map((user) => user.id)
     .filter((id) => id !== exceptId);
   return ids[Math.floor(Math.random() * ids.length)];
+}
+
+export function createMockDemoComments(demoId: number, now: number): MiniHomeComment[] {
+  const rows: [UserSummary, string, number][] = [
+    [mockUsers.kwak, "마우스 따라 흩어지는 느낌이 너무 좋아요. 반발력 계수는 몇으로 두셨어요?", 25],
+    [mockUsers.jinyeop, "모바일 터치에서도 잘 돌아가네요 👍", 90],
+    [mockUsers.me, "파티클 수 늘려도 60fps 유지되는 게 신기해요!", 180],
+  ];
+  return rows.map(([author, content, minutesAgo], index) => ({
+    id: demoId * 100 + index,
+    author,
+    content,
+    createdAt: new Date(now - minutesAgo * MINUTE).toISOString(),
+    secret: false,
+  }));
 }

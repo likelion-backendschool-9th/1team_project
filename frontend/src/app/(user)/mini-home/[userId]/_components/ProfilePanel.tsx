@@ -6,6 +6,7 @@ import type {
   MiniHomeProfile,
 } from "@/app/_lib/types/miniHome";
 import { UserBadges } from "@/app/(user)/_components/UserBadges";
+import { BgmPlayer } from "./BgmPlayer";
 import styles from "./ProfilePanel.module.css";
 
 type Props = {
@@ -24,20 +25,15 @@ export function ProfilePanel({ profile, languages, contributions, repos }: Props
         <span className={styles.avatarName}>{profile.nickname}</span>
       </div>
       <h2 className={styles.name}>{profile.nickname}</h2>
-      <UserBadges badges={profile.badges} align="center" />
-
-      {profile.bgm && (
-        <p className={styles.bgm}>
-          <span className={styles.note} aria-hidden="true">
-            ♬
-          </span>
-          <span className={styles.bgmTitle}>
-            <span className="sr-only">배경음악 </span>
-            {profile.bgm}
-          </span>
-          <span className={styles.pause} aria-hidden="true" />
+      {(profile.plus || profile.company) && (
+        <p className={styles.idTags}>
+          {profile.plus && <span className={styles.plusTag}>PLUS</span>}
+          {profile.company && <span className={styles.company}>🏢 {profile.company}</span>}
         </p>
       )}
+      <UserBadges badges={profile.badges} align="center" />
+
+      {profile.plus && profile.bgm && <BgmPlayer trackId={profile.bgm} />}
 
       {profile.quote && <blockquote className={styles.quote}>{profile.quote}</blockquote>}
 

@@ -42,6 +42,7 @@
   grid-template-columns: minmax(0, 1fr) 310px;
   gap: 24px;
   margin-top: 16px;
+  scroll-margin-top: 24px;
 }
 
 .stage {
@@ -99,7 +100,15 @@
 
 .info {
   display: flex;
+  min-width: 0;
   flex-direction: column;
+  gap: 14px;
+}
+
+.summary {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
 }
 
 .name {
@@ -114,60 +123,166 @@
   font-size: 14px;
 }
 
-.stats {
-  user-select: none;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 16px;
-  margin-top: 16px;
-  color: var(--ink-soft);
-  font-size: 14px;
-}
-
-.stats > span {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.likes {
-  color: var(--danger);
-  font-weight: 700;
-}
-
-.desc {
-  padding-top: 20px;
-  margin-top: 20px;
-  border-top: 1px solid #ece6db;
-  color: var(--ink-soft);
-  font-size: 15px;
-  line-height: 1.7;
-}
-
 .run {
-  user-select: none;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 6px;
   padding: 12px 16px;
-  margin-top: auto;
   border-radius: 12px;
   background: #1f1b17;
   color: #fff;
   font-weight: 700;
+  user-select: none;
 }
 
 .run:hover {
   background: #000;
 }
 
-.actions {
+/* 큰 화면 모드: 실행 화면을 카드 폭 전체로 키우고 정보는 아래로 내린다. */
+.expanded {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.expanded .stage {
+  aspect-ratio: 16 / 8;
+}
+
+.expanded .summary {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.expanded .run {
+  flex: none;
+}
+
+.social {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-block: 12px;
+  border-block: 1px solid #ece6db;
+}
+
+.socialButtons {
+  display: flex;
+  gap: 18px;
+}
+
+.socialButton {
+  --on: var(--ink);
+  --hover: var(--ink);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 2px;
+  color: var(--ink-soft);
+  font-size: 15px;
+  user-select: none;
+  transition: color 0.15s ease;
+}
+
+.socialButton:hover:not(:disabled) {
+  color: var(--hover);
+}
+
+.socialIcon {
+  display: inline-flex;
+  font-size: 20px;
+  transition: transform 0.15s ease;
+}
+
+.socialButton:active:not(:disabled) .socialIcon {
+  transform: scale(0.88);
+}
+
+.likeButton {
+  --on: var(--danger);
+  --hover: #f78fa3;
+}
+
+.commentButton {
+  --on: #3b8beb;
+  --hover: #82b6f3;
+}
+
+.liked,
+.liked:hover:not(:disabled),
+.commentOpen,
+.commentOpen:hover {
+  color: var(--on);
+}
+
+.pop {
+  animation: pop 0.45s cubic-bezier(0.2, 0.9, 0.3, 1.4);
+}
+
+@keyframes pop {
+  30% {
+    transform: scale(1.35);
+  }
+  60% {
+    transform: scale(0.9);
+  }
+}
+
+.caret {
+  font-size: 11px;
+}
+
+.socialError {
+  color: var(--danger);
+  font-size: 13px;
+}
+
+.socialError:empty {
+  display: none;
+}
+
+.comments {
+  display: flex;
+  max-height: 360px;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px;
+  overflow-y: auto;
+  border: 1px solid #ece6db;
+  border-radius: 14px;
+  background: #fdfbf7;
+  animation: open 0.18s ease-out;
+}
+
+.comments[hidden] {
+  display: none;
+}
+
+@keyframes open {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+
+.desc {
+  color: var(--ink-soft);
+  font-size: 15px;
+  line-height: 1.7;
+}
+
+.links {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 10px;
-  margin-top: 10px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pop,
+  .comments {
+    animation: none;
+  }
 }
 
 .later,
@@ -217,7 +332,6 @@
 
 .rule {
   user-select: none;
-  margin-top: 14px;
   color: #c2410c;
   font-size: 13px;
   text-align: center;
@@ -232,9 +346,5 @@
 @media (max-width: 1280px) {
   .body {
     grid-template-columns: minmax(0, 1fr);
-  }
-
-  .run {
-    margin-top: 20px;
   }
 }

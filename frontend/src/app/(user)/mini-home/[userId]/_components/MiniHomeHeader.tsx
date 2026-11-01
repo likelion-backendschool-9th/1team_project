@@ -3,14 +3,17 @@ import { formatCount } from "@/app/_lib/format";
 import type { MiniHomeProfile, VisitorStats } from "@/app/_lib/types/miniHome";
 import { surf } from "../_actions";
 import { IlchonButton } from "./IlchonButton";
+import { SponsorButton } from "./SponsorButton";
 import styles from "./MiniHomeHeader.module.css";
 
 type Props = {
   profile: MiniHomeProfile;
   visitors: VisitorStats;
+  isOwner: boolean;
+  chipBalance: number;
 };
 
-export function MiniHomeHeader({ profile, visitors }: Props) {
+export function MiniHomeHeader({ profile, visitors, isOwner, chipBalance }: Props) {
   return (
     <header className={styles.header}>
       <div className={styles.left}>
@@ -37,11 +40,20 @@ export function MiniHomeHeader({ profile, visitors }: Props) {
         <span className={styles.headline}>{profile.headline}</span>
       </div>
       <div className={styles.right}>
-        <IlchonButton
-          userId={profile.id}
-          nickname={profile.nickname}
-          following={profile.following}
-        />
+        {isOwner ? (
+          <Link href={`/mini-home/${profile.id}/edit`} className={styles.button}>
+            ✏️ 홈피 꾸미기
+          </Link>
+        ) : (
+          <>
+            <IlchonButton
+              userId={profile.id}
+              nickname={profile.nickname}
+              following={profile.following}
+            />
+            <SponsorButton userId={profile.id} nickname={profile.nickname} chipBalance={chipBalance} />
+          </>
+        )}
         <form action={surf.bind(null, profile.id)}>
           <button type="submit" className={styles.button}>
             <span aria-hidden="true">🌊</span> 파도타기
