@@ -1,10 +1,11 @@
 import Link from "next/link";
 import { Avatar } from "@/app/_components/ui/Avatar";
-import { ArrowRightIcon, MoreIcon } from "@/app/_components/ui/Icons";
+import { ArrowRightIcon } from "@/app/_components/ui/Icons";
 import { formatRelativeTime } from "@/app/_lib/format";
 import type { Feed } from "@/app/_lib/types/feed";
 import { DemoThumb } from "./DemoThumb";
 import { FeedActions } from "./FeedActions";
+import { FeedMenu } from "./FeedMenu";
 import { FollowButton } from "./FollowButton";
 import styles from "./FeedCard.module.css";
 
@@ -41,9 +42,12 @@ export function FeedCard({ feed, myId, now }: Props) {
             following={feed.following}
           />
         )}
-        <button type="button" className={styles.more} aria-label="더보기" disabled>
-          <MoreIcon />
-        </button>
+        <FeedMenu
+          feedId={feed.id}
+          authorId={author.id}
+          authorName={author.nickname}
+          mine={author.id === myId}
+        />
       </header>
 
       <p className={styles.content}>{feed.content}</p>
@@ -74,6 +78,7 @@ export function FeedCard({ feed, myId, now }: Props) {
         repostCount={feed.repostCount}
         liked={feed.liked}
         reposted={feed.reposted}
+        bookmarked={feed.bookmarked}
       />
     </article>
   );

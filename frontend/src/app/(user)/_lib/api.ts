@@ -11,7 +11,9 @@ import type {
   RankingEntry,
   RankingPeriod,
 } from "@/app/_lib/types/user";
+import type { AppNotification } from "@/app/_lib/types/notification";
 import {
+  createMockNotifications,
   mockFollowings,
   mockMe,
   mockRanking,
@@ -26,10 +28,14 @@ export async function getMe(): Promise<MyProfile> {
 
 export async function getFollowings(): Promise<Following[]> {
   if (isMockMode) return mockFollowings;
-  const { data } = await apiFetch<ApiResponse<PageResponse<Following>>>(
-    "/api/v1/follows/followings",
-  );
-  return data.content;
+  const [{ data }, presence] = await Promise.all([
+    apiFetch<ApiResponse<PageResponse<Following>>>("/api/v1/follows/followings"),
+    apiFetch<ApiResponse<{ userId: number; online: boolean }[]>>(
+      "/api/v1/follows/followings/presence",
+    ),
+  ]);
+  const online = new Set(presence.data.filter((item) => item.online).map((item) => item.userId));
+  return data.content.map((user) => ({ ...user, online: online.has(user.id) }));
 }
 
 export async function getRanking(period: RankingPeriod): Promise<RankingEntry[]> {
@@ -46,4 +52,16 @@ export async function getUnreadCount(): Promise<number> {
     "/api/v1/notifications/unread-count",
   );
   return data.count;
+}
+
+export async function getServerTime(): Promise<number> {
+  return Date.now();
+}
+
+export async function getNotifications(): Promise<AppNotification[]> {
+  if (isMockMode) return createMockNotifications(Date.now());
+  const { data } = await apiFetch<ApiResponse<PageResponse<AppNotification>>>(
+    "/api/v1/notifications?size=20",
+  );
+  return data.content;
 }

@@ -27,9 +27,14 @@ export async function getHotDemos(): Promise<DemoSummary[]> {
   return data.content;
 }
 
-export async function getFeeds(tag: string | undefined): Promise<Feed[]> {
-  if (isMockMode) return createMockFeeds(Date.now());
-  const query = new URLSearchParams({ type: "recommended" });
+export type FeedType = "recommended" | "following";
+
+export async function getFeeds(tag: string | undefined, type: FeedType): Promise<Feed[]> {
+  if (isMockMode) {
+    const feeds = createMockFeeds(Date.now());
+    return type === "following" ? feeds.filter((feed) => feed.following) : feeds;
+  }
+  const query = new URLSearchParams({ type });
   if (tag) query.set("tag", tag);
   const { data } = await apiFetch<ApiResponse<PageResponse<Feed>>>(
     `/api/v1/feeds?${query}`,

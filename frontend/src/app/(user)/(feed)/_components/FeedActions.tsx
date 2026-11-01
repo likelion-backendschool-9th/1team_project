@@ -8,7 +8,7 @@ import {
   HeartIcon,
   RepostIcon,
 } from "@/app/_components/ui/Icons";
-import { toggleLike, toggleRepost } from "../_actions";
+import { toggleBookmark, toggleLike, toggleRepost } from "../_actions";
 import { useToggle } from "../_hooks/useToggle";
 import styles from "./FeedActions.module.css";
 
@@ -19,6 +19,7 @@ type Props = {
   repostCount: number;
   liked: boolean;
   reposted: boolean;
+  bookmarked: boolean;
 };
 
 type Effect = "like" | "repost" | "bookmark";
@@ -30,19 +31,20 @@ export function FeedActions({
   repostCount,
   liked,
   reposted,
+  bookmarked,
 }: Props) {
   const like = useToggle(liked, likeCount, (next) => toggleLike(feedId, next));
   const repost = useToggle(reposted, repostCount, (next) =>
     toggleRepost(feedId, next),
   );
-  const [bookmarked, setBookmarked] = useState(false);
+  const bookmark = useToggle(bookmarked, 0, (next) => toggleBookmark(feedId, next));
   // 누를 때마다 값이 바뀌어 아이콘을 다시 그리고, 애니메이션을 처음부터 재생한다.
   const [plays, setPlays] = useState<Record<Effect, number>>({
     like: 0,
     repost: 0,
     bookmark: 0,
   });
-  const error = like.error ?? repost.error;
+  const error = like.error ?? repost.error ?? bookmark.error;
 
   function play(effect: Effect) {
     setPlays((value) => ({ ...value, [effect]: value[effect] + 1 }));
@@ -96,19 +98,20 @@ export function FeedActions({
       </button>
       <button
         type="button"
-        className={`${styles.action} ${styles.bookmark} ${bookmarked ? styles.saved : ""}`}
-        aria-pressed={bookmarked}
+        className={`${styles.action} ${styles.bookmark} ${bookmark.active ? styles.saved : ""}`}
+        aria-pressed={bookmark.active}
         aria-label="북마크"
+        disabled={bookmark.pending}
         onClick={() => {
           play("bookmark");
-          setBookmarked((value) => !value);
+          bookmark.toggle();
         }}
       >
         <span
           key={plays.bookmark}
-          className={`${styles.icon} ${animation("bookmark", bookmarked ? styles.drop : styles.press)}`}
+          className={`${styles.icon} ${animation("bookmark", bookmark.active ? styles.drop : styles.press)}`}
         >
-          <BookmarkIcon filled={bookmarked} />
+          <BookmarkIcon filled={bookmark.active} />
         </span>
       </button>
       <p role="alert" className={styles.error}>

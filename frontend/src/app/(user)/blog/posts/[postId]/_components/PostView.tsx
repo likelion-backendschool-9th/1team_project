@@ -6,10 +6,18 @@ import { ArrowRightIcon } from "@/app/_components/ui/Icons";
 import { CommentForm } from "@/app/_components/ui/CommentForm";
 import { ConfirmButton } from "@/app/_components/ui/ConfirmButton";
 import kit from "@/app/_components/ui/kit.module.css";
-import { formatCount, formatDate } from "@/app/_lib/format";
+import { formatCount, formatDate, formatWon } from "@/app/_lib/format";
+import { chipsToWon } from "@/app/_lib/policy";
 import { CommentList } from "@/app/(user)/_components/CommentList";
 import { getMe } from "@/app/(user)/_lib/api";
-import { createPostComment, deletePost, reportPost, unlockPost } from "../../../_actions";
+import {
+  createPostComment,
+  deletePost,
+  deletePostComment,
+  reportPost,
+  unlockPost,
+  updatePostComment,
+} from "../../../_actions";
 import { getPost, getPostComments, getServerTime } from "../../../_lib/api";
 import { categories } from "../../../_lib/query";
 import { Markdown } from "../../../_components/Markdown";
@@ -99,7 +107,7 @@ export async function PostView({ params }: Props) {
               🔒
             </span>
             <h3 id="paywall-title" className={styles.paywallTitle}>
-              이어지는 내용은 {post.price}칩으로 열람할 수 있어요
+              이어지는 내용은 {post.price}칩({formatWon(chipsToWon(post.price))})으로 열람할 수 있어요
             </h3>
             <p className={kit.muted}>
               보유 칩 {formatCount(me.chipBalance)}개 · 열람 후 24시간 안에 코드가 동작하지 않으면 100% 환불돼요.
@@ -114,7 +122,7 @@ export async function PostView({ params }: Props) {
                 onConfirm={unlockPost.bind(null, post.id)}
               />
               <Link href={`/blog/${post.author.id}`} className={kit.btnGhost}>
-                연재 구독하기
+                블로그 구독하기
               </Link>
             </div>
           </section>
@@ -156,7 +164,13 @@ export async function PostView({ params }: Props) {
           댓글 {comments.length}
         </h2>
         <CommentForm action={createPostComment.bind(null, post.id)} />
-        <CommentList comments={comments} now={now} />
+        <CommentList
+          comments={comments}
+          now={now}
+          myId={me.id}
+          updateComment={updatePostComment}
+          deleteComment={deletePostComment}
+        />
       </section>
     </div>
   );

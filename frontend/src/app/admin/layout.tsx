@@ -12,19 +12,19 @@ export const metadata: Metadata = {
 export default function AdminLayout({ children }: { children: ReactNode }) {
   return (
     <div className={styles.shell}>
-      <aside className={styles.sidebar} aria-label="관리자 사이드바">
-        <Link href="/admin" className={styles.logo}>
-          <span className={styles.mark} aria-hidden="true" />
-          <span>
+      <header className={styles.header}>
+        <div className={styles.headerTop}>
+          <Link href="/admin" className={styles.logo}>
+            <span className={styles.mark} aria-hidden="true" />
             <strong>찍먹</strong>
             <span className={styles.logoSub}>ADMIN</span>
-          </span>
-        </Link>
+          </Link>
+          <Link href="/main" className={styles.back}>
+            서비스로 돌아가기 →
+          </Link>
+        </div>
         <AdminNav />
-        <Link href="/main" className={styles.back}>
-          ← 서비스로 돌아가기
-        </Link>
-      </aside>
+      </header>
       <main id="main-content" tabIndex={-1} className={styles.main}>
         {children}
       </main>

@@ -21,14 +21,14 @@ export function FollowingList({ followings }: Props) {
           <ChevronRightIcon />
         </Link>
       </div>
-      <ul className={styles.list}>
+      <ul className={styles.list} aria-label={`팔로잉 ${followings.length}명`} tabIndex={0}>
         {followings.map((user) => (
           <li key={user.id}>
             <Link href={`/mini-home/${user.id}`} className={styles.row}>
-              <Avatar name={user.nickname} size={40} tone="light" />
+              <Avatar name={user.nickname} size={32} tone="light" />
               <div className={styles.info}>
                 <span className={styles.name}>@{user.nickname}</span>
-                <UserBadges badges={user.badges} />
+                <UserBadges badges={user.badges} size="sm" />
               </div>
               <span
                 className={`${styles.dot} ${user.online ? styles.online : ""}`}

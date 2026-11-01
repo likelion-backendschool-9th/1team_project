@@ -6,7 +6,7 @@ import kit from "@/app/_components/ui/kit.module.css";
 import { LinkTabs } from "@/app/_components/ui/LinkTabs";
 import { formatDate } from "@/app/_lib/format";
 import { StatusPill } from "../_components/StatusPill";
-import { getReports } from "../_lib/api";
+import { getReports, REPORT_TYPES } from "../_lib/api";
 
 export const metadata: Metadata = { title: "신고 관리" };
 
@@ -19,19 +19,31 @@ const filters = [
 
 async function ReportsContent({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   await connection();
-  const raw = (await searchParams).status;
-  const status = filters.find((item) => item.value && item.value === raw)?.value;
-  const reports = await getReports(status);
+  const params = await searchParams;
+  const status = filters.find((item) => item.value && item.value === params.status)?.value;
+  const type = REPORT_TYPES.find((item) => item.value === params.type)?.value;
+  const reports = await getReports(status, type);
+  const href = (nextStatus: string | undefined, nextType: string | undefined) => {
+    const query = new URLSearchParams();
+    if (nextStatus) query.set("status", nextStatus);
+    if (nextType) query.set("type", nextType);
+    const search = query.toString();
+    return search ? `/admin/reports?${search}` : "/admin/reports";
+  };
 
   return (
     <>
       <LinkTabs
         label="신고 상태"
-        items={filters.map((item) => ({
-          href: item.value ? `/admin/reports?status=${item.value}` : "/admin/reports",
-          label: item.label,
-          active: item.value === status,
-        }))}
+        items={filters.map((item) => ({ href: href(item.value, type), label: item.label, active: item.value === status }))}
+      />
+      <LinkTabs
+        label="신고 유형"
+        variant="line"
+        items={[
+          { href: href(status, undefined), label: "전체 유형", active: !type },
+          ...REPORT_TYPES.map((item) => ({ href: href(status, item.value), label: item.label, active: item.value === type })),
+        ]}
       />
       <section className={kit.card}>
         <div className={kit.tableWrap}>
@@ -66,7 +78,7 @@ async function ReportsContent({ searchParams }: { searchParams: Promise<Record<s
             </tbody>
           </table>
         </div>
-        {reports.length === 0 && <p className={kit.empty}>해당 상태의 신고가 없어요.</p>}
+        {reports.length === 0 && <p className={kit.empty}>조건에 맞는 신고가 없어요.</p>}
       </section>
     </>
   );

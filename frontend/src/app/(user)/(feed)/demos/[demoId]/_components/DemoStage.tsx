@@ -5,7 +5,7 @@ import { BookmarkIcon, HeartIcon } from "@/app/_components/ui/Icons";
 import kit from "@/app/_components/ui/kit.module.css";
 import { formatCount } from "@/app/_lib/format";
 import { DemoThumb } from "../../../_components/DemoThumb";
-import { playDemo, toggleDemoLike } from "../_actions";
+import { playDemo, toggleDemoBookmark, toggleDemoLike } from "../_actions";
 import styles from "./DemoDetail.module.css";
 
 type Props = {
@@ -16,17 +16,27 @@ type Props = {
   initialPlays: number;
   initialLikes: number;
   liked: boolean;
+  bookmarked: boolean;
 };
 
 // 샌드박스 서버가 연결되기 전까지는 iframe에 안내 화면을 띄운다.
 const PLACEHOLDER = `<!doctype html><html><body style="margin:0;height:100vh;display:grid;place-items:center;background:#1f1b17;color:#ffd04d;font-family:system-ui">
 <div style="text-align:center"><div style="font-size:42px">🥢</div><p>샌드박스 연결 전 미리보기예요</p></div></body></html>`;
 
-export function DemoStage({ demoId, title, seed, label, initialPlays, initialLikes, liked }: Props) {
+export function DemoStage({
+  demoId,
+  title,
+  seed,
+  label,
+  initialPlays,
+  initialLikes,
+  liked,
+  bookmarked: initialBookmarked,
+}: Props) {
   const [playing, setPlaying] = useState(false);
   const [plays, setPlays] = useState(initialPlays);
   const [like, setLike] = useState({ active: liked, count: initialLikes });
-  const [bookmarked, setBookmarked] = useState(false);
+  const [bookmarked, setBookmarked] = useState(initialBookmarked);
   const [message, setMessage] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
@@ -85,7 +95,17 @@ export function DemoStage({ demoId, title, seed, label, initialPlays, initialLik
           type="button"
           className={`${kit.btnGhost} ${bookmarked ? styles.saved : ""}`}
           aria-pressed={bookmarked}
-          onClick={() => setBookmarked((value) => !value)}
+          onClick={() => {
+            const next = !bookmarked;
+            setBookmarked(next);
+            startTransition(async () => {
+              const result = await toggleDemoBookmark(demoId, next);
+              if (!result.ok) {
+                setBookmarked(!next);
+                setMessage(result.message);
+              }
+            });
+          }}
         >
           <BookmarkIcon filled={bookmarked} />
           나중에 해보기

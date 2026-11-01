@@ -12,6 +12,7 @@ export type Feed = {
   repostCount: number;
   liked: boolean;
   reposted: boolean;
+  bookmarked: boolean;
   following: boolean;
 };
 

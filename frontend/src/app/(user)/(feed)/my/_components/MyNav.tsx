@@ -8,6 +8,7 @@ import styles from "./MyNav.module.css";
 const items = [
   { href: "/my", label: "내 정보" },
   { href: "/my/follows", label: "팔로우" },
+  { href: "/my/bookmarks", label: "북마크" },
   { href: "/my/settings", label: "설정" },
   { href: "/my/coins", label: "칩" },
   { href: "/my/subscription", label: "구독" },

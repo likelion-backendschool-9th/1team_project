@@ -1,8 +1,18 @@
 import type { DemoSummary } from "./demo";
 import type { UserBadge, UserSummary } from "./user";
 
+export type MiniHomeSkin = "cream" | "midnight" | "mint" | "cherry";
+
 export type MiniHomeProfile = UserSummary & {
   badges: UserBadge[];
+  plus: boolean;
+  company: string | null;
+  /** 스킨·BGM은 딥소스 플러스 전용 */
+  skin: MiniHomeSkin;
+  /** 미니홈피에 보여 줄 데모 id (일반 3개, 플러스 6개까지) */
+  showcaseDemoIds: number[];
+  /** 칩으로 늘린 데모 인벤토리 칸 수 */
+  extraInventorySlots: number;
   headline: string;
   domain: string | null;
   bgm: string | null;

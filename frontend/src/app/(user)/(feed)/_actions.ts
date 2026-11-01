@@ -40,3 +40,26 @@ export async function toggleFollow(userId: number, follow: boolean) {
   if (!isId(userId)) return INVALID_REQUEST;
   return request(`/api/v1/follows/${userId}`, follow ? "POST" : "DELETE");
 }
+
+export async function toggleBookmark(feedId: number, bookmark: boolean) {
+  if (!isId(feedId)) return INVALID_REQUEST;
+  return request(`/api/v1/feeds/${feedId}/bookmark`, bookmark ? "POST" : "DELETE");
+}
+
+export async function reportFeed(feedId: number) {
+  if (!isId(feedId)) return { ok: false, message: "잘못된 요청이에요." };
+  const result = await request(`/api/v1/feeds/${feedId}/report`, "POST");
+  return { ok: result.ok, message: result.message ?? "신고를 접수했어요. 운영진이 확인할게요." };
+}
+
+export async function blockUser(userId: number) {
+  if (!isId(userId)) return { ok: false, message: "잘못된 요청이에요." };
+  const result = await request(`/api/v1/blocks/${userId}`, "POST");
+  return { ok: result.ok, message: result.message ?? "차단했어요. 이제 이 사용자의 글이 보이지 않아요." };
+}
+
+export async function deleteFeed(feedId: number) {
+  if (!isId(feedId)) return { ok: false, message: "잘못된 요청이에요." };
+  const result = await request(`/api/v1/feeds/${feedId}`, "DELETE");
+  return { ok: result.ok, message: result.message ?? "피드를 삭제했어요." };
+}

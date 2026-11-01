@@ -9,3 +9,7 @@
   color: var(--ink-soft);
   text-align: center;
 }
+
+.tabs {
+  margin-bottom: 16px;
+}

@@ -6,9 +6,24 @@
 }
 
 .name {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
   margin-bottom: 6px;
   font-size: 22px;
   font-weight: 800;
+}
+
+.plusTag {
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: #1f1b17;
+  color: #ffc21a;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  user-select: none;
 }
 
 .stats {

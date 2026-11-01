@@ -3,17 +3,22 @@ import { apiFetch, isMockMode, type ApiResponse, type PageResponse } from "@/app
 import {
   mockAccount,
   mockBlocked,
+  mockBookmarks,
   mockFollowers,
   mockFollowings,
   mockHistory,
   mockPackages,
+  mockPlus,
   mockSettings,
   mockSubscriptions,
   type BlockedUser,
+  type Bookmark,
+  type BookmarkType,
   type ChipHistory,
   type ChipPackage,
   type FollowUser,
   type MyAccount,
+  type PlusMembership,
   type Settings,
   type Subscription,
 } from "./mock";
@@ -39,3 +44,12 @@ export const getPackages = async (): Promise<ChipPackage[]> => mockPackages;
 export const getChipHistory = () => getPage<ChipHistory>("/api/v1/coins/history", mockHistory);
 // 구독 목록 조회 API는 아직 정해지지 않았다 (프론트엔드-청사진 11장).
 export const getSubscriptions = async (): Promise<Subscription[]> => mockSubscriptions;
+// 딥소스 플러스 구독 조회 API는 아직 정해지지 않았다 (프론트엔드-청사진 11장).
+export const getPlus = async (): Promise<PlusMembership> => mockPlus;
+
+export async function getBookmarks(type: BookmarkType | undefined): Promise<Bookmark[]> {
+  if (isMockMode) return mockBookmarks.filter((item) => !type || item.type === type);
+  const query = type ? `?${new URLSearchParams({ type })}` : "";
+  const { data } = await apiFetch<ApiResponse<PageResponse<Bookmark>>>(`/api/v1/users/me/bookmarks${query}`);
+  return data.content;
+}

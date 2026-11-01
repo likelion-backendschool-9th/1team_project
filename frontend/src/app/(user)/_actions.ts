@@ -2,7 +2,11 @@
 
 import { mutate } from "@/app/_lib/api/mutate";
 
-export async function markRead(ids: number[]) {
+export async function updatePresence() {
+  return mutate("/api/v1/users/me/presence", "PUT", { online: true }, "접속 상태를 갱신했어요.");
+}
+
+export async function markNotificationsRead(ids: number[]) {
   const valid = ids.filter((id) => Number.isSafeInteger(id) && id > 0);
   const results = await Promise.all(
     valid.map((id) => mutate(`/api/v1/notifications/${id}/read`, "PUT", undefined, "읽음 처리했어요.")),

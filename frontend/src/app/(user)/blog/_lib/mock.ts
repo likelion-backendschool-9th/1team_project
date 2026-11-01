@@ -199,13 +199,14 @@ export function createMockPostComments(postId: number, now: number): PostComment
   const rows: [UserSummary, string, number][] = [
     [mockUsers.junha, "측정 → 가설 → 검증 순서, 저도 팀에 공유해야겠어요 👍", 25],
     [mockUsers.kwak, "fetch join이랑 페이징 같이 쓸 때는 어떻게 하셨어요?", 70],
+    [mockUsers.me, "잘 읽었습니다. 다음 편도 기대할게요!", 140],
   ];
   return rows.map(([author, content, minutesAgo], index) => ({
     id: postId * 100 + index,
     author,
     content,
     createdAt: new Date(now - minutesAgo * 60_000).toISOString(),
-    likeCount: 3 - index,
+    likeCount: Math.max(0, 3 - index),
   }));
 }
 
@@ -218,7 +219,8 @@ export function findMockBlogOwner(userId: number): BlogOwner | null {
     subscriberCount: 120 + userId * 37,
     postCount: createMockUserPosts(userId, 0).length,
     totalViews: 5000 + userId * 1234,
-    subscriptionPrice: 10 + (userId % 3) * 5,
+    // 블로그 구독은 현금 월 자동이체(원)
+    subscriptionPrice: [3000, 5000, 3000][userId % 3],
     subscribed: userId === 2 || userId === 7,
   };
 }

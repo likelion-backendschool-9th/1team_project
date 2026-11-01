@@ -10,14 +10,23 @@ type Props = {
   demos: MiniHomeDemo[];
   featuredId: number | undefined;
   showMore?: boolean;
+  title?: string;
+  showcaseIds?: number[];
 };
 
-export function PublicDemos({ userId, demos, featuredId, showMore = true }: Props) {
+export function PublicDemos({
+  userId,
+  demos,
+  featuredId,
+  showMore = true,
+  title = "공개된 데모",
+  showcaseIds,
+}: Props) {
   return (
     <section aria-labelledby="public-demos-title">
       <div className={styles.header}>
         <h2 id="public-demos-title" className={styles.title}>
-          <span aria-hidden="true">📁</span> 공개된 데모
+          <span aria-hidden="true">📁</span> {title}
         </h2>
         {showMore && (
           <Link href={`/mini-home/${userId}/demos`} className={styles.more}>
@@ -35,7 +44,11 @@ export function PublicDemos({ userId, demos, featuredId, showMore = true }: Prop
               <article className={styles.card} aria-labelledby={`demo-${demo.id}`}>
                 <div className={styles.thumbWrap}>
                   <DemoArt variant={index} caption={demo.engine} className={styles.thumb} />
-                  {demo.id === featuredId && <span className={styles.featured}>대표</span>}
+                  {demo.id === featuredId ? (
+                    <span className={styles.featured}>대표</span>
+                  ) : (
+                    showcaseIds?.includes(demo.id) && <span className={styles.featured}>공개 중</span>
+                  )}
                 </div>
                 <h3 id={`demo-${demo.id}`} className={styles.name}>
                   {demo.title}

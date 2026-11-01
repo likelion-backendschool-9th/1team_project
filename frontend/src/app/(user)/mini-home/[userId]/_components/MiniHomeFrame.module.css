@@ -12,6 +12,22 @@
   box-shadow: 0 2px 4px rgb(60 40 10 / 4%), 0 16px 40px rgb(60 40 10 / 6%);
 }
 
+.frame[data-skin="midnight"] {
+  border-color: #3a332b;
+  background: #1f1b17;
+  color: #f5efe3;
+}
+
+.frame[data-skin="mint"] {
+  border-color: #cdeedd;
+  background: #effbf5;
+}
+
+.frame[data-skin="cherry"] {
+  border-color: #f7d3e0;
+  background: #fff3f7;
+}
+
 .grid {
   display: grid;
   grid-template-columns: 324px minmax(0, 1fr);

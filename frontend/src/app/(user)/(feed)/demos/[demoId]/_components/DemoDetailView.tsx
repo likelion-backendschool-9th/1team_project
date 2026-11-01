@@ -8,7 +8,14 @@ import kit from "@/app/_components/ui/kit.module.css";
 import { formatCount, formatDate } from "@/app/_lib/format";
 import type { DemoFeedbackType } from "@/app/_lib/types/demo";
 import { CommentList } from "@/app/(user)/_components/CommentList";
-import { createDemoComment, reportDemo } from "../_actions";
+import { getMe } from "@/app/(user)/_lib/api";
+import {
+  createDemoComment,
+  deleteDemo,
+  deleteDemoComment,
+  reportDemo,
+  updateDemoComment,
+} from "../_actions";
 import { getDemo, getDemoComments, getServerTime } from "../../_lib/api";
 import { DemoStage } from "./DemoStage";
 import styles from "./DemoDetail.module.css";
@@ -29,7 +36,8 @@ export async function DemoDetailView({ params }: Props) {
   const demo = Number.isSafeInteger(demoId) && demoId > 0 ? await getDemo(demoId) : null;
   if (!demo) notFound();
 
-  const [comments, now] = await Promise.all([getDemoComments(demoId), getServerTime()]);
+  const [me, comments, now] = await Promise.all([getMe(), getDemoComments(demoId), getServerTime()]);
+  const mine = me.id === demo.author.id;
 
   return (
     <div className={kit.stack}>
@@ -46,6 +54,7 @@ export async function DemoDetailView({ params }: Props) {
           initialPlays={demo.playCount}
           initialLikes={demo.likeCount}
           liked={demo.liked}
+          bookmarked={demo.bookmarked}
         />
         <div className={styles.info}>
           <h2 id="demo-title" className={styles.title}>
@@ -85,19 +94,33 @@ export async function DemoDetailView({ params }: Props) {
                 <span className={kit.faint}> · {demo.author.techStacks[0]}</span>
               </span>
             </Link>
-            <Link href={`/dm/${demo.author.id}`} className={`${kit.btnGhost} ${kit.sm}`}>
-              DM 보내기
-            </Link>
+            {!mine && (
+              <Link href={`/dm/${demo.author.id}`} className={`${kit.btnGhost} ${kit.sm}`}>
+                DM 보내기
+              </Link>
+            )}
           </div>
-          <ConfirmButton
-            label="신고하기"
-            title="이 데모를 신고할까요?"
-            description="운영진이 확인 후 조치해요. 허위 신고는 제재될 수 있어요."
-            confirmLabel="신고"
-            danger
-            className={styles.report}
-            onConfirm={reportDemo.bind(null, demo.id)}
-          />
+          {mine ? (
+            <ConfirmButton
+              label="데모 삭제"
+              title="이 데모를 삭제할까요?"
+              description="댓글과 좋아요도 함께 사라지고, 데모 인벤토리 1칸이 비어요."
+              confirmLabel="삭제"
+              danger
+              className={`${kit.btnDanger} ${kit.sm}`}
+              onConfirm={deleteDemo.bind(null, demo.id)}
+            />
+          ) : (
+            <ConfirmButton
+              label="신고하기"
+              title="이 데모를 신고할까요?"
+              description="운영진이 확인 후 조치해요. 허위 신고는 제재될 수 있어요."
+              confirmLabel="신고"
+              danger
+              className={styles.report}
+              onConfirm={reportDemo.bind(null, demo.id)}
+            />
+          )}
         </div>
       </section>
 
@@ -126,6 +149,9 @@ export async function DemoDetailView({ params }: Props) {
             label: <span className={kit.pill}>{feedbackLabels[comment.type]}</span>,
           }))}
           now={now}
+          myId={me.id}
+          updateComment={updateDemoComment}
+          deleteComment={deleteDemoComment}
         />
       </section>
     </div>

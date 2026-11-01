@@ -21,16 +21,26 @@
   font-weight: 500;
 }
 
+/* 한 번에 4명만 보이고 나머지는 목록 안에서 스크롤한다. */
 .list {
+  --row: 50px;
   display: flex;
+  max-height: calc(var(--row) * 4 + 8px);
   flex-direction: column;
+  padding-right: 4px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-color: #e3dccd transparent;
+  scrollbar-width: thin;
 }
 
 .row {
   display: flex;
+  height: var(--row);
+  flex: none;
   align-items: center;
-  gap: 12px;
-  padding: 10px 8px;
+  gap: 10px;
+  padding: 0 6px;
   border-radius: 12px;
 }
 
@@ -43,16 +53,21 @@
   min-width: 0;
   flex: 1;
   flex-direction: column;
-  gap: 4px;
+  gap: 2px;
 }
 
 .name {
+  overflow: hidden;
+  font-size: 14px;
   font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .dot {
-  width: 10px;
-  height: 10px;
+  width: 8px;
+  height: 8px;
+  flex: none;
   border-radius: 50%;
   background: #d5d6d8;
 }

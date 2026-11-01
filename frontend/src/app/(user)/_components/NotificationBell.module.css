@@ -1,0 +1,153 @@
+.wrap {
+  position: relative;
+  display: flex;
+}
+
+.wrap > button {
+  width: 100%;
+}
+
+.badge {
+  display: inline-flex;
+  min-width: 20px;
+  height: 20px;
+  align-items: center;
+  justify-content: center;
+  padding: 0 6px;
+  border-radius: var(--radius-pill);
+  background: var(--accent);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 30;
+  width: 340px;
+  max-width: calc(100vw - 32px);
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: var(--surface);
+  box-shadow: 0 4px 10px rgb(60 40 10 / 8%), 0 18px 44px rgb(60 40 10 / 16%);
+  animation: drop 0.16s ease-out;
+}
+
+.panel[hidden] {
+  display: none;
+}
+
+@keyframes drop {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+.title {
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.readAll {
+  color: var(--ink-soft);
+  font-size: 13px;
+  font-weight: 700;
+  user-select: none;
+}
+
+.readAll:hover:not(:disabled) {
+  color: var(--ink);
+}
+
+.readAll:disabled {
+  opacity: 0.4;
+}
+
+.list {
+  max-height: 380px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 16px;
+  font-weight: 400;
+}
+
+.item:hover {
+  background: #fdfbf6;
+}
+
+.unread {
+  background: #fffaeb;
+}
+
+.avatar {
+  position: relative;
+  flex: none;
+}
+
+.icon {
+  position: absolute;
+  right: -4px;
+  bottom: -4px;
+  display: inline-flex;
+  width: 20px;
+  height: 20px;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  background: #fff;
+  font-size: 11px;
+}
+
+.body {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.text {
+  font-size: 13.5px;
+  line-height: 1.45;
+  text-align: left;
+}
+
+.body time {
+  color: var(--ink-faint);
+  font-size: 12px;
+  user-select: none;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  flex: none;
+  margin-top: 6px;
+  border-radius: 50%;
+  background: var(--accent-ink);
+}
+
+.empty {
+  padding: 32px 16px;
+  color: var(--ink-soft);
+  font-size: 14px;
+  text-align: center;
+}

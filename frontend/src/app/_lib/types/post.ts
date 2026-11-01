@@ -73,6 +73,7 @@ export type BlogOwner = {
   subscriberCount: number;
   postCount: number;
   totalViews: number;
+  /** 월 구독료(원). 블로그 구독은 현금 자동이체다. */
   subscriptionPrice: number;
   subscribed: boolean;
 };

@@ -1,0 +1,63 @@
+import type { DevEvent } from "./types/event";
+
+// 회원 화면(/events)과 관리자 화면(/admin/events)이 같이 쓰는 목 데이터.
+export const mockEvents: DevEvent[] = [
+  {
+    id: 1,
+    title: "11월 찍먹 챌린지: 하루 만에 만드는 미니 게임",
+    summary: "html/css/js만으로 24시간 안에 미니 게임 데모를 올려 주세요.",
+    content:
+      "주제는 자유! 브라우저에서 바로 플레이할 수 있는 미니 게임이면 무엇이든 좋아요.\n데모를 올릴 때 #nov-challenge 태그를 달면 자동으로 참가돼요.\n좋아요와 체험 수를 합산해 상위 3명에게 칩을 드려요.",
+    status: "ongoing",
+    startAt: "2026-11-01T00:00:00+09:00",
+    endAt: "2026-11-30T23:59:00+09:00",
+    reward: "1등 300칩 · 2등 150칩 · 3등 50칩",
+    emoji: "🎮",
+    participantCount: 128,
+    ctaLabel: "데모 올리고 참가하기",
+    ctaHref: "/demos/upload",
+  },
+  {
+    id: 2,
+    title: "블로그 연재 첫 글 응원 이벤트",
+    summary: "처음으로 연재를 시작하면 미니홈피 고급 배지를 드려요.",
+    content:
+      "연재 1화를 발행하고 2화까지 이어서 쓰면 한정 배지 「✍️ 연재러」를 드려요.\n기간 안에 발행한 글만 인정돼요.",
+    status: "ongoing",
+    startAt: "2026-10-20T00:00:00+09:00",
+    endAt: "2026-11-20T23:59:00+09:00",
+    reward: "한정 배지 ✍️ 연재러",
+    emoji: "✍️",
+    participantCount: 57,
+    ctaLabel: "글쓰기",
+    ctaHref: "/blog/write",
+  },
+  {
+    id: 3,
+    title: "연말 회고 데모 페스티벌",
+    summary: "올해 만든 프로젝트를 한 장짜리 데모로 회고해 보세요.",
+    content: "12월 한 달 동안 진행돼요. 자세한 규칙은 시작일에 공개됩니다.",
+    status: "upcoming",
+    startAt: "2026-12-01T00:00:00+09:00",
+    endAt: "2026-12-31T23:59:00+09:00",
+    reward: "딥소스 플러스 3개월 이용권",
+    emoji: "🎄",
+    participantCount: 0,
+    ctaLabel: "알림 받기",
+    ctaHref: "/my/settings",
+  },
+  {
+    id: 4,
+    title: "10월 찍먹 챌린지: CSS 아트",
+    summary: "순수 CSS로 그린 그림 데모 챌린지가 끝났어요.",
+    content: "참가해 주신 모든 분들 감사합니다! 1등은 「CSS 로딩 컬렉션」의 김진엽 님이에요.",
+    status: "ended",
+    startAt: "2026-10-01T00:00:00+09:00",
+    endAt: "2026-10-31T23:59:00+09:00",
+    reward: "1등 300칩 · 2등 150칩 · 3등 50칩",
+    emoji: "🎨",
+    participantCount: 214,
+    ctaLabel: "수상작 보기",
+    ctaHref: "/demos/12",
+  },
+];

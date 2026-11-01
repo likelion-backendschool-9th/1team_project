@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import { ConfirmButton } from "@/app/_components/ui/ConfirmButton";
 import kit from "@/app/_components/ui/kit.module.css";
 import { formatCount, formatDateTime, formatWon } from "@/app/_lib/format";
+import { CHIP_PRICE_WON, chipsToWon } from "@/app/_lib/policy";
 import { getMe } from "@/app/(user)/_lib/api";
 import { purchaseChips } from "../_actions";
 import { getChipHistory, getPackages } from "../_lib/api";
@@ -22,7 +23,11 @@ async function CoinsContent() {
           <p className={kit.strong}>🪙 보유 칩</p>
           <p className={styles.balanceValue}>{formatCount(me.chipBalance)}개</p>
         </div>
-        <p style={{ fontSize: 14 }}>칩 1개 = 11원 (부가세 포함) · 유료 글 열람과 연재 구독에 써요.</p>
+        <p style={{ fontSize: 14 }}>
+          칩 1개 = {formatWon(CHIP_PRICE_WON)} · 유료 글 잠금해제, 미니홈피 후원, 데모 인벤토리 확장에 써요.
+          <br />
+          블로그 구독과 딥소스 플러스는 칩이 아니라 월 자동이체로 결제돼요.
+        </p>
       </section>
 
       <section aria-labelledby="packages-title">
@@ -33,16 +38,11 @@ async function CoinsContent() {
           {packages.map((item) => (
             <li key={item.id} className={styles.package}>
               <span className={styles.packageChips}>{formatCount(item.chips)}칩</span>
-              {item.bonus > 0 ? (
-                <span className={kit.pillAccent}>+{item.bonus} 보너스</span>
-              ) : (
-                <span className={kit.pill}>기본</span>
-              )}
-              <span className={kit.muted}>{formatWon(item.price)}</span>
+              <span className={kit.muted}>{formatWon(chipsToWon(item.chips))}</span>
               <ConfirmButton
                 label="충전"
                 title={`${formatCount(item.chips)}칩을 충전할까요?`}
-                description={`${formatWon(item.price)}이 결제돼요. 보너스 ${item.bonus}칩이 함께 지급돼요.`}
+                description={`${formatWon(chipsToWon(item.chips))}이 결제돼요.`}
                 confirmLabel="결제하기"
                 className={`${kit.btnPrimary} ${kit.sm}`}
                 onConfirm={purchaseChips.bind(null, item.id)}

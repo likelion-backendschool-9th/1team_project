@@ -15,7 +15,7 @@ const items = [
   { href: "/main", label: "피드", Icon: GridIcon },
   { href: "/blog", label: "블로그", Icon: BookIcon },
   { href: "/news", label: "개발자 뉴스", Icon: NewsIcon },
-  { href: null, label: "이벤트", Icon: TicketIcon },
+  { href: "/events", label: "이벤트", Icon: TicketIcon },
 ] as const;
 
 function NavList({ pathname }: { pathname: string | null }) {
@@ -23,27 +23,17 @@ function NavList({ pathname }: { pathname: string | null }) {
     <nav aria-label="주 메뉴">
       <ul className={styles.list}>
         {items.map(({ href, label, Icon }) => {
-          const active =
-            href !== null &&
-            pathname !== null &&
-            (pathname === href || pathname.startsWith(`${href}/`));
+          const active = pathname !== null && (pathname === href || pathname.startsWith(`${href}/`));
           return (
             <li key={label}>
-              {href ? (
-                <Link
-                  href={href}
-                  className={`${styles.item} ${active ? styles.active : ""}`}
-                  aria-current={active ? "page" : undefined}
-                >
-                  <Icon className={styles.icon} />
-                  {label}
-                </Link>
-              ) : (
-                <span className={`${styles.item} ${styles.disabled}`} aria-disabled="true">
-                  <Icon className={styles.icon} />
-                  {label}
-                </span>
-              )}
+              <Link
+                href={href}
+                className={`${styles.item} ${active ? styles.active : ""}`}
+                aria-current={active ? "page" : undefined}
+              >
+                <Icon className={styles.icon} />
+                {label}
+              </Link>
             </li>
           );
         })}

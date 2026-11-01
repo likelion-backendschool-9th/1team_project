@@ -1,7 +1,9 @@
+/* 알림 드롭다운이 고정된 피드 작성창(z-index 5)보다 위에 오도록 aside를 올린다. */
 .aside {
   grid-area: right;
   position: sticky;
   top: 0;
+  z-index: 20;
   display: flex;
   height: 100vh;
   flex-direction: column;

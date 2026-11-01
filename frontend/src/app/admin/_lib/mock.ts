@@ -98,22 +98,34 @@ export const mockReports: Report[] = [
 ];
 
 export const mockSignups = [32, 41, 38, 55, 47, 62, 71];
+// subscription: 블로그 구독, plus: 딥소스 플러스 (둘 다 자동이체), chips: 칩 충전
 export const mockRevenue = [
-  { month: "2026-06", subscription: 1_820_000, chips: 2_410_000 },
-  { month: "2026-07", subscription: 2_040_000, chips: 2_780_000 },
-  { month: "2026-08", subscription: 2_350_000, chips: 3_120_000 },
-  { month: "2026-09", subscription: 2_610_000, chips: 3_050_000 },
-  { month: "2026-10", subscription: 3_020_000, chips: 3_640_000 },
-  { month: "2026-11", subscription: 980_000, chips: 1_210_000 },
+  { month: "2026-06", subscription: 1_820_000, plus: 640_000, chips: 2_410_000 },
+  { month: "2026-07", subscription: 2_040_000, plus: 790_000, chips: 2_780_000 },
+  { month: "2026-08", subscription: 2_350_000, plus: 960_000, chips: 3_120_000 },
+  { month: "2026-09", subscription: 2_610_000, plus: 1_120_000, chips: 3_050_000 },
+  { month: "2026-10", subscription: 3_020_000, plus: 1_340_000, chips: 3_640_000 },
+  { month: "2026-11", subscription: 980_000, plus: 450_000, chips: 1_210_000 },
 ];
 
-export type AdminSubscription = { id: number; subscriber: string; author: string; chips: number; startedAt: string; status: "active" | "canceled" };
+// 블로그 구독과 딥소스 플러스는 현금 월 자동이체(원)다.
+export type AdminSubscription = {
+  id: number;
+  plan: "blog" | "plus";
+  subscriber: string;
+  author: string | null;
+  price: number;
+  startedAt: string;
+  status: "active" | "canceled";
+};
 export const mockAdminSubscriptions: AdminSubscription[] = [
-  { id: 1, subscriber: "딥소스", author: "차재인", chips: 15, startedAt: day(60), status: "active" },
-  { id: 2, subscriber: "딥소스", author: "윤세진", chips: 10, startedAt: day(32), status: "active" },
-  { id: 3, subscriber: "곽다윗", author: "차재인", chips: 15, startedAt: day(90), status: "active" },
-  { id: 4, subscriber: "김진엽", author: "정시우", chips: 15, startedAt: day(12), status: "active" },
-  { id: 5, subscriber: "박준하", author: "김승조", chips: 8, startedAt: day(120), status: "canceled" },
+  { id: 1, plan: "plus", subscriber: "딥소스", author: null, price: 4900, startedAt: day(93), status: "active" },
+  { id: 2, plan: "blog", subscriber: "딥소스", author: "차재인", price: 5000, startedAt: day(60), status: "active" },
+  { id: 3, plan: "blog", subscriber: "딥소스", author: "윤세진", price: 3000, startedAt: day(32), status: "active" },
+  { id: 4, plan: "plus", subscriber: "정시우", author: null, price: 4900, startedAt: day(150), status: "active" },
+  { id: 5, plan: "blog", subscriber: "곽다윗", author: "차재인", price: 5000, startedAt: day(90), status: "active" },
+  { id: 6, plan: "blog", subscriber: "김진엽", author: "정시우", price: 3000, startedAt: day(12), status: "active" },
+  { id: 7, plan: "blog", subscriber: "박준하", author: "김승조", price: 3000, startedAt: day(120), status: "canceled" },
 ];
 
 export type Settlement = { id: number; creator: string; gross: number; fee: number; status: "pending" | "done"; period: string };
@@ -125,13 +137,13 @@ export const mockSettlements: Settlement[] = [
   { id: 5, creator: "차재인", gross: 790_000, fee: 158_000, status: "done", period: "2026-09" },
 ];
 
-export type CoinTx = { id: number; user: string; type: "charge" | "refund-request" | "refunded"; chips: number; amount: number; createdAt: string; memo: string };
+export type CoinTx = { id: number; user: string; type: "charge" | "refund-request" | "refunded"; chips: number; createdAt: string; memo: string };
 export const mockCoinTx: CoinTx[] = [
-  { id: 1, user: "딥소스", type: "charge", chips: 1080, amount: 11_000, createdAt: day(5), memo: "카드 결제" },
-  { id: 2, user: "곽다윗", type: "refund-request", chips: 20, amount: 220, createdAt: day(1), memo: "품질 보장제: 코드 실행 불가" },
-  { id: 3, user: "김진엽", type: "charge", chips: 525, amount: 5_500, createdAt: day(2), memo: "카카오페이" },
-  { id: 4, user: "박준하", type: "refunded", chips: 10, amount: 110, createdAt: day(9), memo: "품질 보장제 환불 완료" },
-  { id: 5, user: "한지우", type: "refund-request", chips: 15, amount: 165, createdAt: day(0), memo: "중복 결제" },
+  { id: 1, user: "딥소스", type: "charge", chips: 300, createdAt: day(5), memo: "카드 결제" },
+  { id: 2, user: "곽다윗", type: "refund-request", chips: 20, createdAt: day(1), memo: "품질 보장제: 코드 실행 불가" },
+  { id: 3, user: "김진엽", type: "charge", chips: 50, createdAt: day(2), memo: "카카오페이" },
+  { id: 4, user: "박준하", type: "refunded", chips: 10, createdAt: day(9), memo: "품질 보장제 환불 완료" },
+  { id: 5, user: "한지우", type: "refund-request", chips: 10, createdAt: day(0), memo: "중복 결제" },
 ];
 
 export type Suspicious = { id: number; userId: number; user: string; pattern: string; count: number; amount: number; detectedAt: string; level: "high" | "medium" };

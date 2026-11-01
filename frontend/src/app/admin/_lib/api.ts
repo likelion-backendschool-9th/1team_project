@@ -1,4 +1,5 @@
 import "server-only";
+import { mockEvents } from "@/app/_lib/mockEvents";
 import { apiFetch, isMockMode, type ApiResponse, type PageResponse } from "@/app/_lib/api/client";
 import {
   mockAdminSubscriptions,
@@ -41,7 +42,7 @@ export function getDashboard(): Promise<Dashboard> {
     newUsersToday: mockSignups.at(-1)!,
     demoUploadsWeek: 186,
     pendingReports: mockReports.filter((report) => report.status === "pending").length,
-    revenueMonth: latest.subscription + latest.chips,
+    revenueMonth: latest.subscription + latest.plus + latest.chips,
     signups: mockSignups,
   });
 }
@@ -86,11 +87,23 @@ export async function getContent(kind: ContentKind, q?: string): Promise<Content
   return mockContent[kind].filter((row) => !q || `${row.title} ${row.author}`.includes(q));
 }
 
-export async function getReports(status?: string): Promise<Report[]> {
-  const reports = await get("/api/v1/admin/reports", mockReports);
+export const REPORT_TYPES = [
+  { value: "demos", label: "데모" },
+  { value: "posts", label: "블로그" },
+  { value: "feeds", label: "피드" },
+  { value: "comments", label: "댓글" },
+  { value: "guestbooks", label: "방명록" },
+] as const;
+
+export async function getReports(status?: string, type?: string): Promise<Report[]> {
+  const query = new URLSearchParams();
+  if (status) query.set("status", status);
+  if (type) query.set("type", type);
+  const reports = await get(`/api/v1/admin/reports?${query}`, mockReports);
+  const typeLabel = REPORT_TYPES.find((item) => item.value === type)?.label;
   const order = { pending: 0, resolved: 1, rejected: 2 };
   return reports
-    .filter((report) => !status || report.status === status)
+    .filter((report) => (!status || report.status === status) && (!typeLabel || report.targetType === typeLabel))
     .sort((a, b) => order[a.status] - order[b.status] || b.createdAt.localeCompare(a.createdAt));
 }
 
@@ -99,7 +112,18 @@ export async function getReport(reportId: number): Promise<Report | null> {
 }
 
 export const getSubscriptions = () => get("/api/v1/admin/subscriptions", mockAdminSubscriptions);
-export const getRevenue = () => get("/api/v1/admin/revenue", mockRevenue);
+export async function getRevenue(from?: string, to?: string) {
+  if (!isMockMode) {
+    const query = new URLSearchParams();
+    if (from) query.set("from", from);
+    if (to) query.set("to", to);
+    const { data } = await apiFetch<ApiResponse<typeof mockRevenue>>(`/api/v1/admin/revenue?${query}`);
+    return data;
+  }
+  return mockRevenue.filter((row) => (!from || row.month >= from) && (!to || row.month <= to));
+}
 export const getSettlements = () => get("/api/v1/admin/settlements", mockSettlements);
 export const getCoinTx = () => get("/api/v1/admin/coins/purchases", mockCoinTx);
 export const getSuspicious = () => get("/api/v1/admin/coins/suspicious", mockSuspicious);
+
+export const getAdminEvents = () => get("/api/v1/events", mockEvents);

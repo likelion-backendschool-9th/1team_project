@@ -16,6 +16,10 @@ export type UserBadge = {
 
 export type MyProfile = UserSummary & {
   badges: UserBadge[];
+  /** 딥소스 플러스 구독 여부. 고급 배지는 플러스 혜택이다. */
+  plus: boolean;
+  /** 회사 인증을 마친 경우 프로필에 보여 줄 회사 이름 */
+  company: string | null;
   followerCount: number;
   followingCount: number;
   chipBalance: number;
