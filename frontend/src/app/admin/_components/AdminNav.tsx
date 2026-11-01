@@ -15,9 +15,10 @@ const groups = [
       { href: "/admin/posts", label: "📝 블로그" },
       { href: "/admin/feeds", label: "💬 피드" },
       { href: "/admin/comments", label: "🗨️ 댓글" },
-      { href: "/admin/reports", label: "🚨 신고" },
+      { href: "/admin/events", label: "🎉 이벤트" },
     ],
   },
+  { title: "신고", items: [{ href: "/admin/reports", label: "🚨 신고 관리" }] },
   {
     title: "수익",
     items: [
@@ -46,7 +47,7 @@ function NavList({ pathname }: { pathname: string | null }) {
     <nav aria-label="관리자 메뉴" className={styles.nav}>
       {groups.map((group) => (
         <div key={group.title ?? "home"} className={styles.group}>
-          {group.title && <p className={styles.groupTitle}>{group.title}</p>}
+          {group.title && <span className={styles.groupTitle}>{group.title}</span>}
           <ul>
             {group.items.map((item) => {
               const active = isActive(pathname, item.href);

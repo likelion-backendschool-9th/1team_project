@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import { ConfirmButton } from "@/app/_components/ui/ConfirmButton";
 import kit from "@/app/_components/ui/kit.module.css";
 import { formatCount, formatDate, formatWon } from "@/app/_lib/format";
+import { CHIP_PRICE_WON, chipsToWon } from "@/app/_lib/policy";
 import { approveRefund } from "../_actions";
 import { StatusPill } from "../_components/StatusPill";
 import { getCoinTx } from "../_lib/api";
@@ -17,8 +18,8 @@ async function CoinsContent() {
     <>
       <div className={kit.grid3}>
         <div className={`${kit.card} ${kit.stat}`}><span className={kit.statLabel}>환불 요청</span><span className={kit.statValue}>{requests.length}건</span></div>
-        <div className={`${kit.card} ${kit.stat}`}><span className={kit.statLabel}>최근 충전액</span><span className={kit.statValue}>{formatWon(rows.filter((r) => r.type === "charge").reduce((s, r) => s + r.amount, 0))}</span></div>
-        <div className={`${kit.card} ${kit.stat}`}><span className={kit.statLabel}>칩 단가</span><span className={kit.statValue}>11원</span></div>
+        <div className={`${kit.card} ${kit.stat}`}><span className={kit.statLabel}>최근 충전액</span><span className={kit.statValue}>{formatWon(rows.filter((r) => r.type === "charge").reduce((s, r) => s + chipsToWon(r.chips), 0))}</span></div>
+        <div className={`${kit.card} ${kit.stat}`}><span className={kit.statLabel}>칩 단가</span><span className={kit.statValue}>{formatWon(CHIP_PRICE_WON)}</span></div>
       </div>
       <section className={kit.card}>
         <div className={kit.tableWrap}>
@@ -37,14 +38,14 @@ async function CoinsContent() {
                   <td className={kit.strong}>{row.user}</td>
                   <td><StatusPill status={row.type} /></td>
                   <td className={kit.num}>{formatCount(row.chips)}</td>
-                  <td className={kit.num}>{formatWon(row.amount)}</td>
+                  <td className={kit.num}>{formatWon(chipsToWon(row.chips))}</td>
                   <td>{row.memo}</td>
                   <td>
                     {row.type === "refund-request" && (
                       <ConfirmButton
                         label="환불 승인"
                         title={`${row.user}님 환불을 승인할까요?`}
-                        description={`${formatCount(row.chips)}칩 회수 후 ${formatWon(row.amount)}을 환불해요.`}
+                        description={`${formatCount(row.chips)}칩 회수 후 ${formatWon(chipsToWon(row.chips))}을 환불해요.`}
                         confirmLabel="승인"
                         className={`${kit.btnPrimary} ${kit.sm}`}
                         onConfirm={approveRefund.bind(null, row.id)}

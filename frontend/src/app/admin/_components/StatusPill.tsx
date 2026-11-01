@@ -14,6 +14,9 @@ const map: Record<string, { label: string; className: string }> = {
   charge: { label: "충전", className: kit.pillAccent },
   "refund-request": { label: "환불 요청", className: kit.pillWarn },
   refunded: { label: "환불 완료", className: kit.pill },
+  ongoing: { label: "진행 중", className: kit.pillSuccess },
+  upcoming: { label: "예정", className: kit.pillWarn },
+  ended: { label: "종료", className: kit.pill },
   high: { label: "위험", className: kit.pillDanger },
   medium: { label: "주의", className: kit.pillWarn },
 };

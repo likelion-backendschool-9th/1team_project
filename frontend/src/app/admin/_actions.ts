@@ -70,3 +70,32 @@ export async function suspendForFraud(userId: number) {
     "계정을 정지했어요.",
   );
 }
+
+const EVENT_STATUSES = ["ongoing", "upcoming", "ended"];
+
+function validateEvent(formData: FormData) {
+  const values = readValues(formData, ["title", "summary", "status", "startAt", "endAt", "reward"]);
+  const errors: Record<string, string> = {};
+  if (!values.title) errors.title = "제목을 입력해 주세요.";
+  if (!values.summary) errors.summary = "한 줄 소개를 입력해 주세요.";
+  if (!EVENT_STATUSES.includes(values.status)) errors.status = "상태를 골라 주세요.";
+  if (!values.startAt || !values.endAt) errors.endAt = "기간을 입력해 주세요.";
+  else if (values.startAt > values.endAt) errors.endAt = "끝나는 날이 시작일보다 빨라요.";
+  return { values, errors };
+}
+
+export async function saveEvent(eventId: number | null, previous: FormState, formData: FormData): Promise<FormState> {
+  const { values, errors } = validateEvent(formData);
+  const state = await runForm(previous, values, errors, () =>
+    eventId
+      ? mutate(`/api/v1/admin/events/${eventId}`, "PUT", values, "이벤트를 수정했어요.")
+      : mutate("/api/v1/admin/events", "POST", values, "이벤트를 등록했어요."),
+  );
+  if (state.ok) revalidatePath("/admin/events");
+  return state;
+}
+
+export async function deleteEvent(eventId: number) {
+  if (!isId(eventId)) return { ok: false, message: "잘못된 요청이에요." };
+  return mutate(`/api/v1/admin/events/${eventId}`, "DELETE", undefined, "이벤트를 삭제했어요.");
+}

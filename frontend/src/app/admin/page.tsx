@@ -6,7 +6,7 @@ import { formatCount, formatDate, formatWon } from "@/app/_lib/format";
 import { getDashboard, getReports } from "./_lib/api";
 import styles from "./_components/Admin.module.css";
 
-export const metadata: Metadata = { title: "대시보드" };
+export const metadata: Metadata = { title: { absolute: "대시보드 | 찍먹 관리자" } };
 
 const days = ["월", "화", "수", "목", "금", "토", "일"];
 
@@ -17,7 +17,7 @@ async function DashboardContent() {
     { label: "전체 회원", value: `${formatCount(stats.userCount)}명`, delta: `오늘 +${stats.newUsersToday}` },
     { label: "이번 주 데모 업로드", value: `${formatCount(stats.demoUploadsWeek)}개`, delta: "지난주 대비 +12%" },
     { label: "처리 대기 신고", value: `${stats.pendingReports}건`, delta: "대기 우선 처리" },
-    { label: "지난달 매출", value: formatWon(stats.revenueMonth), delta: "구독 + 칩 충전" },
+    { label: "지난달 매출", value: formatWon(stats.revenueMonth), delta: "블로그 구독 + 플러스 + 칩 충전" },
   ];
 
   return (
