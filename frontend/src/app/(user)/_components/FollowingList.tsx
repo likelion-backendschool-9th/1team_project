@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Avatar } from "@/app/_components/ui/Avatar";
 import { ChevronRightIcon } from "@/app/_components/ui/Icons";
 import type { Following } from "@/app/_lib/types/user";
+import { UserBadges } from "./UserBadges";
 import styles from "./FollowingList.module.css";
 
 type Props = {
@@ -25,7 +26,10 @@ export function FollowingList({ followings }: Props) {
           <li key={user.id}>
             <Link href={`/mini-home/${user.id}`} className={styles.row}>
               <Avatar name={user.nickname} size={40} tone="light" />
-              <span className={styles.name}>@{user.nickname}</span>
+              <div className={styles.info}>
+                <span className={styles.name}>@{user.nickname}</span>
+                <UserBadges badges={user.badges} />
+              </div>
               <span
                 className={`${styles.dot} ${user.online ? styles.online : ""}`}
                 role="img"

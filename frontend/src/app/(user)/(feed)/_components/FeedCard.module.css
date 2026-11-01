@@ -88,6 +88,7 @@
 }
 
 .tags li {
+  user-select: none;
   padding: 3px 12px;
   border-radius: var(--radius-pill);
   background: rgb(255 255 255 / 70%);
@@ -96,6 +97,7 @@
 }
 
 .play {
+  user-select: none;
   display: inline-flex;
   flex: none;
   align-items: center;

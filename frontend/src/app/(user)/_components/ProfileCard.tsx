@@ -7,6 +7,7 @@ import {
 } from "@/app/_components/ui/Icons";
 import { formatCount } from "@/app/_lib/format";
 import type { MyProfile } from "@/app/_lib/types/user";
+import { UserBadges } from "./UserBadges";
 import styles from "./ProfileCard.module.css";
 
 type Props = {
@@ -19,11 +20,9 @@ export function ProfileCard({ me, unreadCount }: Props) {
     <section className={styles.card} aria-label="내 프로필">
       <div className={styles.profile}>
         <Avatar name={me.nickname} size={56} />
-        <div>
-          <p className={styles.name}>{me.nickname}</p>
-          <p className={styles.stacks}>{me.techStacks.join(" · ")}</p>
-        </div>
+        <p className={styles.name}>{me.nickname}</p>
       </div>
+      <UserBadges badges={me.badges} />
       <dl className={styles.stats}>
         <div>
           <dt>팔로워</dt>

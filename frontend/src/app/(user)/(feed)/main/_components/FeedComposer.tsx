@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import { ImageIcon, LinkIcon } from "@/app/_components/ui/Icons";
 import { Avatar } from "@/app/_components/ui/Avatar";
 import { createFeed } from "../_actions";
@@ -44,14 +44,37 @@ type Props = {
   nickname: string;
 };
 
+// FeedComposer.module.css의 .composer top 값과 맞춘다.
+const STICKY_TOP = 12;
+
 export function FeedComposer({ nickname }: Props) {
   const [state, formAction, pending] = useActionState(
     createFeed,
     initialComposerState,
   );
+  const sectionRef = useRef<HTMLElement>(null);
+  const [stuck, setStuck] = useState(false);
+
+  // 위에 붙어 있는 동안만 그림자를 진하게 해서 떠 있는 상태를 보여 준다.
+  useEffect(() => {
+    const section = sectionRef.current;
+    if (!section) return;
+    const observer = new IntersectionObserver(
+      ([entry]) =>
+        setStuck(entry.intersectionRatio < 1 && entry.boundingClientRect.top <= STICKY_TOP + 1),
+      { threshold: 1, rootMargin: `-${STICKY_TOP + 1}px 0px 0px 0px` },
+    );
+    observer.observe(section);
+    return () => observer.disconnect();
+  }, []);
 
   return (
-    <section id="feed-composer" aria-label="피드 작성" className={styles.composer}>
+    <section
+      ref={sectionRef}
+      id="feed-composer"
+      aria-label="피드 작성"
+      className={`${styles.composer} ${stuck ? styles.stuck : ""}`}
+    >
       <form action={formAction} className={styles.form}>
         <Avatar name={nickname} size={48} />
         <ComposerField

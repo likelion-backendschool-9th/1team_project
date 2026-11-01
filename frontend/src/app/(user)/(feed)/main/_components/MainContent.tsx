@@ -1,7 +1,7 @@
 import { connection } from "next/server";
-import { getMe } from "../../_lib/api";
+import { getMe } from "@/app/(user)/_lib/api";
 import { getFeeds, getHotDemos, getServerTime, getTags } from "../_lib/api";
-import { FeedCard } from "./FeedCard";
+import { FeedCard } from "../../_components/FeedCard";
 import { FeedComposer } from "./FeedComposer";
 import { HotDemos } from "./HotDemos";
 import { TagChips } from "./TagChips";

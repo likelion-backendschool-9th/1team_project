@@ -1,8 +1,16 @@
 .composer {
+  position: sticky;
+  top: 12px;
+  z-index: 5;
   scroll-margin-top: 24px;
+  transition: box-shadow 0.2s ease;
   border-radius: var(--radius-card);
   background: var(--surface);
   box-shadow: var(--shadow-card);
+}
+
+.stuck {
+  box-shadow: 0 2px 6px rgb(60 40 10 / 8%), 0 12px 32px rgb(60 40 10 / 14%);
 }
 
 .form {

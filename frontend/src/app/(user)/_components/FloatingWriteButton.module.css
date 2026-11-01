@@ -1,4 +1,5 @@
 .button {
+  user-select: none;
   position: fixed;
   right: max(24px, calc((100vw - 1360px) / 2 + 24px));
   bottom: 24px;
