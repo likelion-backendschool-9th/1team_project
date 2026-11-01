@@ -1,0 +1,55 @@
+.plus {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 20px;
+  padding: 28px;
+  border-radius: var(--radius-card);
+  background: radial-gradient(circle at 85% 0%, #4b3d22, #1f1b17 60%);
+  color: #f5efe3;
+  box-shadow: 0 12px 30px rgb(31 27 23 / 25%);
+}
+
+.plusLabel {
+  color: #ffc21a;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+}
+
+.plusTitle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 4px;
+  font-size: 24px;
+  font-weight: 800;
+}
+
+.plusPrice {
+  margin-top: 4px;
+  color: #cfc5b4;
+  font-size: 14px;
+}
+
+.benefits {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px 16px;
+  margin-top: 16px;
+  font-size: 14px;
+}
+
+@media (max-width: 640px) {
+  .benefits {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.plusAction {
+  color: var(--ink);
+}
+
+.plus [role="status"] {
+  color: #cfc5b4;
+}

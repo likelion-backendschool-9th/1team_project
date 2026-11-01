@@ -44,7 +44,24 @@ export async function purchaseChips(packageId: number) {
 
 export async function cancelSubscription(subscriptionId: number) {
   if (!isId(subscriptionId)) return { ok: false, message: "잘못된 요청이에요." };
-  return mutate("/api/v1/subscriptions/me", "DELETE", { subscriptionId }, "구독을 해지했어요. 다음 결제일부터 청구되지 않아요.");
+  return mutate(
+    "/api/v1/subscriptions/me",
+    "DELETE",
+    { subscriptionId },
+    "구독을 해지했어요. 다음 결제일부터 자동이체되지 않아요.",
+  );
+}
+
+export async function subscribePlus() {
+  return mutate("/api/v1/subscriptions", "POST", { plan: "plus" }, "딥소스 플러스를 시작했어요. 매달 자동이체돼요.");
+}
+
+export async function cancelPlus() {
+  return mutate("/api/v1/subscriptions/me", "DELETE", { plan: "plus" }, "딥소스 플러스를 해지했어요. 이번 결제 기간까지는 혜택이 유지돼요.");
+}
+
+export async function verifyCompany() {
+  return { ok: false, message: "회사 인증은 준비 중이에요. 조금만 기다려 주세요." };
 }
 
 export async function logout() {

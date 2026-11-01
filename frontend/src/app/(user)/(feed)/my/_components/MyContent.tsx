@@ -5,7 +5,7 @@ import kit from "@/app/_components/ui/kit.module.css";
 import { formatCount, formatDate } from "@/app/_lib/format";
 import { UserBadges } from "@/app/(user)/_components/UserBadges";
 import { getMe } from "@/app/(user)/_lib/api";
-import { logout, withdraw } from "../_actions";
+import { logout, verifyCompany, withdraw } from "../_actions";
 import { getAccount } from "../_lib/api";
 import { AccountForm } from "./AccountForm";
 import styles from "./My.module.css";
@@ -20,7 +20,15 @@ export async function MyContent() {
       <section className={`${kit.card} ${styles.summary}`} aria-label="프로필 요약">
         <Avatar name={me.nickname} size={72} />
         <div className={kit.grow}>
-          <p className={styles.name}>{me.nickname}</p>
+          <p className={styles.name}>
+            {me.nickname}
+            {me.plus && (
+              <Link href="/my/subscription" className={styles.plusTag}>
+                PLUS
+              </Link>
+            )}
+            {me.company && <span className={kit.pill}>🏢 {me.company}</span>}
+          </p>
           <UserBadges badges={me.badges} />
           <p className={kit.faint} style={{ marginTop: 8 }}>
             {providers[account.provider]} 계정 · {account.email} · {formatDate(account.joinedAt)} 가입
@@ -58,6 +66,31 @@ export async function MyContent() {
       </div>
 
       <AccountForm nickname={me.nickname} techStacks={me.techStacks.join(", ")} account={account} />
+
+      <section className={kit.card} aria-labelledby="company-title">
+        <div className={kit.between}>
+          <div>
+            <h2 id="company-title" className={kit.cardTitle}>
+              회사 인증
+            </h2>
+            <p className={kit.faint}>
+              {me.company
+                ? `${me.company} 인증 완료 · 프로필에 회사 태그가 표시돼요.`
+                : "회사 이메일로 인증하면 프로필에 회사 태그를 달 수 있어요."}
+            </p>
+          </div>
+          {!me.company && (
+            <ConfirmButton
+              label="회사 인증하기"
+              title="회사 인증을 시작할까요?"
+              description="회사 이메일로 인증 메일을 보내요."
+              confirmLabel="인증 시작"
+              className={kit.btnDark}
+              onConfirm={verifyCompany}
+            />
+          )}
+        </div>
+      </section>
 
       <section className={kit.card} aria-labelledby="account-danger">
         <h2 id="account-danger" className={kit.cardTitle}>

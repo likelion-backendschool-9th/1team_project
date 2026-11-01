@@ -4,27 +4,67 @@ import { Suspense } from "react";
 import { Avatar } from "@/app/_components/ui/Avatar";
 import { ConfirmButton } from "@/app/_components/ui/ConfirmButton";
 import kit from "@/app/_components/ui/kit.module.css";
-import { formatDate } from "@/app/_lib/format";
-import { cancelSubscription } from "../_actions";
-import { getSubscriptions } from "../_lib/api";
+import { formatDate, formatWon } from "@/app/_lib/format";
+import { PLUS_BENEFITS, PLUS_PRICE_WON } from "@/app/_lib/policy";
+import { cancelPlus, cancelSubscription, subscribePlus } from "../_actions";
+import { getPlus, getSubscriptions } from "../_lib/api";
+import styles from "./Subscription.module.css";
 
 export const metadata: Metadata = { title: "구독 관리", robots: { index: false } };
 
 async function SubscriptionContent() {
-  const subscriptions = await getSubscriptions();
+  const [plus, subscriptions] = await Promise.all([getPlus(), getSubscriptions()]);
   const active = subscriptions.filter((item) => item.status === "active");
-  const monthly = active.reduce((sum, item) => sum + item.chipsPerMonth, 0);
+  const monthly = active.reduce((sum, item) => sum + item.pricePerMonth, 0) + (plus.active ? PLUS_PRICE_WON : 0);
 
   return (
     <>
+      <section className={styles.plus} aria-labelledby="plus-title">
+        <div className={kit.grow}>
+          <p className={styles.plusLabel}>DIPSOURCE PLUS</p>
+          <h2 id="plus-title" className={styles.plusTitle}>
+            딥소스 플러스 {plus.active && <span className={kit.pillSuccess}>이용 중</span>}
+          </h2>
+          <p className={styles.plusPrice}>
+            월 {formatWon(PLUS_PRICE_WON)} · 자동이체
+            {plus.active && plus.nextBillingAt && ` · 다음 결제 ${formatDate(plus.nextBillingAt)}`}
+          </p>
+          <ul className={styles.benefits}>
+            {PLUS_BENEFITS.map((benefit) => (
+              <li key={benefit}>✓ {benefit}</li>
+            ))}
+          </ul>
+        </div>
+        {plus.active ? (
+          <ConfirmButton
+            label="플러스 해지"
+            title="딥소스 플러스를 해지할까요?"
+            description="이번 결제 기간이 끝나면 스킨·BGM·고급 배지가 꺼지고, 미니홈피 데모는 3개만 보여요."
+            confirmLabel="해지"
+            danger
+            className={`${kit.btnGhost} ${styles.plusAction}`}
+            onConfirm={cancelPlus}
+          />
+        ) : (
+          <ConfirmButton
+            label="플러스 시작하기"
+            title="딥소스 플러스를 시작할까요?"
+            description={`매달 ${formatWon(PLUS_PRICE_WON)}이 자동이체돼요.`}
+            confirmLabel="시작하기"
+            className={`${kit.btnPrimary} ${styles.plusAction}`}
+            onConfirm={subscribePlus}
+          />
+        )}
+      </section>
+
       <div className={kit.grid3}>
         <div className={`${kit.card} ${kit.stat}`}>
-          <span className={kit.statLabel}>구독 중</span>
+          <span className={kit.statLabel}>구독 중인 블로그</span>
           <span className={kit.statValue}>{active.length}개</span>
         </div>
         <div className={`${kit.card} ${kit.stat}`}>
-          <span className={kit.statLabel}>매달 나가는 칩</span>
-          <span className={kit.statValue}>{monthly}칩</span>
+          <span className={kit.statLabel}>매달 자동이체 금액</span>
+          <span className={kit.statValue}>{formatWon(monthly)}</span>
         </div>
         <div className={`${kit.card} ${kit.stat}`}>
           <span className={kit.statLabel}>다음 결제일</span>
@@ -33,7 +73,7 @@ async function SubscriptionContent() {
       </div>
       <section className={kit.card} aria-labelledby="subscription-title">
         <h2 id="subscription-title" className={kit.cardTitle}>
-          구독 중인 연재
+          블로그 구독
         </h2>
         <ul className={kit.list}>
           {subscriptions.map((item) => (
@@ -41,11 +81,13 @@ async function SubscriptionContent() {
               <Avatar name={item.author.nickname} size={44} />
               <span className={kit.grow}>
                 <Link href={`/blog/${item.author.id}`} className={kit.strong}>
-                  {item.seriesTitle}
+                  {item.blogTitle}
                 </Link>
                 <span className={kit.faint} style={{ display: "block" }}>
-                  {item.author.nickname} · 월 {item.chipsPerMonth}칩 ·{" "}
-                  {item.status === "active" ? `다음 결제 ${formatDate(item.nextBillingAt)}` : `${formatDate(item.nextBillingAt)}까지 이용 가능`}
+                  월 {formatWon(item.pricePerMonth)} 자동이체 ·{" "}
+                  {item.status === "active"
+                    ? `다음 결제 ${formatDate(item.nextBillingAt)}`
+                    : `${formatDate(item.nextBillingAt)}까지 이용 가능`}
                 </span>
               </span>
               {item.status === "active" ? (

@@ -19,7 +19,7 @@ export type Settings = {
 
 export type BlockedUser = UserSummary & { blockedAt: string };
 
-export type ChipPackage = { id: number; chips: number; price: number; bonus: number };
+export type ChipPackage = { id: number; chips: number };
 
 export type ChipHistory = {
   id: number;
@@ -29,13 +29,20 @@ export type ChipHistory = {
   createdAt: string;
 };
 
+// 블로그 구독과 딥소스 플러스는 칩이 아니라 현금 월 자동이체다.
 export type Subscription = {
   id: number;
   author: UserSummary;
-  seriesTitle: string;
-  chipsPerMonth: number;
+  blogTitle: string;
+  pricePerMonth: number;
   nextBillingAt: string;
   status: "active" | "canceled";
+};
+
+export type PlusMembership = {
+  active: boolean;
+  since: string | null;
+  nextBillingAt: string | null;
 };
 
 export const mockAccount: MyAccount = {
@@ -73,22 +80,48 @@ export const mockBlocked: BlockedUser[] = [
 ];
 
 export const mockPackages: ChipPackage[] = [
-  { id: 1, chips: 100, price: 1100, bonus: 0 },
-  { id: 2, chips: 500, price: 5500, bonus: 25 },
-  { id: 3, chips: 1000, price: 11000, bonus: 80 },
-  { id: 4, chips: 3000, price: 33000, bonus: 300 },
+  { id: 1, chips: 10 },
+  { id: 2, chips: 50 },
+  { id: 3, chips: 100 },
+  { id: 4, chips: 300 },
 ];
 
 export const mockHistory: ChipHistory[] = [
   { id: 1, type: "use", description: "「10만 동시접속 채팅 서버」 잠금 해제", amount: -20, createdAt: "2026-11-01T21:14:00+09:00" },
-  { id: 2, type: "use", description: "차재인 연재 구독 (11월)", amount: -15, createdAt: "2026-11-01T09:00:00+09:00" },
-  { id: 3, type: "charge", description: "칩 1,000개 충전 (+보너스 80)", amount: 1080, createdAt: "2026-10-28T19:40:00+09:00" },
-  { id: 4, type: "refund", description: "품질 보장제 환불 「Kafka 실습 3화」", amount: 10, createdAt: "2026-10-20T15:02:00+09:00" },
-  { id: 5, type: "use", description: "윤세진 연재 구독 (10월)", amount: -10, createdAt: "2026-10-01T09:00:00+09:00" },
+  { id: 2, type: "use", description: "정시우 미니홈피 칩 후원", amount: -30, createdAt: "2026-11-01T09:00:00+09:00" },
+  { id: 3, type: "charge", description: "칩 300개 충전", amount: 300, createdAt: "2026-10-28T19:40:00+09:00" },
+  { id: 4, type: "use", description: "데모 인벤토리 +1칸", amount: -10, createdAt: "2026-10-25T11:20:00+09:00" },
+  { id: 5, type: "refund", description: "품질 보장제 환불 「Kafka 실습 3화」", amount: 10, createdAt: "2026-10-20T15:02:00+09:00" },
 ];
 
 export const mockSubscriptions: Subscription[] = [
-  { id: 1, author: mockUsers.cha, seriesTitle: "대규모 트래픽을 견디는 이벤트 드리븐 시스템", chipsPerMonth: 15, nextBillingAt: "2026-12-01T09:00:00+09:00", status: "active" },
-  { id: 2, author: mockUsers.yoon, seriesTitle: "React 19 & Next.js 15 렌더링 딥다이브", chipsPerMonth: 10, nextBillingAt: "2026-12-01T09:00:00+09:00", status: "active" },
-  { id: 3, author: mockUsers.seungjo, seriesTitle: "DevOps CI/CD 파이프라인", chipsPerMonth: 8, nextBillingAt: "2026-11-15T09:00:00+09:00", status: "canceled" },
+  { id: 1, author: mockUsers.cha, blogTitle: "차재인의 개발 블로그", pricePerMonth: 5000, nextBillingAt: "2026-12-01T09:00:00+09:00", status: "active" },
+  { id: 2, author: mockUsers.yoon, blogTitle: "윤세진의 개발 블로그", pricePerMonth: 3000, nextBillingAt: "2026-12-01T09:00:00+09:00", status: "active" },
+  { id: 3, author: mockUsers.seungjo, blogTitle: "김승조의 개발 블로그", pricePerMonth: 3000, nextBillingAt: "2026-11-15T09:00:00+09:00", status: "canceled" },
+];
+
+export const mockPlus: PlusMembership = {
+  active: true,
+  since: "2026-08-01T09:00:00+09:00",
+  nextBillingAt: "2026-12-01T09:00:00+09:00",
+};
+
+export type BookmarkType = "feed" | "post" | "demo";
+
+export type Bookmark = {
+  id: number;
+  type: BookmarkType;
+  title: string;
+  author: string;
+  href: string;
+  savedAt: string;
+};
+
+export const mockBookmarks: Bookmark[] = [
+  { id: 1, type: "feed", title: "Unity WebGL 빌드 용량 38MB → 9MB로 줄였어요", author: "김승조", href: "/feeds/3", savedAt: "2026-11-01T20:10:00+09:00" },
+  { id: 2, type: "feed", title: "Spring Batch 모니터 데모 올렸어요", author: "딥소스", href: "/feeds/6", savedAt: "2026-10-31T09:00:00+09:00" },
+  { id: 3, type: "post", title: "STOMP + Spring WebSocket으로 10만 동시접속 채팅 서버 구축하기", author: "차재인", href: "/blog/posts/1", savedAt: "2026-11-02T08:30:00+09:00" },
+  { id: 4, type: "post", title: "웹 워커를 이용한 프레임 드랍 없는 60fps 파티클", author: "정시우", href: "/blog/posts/302", savedAt: "2026-10-29T22:00:00+09:00" },
+  { id: 5, type: "demo", title: "Three.js 태양계", author: "차재인", href: "/demos/7", savedAt: "2026-10-30T13:20:00+09:00" },
+  { id: 6, type: "demo", title: "사운드 시퀀서", author: "박준하", href: "/demos/10", savedAt: "2026-10-27T18:45:00+09:00" },
 ];
