@@ -1,0 +1,50 @@
+.form {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 16px;
+  border-radius: 16px;
+  background: var(--surface-muted);
+}
+
+.form:focus-within {
+  outline: 2px solid var(--accent-ink);
+}
+
+.icon {
+  flex: none;
+  color: var(--ink-soft);
+  font-size: 22px;
+}
+
+.input {
+  min-width: 0;
+  flex: 1;
+  padding: 16px 0;
+  border: 0;
+  background: none;
+  font-size: 16px;
+}
+
+.input:focus {
+  outline: none;
+}
+
+.input::placeholder {
+  color: var(--ink-faint);
+}
+
+.shortcut {
+  padding: 4px 10px;
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--ink-soft);
+  font-family: inherit;
+  font-size: 13px;
+}
+
+@media (max-width: 760px) {
+  .shortcut {
+    display: none;
+  }
+}
