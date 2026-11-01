@@ -11,54 +11,38 @@ AI 에이전트는 커밋 → 푸시 → PR 생성까지 수행하고, **머지�
 
 브랜치는 아래 4종류만 사용한다.
 
-| 브랜치      | 역할                                   | 분기 기준 | PR 대상                                    | 머지 방식             |
-| ----------- | -------------------------------------- | --------- | ------------------------------------------ | --------------------- |
-| `main`      | 배포                                   | -         | -                                          | -                     |
-| `develop`   | 개발 통합                              | `main`    | `main` (배포 시)                           | Create a merge commit |
-| `feature/*` | 기능 개발, 버그 수정 등 모든 일반 작업 | `develop` | `develop`                                  | Squash and merge      |
-| `hotfix/*`  | 운영 긴급 수정                         | `main`    | `main` → 머지 후 `main`을 `develop`에 반영 | Squash and merge      |
+| 브랜치      | 역할                                   | 분기 기준 | PR 대상                                | 머지 방식             |
+| ----------- | -------------------------------------- | --------- | -------------------------------------- | --------------------- |
+| `main`      | 배포                                   | -         | -                                      | -                     |
+| `dev`       | 개발 통합                              | `main`    | `main` (배포 시)                       | Create a merge commit |
+| `feature/*` | 기능 개발, 버그 수정 등 모든 일반 작업 | `dev`     | `dev`                                  | Squash and merge      |
+| `hotfix/*`  | 운영 긴급 수정                         | `main`    | `main` → 머지 후 `main`을 `dev`에 반영 | Squash and merge      |
 
 ```
 main ──────────●────────────●──────
   │            ↑ 배포        ↑
   │  hotfix/* ─┘(긴급)       │
-  └ develop ───●────●────────┘
+  └ dev ───●────●────────┘
                ↑    ↑
      feature/* ┘    └ feature/*
 ```
 
-- `main`, `develop`에는 직접 커밋/푸시하지 않는다. 항상 PR로만 반영한다.
+- `main`, `dev`에는 직접 커밋/푸시하지 않는다. 항상 PR로만 반영한다.
 
 ---
 
 ## 2. 브랜치 네이밍
 
-```
-feature/<짧은-설명>
-hotfix/<짧은-설명>
-```
-
-- 영어 소문자, 숫자, 하이픈(`-`)만 사용
-- 설명은 2~4단어
-- 이슈 번호는 브랜치명에 넣지 않고 PR 본문에 `Closes #12`로 연결
-
-| 예시                     | 설명                         |
-| ------------------------ | ---------------------------- |
-| `feature/login-api`      | 로그인 API 개발              |
-| `feature/follow-bug`     | 팔로우 버그 수정             |
-| `hotfix/payment-timeout` | 운영 결제 타임아웃 긴급 수정 |
+| 규칙 | 설명 | 예시 |
+| --- | --- | --- |
+| 영어 소문자 사용 | 대문자 사용 금지 | `feature/login-api` |
+| 하이픈(`-`)으로 단어 구분 | 언더스코어, 공백 사용 금지 | `feature/follow-bug` |
+| 작업 내용을 알아볼 수 있도록 작성 | 2~4단어로 간결하게 | `hotfix/payment-timeout` |
+| 브랜치 하나에 작업 하나 | 기능 또는 수정 단위로 생성 | `feature/demo-upload` |
 
 ---
 
 ## 3. 커밋 메시지
-
-```
-<type>: <제목>
-
-<본문 - 선택>
-```
-
-### 커밋 타입
 
 | type       | 언제 쓰나                               | 예시                                    |
 | ---------- | --------------------------------------- | --------------------------------------- |
@@ -69,6 +53,8 @@ hotfix/<짧은-설명>
 | `docs`     | 문서 수정 (README, 주석 등)             | `docs: 설치 방법 README에 추가`         |
 | `test`     | 테스트 추가/수정                        | `test: 로그인 실패 케이스 테스트 추가`  |
 | `chore`    | 빌드, 설정, 패키지 등 기타 작업         | `chore: eslint 9 버전으로 업데이트`     |
+| `perf`     | 성능 개선                               | `perf: 피드 목록 쿼리 최적화`           |
+| `design`   | 디자인 변경                             | `design: 메인 페이지 레이아웃 수정`     |
 
 ### 작성 규칙
 
@@ -84,7 +70,7 @@ hotfix/<짧은-설명>
 
 ```bash
 git fetch origin
-git switch -c feature/<설명> origin/develop   # 긴급 수정: git switch -c hotfix/<설명> origin/main
+git switch -c feature/<설명> origin/dev   # 긴급 수정: git switch -c hotfix/<설명> origin/main
 ```
 
 - 이미 작업 브랜치에 있다면 새로 만들지 말고 그 브랜치에서 계속한다.
@@ -99,7 +85,7 @@ git switch -c feature/<설명> origin/develop   # 긴급 수정: git switch -c h
 
 ```bash
 git fetch origin
-git rebase origin/develop   # hotfix는 origin/main
+git rebase origin/dev   # hotfix는 origin/main
 ```
 
 - **충돌이 나면 임의로 해결하지 말고** `git rebase --abort` 후 사람에게 보고한다.
@@ -108,7 +94,7 @@ git rebase origin/develop   # hotfix는 origin/main
 
 ```bash
 git push -u origin HEAD
-gh pr create --base develop --title "<커밋 메시지 형식>" --body "<PR 템플릿 내용>"
+gh pr create --base dev --title "<커밋 메시지 형식>" --body "<PR 템플릿 내용>"
 # hotfix는 --base main
 ```
 
@@ -118,7 +104,7 @@ gh pr create --base develop --title "<커밋 메시지 형식>" --body "<PR 템�
 
 ### 4-5. 절대 하지 말 것
 
-- `main`, `develop`에 직접 커밋/푸시
+- `main`, `dev`에 직접 커밋/푸시
 - `git push --force` (본인 브랜치에서 rebase 후 필요하면 `--force-with-lease`만 허용)
 - PR 머지, 브랜치 삭제, 다른 사람 브랜치 수정
 - `.env`, 키, 토큰 등 비밀정보 커밋

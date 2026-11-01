@@ -2,8 +2,8 @@
 
 > 프론트엔드 작업의 기준 문서다.
 >
-> - **데이터·API:** [기획서](./기획서.md) 5장 API 명세와 백엔드 DTO 코드가 기준
-> - **DB 구조:** [테이블정의서](./테이블정의서.md)가 기준
+> - **데이터·API:** 백엔드 실제 API/DTO 코드가 기준. [wbs.md](./wbs.md)는 작업 초안
+> - **DB 구조:** [database-design.md](./database-design.md), [테이블정의서](./테이블정의서.md) 참조
 > - **Git 규칙:** [AGENTS.md](../AGENTS.md)를 따른다
 
 ## 1. 개요
@@ -54,7 +54,7 @@
 | `/my/followers` | `GET follows/followers` | 팔로워 목록 |
 | `/my/bookmarks` | `GET users/me/bookmarks` | 북마크 목록 |
 | `/my/subscriptions` | `GET subscriptions/me` | 내 구독 목록 |
-| `/my/coins` | `GET coins/balance`, `POST coins/purchase` | 도토리 충전/잔액 |
+| `/my/coins` | `GET coins/balance`, `POST coins/purchase` | 칩 충전/잔액 |
 | `/notifications` | `GET notifications` | 알림 |
 | `/settings` | `GET/PUT users/me/settings` | 설정 |
 | `/admin` | `GET admin/dashboard` | 관리자 대시보드 |
@@ -301,7 +301,22 @@ DM과 알림은 WebSocket + STOMP + SockJS로 실시간 통신한다.
 
 ---
 
-## 11. 기타
+## 11. 스타일 (CSS)
+
+- **CSS Modules를 쓴다.** `globals.css`에 스타일을 몰아넣지 않고, 컴포넌트(페이지) 단위로 `*.module.css` 파일을 만든다.
+- **`globals.css`에는 전역 스타일만 둔다.** CSS 변수(`:root`), 리셋(`*`, `body`), 공통 타이포그래피, 공통 유틸리티 클래스 등.
+- **파일 위치:** 해당 컴포넌트 옆에 둔다. 예) `page.tsx` → `page.module.css`, `DemoCard.tsx` → `DemoCard.module.css`.
+- **네이밍:** 클래스명은 camelCase로 쓴다. `styles.feedCard`, `styles.demoGrid` 등.
+- **사용법:**
+  ```tsx
+  import styles from "./page.module.css";
+  <div className={styles.feedCard}>...</div>
+  ```
+- **여러 클래스 조합:** 템플릿 리터럴을 쓴다. `` className={`${styles.btn} ${styles.active}`} ``
+
+---
+
+## 12. 기타
 
 - 이미지는 `next/image`, 폰트는 `next/font`, 무거운 라이브러리는 `dynamic import`를 쓴다.
 - 리스트 `key`에 index를 쓰지 않는다. `any`는 금지하고, 외부 입력은 검증한다.
@@ -310,7 +325,7 @@ DM과 알림은 WebSocket + STOMP + SockJS로 실시간 통신한다.
 
 ---
 
-## 12. PR 체크리스트
+## 13. PR 체크리스트
 
 - [ ] **매핑:** PR이 하나의 페이지-API 쌍을 다루고, 엔드포인트가 2장과 일치한다
 - [ ] **URL 변경:** URL을 바꿨다면 라우트 목록과 기획서 API 명세를 함께 고쳤다
