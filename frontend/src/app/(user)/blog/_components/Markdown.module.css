@@ -1,0 +1,42 @@
+.body {
+  font-size: 17px;
+  line-height: 1.8;
+  overflow-wrap: anywhere;
+}
+
+.body > * + * {
+  margin-top: 16px;
+}
+
+.body h3 {
+  margin-top: 32px;
+  font-size: 21px;
+  font-weight: 800;
+}
+
+.body ul {
+  padding-left: 22px;
+  list-style: disc;
+}
+
+.body pre {
+  position: relative;
+  padding: 18px 20px;
+  overflow-x: auto;
+  border-radius: 14px;
+  background: #1f1b17;
+  color: #f5efe3;
+  font-family: ui-monospace, "SFMono-Regular", Menlo, monospace;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.body pre[data-lang]::after {
+  position: absolute;
+  top: 8px;
+  right: 12px;
+  color: #ffc21a;
+  content: attr(data-lang);
+  font-size: 11px;
+  text-transform: uppercase;
+}

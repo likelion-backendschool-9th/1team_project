@@ -1,0 +1,41 @@
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 24px;
+  padding-top: 14px;
+  margin-top: 6px;
+  border-top: 1px solid var(--border);
+}
+
+.action {
+  user-select: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 2px;
+  border-radius: 10px;
+  color: var(--ink-soft);
+  font-size: 15px;
+}
+
+.action svg {
+  font-size: 20px;
+}
+
+a.action:hover,
+button.action:hover {
+  color: var(--ink);
+}
+
+.liked,
+.liked:hover {
+  color: var(--danger);
+}
+
+.read {
+  user-select: none;
+  margin-inline-start: auto;
+  color: var(--ink-faint);
+  font-size: 14px;
+}

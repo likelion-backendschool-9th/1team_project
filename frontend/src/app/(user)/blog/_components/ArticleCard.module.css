@@ -1,0 +1,150 @@
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 28px 28px 20px;
+  border: 1px solid var(--border);
+  border-radius: 28px;
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.meta {
+  min-width: 0;
+  flex: 1;
+  color: var(--ink-faint);
+  font-size: 14px;
+}
+
+.name {
+  color: var(--ink);
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.locked,
+.free {
+  user-select: none;
+  flex: none;
+  padding: 4px 12px;
+  border-radius: var(--radius-pill);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.locked {
+  border: 1px solid #fbe6ad;
+  background: #fff8e1;
+  color: #8a4b08;
+}
+
+.free {
+  background: var(--surface-muted);
+  color: var(--ink-soft);
+}
+
+.more {
+  display: inline-flex;
+  padding: 6px;
+  color: var(--ink-faint);
+  font-size: 18px;
+}
+
+.title {
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1.45;
+}
+
+.title a:hover {
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.excerpt {
+  display: -webkit-box;
+  overflow: hidden;
+  color: var(--ink-soft);
+  font-size: 16px;
+  line-height: 1.65;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+
+.source {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 18px 20px;
+  margin-top: 6px;
+  border: 1px solid #fbe6ad;
+  border-radius: 20px;
+  background: #fffbea;
+}
+
+.code {
+  user-select: none;
+  display: inline-flex;
+  flex: none;
+  width: 56px;
+  height: 56px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 14px;
+  background: #ffefc2;
+  color: #b45f06;
+  font-family: ui-monospace, "SFMono-Regular", Menlo, monospace;
+  font-weight: 700;
+}
+
+.sourceInfo {
+  min-width: 0;
+  flex: 1;
+}
+
+.sourceTitle {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.sourceDesc {
+  color: var(--ink-faint);
+  font-size: 13px;
+}
+
+.play {
+  user-select: none;
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 20px;
+  border-radius: 14px;
+  background: #ffc21a;
+  font-weight: 700;
+}
+
+.play:hover {
+  background: #ffb800;
+}
+
+@media (max-width: 760px) {
+  .card {
+    padding: 20px 18px 16px;
+  }
+
+  .source {
+    flex-wrap: wrap;
+  }
+
+  .play {
+    width: 100%;
+    justify-content: center;
+  }
+}
