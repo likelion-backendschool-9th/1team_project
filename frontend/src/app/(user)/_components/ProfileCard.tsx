@@ -6,6 +6,7 @@ import type { AppNotification } from "@/app/_lib/types/notification";
 import type { MyProfile } from "@/app/_lib/types/user";
 import { NotificationBell } from "./NotificationBell";
 import { UserBadges } from "./UserBadges";
+import { LogoutButton } from "./LogoutButton";
 import styles from "./ProfileCard.module.css";
 
 type Props = {
@@ -21,6 +22,7 @@ export function ProfileCard({ me, unreadCount, notifications, now }: Props) {
       <div className={styles.profile}>
         <Avatar name={me.nickname} size={56} />
         <p className={styles.name}>{me.nickname}</p>
+        <LogoutButton />
       </div>
       {me.plus && <UserBadges badges={me.badges} />}
       <dl className={styles.stats}>

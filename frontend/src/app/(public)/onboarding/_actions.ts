@@ -1,6 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { startMockSession } from "@/app/(user)/_lib/session";
 import { isMockMode } from "@/app/_lib/api/client";
 import { readValues, type FormState } from "@/app/_lib/formState";
 import { parseRedirect } from "@/app/_lib/redirect";
@@ -52,5 +53,6 @@ export async function submitOnboarding(previous: FormState, formData: FormData):
   if (!isMockMode)
     return { ok: false, message: "가입 정보 저장 API 연결 전이에요.", errors: {}, values, attempt };
 
+  await startMockSession();
   redirect(parseRedirect(values.redirect));
 }
