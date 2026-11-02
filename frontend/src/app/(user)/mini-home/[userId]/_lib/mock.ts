@@ -33,6 +33,8 @@ const siwooProfile: MiniHomeProfile = {
 // 목 모드에서는 정시우 홈피를 기준으로, 다른 회원은 이름과 소개만 바꿔 보여준다.
 // 로그인한 딥소스의 홈피. 정시우 홈피와 같은 데모·구성을 쓰는 기존 모습을 유지한다.
 const myHomeId = mockUsers.me.id;
+const MY_DEMO_ID_OFFSET = 100;
+const toMyDemoId = (siwooDemoId: number) => siwooDemoId + MY_DEMO_ID_OFFSET;
 
 export function findMockProfile(userId: number): MiniHomeProfile | null {
   if (userId === siwooProfile.id) return siwooProfile;
@@ -47,6 +49,9 @@ export function findMockProfile(userId: number): MiniHomeProfile | null {
       domain: null,
       bgm: "lofi-coding",
       extraInventorySlots: 1,
+      // 내 데모는 정시우 데모를 본뜬 별도 id(201~)라서 상세도 내 미니홈피 안에서 열린다.
+      showcaseDemoIds: siwooProfile.showcaseDemoIds.map(toMyDemoId),
+      featuredDemoId: toMyDemoId(siwooProfile.featuredDemoId ?? 101),
     };
   const user = Object.values(mockUsers).find((item) => item.id === userId);
   const theme = userThemes[userId];
@@ -73,7 +78,9 @@ export function findMockProfile(userId: number): MiniHomeProfile | null {
 
 /** 정시우는 기존 데모, 나머지 회원은 각자의 마스코트 데모를 쓴다. */
 export function findMockDemos(userId: number): MiniHomeDemo[] {
-  if (userId === siwooProfile.id || userId === myHomeId) return mockDemos;
+  if (userId === siwooProfile.id) return mockDemos;
+  if (userId === myHomeId)
+    return mockDemos.map((demo) => ({ ...demo, id: toMyDemoId(demo.id), author: mockUsers.me }));
   const user = Object.values(mockUsers).find((item) => item.id === userId);
   return user ? createUserDemos(user) : [];
 }

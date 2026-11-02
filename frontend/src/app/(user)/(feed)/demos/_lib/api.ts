@@ -1,4 +1,5 @@
 import "server-only";
+import { cache } from "react";
 import {
   ApiRequestError,
   apiFetch,
@@ -30,7 +31,8 @@ export async function getDemos(tag: string | undefined, sort: DemoSort): Promise
   return data.content;
 }
 
-export async function getDemo(demoId: number): Promise<DemoDetail | null> {
+// 레이아웃(미니홈피 틀)과 페이지가 같은 요청에서 함께 부르므로 한 번만 가져온다.
+export const getDemo = cache(async function getDemo(demoId: number): Promise<DemoDetail | null> {
   if (isMockMode) return mockDemos.find((demo) => demo.id === demoId) ?? null;
   try {
     const { data } = await apiFetch<ApiResponse<DemoDetail>>(`/api/v1/demos/${demoId}`);
@@ -39,7 +41,7 @@ export async function getDemo(demoId: number): Promise<DemoDetail | null> {
     if (error instanceof ApiRequestError && error.status === 404) return null;
     throw error;
   }
-}
+});
 
 export async function getDemoComments(demoId: number): Promise<DemoComment[]> {
   if (isMockMode) return createMockDemoComments(demoId, Date.now());
