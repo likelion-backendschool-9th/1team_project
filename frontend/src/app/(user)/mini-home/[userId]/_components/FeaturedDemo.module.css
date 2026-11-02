@@ -180,6 +180,7 @@
 }
 
 .social {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -262,17 +263,30 @@
   display: none;
 }
 
+/* 댓글은 아래 내용을 밀지 않고 알림 드롭다운처럼 위에 띄운다. */
 .comments {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 30;
   display: flex;
-  max-height: 360px;
+  width: min(440px, calc(100vw - 48px));
+  max-height: 420px;
   flex-direction: column;
   gap: 8px;
   padding: 14px;
   overflow-y: auto;
-  border: 1px solid #ece6db;
-  border-radius: 14px;
-  background: #fdfbf7;
+  overscroll-behavior: contain;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: var(--surface);
+  box-shadow: 0 4px 10px rgb(60 40 10 / 8%), 0 18px 44px rgb(60 40 10 / 16%);
   animation: open 0.18s ease-out;
+}
+
+.expanded .comments {
+  left: 0;
+  right: auto;
 }
 
 .comments[hidden] {

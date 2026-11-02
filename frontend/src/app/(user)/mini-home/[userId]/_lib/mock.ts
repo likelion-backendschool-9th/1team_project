@@ -238,10 +238,10 @@ export function createMockGuestbook(now: number): MiniHomeComment[] {
   }));
 }
 
-export function pickRandomMockUserId(exceptId: number): number {
+export function pickRandomMockUserId(exceptIds: number[]): number {
   const ids = Object.values(mockUsers)
     .map((user) => user.id)
-    .filter((id) => id !== exceptId);
+    .filter((id) => !exceptIds.includes(id));
   return ids[Math.floor(Math.random() * ids.length)];
 }
 

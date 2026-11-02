@@ -36,10 +36,12 @@ export async function toggleIlchon(userId: number, follow: boolean): Promise<Act
   return { ok: true };
 }
 
+// 파도타기는 남의 홈피로만 간다. 내 홈피와 지금 보고 있는 홈피는 뽑지 않는다.
 export async function surf(currentUserId: number) {
+  const me = await getMe();
   let nextId: number;
   if (isMockMode) {
-    nextId = pickRandomMockUserId(isId(currentUserId) ? currentUserId : 0);
+    nextId = pickRandomMockUserId([me.id, isId(currentUserId) ? currentUserId : 0]);
   } else {
     const { data } = await apiFetch<ApiResponse<{ userId: number }>>(
       "/api/v1/mini-homes/random",
