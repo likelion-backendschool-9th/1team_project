@@ -49,7 +49,8 @@ com/dipsource
 
 | 기능 | 설명 |
 |------|------|
-| `user` | users, social_accounts, 관심 태그 (+ 인증 컨트롤러) |
+| `user` | users, social_accounts, 관심 태그, 제재 (+ 인증 컨트롤러) |
+| `badge` | 뱃지, 회원 뱃지 |
 | `follow` · `block` | 팔로우, 차단 |
 | `feed` | 피드, 좋아요·댓글·리포스트·투표 |
 | `tag` | 태그 |
