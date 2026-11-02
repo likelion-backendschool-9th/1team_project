@@ -14,7 +14,7 @@
 }
 
 .title {
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 700;
 }
 
@@ -24,7 +24,7 @@
   align-items: center;
   gap: 2px;
   color: var(--ink-faint);
-  font-size: 13px;
+  font-size: 12px;
 }
 
 .list {

@@ -7,7 +7,7 @@
 
 .title {
   color: var(--ink-soft);
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 700;
 }
 
@@ -25,7 +25,7 @@
 .tab {
   padding: 2px 0;
   color: var(--ink-faint);
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 500;
 }
 
@@ -75,6 +75,6 @@
 
 .score {
   color: var(--ink-soft);
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 500;
 }

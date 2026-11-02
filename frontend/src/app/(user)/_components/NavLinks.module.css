@@ -11,7 +11,7 @@
   padding: 14px 16px;
   border-radius: 14px;
   color: var(--ink);
-  font-size: 17px;
+  font-size: 16px;
   font-weight: 700;
 }
 
@@ -20,7 +20,7 @@
 }
 
 .icon {
-  font-size: 24px;
+  font-size: 22px;
 }
 
 .active,
@@ -38,10 +38,10 @@
 
   .item {
     padding: 8px 12px;
-    font-size: 15px;
+    font-size: 14px;
   }
 
   .icon {
-    font-size: 20px;
+    font-size: 19px;
   }
 }

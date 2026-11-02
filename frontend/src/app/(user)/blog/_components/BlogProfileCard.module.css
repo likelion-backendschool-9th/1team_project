@@ -16,7 +16,7 @@
 }
 
 .name {
-  font-size: 18px;
+  font-size: 17px;
   font-weight: 700;
 }
 
@@ -43,14 +43,14 @@
 }
 
 .stats dd {
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 700;
 }
 
 .stats dt {
   order: 2;
   color: var(--ink-faint);
-  font-size: 13px;
+  font-size: 12px;
 }
 
 .chip dd,
