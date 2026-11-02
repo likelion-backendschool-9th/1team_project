@@ -30,14 +30,17 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class SocialAccount {
 
+    /** 소셜 계정 연결 ID */
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    /** 연결된 회원 */
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
+    /** 소셜 로그인 제공자 */
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     private SocialProvider provider;
@@ -46,6 +49,7 @@ public class SocialAccount {
     @Column(name = "provider_id", nullable = false, length = 100)
     private String providerId;
 
+    /** 연결 시각 */
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
@@ -55,5 +59,6 @@ public class SocialAccount {
         this.user = user;
         this.provider = provider;
         this.providerId = providerId;
+        user.getSocialAccounts().add(this);
     }
 }
