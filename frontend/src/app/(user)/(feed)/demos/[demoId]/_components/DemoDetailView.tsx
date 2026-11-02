@@ -13,7 +13,9 @@ import {
   createDemoComment,
   deleteDemo,
   deleteDemoComment,
+  replyDemoComment,
   reportDemo,
+  toggleDemoCommentLike,
   updateDemoComment,
 } from "../_actions";
 import { getDemo, getDemoComments, getServerTime } from "../../_lib/api";
@@ -149,9 +151,11 @@ export async function DemoDetailView({ params }: Props) {
             label: <span className={kit.pill}>{feedbackLabels[comment.type]}</span>,
           }))}
           now={now}
-          myId={me.id}
+          me={me}
           updateComment={updateDemoComment}
           deleteComment={deleteDemoComment}
+          likeComment={toggleDemoCommentLike}
+          replyComment={replyDemoComment.bind(null, demo.id)}
         />
       </section>
     </div>

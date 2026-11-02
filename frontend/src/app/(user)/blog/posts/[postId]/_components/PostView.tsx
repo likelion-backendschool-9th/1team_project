@@ -14,7 +14,9 @@ import {
   createPostComment,
   deletePost,
   deletePostComment,
+  replyPostComment,
   reportPost,
+  togglePostCommentLike,
   unlockPost,
   updatePostComment,
 } from "../../../_actions";
@@ -167,9 +169,11 @@ export async function PostView({ params }: Props) {
         <CommentList
           comments={comments}
           now={now}
-          myId={me.id}
+          me={me}
           updateComment={updatePostComment}
           deleteComment={deletePostComment}
+          likeComment={togglePostCommentLike}
+          replyComment={replyPostComment.bind(null, post.id)}
         />
       </section>
     </div>

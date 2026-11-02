@@ -187,13 +187,25 @@ export function createMockFeedComments(feedId: number, now: number): FeedComment
     [mockUsers.jinyeop, "하트비트 주기는 몇 초로 두셨어요?", 90, 1],
     [mockUsers.me, "저도 비슷하게 만들어 봤는데 재연결 로직 참고할게요!", 120, 0],
   ];
-  return rows.map(([author, content, minutesAgo, likeCount], index) => ({
+  const comments: FeedComment[] = rows.map(([author, content, minutesAgo, likeCount], index) => ({
     id: feedId * 100 + index,
     author,
     content,
     createdAt: new Date(now - minutesAgo * MINUTE).toISOString(),
     likeCount,
+    liked: index === 1,
   }));
+  comments[0].replies = [
+    {
+      id: feedId * 100 + 50,
+      author: mockUsers.seungjo,
+      content: "@곽다윗 방마다 구독을 따로 걸어야 권한 체크가 쉬워서 그렇게 나눴어요!",
+      createdAt: new Date(now - 15 * MINUTE).toISOString(),
+      likeCount: 2,
+      liked: false,
+    },
+  ];
+  return comments;
 }
 
 // 피드 작성창 "데모 첨부"에 보여 줄 내 데모

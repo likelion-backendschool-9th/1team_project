@@ -6,7 +6,14 @@ import kit from "@/app/_components/ui/kit.module.css";
 import { CommentList } from "@/app/(user)/_components/CommentList";
 import { getMe } from "@/app/(user)/_lib/api";
 import { FeedCard } from "../../../_components/FeedCard";
-import { createComment, deleteFeedComment, updateFeed, updateFeedComment } from "../_actions";
+import {
+  createComment,
+  deleteFeedComment,
+  replyFeedComment,
+  toggleFeedCommentLike,
+  updateFeed,
+  updateFeedComment,
+} from "../_actions";
 import { FeedEditForm } from "./FeedEditForm";
 import { getFeed, getFeedComments, getServerTime } from "../_lib/api";
 
@@ -47,9 +54,11 @@ export async function FeedDetail({ params, searchParams }: Props) {
         <CommentList
           comments={comments}
           now={now}
-          myId={me.id}
+          me={me}
           updateComment={updateFeedComment}
           deleteComment={deleteFeedComment}
+          likeComment={toggleFeedCommentLike}
+          replyComment={replyFeedComment.bind(null, feedId)}
         />
       </section>
     </div>

@@ -85,12 +85,25 @@ export function createMockDemoComments(demoId: number, now: number): DemoComment
     [mockUsers.junha, "bug", "창 크기를 줄이면 오른쪽 패널이 잘려 보여요.", 180, 1],
     [mockUsers.me, "question", "Unity 버전은 몇 쓰셨어요?", 240, 0],
   ];
-  return rows.map(([author, type, content, minutesAgo, likeCount], index) => ({
+  const comments: DemoComment[] = rows.map(([author, type, content, minutesAgo, likeCount], index) => ({
     id: demoId * 100 + index,
     author,
     type,
     content,
     createdAt: new Date(now - minutesAgo * 60_000).toISOString(),
     likeCount,
+    liked: index === 0,
   }));
+  comments[1].replies = [
+    {
+      id: demoId * 100 + 50,
+      author: mockUsers.seungjo,
+      type: "praise",
+      content: "@김진엽 iOS 17 사파리에서 확인했어요. 터치 이벤트도 잘 받아요!",
+      createdAt: new Date(now - 60 * 60_000).toISOString(),
+      likeCount: 1,
+      liked: false,
+    },
+  ];
+  return comments;
 }
