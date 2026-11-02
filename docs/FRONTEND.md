@@ -41,7 +41,8 @@
 | `/home/[userId]/blog` | `GET users/{userId}/posts` | 미니홈피 내 블로그 목록 |
 | `/demos` | `GET demos` | 데모 탐색 (태그 필터, 정렬) |
 | `/demos/upload` | `POST demos` | 데모 업로드 |
-| `/demos/[id]` | `GET demos/{id}`, 댓글/좋아요/북마크 | 데모 상세·실행 |
+| `/mini-home/[userId]/demos/[demoId]` | `GET demos/{id}`, 댓글/좋아요/북마크 | 데모 상세·실행 (작성자 미니홈피 틀 안) |
+| `/demos/[id]` | `GET demos/{id}` | 작성자의 미니홈피 데모 상세로 리다이렉트 |
 | `/blog/write` | `POST posts` | 글 작성 |
 | `/blog/[id]` | `GET posts/{id}`, 댓글 | 글 상세 |
 | `/blog/[id]/edit` | `PUT posts/{id}` | 글 수정 |

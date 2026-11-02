@@ -60,7 +60,7 @@ export function PublicDemos({
                     <span className="sr-only">좋아요</span> {formatCount(demo.likeCount)} · 실행{" "}
                     {formatCount(demo.playCount)}
                   </p>
-                  <Link href={`/demos/${demo.id}`} className={styles.play}>
+                  <Link href={`/mini-home/${userId}/demos/${demo.id}`} className={styles.play}>
                     찍먹하기
                     <ArrowRightIcon />
                   </Link>

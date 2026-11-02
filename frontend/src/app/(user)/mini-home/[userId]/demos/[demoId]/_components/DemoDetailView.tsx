@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { connection } from "next/server";
 import { Avatar } from "@/app/_components/ui/Avatar";
 import { CommentForm } from "@/app/_components/ui/CommentForm";
@@ -23,7 +23,7 @@ import { DemoStage } from "./DemoStage";
 import styles from "./DemoDetail.module.css";
 
 type Props = {
-  params: Promise<{ demoId: string }>;
+  params: Promise<{ userId: string; demoId: string }>;
 };
 
 const feedbackLabels: Record<DemoFeedbackType, string> = {
@@ -34,9 +34,12 @@ const feedbackLabels: Record<DemoFeedbackType, string> = {
 
 export async function DemoDetailView({ params }: Props) {
   await connection();
-  const demoId = Number((await params).demoId);
+  const { userId, demoId: rawDemoId } = await params;
+  const demoId = Number(rawDemoId);
   const demo = Number.isSafeInteger(demoId) && demoId > 0 ? await getDemo(demoId) : null;
   if (!demo) notFound();
+  // 데모는 올린 사람의 미니홈피에서만 보여 준다. 다른 홈피 주소로 들어오면 작성자 홈피로 보낸다.
+  if (String(demo.author.id) !== userId) redirect(`/mini-home/${demo.author.id}/demos/${demo.id}`);
 
   const [me, comments, now] = await Promise.all([getMe(), getDemoComments(demoId), getServerTime()]);
   const mine = me.id === demo.author.id;

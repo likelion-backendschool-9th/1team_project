@@ -33,7 +33,7 @@ export async function createDemoComment(
   const state = await runForm(previous, values, errors, () =>
     mutate(`/api/v1/demos/${demoId}/comments`, "POST", values, "피드백을 남겼어요."),
   );
-  if (state.ok) revalidatePath(`/demos/${demoId}`);
+  if (state.ok) revalidatePath("/mini-home/[userId]/demos/[demoId]", "page");
   return state.ok ? { ...state, values: { type: values.type } } : state;
 }
 
