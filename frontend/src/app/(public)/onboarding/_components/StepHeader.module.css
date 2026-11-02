@@ -1,0 +1,10 @@
+.title {
+  font-size: 24px;
+  font-weight: 800;
+}
+
+.desc {
+  margin-top: 4px;
+  color: var(--ink-soft);
+  font-size: 14px;
+}

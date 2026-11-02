@@ -1,0 +1,40 @@
+.list {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  list-style: none;
+}
+
+.item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  color: var(--ink-faint);
+  font-size: 12px;
+}
+
+.bar {
+  height: 4px;
+  border-radius: var(--radius-pill);
+  background: var(--border);
+}
+
+.reached {
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.reached .bar {
+  background: var(--accent-ink);
+}
+
+@media (max-width: 480px) {
+  .label {
+    display: none;
+  }
+
+  .item[aria-current="step"] .label {
+    display: inline;
+    grid-column: 1 / -1;
+  }
+}

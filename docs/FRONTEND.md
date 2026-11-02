@@ -32,7 +32,9 @@
 | --- | --- | --- |
 | `/` | 추천 피드, 인기 데모, 순위, 뉴스 | 통합 타임라인 |
 | `/login` | `POST auth/login/{provider}` | 소셜 로그인 (GitHub, 카카오, 구글) |
-| `/onboarding` | 명세 없음 (목) | 소셜 가입 직후 추가 정보 입력 (닉네임 필수). API는 백엔드와 합의 후 기획서에 반영 |
+| `/onboarding` | 명세 없음 (목) | 소셜 가입 직후 4단계 입력의 입구. 끝나지 않은 첫 단계로 리다이렉트 |
+| `/onboarding/profile` | 명세 없음 (목) | 1단계 기본 정보 (닉네임 필수) |
+| `/onboarding/stack` · `/fields` · `/topics` | 명세 없음 (목) | 2~4단계 고정 태그 선택 (기술 스택 10개, 관심분야 10개, 관심주제 7개 이하, 각각 2개 이상). API·태그 목록은 백엔드와 합의 후 기획서에 반영 |
 | `/feeds` | `GET feeds`, `POST feeds` | 피드 전용 페이지 |
 | `/home/[userId]` | `GET mini-home/{userId}` | 미니홈피 |
 | `/home/[userId]/edit` | `PUT mini-home/{userId}` | 미니홈피 수정 (본인만) |
