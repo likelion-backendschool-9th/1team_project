@@ -15,6 +15,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class UserTagId implements Serializable {
 
+    /** 회원 ID */
     @Column(name = "user_id")
     private Long userId;
 

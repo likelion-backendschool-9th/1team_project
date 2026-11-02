@@ -24,14 +24,17 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class UserInterestTag {
 
+    /** 회원 ID·태그 ID 복합 키 */
     @EmbeddedId
     private UserTagId id;
 
+    /** 관심 태그를 고른 회원 */
     @MapsId("userId")
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
+    /** 고른 시각 */
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;

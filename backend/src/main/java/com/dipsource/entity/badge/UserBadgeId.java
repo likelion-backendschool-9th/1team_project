@@ -19,6 +19,7 @@ public class UserBadgeId implements Serializable {
     @Column(name = "user_id")
     private Long userId;
 
+    /** 뱃지 ID */
     @Column(name = "badge_id")
     private Long badgeId;
 

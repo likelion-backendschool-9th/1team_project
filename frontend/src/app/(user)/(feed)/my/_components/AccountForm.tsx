@@ -64,7 +64,7 @@ export function AccountForm({ nickname, techStacks, account }: Props) {
           id="account-bio"
           name="bio"
           rows={3}
-          maxLength={150}
+          maxLength={200}
           defaultValue={value("bio", account.bio)}
           className={kit.textarea}
           style={{ minHeight: 96 }}

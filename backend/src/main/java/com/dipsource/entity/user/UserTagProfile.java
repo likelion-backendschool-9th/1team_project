@@ -24,17 +24,21 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class UserTagProfile {
 
+    /** 회원 ID·태그 ID 복합 키 */
     @EmbeddedId
     private UserTagId id;
 
+    /** 대상 회원 */
     @MapsId("userId")
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
+    /** 가중치. 활동할수록 커진다 */
     @Column(nullable = false)
     private int weight;
 
+    /** 가중치 갱신 시각 */
     @LastModifiedDate
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
