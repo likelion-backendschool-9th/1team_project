@@ -5,19 +5,20 @@ import { Avatar } from "@/app/_components/ui/Avatar";
 import { FormMessage } from "@/app/_components/ui/FormMessage";
 import kit from "@/app/_components/ui/kit.module.css";
 import { initialFormState } from "@/app/_lib/formState";
-import { checkNickname, submitOnboarding, type NicknameCheck } from "../_actions";
-import { BIO_MAX, NICKNAME_MAX, parseStacks } from "../_lib/rules";
-import { TechStackPicker } from "./TechStackPicker";
-import styles from "./OnboardingForm.module.css";
+import { checkNickname, saveProfile, type NicknameCheck } from "../_actions";
+import { BIO_MAX, NICKNAME_MAX } from "../_lib/rules";
+import styles from "./ProfileForm.module.css";
 
 type Props = {
   defaultNickname: string;
+  defaultBio: string;
   defaultGithubUsername: string;
+  defaultTermsAgreed: boolean;
   redirectTo: string;
 };
 
-export function OnboardingForm({ defaultNickname, defaultGithubUsername, redirectTo }: Props) {
-  const [state, formAction, pending] = useActionState(submitOnboarding, initialFormState);
+export function ProfileForm({ defaultNickname, defaultBio, defaultGithubUsername, defaultTermsAgreed, redirectTo }: Props) {
+  const [state, formAction, pending] = useActionState(saveProfile, initialFormState);
   const [nickname, setNickname] = useState(state.values.nickname ?? defaultNickname);
   const [check, setCheck] = useState<NicknameCheck | null>(null);
   const [checking, startChecking] = useTransition();
@@ -78,7 +79,7 @@ export function OnboardingForm({ defaultNickname, defaultGithubUsername, redirec
           name="bio"
           rows={3}
           maxLength={BIO_MAX}
-          defaultValue={state.values.bio}
+          defaultValue={state.values.bio ?? defaultBio}
           placeholder="어떤 개발을 좋아하는지 알려 주세요"
           className={kit.textarea}
           style={{ minHeight: 96 }}
@@ -88,12 +89,6 @@ export function OnboardingForm({ defaultNickname, defaultGithubUsername, redirec
           {state.errors.bio}
         </p>
       </div>
-
-      <TechStackPicker
-        key={state.attempt}
-        initial={parseStacks(state.values.techStacks ?? "")}
-        error={state.errors.techStacks}
-      />
 
       <div className={kit.field}>
         <label htmlFor="onboarding-github" className={kit.label}>
@@ -118,6 +113,7 @@ export function OnboardingForm({ defaultNickname, defaultGithubUsername, redirec
           <input
             type="checkbox"
             name="terms"
+            defaultChecked={defaultTermsAgreed}
             aria-describedby="onboarding-terms-error"
             aria-invalid={state.errors.terms ? true : undefined}
           />
@@ -131,7 +127,7 @@ export function OnboardingForm({ defaultNickname, defaultGithubUsername, redirec
       <div className={kit.between}>
         <FormMessage ok={state.ok} message={state.message} />
         <button type="submit" className={kit.btnPrimary} disabled={pending}>
-          {pending ? "저장 중…" : "찍먹 시작하기"}
+          {pending ? "저장 중…" : "다음"}
         </button>
       </div>
     </form>

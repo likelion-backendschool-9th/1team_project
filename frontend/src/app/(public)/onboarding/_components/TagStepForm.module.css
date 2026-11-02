@@ -1,3 +1,7 @@
+.counter {
+  font-size: 14px;
+}
+
 .chips {
   display: flex;
   flex-wrap: wrap;
@@ -6,23 +10,21 @@
 }
 
 .chip {
-  padding: 6px 14px;
+  display: inline-block;
+  padding: 7px 14px;
   border: 1px solid var(--border);
   border-radius: var(--radius-pill);
   background: var(--surface);
   font-size: 14px;
+  cursor: pointer;
+  user-select: none;
 }
 
-.chip:hover:not(:disabled) {
+.chip:hover {
   background: var(--surface-muted);
 }
 
-.chip:disabled {
-  cursor: not-allowed;
-  opacity: 0.45;
-}
-
-.chip:focus-visible {
+.chip:focus-within {
   outline: 2px solid var(--ink);
   outline-offset: 2px;
 }
@@ -33,7 +35,13 @@
   font-weight: 700;
 }
 
-.addRow {
+.off {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.submit {
   display: flex;
-  gap: 8px;
+  align-items: center;
+  gap: 12px;
 }
