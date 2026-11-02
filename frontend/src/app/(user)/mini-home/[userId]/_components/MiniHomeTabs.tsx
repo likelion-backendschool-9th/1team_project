@@ -6,13 +6,15 @@ import styles from "./MiniHomeFrame.module.css";
 
 type Props = {
   userId: number;
+  myId: number;
 };
 
-export function MiniHomeTabs({ userId }: Props) {
+// "홈"은 파도타기로 남의 홈피를 구경하다가도 내 홈피로 돌아오는 탭이다. 나머지 탭은 지금 보는 홈피 기준.
+export function MiniHomeTabs({ userId, myId }: Props) {
   const pathname = usePathname();
   const base = `/mini-home/${userId}`;
   const tabs = [
-    { href: base, label: "홈" },
+    { href: `/mini-home/${myId}`, label: "홈" },
     { href: `${base}/demos`, label: "데모" },
     { href: `/blog/${userId}`, label: "블로그" },
     { href: `${base}/guestbook`, label: "방명록" },

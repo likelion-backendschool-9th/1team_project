@@ -1,5 +1,4 @@
 import { mockUsers } from "@/app/(user)/_lib/mock";
-import { createUserDemos } from "@/app/_lib/mockMiniDemos";
 import type { DemoSummary } from "@/app/_lib/types/demo";
 import type { Feed, FeedComment, Tag } from "@/app/_lib/types/feed";
 import type { UserSummary } from "@/app/_lib/types/user";
@@ -199,7 +198,21 @@ export function createMockFeedComments(feedId: number, now: number): FeedComment
 
 // 피드 작성창 "데모 첨부"에 보여 줄 내 데모
 export const mockMyDemos: DemoSummary[] = [
-  ...createUserDemos(mockUsers.me),
+  ...(
+    [
+      [101, "Interactive Neon Particle Swarm", "마우스 반발력과 물리 기반 가속도를 시뮬레이션한 파티클 데모예요.", 42],
+      [102, "실시간 WebAudio 스펙트럼 뷰어", "마이크 입력 주파수를 파티클로 전환하는 시각화 도구", 29],
+      [103, "초경량 글래스모피즘 컴포넌트", "Zero-dependency 반응형 CSS 블러 디자인 킷", 53],
+    ] as const
+  ).map(([id, title, description, likeCount]) => ({
+    id,
+    title,
+    description,
+    thumbnail: null,
+    techTags: [],
+    author: mockUsers.me,
+    likeCount,
+  })),
   {
     id: 9,
     title: "Spring Batch 모니터",

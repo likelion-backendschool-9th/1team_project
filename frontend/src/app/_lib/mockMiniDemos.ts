@@ -13,17 +13,6 @@ type Theme = {
 };
 
 export const userThemes: Record<number, Theme> = {
-  1: {
-    skin: "cream",
-    headline: "Dip Source Maker",
-    quote: "“찍어 먹어 봐야\n맛을 알지.” 🥢",
-    colors: ["#fff3c4", "#ffc94d"],
-    demos: [
-      ["🥢", "찍먹 마스코트 뽑기", "Canvas 2D", "버튼을 누르면 랜덤 마스코트가 튀어나오는 뽑기 데모예요."],
-      ["🍜", "라멘 타이머", "Web Animations", "3분을 기다리는 동안 면이 익어 가는 타이머예요."],
-      ["☕", "커피 주문 봇", "Vanilla JS", "말을 걸면 커피를 추천해 주는 미니 챗봇이에요."],
-    ],
-  },
   2: {
     skin: "mint",
     headline: "Cat Lover Backend",
@@ -137,7 +126,7 @@ function cuteThumbnail(emoji: string, [from, to]: [string, string]) {
   return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
 }
 
-/** 정시우(6)를 뺀 회원의 데모. id는 회원 id × 1000 + 순번이라 다른 목 데이터와 겹치지 않는다. */
+/** 딥소스(1)·정시우(6)를 뺀 회원의 데모. id는 회원 id × 1000 + 순번이라 다른 목 데이터와 겹치지 않는다. */
 export function createUserDemos(user: UserSummary): MiniHomeDemo[] {
   const theme = userThemes[user.id];
   if (!theme) return [];

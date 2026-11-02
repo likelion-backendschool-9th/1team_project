@@ -31,8 +31,23 @@ const siwooProfile: MiniHomeProfile = {
 };
 
 // 목 모드에서는 정시우 홈피를 기준으로, 다른 회원은 이름과 소개만 바꿔 보여준다.
+// 로그인한 딥소스의 홈피. 정시우 홈피와 같은 데모·구성을 쓰는 기존 모습을 유지한다.
+const myHomeId = mockUsers.me.id;
+
 export function findMockProfile(userId: number): MiniHomeProfile | null {
   if (userId === siwooProfile.id) return siwooProfile;
+  if (userId === myHomeId)
+    return {
+      ...siwooProfile,
+      ...mockUsers.me,
+      badges: mockBadges[myHomeId] ?? [],
+      plus: mockPlusUserIds.includes(myHomeId),
+      company: mockCompanies[myHomeId] ?? null,
+      headline: "Dip Source Maker",
+      domain: null,
+      bgm: "lofi-coding",
+      extraInventorySlots: 1,
+    };
   const user = Object.values(mockUsers).find((item) => item.id === userId);
   const theme = userThemes[userId];
   if (!user || !theme) return null;
@@ -58,7 +73,7 @@ export function findMockProfile(userId: number): MiniHomeProfile | null {
 
 /** 정시우는 기존 데모, 나머지 회원은 각자의 마스코트 데모를 쓴다. */
 export function findMockDemos(userId: number): MiniHomeDemo[] {
-  if (userId === siwooProfile.id) return mockDemos;
+  if (userId === siwooProfile.id || userId === myHomeId) return mockDemos;
   const user = Object.values(mockUsers).find((item) => item.id === userId);
   return user ? createUserDemos(user) : [];
 }
