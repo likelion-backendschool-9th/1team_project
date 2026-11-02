@@ -32,6 +32,7 @@
 | --- | --- | --- |
 | `/` | 추천 피드, 인기 데모, 순위, 뉴스 | 통합 타임라인 |
 | `/login` | `POST auth/login/{provider}` | 소셜 로그인 (GitHub, 카카오, 구글) |
+| `/onboarding` | 명세 없음 (목) | 소셜 가입 직후 추가 정보 입력 (닉네임 필수). API는 백엔드와 합의 후 기획서에 반영 |
 | `/feeds` | `GET feeds`, `POST feeds` | 피드 전용 페이지 |
 | `/home/[userId]` | `GET mini-home/{userId}` | 미니홈피 |
 | `/home/[userId]/edit` | `PUT mini-home/{userId}` | 미니홈피 수정 (본인만) |
