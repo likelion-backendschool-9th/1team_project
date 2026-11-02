@@ -13,7 +13,7 @@ export async function saveAccount(previous: FormState, formData: FormData): Prom
   const errors: Record<string, string> = {};
   if (!values.nickname) errors.nickname = "닉네임을 입력해 주세요.";
   else if (values.nickname.length > 12) errors.nickname = "12자 이하로 입력해 주세요.";
-  if (values.bio.length > 150) errors.bio = "150자 이하로 입력해 주세요.";
+  if (values.bio.length > 200) errors.bio = "200자 이하로 입력해 주세요.";
   if (values.githubUrl && !/^https:\/\/github\.com\/[\w-]+\/?$/.test(values.githubUrl))
     errors.githubUrl = "https://github.com/아이디 형식으로 입력해 주세요.";
 
