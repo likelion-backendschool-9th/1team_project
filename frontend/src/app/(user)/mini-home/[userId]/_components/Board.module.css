@@ -1,4 +1,5 @@
 .board {
+  color: var(--ink);
   display: flex;
   flex-direction: column;
   gap: 16px;

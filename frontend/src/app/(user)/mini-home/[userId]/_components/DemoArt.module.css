@@ -69,3 +69,8 @@
   font-size: 14px;
   backdrop-filter: blur(6px);
 }
+
+.image {
+  background-position: center;
+  background-size: cover;
+}

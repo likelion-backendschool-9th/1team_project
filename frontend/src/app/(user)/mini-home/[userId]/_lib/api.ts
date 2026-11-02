@@ -19,11 +19,11 @@ import type {
 } from "@/app/_lib/types/miniHome";
 import {
   createMockComments,
+  findMockDemos,
   findMockProfile,
   createMockDemoComments,
   createMockGuestbook,
   mockContributions,
-  mockDemos,
   mockLanguages,
   mockPosts,
   mockRepos,
@@ -79,7 +79,7 @@ export async function getRepos(userId: number): Promise<GithubRepo[]> {
 }
 
 export async function getDemos(userId: number, size = 3): Promise<MiniHomeDemo[]> {
-  if (isMockMode) return mockDemos.slice(0, size);
+  if (isMockMode) return findMockDemos(userId).slice(0, size);
   const { data } = await apiFetch<ApiResponse<PageResponse<MiniHomeDemo>>>(
     `/api/v1/demos?userId=${userId}&size=${size}`,
   );

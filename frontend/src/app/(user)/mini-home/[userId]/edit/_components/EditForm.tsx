@@ -15,6 +15,11 @@ const skins = [
   { value: "midnight", label: "미드나잇", colors: ["#1f1b17", "#ffd04d"] },
   { value: "mint", label: "민트 소다", colors: ["#effbf5", "#3ddc97"] },
   { value: "cherry", label: "체리 블로썸", colors: ["#fff3f7", "#ff7eb6"] },
+  { value: "sky", label: "하늘", colors: ["#f4f9ff", "#7cbcff"] },
+  { value: "lavender", label: "라벤더", colors: ["#f8f5ff", "#b39cff"] },
+  { value: "peach", label: "피치", colors: ["#fff7f1", "#ffaa7a"] },
+  { value: "forest", label: "숲속", colors: ["#f1f8f3", "#5fae7e"] },
+  { value: "sunset", label: "노을", colors: ["#fff4ee", "#ff8a65"] },
 ];
 
 type Props = {

@@ -43,7 +43,7 @@ export function PublicDemos({
             <li key={demo.id}>
               <article className={styles.card} aria-labelledby={`demo-${demo.id}`}>
                 <div className={styles.thumbWrap}>
-                  <DemoArt variant={index} caption={demo.engine} className={styles.thumb} />
+                  <DemoArt variant={index} caption={demo.engine} thumbnail={demo.thumbnail} className={styles.thumb} />
                   {demo.id === featuredId ? (
                     <span className={styles.featured}>대표</span>
                   ) : (

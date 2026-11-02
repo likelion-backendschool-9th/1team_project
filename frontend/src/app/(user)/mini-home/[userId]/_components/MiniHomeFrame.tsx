@@ -39,11 +39,11 @@ export async function MiniHomeFrame({ params, children }: Props) {
   ]);
 
   return (
-    <div className={styles.wrap}>
+    // 스킨은 딥소스 플러스 전용이라 일반 회원은 기본 스킨으로 보인다.
+    <div className={styles.wrap} data-skin={profile.plus ? profile.skin : "cream"}>
       <MiniHomeTabs userId={userId} />
       {me.id !== userId && <VisitCounter userId={userId} />}
-      {/* 스킨은 딥소스 플러스 전용이라 일반 회원은 기본 스킨으로 보인다. */}
-      <div className={styles.frame} data-skin={profile.plus ? profile.skin : "cream"}>
+      <div className={styles.frame}>
         <MiniHomeHeader
           profile={profile}
           visitors={visitors}

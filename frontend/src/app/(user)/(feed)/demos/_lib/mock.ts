@@ -1,5 +1,6 @@
 import { mockUsers } from "@/app/(user)/_lib/mock";
 import type { DemoComment, DemoDetail } from "@/app/_lib/types/demo";
+import { createUserDemos } from "@/app/_lib/mockMiniDemos";
 import type { UserSummary } from "@/app/_lib/types/user";
 
 // 제목, 설명, 태그, 작성자, 좋아요, 실행 수, 몇 시간 전
@@ -57,9 +58,22 @@ const siwooRows: Row[] = [
   ["CSS 3D 카드 플립 갤러리", "transform-style: preserve-3d로 만든 카드 갤러리", ["css"], mockUsers.jung, 14, 97, 340],
 ];
 
+// 다른 회원들의 미니홈피 마스코트 데모 (id: 회원 id × 1000 + 순번)
+const memberDemos: DemoDetail[] = Object.values(mockUsers)
+  .flatMap((user) => createUserDemos(user))
+  .map((demo, index) => ({
+    ...demo,
+    createdAt: new Date(NOW - (80 + index * 9) * HOUR).toISOString(),
+    runtime: demo.engine.startsWith("Unity") ? "unity" : "web",
+    sizeMb: 1.4 + (index % 5) * 0.5,
+    liked: false,
+    bookmarked: false,
+  }));
+
 export const mockDemos: DemoDetail[] = [
   ...rows.map((row, index) => toDetail(row, index + 1)),
   ...siwooRows.map((row, index) => toDetail(row, 101 + index)),
+  ...memberDemos,
 ];
 
 export const mockDemoTags = ["spring", "react", "typescript", "unity", "game", "canvas", "css", "webaudio"];

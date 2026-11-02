@@ -29,6 +29,7 @@
 }
 
 .card {
+  color: var(--ink);
   display: flex;
   height: 100%;
   flex-direction: column;
