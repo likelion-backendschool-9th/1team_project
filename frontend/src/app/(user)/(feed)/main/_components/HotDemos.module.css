@@ -52,10 +52,49 @@
   font-weight: 500;
 }
 
-/* 카드 크기는 4열 기준 그대로 두고, 넘치는 카드는 가로로 스크롤한다. */
+.viewport {
+  position: relative;
+}
+
+.arrow {
+  user-select: none;
+  position: absolute;
+  top: 76px;
+  z-index: 2;
+  display: inline-flex;
+  width: 36px;
+  height: 36px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--surface);
+  box-shadow: 0 2px 8px rgb(60 40 10 / 18%);
+  color: var(--ink);
+  font-size: 20px;
+  transition: background 0.15s ease, transform 0.15s ease;
+}
+
+.arrow:hover {
+  background: var(--accent-soft);
+  transform: scale(1.06);
+}
+
+.prev {
+  left: -14px;
+}
+
+.prev svg {
+  transform: scaleX(-1);
+}
+
+.next {
+  right: -14px;
+}
+
+/* 카드 크기는 고정하고, 넓어진 만큼 더 많이 보이며 넘치는 카드는 가로로 스크롤한다. */
 .grid {
   display: grid;
-  grid-auto-columns: calc((100% - 36px) / 4);
+  grid-auto-columns: 167px;
   grid-auto-flow: column;
   gap: 12px;
   padding: 4px 4px 14px;
@@ -64,8 +103,7 @@
   overscroll-behavior-x: contain;
   scroll-padding-inline: 4px;
   scroll-snap-type: x mandatory;
-  scrollbar-color: #e3dccd transparent;
-  scrollbar-width: thin;
+  scrollbar-width: none;
 }
 
 .card {
@@ -137,4 +175,26 @@
   .grid {
     grid-auto-columns: 85%;
   }
+}
+
+.grid::-webkit-scrollbar {
+  display: none;
+}
+
+.track {
+  position: absolute;
+  right: 0;
+  bottom: -12px;
+  left: 0;
+  height: 4px;
+  border-radius: var(--radius-pill);
+  background: var(--border);
+}
+
+.trackThumb {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-radius: inherit;
+  background: #d8cdb6;
 }

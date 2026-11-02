@@ -2,7 +2,7 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 8px 24px;
+  gap: 6px 20px;
 }
 
 /* 버튼마다 눌린 색(--on)과 그보다 연한 호버 색(--hover)을 둔다. */
@@ -12,11 +12,11 @@
   user-select: none;
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 6px 4px;
+  gap: 6px;
+  padding: 4px 4px;
   border-radius: 10px;
   color: var(--ink-soft);
-  font-size: 16px;
+  font-size: 14px;
   transition: color 0.15s ease;
 }
 
@@ -27,7 +27,7 @@
 .icon {
   position: relative;
   display: inline-flex;
-  font-size: 22px;
+  font-size: 19px;
   transition: transform 0.15s ease;
 }
 

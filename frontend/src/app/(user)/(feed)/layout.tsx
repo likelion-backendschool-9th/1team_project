@@ -1,5 +1,4 @@
 import type { ReactNode } from "react";
-import { FloatingWriteButton } from "../_components/FloatingWriteButton";
 import { LeftNav } from "../_components/LeftNav";
 import { PresenceHeartbeat } from "../_components/PresenceHeartbeat";
 import { RightAside } from "../_components/RightAside";
@@ -17,7 +16,6 @@ export default function UserLayout({ children }: { children: ReactNode }) {
         </main>
       </div>
       <RightAside />
-      <FloatingWriteButton />
       <PresenceHeartbeat />
     </div>
   );

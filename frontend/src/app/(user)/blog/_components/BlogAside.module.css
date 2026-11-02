@@ -1,16 +1,17 @@
 .aside {
+  font-size: 15px;
   position: relative;
   z-index: 20;
   grid-area: right;
   display: flex;
   flex-direction: column;
   gap: 24px;
-  padding: 24px 0 64px;
+  padding: 20px 20px 64px;
 }
 
 .loading {
   color: var(--ink-faint);
-  font-size: 14px;
+  font-size: 13px;
 }
 
 .guarantee {
@@ -28,13 +29,13 @@
   align-items: center;
   gap: 10px;
   color: #8a4b08;
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 700;
 }
 
 .guaranteeText {
   color: #a0611a;
-  font-size: 13px;
+  font-size: 12px;
   line-height: 1.7;
 }
 
@@ -45,7 +46,7 @@
   align-items: center;
   gap: 4px;
   color: #8a4b08;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 700;
   text-decoration: underline;
   text-underline-offset: 3px;
@@ -70,11 +71,17 @@
 }
 
 .settingsIcon {
-  font-size: 18px;
+  font-size: 16px;
 }
 
-@media (max-width: 1180px) {
+@media (max-width: 1100px) {
   .aside {
-    padding-top: 0;
+    padding: 0 28px 64px;
+  }
+}
+
+@media (max-width: 760px) {
+  .aside {
+    padding-inline: 0;
   }
 }

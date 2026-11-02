@@ -1,8 +1,8 @@
 .card {
   display: flex;
   flex-direction: column;
-  gap: 18px;
-  padding: 24px;
+  gap: 12px;
+  padding: 17px 20px;
   border-radius: var(--radius-card);
   background: var(--surface);
   box-shadow: var(--shadow-card);
@@ -50,18 +50,18 @@
 .demo {
   display: flex;
   align-items: center;
-  gap: 18px;
-  padding: 16px;
-  border-radius: 16px;
+  gap: 14px;
+  padding: 12px;
+  border-radius: 14px;
   background: #fbf3dc;
 }
 
 .demoThumb {
   flex: none;
-  width: 190px;
+  width: 112px;
   aspect-ratio: 4 / 3;
   overflow: hidden;
-  border-radius: 12px;
+  border-radius: 10px;
 }
 
 .demoInfo {
@@ -70,13 +70,14 @@
 }
 
 .demoTitle {
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 800;
 }
 
 .demoDesc {
-  margin-top: 4px;
+  margin-top: 2px;
   color: var(--ink-soft);
+  font-size: 14px;
   font-weight: 500;
 }
 
@@ -84,16 +85,16 @@
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
-  margin-top: 12px;
+  margin-top: 6px;
 }
 
 .tags li {
   user-select: none;
-  padding: 3px 12px;
+  padding: 2px 10px;
   border-radius: var(--radius-pill);
   background: rgb(255 255 255 / 70%);
   color: var(--ink-soft);
-  font-size: 14px;
+  font-size: 13px;
 }
 
 .play {
@@ -102,9 +103,10 @@
   flex: none;
   align-items: center;
   gap: 8px;
-  padding: 14px 24px;
-  border-radius: 14px;
+  padding: 9px 18px;
+  border-radius: 12px;
   background: var(--accent);
+  font-size: 14px;
   font-weight: 700;
 }
 
@@ -114,7 +116,7 @@
 
 @media (max-width: 760px) {
   .card {
-    padding: 18px;
+    padding: 16px;
   }
 
   .demo {

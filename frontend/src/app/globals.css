@@ -1,4 +1,7 @@
 :root {
+  --shell-max: 1760px;
+  --aside-left: 260px;
+  --aside-right: 300px;
   --bg: #fbf8f3;
   --surface: #ffffff;
   --surface-muted: #f3f1ed;

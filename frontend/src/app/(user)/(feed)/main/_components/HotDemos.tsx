@@ -43,9 +43,9 @@ function DemoCard({ demo }: { demo: DemoSummary }) {
 }
 
 export function HotDemos({ demos }: Props) {
-  // 마지막 카드 뒤에 앞쪽 카드를 한 번 더 붙여, 끝에서 처음으로 끊김 없이 이어지게 한다.
+  // 마지막 카드 뒤에 같은 카드를 한 번 더 붙여, 화면 폭에 몇 장이 보이든 끝에서 처음으로 끊김 없이 이어지게 한다.
   const loops = demos.length > VISIBLE_CARDS;
-  const clones = loops ? demos.slice(0, VISIBLE_CARDS) : [];
+  const clones = loops ? demos : [];
 
   return (
     <section aria-labelledby="hot-demos-title">
