@@ -35,7 +35,11 @@ export function FeaturedDemo({ demo, variant, postId, comments, myId, now }: Pro
         <FeaturedBody
           stage={
             <>
-              {variant % 3 === 0 ? (
+              {demo.thumbnail ? (
+                // 썸네일이 있는 데모는 그 그림을 크게 보여 준다. 장식이라 alt는 비운다.
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={demo.thumbnail} alt="" className={`${styles.canvas} ${styles.mascot}`} />
+              ) : variant % 3 === 0 ? (
                 <ParticleCanvas className={styles.canvas} />
               ) : (
                 <DemoArt variant={variant} caption={demo.engine} className={styles.canvas} />
@@ -44,7 +48,7 @@ export function FeaturedDemo({ demo, variant, postId, comments, myId, now }: Pro
                 <span className={styles.badgeDot} aria-hidden="true" />
                 {demo.title}
               </span>
-              {variant % 3 === 0 && (
+              {!demo.thumbnail && variant % 3 === 0 && (
                 <span className={styles.tip}>마우스를 움직여 파티클을 조작하세요</span>
               )}
             </>

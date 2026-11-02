@@ -1,4 +1,5 @@
 import { mockBadges, mockCompanies, mockPlusUserIds, mockUsers } from "@/app/(user)/_lib/mock";
+import { createUserDemos, userThemes } from "@/app/_lib/mockMiniDemos";
 import type { UserSummary } from "@/app/_lib/types/user";
 import type {
   GithubContributions,
@@ -29,26 +30,52 @@ const siwooProfile: MiniHomeProfile = {
   following: false,
 };
 
-const skins: Record<number, MiniHomeProfile["skin"]> = { 2: "mint", 3: "cherry" };
-
 // 목 모드에서는 정시우 홈피를 기준으로, 다른 회원은 이름과 소개만 바꿔 보여준다.
+// 로그인한 딥소스의 홈피. 정시우 홈피와 같은 데모·구성을 쓰는 기존 모습을 유지한다.
+const myHomeId = mockUsers.me.id;
+
 export function findMockProfile(userId: number): MiniHomeProfile | null {
   if (userId === siwooProfile.id) return siwooProfile;
+  if (userId === myHomeId)
+    return {
+      ...siwooProfile,
+      ...mockUsers.me,
+      badges: mockBadges[myHomeId] ?? [],
+      plus: mockPlusUserIds.includes(myHomeId),
+      company: mockCompanies[myHomeId] ?? null,
+      headline: "Dip Source Maker",
+      domain: null,
+      bgm: "lofi-coding",
+      extraInventorySlots: 1,
+    };
   const user = Object.values(mockUsers).find((item) => item.id === userId);
-  if (!user) return null;
+  const theme = userThemes[userId];
+  if (!user || !theme) return null;
+  const demos = createUserDemos(user);
   return {
     ...siwooProfile,
     ...user,
     badges: mockBadges[user.id] ?? [],
     plus: mockPlusUserIds.includes(user.id),
     company: mockCompanies[user.id] ?? null,
-    bgm: mockPlusUserIds.includes(user.id) ? "lofi-coding" : null,
-    skin: skins[user.id] ?? "cream",
-    showcaseDemoIds: mockPlusUserIds.includes(user.id) ? [101, 102, 103, 104] : [101, 102, 103],
-    extraInventorySlots: user.id === 1 ? 1 : 0,
-    headline: "Dip Source Maker",
+    headline: theme.headline,
+    quote: theme.quote,
     domain: null,
+    bgm: mockPlusUserIds.includes(user.id) ? "lofi-coding" : null,
+    skin: theme.skin,
+    stackTags: user.techStacks,
+    featuredDemoId: demos[0]?.id ?? null,
+    featuredPostId: null,
+    showcaseDemoIds: demos.map((demo) => demo.id),
+    extraInventorySlots: user.id === 1 ? 1 : 0,
   };
+}
+
+/** 정시우는 기존 데모, 나머지 회원은 각자의 마스코트 데모를 쓴다. */
+export function findMockDemos(userId: number): MiniHomeDemo[] {
+  if (userId === siwooProfile.id || userId === myHomeId) return mockDemos;
+  const user = Object.values(mockUsers).find((item) => item.id === userId);
+  return user ? createUserDemos(user) : [];
 }
 
 export const mockVisitors: VisitorStats = { today: 142, total: 4892 };
@@ -211,10 +238,10 @@ export function createMockGuestbook(now: number): MiniHomeComment[] {
   }));
 }
 
-export function pickRandomMockUserId(exceptId: number): number {
+export function pickRandomMockUserId(exceptIds: number[]): number {
   const ids = Object.values(mockUsers)
     .map((user) => user.id)
-    .filter((id) => id !== exceptId);
+    .filter((id) => !exceptIds.includes(id));
   return ids[Math.floor(Math.random() * ids.length)];
 }
 

@@ -17,13 +17,14 @@ export const mockUsers = {
   jung: { id: 6, nickname: "정시우", profileImage: null, techStacks: ["프론트엔드"] },
   yoon: { id: 7, nickname: "윤세진", profileImage: null, techStacks: ["프론트엔드"] },
   jinyeop: { id: 8, nickname: "김진엽", profileImage: null, techStacks: ["Kotlin"] },
-  seoyeon: { id: 9, nickname: "이서연", profileImage: null, techStacks: ["Vue"] },
-  minjun: { id: 10, nickname: "최민준", profileImage: null, techStacks: ["Go"] },
-  jiwoo: { id: 11, nickname: "한지우", profileImage: null, techStacks: ["Flutter"] },
+  seoyeon: { id: 9, nickname: "뉴렉쳐", profileImage: null, techStacks: ["Vue"] },
+  minjun: { id: 10, nickname: "최멋사", profileImage: null, techStacks: ["Go"] },
+  jiwoo: { id: 11, nickname: "일론머스크", profileImage: null, techStacks: ["Flutter"] },
 } satisfies Record<string, UserSummary>;
 
 // 딥소스 플러스 회원. 고급 배지·스킨·BGM은 플러스 혜택이다.
-export const mockPlusUserIds = [1, 2, 3, 6];
+// 파도타기로 홈피마다 다른 스킨이 보이도록 대부분을 플러스로 둔다. 박준하(5)는 기본 스킨 예시.
+export const mockPlusUserIds = [1, 2, 3, 4, 6, 7, 8, 9, 10, 11];
 
 // 회사 인증을 마친 회원의 회사 태그
 export const mockCompanies: Record<number, string> = { 2: "코드브릿지", 6: "라이온테크" };

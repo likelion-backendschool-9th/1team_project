@@ -1,7 +1,6 @@
 .main {
   min-height: 100vh;
   padding: 40px 120px 40px 40px;
-  background: #f3f1ec;
 }
 
 .main:focus {

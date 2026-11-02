@@ -4,6 +4,7 @@ type Props = {
   variant: number;
   caption: string;
   className?: string;
+  thumbnail?: string | null;
 };
 
 const NODES = [
@@ -17,7 +18,15 @@ const LINKS = [
 const BARS = [38, 58, 44, 30, 20];
 
 // 썸네일이 없는 데모를 위한 기본 그림. variant는 목록 순서로 정한다.
-export function DemoArt({ variant, caption, className = "" }: Props) {
+export function DemoArt({ variant, caption, className = "", thumbnail }: Props) {
+  if (thumbnail)
+    return (
+      <div
+        className={`${styles.art} ${styles.image} ${className}`}
+        style={{ backgroundImage: `url("${thumbnail}")` }}
+      />
+    );
+
   if (variant % 3 === 1)
     return (
       <div className={`${styles.art} ${styles.dark} ${className}`}>

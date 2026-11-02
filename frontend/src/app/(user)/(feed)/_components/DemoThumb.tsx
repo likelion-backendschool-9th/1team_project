@@ -11,7 +11,7 @@ export function DemoThumb({ seed, thumbnail, label, className = "" }: Props) {
   return (
     <div
       className={`${styles.thumb} ${styles[`tone${seed % 4}`]} ${className}`}
-      style={thumbnail ? { backgroundImage: `url(${thumbnail})` } : undefined}
+      style={thumbnail ? { backgroundImage: `url("${thumbnail}")` } : undefined}
     >
       {label && <span className={styles.label}>{label}</span>}
     </div>

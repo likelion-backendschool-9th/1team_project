@@ -1,7 +1,16 @@
 import type { DemoSummary } from "./demo";
 import type { UserBadge, UserSummary } from "./user";
 
-export type MiniHomeSkin = "cream" | "midnight" | "mint" | "cherry";
+export type MiniHomeSkin =
+  | "cream"
+  | "midnight"
+  | "mint"
+  | "cherry"
+  | "sky"
+  | "lavender"
+  | "peach"
+  | "forest"
+  | "sunset";
 
 export type MiniHomeProfile = UserSummary & {
   badges: UserBadge[];

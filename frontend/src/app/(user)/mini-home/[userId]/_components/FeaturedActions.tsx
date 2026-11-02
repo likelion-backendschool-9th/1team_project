@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useState, useTransition, type ReactNode } from "react";
+import { useEffect, useId, useRef, useState, useTransition, type ReactNode } from "react";
 import { CommentIcon, HeartIcon } from "@/app/_components/ui/Icons";
 import { toggleDemoLike } from "../_actions";
 import styles from "./FeaturedDemo.module.css";
@@ -20,6 +20,30 @@ export function FeaturedActions({ demoId, likeCount, commentCount, children }: P
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const panelId = useId();
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const toggleRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    function handlePointer(event: PointerEvent) {
+      const target = event.target as Element;
+      // 댓글 삭제 확인 대화상자는 패널 밖(top layer)에 뜨므로 닫지 않는다.
+      if (!wrapRef.current?.contains(target) && !target.closest("dialog")) setOpen(false);
+    }
+    function handleKey(event: KeyboardEvent) {
+      if (event.key === "Escape" && !document.querySelector("dialog[open]")) {
+        event.stopPropagation();
+        setOpen(false);
+        toggleRef.current?.focus();
+      }
+    }
+    document.addEventListener("pointerdown", handlePointer);
+    document.addEventListener("keydown", handleKey, true);
+    return () => {
+      document.removeEventListener("pointerdown", handlePointer);
+      document.removeEventListener("keydown", handleKey, true);
+    };
+  }, [open]);
 
   function handleLike() {
     const previous = like;
@@ -37,7 +61,7 @@ export function FeaturedActions({ demoId, likeCount, commentCount, children }: P
   }
 
   return (
-    <div className={styles.social}>
+    <div ref={wrapRef} className={styles.social}>
       <div className={styles.socialButtons}>
         <button
           type="button"
@@ -53,6 +77,7 @@ export function FeaturedActions({ demoId, likeCount, commentCount, children }: P
           {like.count}
         </button>
         <button
+          ref={toggleRef}
           type="button"
           className={`${styles.socialButton} ${styles.commentButton} ${open ? styles.commentOpen : ""}`}
           aria-expanded={open}
