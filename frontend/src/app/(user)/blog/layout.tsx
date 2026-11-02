@@ -18,7 +18,7 @@ export default function BlogLayout({ children }: { children: ReactNode }) {
             <ArticleRanking />
           </Suspense>
         </section>
-        <p className={styles.copy}>© 2025 찍먹 dipsource</p>
+        <p className={styles.copy}>© 2026 찍먹 dipsource</p>
       </aside>
       <main id="main-content" tabIndex={-1} className={styles.main}>
         {children}

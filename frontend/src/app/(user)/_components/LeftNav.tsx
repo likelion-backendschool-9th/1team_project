@@ -14,7 +14,7 @@ export function LeftNav() {
           <RankingWidget />
         </Suspense>
       </section>
-      <p className={styles.copy}>© 2025 찍먹 dipsource</p>
+      <p className={styles.copy}>© 2026 찍먹 dipsource</p>
     </aside>
   );
 }
