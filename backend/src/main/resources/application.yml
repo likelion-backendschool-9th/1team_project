@@ -3,9 +3,9 @@ spring:
     name: dipsource
 
   datasource:
-    url: jdbc:postgresql://localhost:5432/dipsource
-    username: dipsource
-    password: dipsource
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/dipsource}
+    username: ${SPRING_DATASOURCE_USERNAME:dipsource}
+    password: ${SPRING_DATASOURCE_PASSWORD:dipsource}
 
   jpa:
     hibernate:
