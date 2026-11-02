@@ -27,50 +27,49 @@
 
 ## 2. 패키지 구조
 
-3계층 아키텍처 + 도메인별 패키지. 루트 패키지는 `com.dipsource`다. 도메인 목록과 담당 테이블은 [백엔드-청사진.md](./백엔드-청사진.md) 5장을 따른다.
+3계층을 먼저 나누고, 그 안에 기능(도메인)별 폴더를 둔다. 루트 패키지는 `com.dipsource`다. 기능 목록과 담당 테이블은 [백엔드-청사진.md](./백엔드-청사진.md) 5장을 따른다.
 
 ```text
 com/dipsource
 ├─ DipSourceApplication.java
 ├─ global/                    전역 설정·공통 코드 (도메인 로직 금지)
-│  ├─ config/                 Security, Cors, WebSocket
+│  ├─ config/                 Security, Cors, WebSocket, JpaAuditing
 │  ├─ auth/                   JWT 필터, OAuth2 핸들러
 │  ├─ exception/              BusinessException, ErrorCode, GlobalExceptionHandler
 │  └─ common/                 BaseEntity, ApiResponse, PageResponse
 │
-└─ domain/
-   ├─ user/                   users, social_accounts, 관심 태그 (+ 인증 컨트롤러)
-   ├─ follow/  block/         팔로우, 차단
-   ├─ feed/                   피드, 좋아요·댓글·리포스트·투표
-   ├─ tag/                    태그
-   ├─ demo/                   데모, 피드백, 북마크
-   ├─ post/                   블로그 글, 댓글·좋아요
-   ├─ minihome/               미니홈피, 방명록
-   ├─ dm/                     DM 방·멤버·메시지
-   ├─ notification/           알림
-   ├─ coin/  subscription/    칩, 구독
-   ├─ settlement/             정산
-   ├─ report/                 신고
-   ├─ admin/                  관리자
-   └─ search/  ranking/  news/   집계·외부 API (entity, repository 없음)
+├─ controller/<기능>/         [1층] 요청 파싱, 응답 포장만
+├─ service/<기능>/            [2층] 비즈니스 로직, @Transactional
+├─ repository/<기능>/         [3층] 데이터 접근
+├─ entity/<기능>/             [3층] JPA 엔티티
+└─ dto/<기능>/                요청·응답 record
 ```
 
-각 도메인은 같은 하위 구성을 갖는다.
+기능 폴더는 5개 층 폴더에 같은 이름으로 만든다. 예를 들어 회원은 `controller/user`, `service/user`, `repository/user`, `entity/user`, `dto/user`다.
 
-```text
-domain/<도메인>/
-├─ controller/                [1층] 요청 파싱, 응답 포장만
-├─ service/                   [2층] 비즈니스 로직, @Transactional
-├─ repository/  entity/       [3층] 데이터 접근
-└─ dto/                       record 요청·응답
-```
+| 기능 | 설명 |
+|------|------|
+| `user` | users, social_accounts, 관심 태그 (+ 인증 컨트롤러) |
+| `follow` · `block` | 팔로우, 차단 |
+| `feed` | 피드, 좋아요·댓글·리포스트·투표 |
+| `tag` | 태그 |
+| `demo` | 데모, 피드백, 북마크 |
+| `post` | 블로그 글, 댓글·좋아요 |
+| `minihome` | 미니홈피, 방명록 |
+| `dm` | DM 방·멤버·메시지 |
+| `notification` | 알림 |
+| `coin` · `subscription` | 칩, 구독 |
+| `settlement` | 정산 |
+| `report` | 신고 |
+| `admin` | 관리자 |
+| `search` · `ranking` · `news` | 집계·외부 API. `entity`, `repository` 폴더는 없다 |
 
 ### 규칙
 
-- 도메인 패키지 안에서 `entity → repository → service → controller → dto` 계층을 유지한다.
-- 다른 도메인의 `entity`나 `repository`를 직접 참조하지 않는다. 필요하면 해당 도메인의 `service`를 통해 접근한다.
-- `global/`에는 도메인 로직을 넣지 않는다.
-- 빈 패키지는 `.gitkeep`으로 유지한다. 첫 파일을 만들 때 해당 `.gitkeep`을 지운다.
+- 호출 방향은 `controller → service → repository → entity`이고, `dto`는 controller와 service 사이에서 쓴다.
+- 다른 기능의 `entity`나 `repository`를 직접 참조하지 않는다. 필요하면 해당 기능의 `service`를 통해 접근한다.
+- `global/`에는 기능 로직을 넣지 않는다.
+- 빈 폴더는 `.gitkeep`으로 유지한다. 첫 파일을 만들 때 해당 `.gitkeep`을 지운다.
 
 ---
 

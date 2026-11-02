@@ -1,4 +1,4 @@
-package com.dipsource.domain.user.entity;
+package com.dipsource.entity.user;
 
 import com.dipsource.global.common.BaseEntity;
 import jakarta.persistence.Column;
