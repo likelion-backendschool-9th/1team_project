@@ -65,6 +65,8 @@ export type PostComment = {
   content: string;
   createdAt: string;
   likeCount: number;
+  liked: boolean;
+  replies?: PostComment[];
 };
 
 export type BlogOwner = {

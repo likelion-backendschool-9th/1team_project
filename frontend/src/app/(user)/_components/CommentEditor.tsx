@@ -12,10 +12,11 @@ type Props = {
   content: string;
   updateComment: (commentId: number, content: string) => Promise<Result>;
   deleteComment: (commentId: number) => Promise<Result>;
+  onReply?: () => void;
 };
 
 // 내가 쓴 댓글의 본문 자리. 수정·삭제를 그 자리에서 처리한다.
-export function CommentEditor({ commentId, content, updateComment, deleteComment }: Props) {
+export function CommentEditor({ commentId, content, updateComment, deleteComment, onReply }: Props) {
   const [text, setText] = useState(content);
   const [draft, setDraft] = useState(content);
   const [editing, setEditing] = useState(false);
@@ -73,6 +74,11 @@ export function CommentEditor({ commentId, content, updateComment, deleteComment
       )}
       {!editing && (
         <div className={styles.mine}>
+          {onReply && (
+            <button type="button" className={styles.mineButton} onClick={onReply}>
+              답글
+            </button>
+          )}
           <button type="button" className={styles.mineButton} onClick={() => setEditing(true)}>
             수정
           </button>

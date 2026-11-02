@@ -124,3 +124,15 @@ export async function updatePostComment(commentId: number, content: string) {
 export async function deletePostComment(commentId: number) {
   return mutate(`/api/v1/posts/comments/${commentId}`, "DELETE", undefined, "댓글을 삭제했어요.");
 }
+
+export async function replyPostComment(postId: number, parentId: number, content: string) {
+  if (!isId(postId) || !isId(parentId)) return { ok: false, message: "잘못된 요청이에요." };
+  const text = content.trim();
+  if (!text || text.length > 300) return { ok: false, message: "1~300자로 입력해 주세요." };
+  return mutate(`/api/v1/posts/${postId}/comments`, "POST", { content: text, parentId }, "답글을 남겼어요.");
+}
+
+export async function togglePostCommentLike(commentId: number, like: boolean) {
+  if (!isId(commentId)) return { ok: false, message: "잘못된 요청이에요." };
+  return mutate(`/api/v1/posts/comments/${commentId}/like`, like ? "POST" : "DELETE", undefined, "좋아요를 반영했어요.");
+}

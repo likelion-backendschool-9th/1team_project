@@ -27,4 +27,6 @@ export type FeedComment = {
   content: string;
   createdAt: string;
   likeCount: number;
+  liked: boolean;
+  replies?: FeedComment[];
 };

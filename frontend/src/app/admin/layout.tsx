@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { LogoMark } from "@/app/_components/ui/LogoMark";
 import { AdminNav } from "./_components/AdminNav";
 import styles from "./_components/Admin.module.css";
 
@@ -15,7 +16,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
       <header className={styles.header}>
         <div className={styles.headerTop}>
           <Link href="/admin" className={styles.logo}>
-            <span className={styles.mark} aria-hidden="true" />
+            <LogoMark size={30} />
             <strong>찍먹</strong>
             <span className={styles.logoSub}>ADMIN</span>
           </Link>

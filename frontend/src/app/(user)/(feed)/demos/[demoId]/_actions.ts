@@ -54,3 +54,13 @@ export async function updateDemoComment(commentId: number, content: string) {
 export async function deleteDemoComment(commentId: number) {
   return mutate(`/api/v1/demos/comments/${commentId}`, "DELETE", undefined, "피드백을 삭제했어요.");
 }
+
+export async function replyDemoComment(demoId: number, parentId: number, content: string) {
+  const text = content.trim();
+  if (!text || text.length > 300) return { ok: false, message: "1~300자로 입력해 주세요." };
+  return mutate(`/api/v1/demos/${demoId}/comments`, "POST", { content: text, parentId, type: "praise" }, "답글을 남겼어요.");
+}
+
+export async function toggleDemoCommentLike(commentId: number, like: boolean) {
+  return mutate(`/api/v1/demos/comments/${commentId}/like`, like ? "POST" : "DELETE", undefined, "좋아요를 반영했어요.");
+}

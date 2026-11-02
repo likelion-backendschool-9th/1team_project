@@ -31,4 +31,6 @@ export type DemoComment = {
   content: string;
   createdAt: string;
   likeCount: number;
+  liked: boolean;
+  replies?: DemoComment[];
 };

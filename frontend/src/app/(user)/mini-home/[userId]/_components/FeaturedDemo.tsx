@@ -3,7 +3,14 @@ import { ArrowRightIcon } from "@/app/_components/ui/Icons";
 import { CommentForm } from "@/app/_components/ui/CommentForm";
 import type { MiniHomeComment, MiniHomeDemo } from "@/app/_lib/types/miniHome";
 import { CommentList } from "@/app/(user)/_components/CommentList";
-import { createDemoComment, deleteDemoComment, updateDemoComment } from "../_actions";
+import type { UserSummary } from "@/app/_lib/types/user";
+import {
+  createDemoComment,
+  deleteDemoComment,
+  replyDemoComment,
+  toggleDemoCommentLike,
+  updateDemoComment,
+} from "../_actions";
 import { DemoArt } from "./DemoArt";
 import { FeaturedActions } from "./FeaturedActions";
 import { FeaturedBody } from "./FeaturedBody";
@@ -16,11 +23,11 @@ type Props = {
   variant: number;
   postId: number | null;
   comments: MiniHomeComment[];
-  myId: number;
+  me: UserSummary;
   now: number;
 };
 
-export function FeaturedDemo({ demo, variant, postId, comments, myId, now }: Props) {
+export function FeaturedDemo({ demo, variant, postId, comments, me, now }: Props) {
   return (
     <section className={styles.card} aria-labelledby="featured-title">
       <div className={styles.header}>
@@ -68,9 +75,11 @@ export function FeaturedDemo({ demo, variant, postId, comments, myId, now }: Pro
               <CommentList
                 comments={comments.map((comment) => ({ ...comment, likeCount: 0 }))}
                 now={now}
-                myId={myId}
+                me={me}
                 updateComment={updateDemoComment}
                 deleteComment={deleteDemoComment}
+                likeComment={toggleDemoCommentLike}
+                replyComment={replyDemoComment.bind(null, demo.id)}
               />
             </FeaturedActions>
           }

@@ -201,13 +201,25 @@ export function createMockPostComments(postId: number, now: number): PostComment
     [mockUsers.kwak, "fetch join이랑 페이징 같이 쓸 때는 어떻게 하셨어요?", 70],
     [mockUsers.me, "잘 읽었습니다. 다음 편도 기대할게요!", 140],
   ];
-  return rows.map(([author, content, minutesAgo], index) => ({
+  const comments: PostComment[] = rows.map(([author, content, minutesAgo], index) => ({
     id: postId * 100 + index,
     author,
     content,
     createdAt: new Date(now - minutesAgo * 60_000).toISOString(),
     likeCount: Math.max(0, 3 - index),
+    liked: index === 0,
   }));
+  comments[1].replies = [
+    {
+      id: postId * 100 + 50,
+      author: mockUsers.seungjo,
+      content: "@곽다윗 컬렉션 fetch join은 페이징이랑 같이 못 써서 batch size로 풀었어요.",
+      createdAt: new Date(now - 40 * 60_000).toISOString(),
+      likeCount: 1,
+      liked: false,
+    },
+  ];
+  return comments;
 }
 
 export function findMockBlogOwner(userId: number): BlogOwner | null {
