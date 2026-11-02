@@ -1,0 +1,29 @@
+.page {
+  display: flex;
+  min-height: 100vh;
+  justify-content: center;
+  padding: 40px 16px 80px;
+}
+
+.page:focus {
+  outline: none;
+}
+
+.inner {
+  display: flex;
+  width: 100%;
+  max-width: 560px;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.title {
+  font-size: 24px;
+  font-weight: 800;
+}
+
+.desc {
+  margin-top: 4px;
+  color: var(--ink-soft);
+  font-size: 14px;
+}

@@ -3,6 +3,8 @@ import { connection } from "next/server";
 import { Suspense } from "react";
 import { ArrowRightIcon, GearIcon } from "@/app/_components/ui/Icons";
 import { getMe, getNotifications, getServerTime, getUnreadCount } from "@/app/(user)/_lib/api";
+import { LoginPrompt } from "@/app/(user)/_components/LoginPrompt";
+import { isLoggedIn } from "@/app/(user)/_lib/session";
 import { getSubscribedAuthors } from "../_lib/api";
 import { BlogProfileCard } from "./BlogProfileCard";
 import { SubscribedAuthors } from "./SubscribedAuthors";
@@ -10,6 +12,8 @@ import styles from "./BlogAside.module.css";
 
 async function BlogAsideContent() {
   await connection();
+  if (!(await isLoggedIn())) return <LoginPrompt />;
+
   const [me, unreadCount, authors, notifications, now] = await Promise.all([
     getMe(),
     getUnreadCount(),
@@ -22,6 +26,10 @@ async function BlogAsideContent() {
     <>
       <BlogProfileCard me={me} unreadCount={unreadCount} notifications={notifications} now={now} />
       <SubscribedAuthors authors={authors} />
+      <Link href="/my/settings" className={styles.settings}>
+        <GearIcon className={styles.settingsIcon} />
+        블로그 피드 환경 설정
+      </Link>
     </>
   );
 }
@@ -46,10 +54,6 @@ export function BlogAside() {
           <ArrowRightIcon />
         </Link>
       </section>
-      <Link href="/my/settings" className={styles.settings}>
-        <GearIcon className={styles.settingsIcon} />
-        블로그 피드 환경 설정
-      </Link>
     </aside>
   );
 }

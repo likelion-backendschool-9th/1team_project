@@ -1,0 +1,16 @@
+.avatarRow {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.nicknameRow {
+  display: flex;
+  gap: 8px;
+}
+
+.required {
+  margin-left: 4px;
+  color: var(--accent-ink);
+  font-size: 12px;
+}

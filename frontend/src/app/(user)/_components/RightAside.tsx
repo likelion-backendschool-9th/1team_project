@@ -9,12 +9,16 @@ import {
   getServerTime,
   getUnreadCount,
 } from "../_lib/api";
+import { isLoggedIn } from "../_lib/session";
 import { FollowingList } from "./FollowingList";
+import { LoginPrompt } from "./LoginPrompt";
 import { ProfileCard } from "./ProfileCard";
 import styles from "./RightAside.module.css";
 
 async function RightAsideContent() {
   await connection();
+  if (!(await isLoggedIn())) return <LoginPrompt />;
+
   const [me, followings, unreadCount, notifications, now] = await Promise.all([
     getMe(),
     getFollowings(),
@@ -27,6 +31,12 @@ async function RightAsideContent() {
     <>
       <ProfileCard me={me} unreadCount={unreadCount} notifications={notifications} now={now} />
       <FollowingList followings={followings} />
+      <div className={styles.footer}>
+        <Link href="/my/settings" className={styles.settings}>
+          <GearIcon className={styles.settingsIcon} />
+          설정
+        </Link>
+      </div>
     </>
   );
 }
@@ -37,12 +47,6 @@ export function RightAside() {
       <Suspense fallback={<p className={styles.loading}>불러오는 중…</p>}>
         <RightAsideContent />
       </Suspense>
-      <div className={styles.footer}>
-        <Link href="/my/settings" className={styles.settings}>
-          <GearIcon className={styles.settingsIcon} />
-          설정
-        </Link>
-      </div>
     </aside>
   );
 }
