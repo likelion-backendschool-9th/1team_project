@@ -1,4 +1,5 @@
 import { mockUsers } from "@/app/(user)/_lib/mock";
+import { createUserDemos } from "@/app/_lib/mockMiniDemos";
 import type { DemoSummary } from "@/app/_lib/types/demo";
 import type { Feed, FeedComment, Tag } from "@/app/_lib/types/feed";
 import type { UserSummary } from "@/app/_lib/types/user";
@@ -195,3 +196,17 @@ export function createMockFeedComments(feedId: number, now: number): FeedComment
     likeCount,
   }));
 }
+
+// 피드 작성창 "데모 첨부"에 보여 줄 내 데모
+export const mockMyDemos: DemoSummary[] = [
+  ...createUserDemos(mockUsers.me),
+  {
+    id: 9,
+    title: "Spring Batch 모니터",
+    description: "배치 잡 실행 현황을 시각화한 대시보드 데모입니다.",
+    thumbnail: null,
+    techTags: ["spring"],
+    author: mockUsers.me,
+    likeCount: 33,
+  },
+];

@@ -1,7 +1,14 @@
 import { connection } from "next/server";
 import { getMe } from "@/app/(user)/_lib/api";
 import { LinkTabs } from "@/app/_components/ui/LinkTabs";
-import { getFeeds, getHotDemos, getServerTime, getTags, type FeedType } from "../_lib/api";
+import {
+  getFeeds,
+  getHotDemos,
+  getMyDemos,
+  getServerTime,
+  getTags,
+  type FeedType,
+} from "../_lib/api";
 import { FeedCard } from "../../_components/FeedCard";
 import { FeedComposer } from "./FeedComposer";
 import { HotDemos } from "./HotDemos";
@@ -31,19 +38,20 @@ export async function MainContent({ searchParams }: Props) {
     const search = query.toString();
     return search ? `/main?${search}` : "/main";
   };
-  const [me, tags, demos, feeds, now] = await Promise.all([
-    getMe(),
+  const me = await getMe();
+  const [tags, demos, feeds, now, myDemos] = await Promise.all([
     getTags(),
     getHotDemos(),
     getFeeds(activeTag, feedType),
     getServerTime(),
+    getMyDemos(me.id),
   ]);
 
   return (
     <>
       <TagChips tags={tags} activeTag={activeTag} />
       <HotDemos demos={demos} />
-      <FeedComposer nickname={me.nickname} />
+      <FeedComposer nickname={me.nickname} myDemos={myDemos} />
       <section aria-labelledby="feed-list-title">
         <h2 id="feed-list-title" className="sr-only">
           피드 목록

@@ -7,7 +7,7 @@ import {
 } from "@/app/_lib/api/client";
 import type { DemoSummary } from "@/app/_lib/types/demo";
 import type { Feed, Tag } from "@/app/_lib/types/feed";
-import { createMockFeeds, mockHotDemos, mockTags } from "../../_lib/mock";
+import { createMockFeeds, mockHotDemos, mockMyDemos, mockTags } from "../../_lib/mock";
 
 export async function getServerTime(): Promise<number> {
   return Date.now();
@@ -38,6 +38,14 @@ export async function getFeeds(tag: string | undefined, type: FeedType): Promise
   if (tag) query.set("tag", tag);
   const { data } = await apiFetch<ApiResponse<PageResponse<Feed>>>(
     `/api/v1/feeds?${query}`,
+  );
+  return data.content;
+}
+
+export async function getMyDemos(myId: number): Promise<DemoSummary[]> {
+  if (isMockMode) return mockMyDemos;
+  const { data } = await apiFetch<ApiResponse<PageResponse<DemoSummary>>>(
+    `/api/v1/demos?userId=${myId}&sort=latest`,
   );
   return data.content;
 }

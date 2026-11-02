@@ -3,8 +3,10 @@
 import { useActionState, useEffect, useRef, useState } from "react";
 import { ImageIcon, LinkIcon } from "@/app/_components/ui/Icons";
 import { Avatar } from "@/app/_components/ui/Avatar";
+import type { DemoSummary } from "@/app/_lib/types/demo";
 import { createFeed } from "../_actions";
 import { initialComposerState, MAX_FEED_LENGTH } from "../_lib/composerState";
+import { DemoAttach } from "./DemoAttach";
 import styles from "./FeedComposer.module.css";
 
 type FieldProps = {
@@ -42,12 +44,13 @@ function ComposerField({ defaultValue, error }: FieldProps) {
 
 type Props = {
   nickname: string;
+  myDemos: DemoSummary[];
 };
 
 // FeedComposer.module.css의 .composer top 값과 맞춘다.
 const STICKY_TOP = 12;
 
-export function FeedComposer({ nickname }: Props) {
+export function FeedComposer({ nickname, myDemos }: Props) {
   const [state, formAction, pending] = useActionState(
     createFeed,
     initialComposerState,
@@ -78,10 +81,11 @@ export function FeedComposer({ nickname }: Props) {
       <form action={formAction} className={styles.form}>
         <Avatar name={nickname} size={48} />
         <ComposerField
-          key={state.attempt}
+          key={`field-${state.attempt}`}
           defaultValue={state.values.content}
           error={state.error}
         />
+        <DemoAttach key={`demo-${state.attempt}`} demos={myDemos} defaultDemoId={state.values.demoId} />
         <button type="button" className={styles.tool} aria-label="이미지 첨부" disabled>
           <ImageIcon />
         </button>
