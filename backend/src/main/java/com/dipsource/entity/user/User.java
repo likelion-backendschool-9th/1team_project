@@ -9,6 +9,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -62,6 +63,10 @@ public class User extends BaseEntity {
     @Column(name = "chip_balance", nullable = false)
     private int chipBalance = 0;
 
+    /** 마지막 활동 시각. DM에서 "활동중"을 판단하는 기준이다. */
+    @Column(name = "last_active_at")
+    private LocalDateTime lastActiveAt;
+
     /** 탈퇴 시각. 탈퇴하지 않았으면 null. */
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
@@ -84,6 +89,17 @@ public class User extends BaseEntity {
         this.bio = bio;
         this.techStacks = techStacks == null ? new ArrayList<>() : new ArrayList<>(techStacks);
         this.githubUsername = githubUsername;
+    }
+
+    /** 활동이 있을 때 호출해 마지막 활동 시각을 갱신한다. */
+    public void markActive() {
+        this.lastActiveAt = LocalDateTime.now();
+    }
+
+    /** 마지막 활동이 기준 시간 안이면 활동중이다. 활동 기록이 없으면 false. */
+    public boolean isActiveWithin(Duration threshold) {
+        return lastActiveAt != null
+                && lastActiveAt.isAfter(LocalDateTime.now().minus(threshold));
     }
 
     public void suspend() {
