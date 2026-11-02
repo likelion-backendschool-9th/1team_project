@@ -18,7 +18,7 @@ import {
   toggleDemoCommentLike,
   updateDemoComment,
 } from "../_actions";
-import { getDemo, getDemoComments, getServerTime } from "../../_lib/api";
+import { getDemo, getDemoComments, getServerTime } from "@/app/(user)/(feed)/demos/_lib/api";
 import { DemoStage } from "./DemoStage";
 import styles from "./DemoDetail.module.css";
 
@@ -43,8 +43,8 @@ export async function DemoDetailView({ params }: Props) {
 
   return (
     <div className={kit.stack}>
-      <Link href="/demos" className={kit.more}>
-        ← 데모 목록
+      <Link href={`/mini-home/${demo.author.id}/demos`} className={kit.more}>
+        ← {demo.author.nickname}님의 데모
       </Link>
 
       <section className={`${kit.card} ${styles.hero}`} aria-labelledby="demo-title">

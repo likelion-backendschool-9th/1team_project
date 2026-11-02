@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import { BookmarkIcon, HeartIcon } from "@/app/_components/ui/Icons";
 import kit from "@/app/_components/ui/kit.module.css";
 import { formatCount } from "@/app/_lib/format";
-import { DemoThumb } from "../../../_components/DemoThumb";
+import { DemoThumb } from "@/app/(user)/(feed)/_components/DemoThumb";
 import { playDemo, toggleDemoBookmark, toggleDemoLike } from "../_actions";
 import styles from "./DemoDetail.module.css";
 

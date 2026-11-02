@@ -143,3 +143,10 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* 미니홈피 안에서는 왼쪽 프로필 때문에 폭이 좁아 한 줄로 쌓는다. */
+@media (max-width: 1280px) {
+  .hero {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
