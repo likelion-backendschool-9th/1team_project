@@ -19,5 +19,5 @@ export async function markNotificationsRead(ids: number[]) {
 // TODO(백엔드 연동): 로그아웃 API가 명세에 생기면 토큰 폐기 요청을 함께 보낸다.
 export async function logout() {
   await endSession();
-  redirect("/login");
+  redirect("/main");
 }
