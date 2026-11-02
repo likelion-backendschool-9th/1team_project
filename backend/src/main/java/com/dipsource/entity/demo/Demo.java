@@ -1,0 +1,134 @@
+package com.dipsource.entity.demo;
+
+import com.dipsource.global.common.BaseEntity;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Index;
+import jakarta.persistence.Table;
+import java.time.LocalDateTime;
+import lombok.AccessLevel;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+
+/**
+ * 데모. 테이블: demos
+ * 실행·좋아요 수는 동시성 때문에 엔티티에서 더하지 않고 리포지토리의 UPDATE 쿼리로 갱신한다.
+ */
+@Getter
+@Entity
+@Table(name = "demos", indexes = {
+        @Index(name = "idx_demos_user_created", columnList = "user_id, created_at"),
+        @Index(name = "idx_demos_created", columnList = "created_at")
+})
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+public class Demo extends BaseEntity {
+
+    /** 데모 ID */
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    /** 작성자 ID(users.id) */
+    @Column(name = "user_id", nullable = false)
+    private Long userId;
+
+    /** 제목 */
+    @Column(nullable = false, length = 100)
+    private String title;
+
+    /** 설명 */
+    @Column(length = 2000)
+    private String description;
+
+    /** 실행 방식 */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "demo_type", nullable = false, length = 20)
+    private DemoType demoType = DemoType.STATIC;
+
+    /** 업로드 파일 경로. STATIC일 때 사용 */
+    @Column(name = "file_path", length = 500)
+    private String filePath;
+
+    /** API 주소. API일 때 사용 */
+    @Column(name = "api_url", length = 500)
+    private String apiUrl;
+
+    /** OpenAPI 명세 JSON. API일 때 사용 */
+    @Column(name = "openapi_json", length = 50000)
+    private String openapiJson;
+
+    /** 실행 시나리오 JSON. API일 때 사용 */
+    @Column(name = "scenario_json", length = 50000)
+    private String scenarioJson;
+
+    /** 외부 실행 URL. EXTERNAL일 때 사용 */
+    @Column(name = "external_url", length = 500)
+    private String externalUrl;
+
+    /** 썸네일 이미지 URL */
+    @Column(length = 500)
+    private String thumbnail;
+
+    /** 실행(찍먹) 수 */
+    @Column(name = "play_count", nullable = false)
+    private int playCount = 0;
+
+    /** 좋아요 수 */
+    @Column(name = "like_count", nullable = false)
+    private int likeCount = 0;
+
+    /** 상태 */
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private DemoStatus status = DemoStatus.ACTIVE;
+
+    /** 데모 버전. 다시 올릴 때마다 1씩 오른다 */
+    @Column(nullable = false)
+    private int version = 1;
+
+    /** 삭제 시각. 삭제하지 않았으면 null */
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;
+
+    @Builder
+    private Demo(Long userId, String title, String description, DemoType demoType, String filePath,
+                 String apiUrl, String openapiJson, String scenarioJson, String externalUrl, String thumbnail) {
+        this.userId = userId;
+        this.title = title;
+        this.description = description;
+        this.demoType = demoType == null ? DemoType.STATIC : demoType;
+        this.filePath = filePath;
+        this.apiUrl = apiUrl;
+        this.openapiJson = openapiJson;
+        this.scenarioJson = scenarioJson;
+        this.externalUrl = externalUrl;
+        this.thumbnail = thumbnail;
+    }
+
+    public void update(String title, String description, String thumbnail) {
+        this.title = title;
+        this.description = description;
+        this.thumbnail = thumbnail;
+    }
+
+    /** 새 파일로 다시 올린다. 버전이 1 오른다. */
+    public void reupload(String filePath) {
+        this.filePath = filePath;
+        this.version++;
+    }
+
+    public void hide() {
+        this.status = DemoStatus.HIDDEN;
+    }
+
+    public void delete() {
+        this.status = DemoStatus.DELETED;
+        this.deletedAt = LocalDateTime.now();
+    }
+}
