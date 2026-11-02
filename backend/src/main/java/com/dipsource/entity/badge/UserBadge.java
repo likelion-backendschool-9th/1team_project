@@ -24,9 +24,11 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class UserBadge {
 
+    /** 회원 ID·뱃지 ID 복합 키 */
     @EmbeddedId
     private UserBadgeId id;
 
+    /** 획득한 뱃지 */
     @MapsId("badgeId")
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "badge_id", nullable = false)
@@ -36,9 +38,11 @@ public class UserBadge {
     @Column(name = "is_displayed", nullable = false)
     private boolean displayed = false;
 
+    /** 프로필에 보여 줄 순서 */
     @Column(name = "display_order", nullable = false)
     private int displayOrder = 0;
 
+    /** 획득 시각 */
     @CreatedDate
     @Column(name = "acquired_at", nullable = false, updatable = false)
     private LocalDateTime acquiredAt;

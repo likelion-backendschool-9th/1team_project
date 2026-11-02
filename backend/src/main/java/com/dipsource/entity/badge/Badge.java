@@ -23,6 +23,7 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Badge {
 
+    /** 뱃지 ID */
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -31,15 +32,19 @@ public class Badge {
     @Column(nullable = false, unique = true, length = 50)
     private String code;
 
+    /** 뱃지 이름. 예: 고인물 */
     @Column(nullable = false, length = 30)
     private String name;
 
+    /** 아이콘(이모지 또는 이미지 URL) */
     @Column(length = 100)
     private String icon;
 
+    /** 표시 색상 */
     @Column(length = 20)
     private String color;
 
+    /** 설명 */
     @Column(length = 200)
     private String description;
 
@@ -55,6 +60,7 @@ public class Badge {
     @Column(name = "is_active", nullable = false)
     private boolean active = true;
 
+    /** 뱃지 등록 시각 */
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;

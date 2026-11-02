@@ -7,6 +7,7 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
@@ -22,10 +23,12 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 @Getter
 @Entity
 @EntityListeners(AuditingEntityListener.class)
-@Table(name = "user_sanctions")
+@Table(name = "user_sanctions",
+        indexes = @Index(name = "idx_user_sanctions_user", columnList = "user_id"))
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class UserSanction {
 
+    /** 제재 ID */
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -39,13 +42,15 @@ public class UserSanction {
     @Column(name = "admin_id", nullable = false)
     private Long adminId;
 
-    @Column(length = 500)
+    /** 제재 사유 */
+    @Column(nullable = false, length = 500)
     private String reason;
 
+    /** 제재 시작 시각 */
     @Column(name = "starts_at", nullable = false)
     private LocalDateTime startsAt;
 
-    /** 제재 종료 예정 시각 */
+    /** 제재 종료 예정 시각. 영구 정지면 null */
     @Column(name = "ends_at")
     private LocalDateTime endsAt;
 
@@ -53,6 +58,7 @@ public class UserSanction {
     @Column(name = "released_at")
     private LocalDateTime releasedAt;
 
+    /** 제재 기록 시각 */
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
