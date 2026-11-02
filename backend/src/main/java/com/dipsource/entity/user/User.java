@@ -9,6 +9,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.AccessLevel;
@@ -54,12 +55,16 @@ public class User extends BaseEntity {
     private Role role = Role.USER;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 10)
+    @Column(nullable = false, length = 20)
     private UserStatus status = UserStatus.ACTIVE;
 
     /** 칩 잔액. 비정규화 값이라 chip_transactions와 같은 트랜잭션에서 갱신한다. */
     @Column(name = "chip_balance", nullable = false)
     private int chipBalance = 0;
+
+    /** 탈퇴 시각. 탈퇴하지 않았으면 null. */
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;
 
     @Builder
     private User(String email, String nickname, String profileImage, String bio,
@@ -87,5 +92,6 @@ public class User extends BaseEntity {
 
     public void withdraw() {
         this.status = UserStatus.DELETED;
+        this.deletedAt = LocalDateTime.now();
     }
 }
