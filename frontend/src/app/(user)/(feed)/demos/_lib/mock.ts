@@ -58,6 +58,17 @@ const siwooRows: Row[] = [
   ["CSS 3D 카드 플립 갤러리", "transform-style: preserve-3d로 만든 카드 갤러리", ["css"], mockUsers.jung, 14, 97, 340],
 ];
 
+// 내 미니홈피 데모. 정시우 데모를 본뜬 것으로, 미니홈피 목 데이터와 같은 id(201~)를 쓴다.
+const myRows: Row[] = siwooRows.map(([title, description, techTags, , likeCount, playCount, hoursAgo]) => [
+  title,
+  description,
+  techTags,
+  mockUsers.me,
+  likeCount,
+  playCount,
+  hoursAgo,
+]);
+
 // 다른 회원들의 미니홈피 마스코트 데모 (id: 회원 id × 1000 + 순번)
 const memberDemos: DemoDetail[] = Object.values(mockUsers)
   .flatMap((user) => createUserDemos(user))
@@ -73,6 +84,7 @@ const memberDemos: DemoDetail[] = Object.values(mockUsers)
 export const mockDemos: DemoDetail[] = [
   ...rows.map((row, index) => toDetail(row, index + 1)),
   ...siwooRows.map((row, index) => toDetail(row, 101 + index)),
+  ...myRows.map((row, index) => toDetail(row, 201 + index)),
   ...memberDemos,
 ];
 
