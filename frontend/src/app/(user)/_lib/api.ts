@@ -1,6 +1,7 @@
 import "server-only";
 import {
   apiFetch,
+  ApiRequestError,
   isMockMode,
   type ApiResponse,
   type PageResponse,
@@ -20,10 +21,15 @@ import {
   mockUnreadCount,
 } from "./mock";
 
-export async function getMe(): Promise<MyProfile> {
+export async function getMe(): Promise<MyProfile | null> {
   if (isMockMode) return mockMe;
-  const { data } = await apiFetch<ApiResponse<MyProfile>>("/api/v1/users/me");
-  return data;
+  try {
+    const { data } = await apiFetch<ApiResponse<MyProfile>>("/api/v1/users/me");
+    return data;
+  } catch (e) {
+    if (e instanceof ApiRequestError && e.status === 401) return null;
+    throw e;
+  }
 }
 
 export async function getFollowings(): Promise<Following[]> {
