@@ -37,6 +37,7 @@ services:
     restart: always
     environment:
       API_ORIGIN: http://backend:8080
+      BROWSER_API_ORIGIN: ""
     ports:
       - "3000:3000"
     depends_on:
