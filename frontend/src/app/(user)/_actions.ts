@@ -1,6 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { apiFetch, isMockMode } from "@/app/_lib/api/client";
 import { mutate } from "@/app/_lib/api/mutate";
 import { endSession } from "./_lib/session";
 
@@ -16,8 +17,18 @@ export async function markNotificationsRead(ids: number[]) {
   return results.find((result) => !result.ok) ?? { ok: true, message: "읽음 처리했어요." };
 }
 
-// TODO(백엔드 연동): 로그아웃 API가 명세에 생기면 토큰 폐기 요청을 함께 보낸다.
+/**
+ * 로그아웃 Action.
+ * 실서버면 백엔드에 쿠키 만료를 요청한 뒤, Next 쪽 쿠키도 지우고 메인으로 이동한다.
+ */
 export async function logout() {
+  if (!isMockMode) {
+    try {
+      await apiFetch("/api/v1/auth/logout", { method: "POST" });
+    } catch {
+      // 토큰이 이미 만료돼도 로컬 세션 정리는 계속한다.
+    }
+  }
   await endSession();
   redirect("/main");
 }

@@ -49,8 +49,8 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
         String refreshToken = jwtProvider.createRefreshToken(result.user().getId());
         authCookieWriter.writeTokens(response, accessToken, refreshToken);
 
-        // 신규면 온보딩, 기존이면 메인으로 이동한다.
-        String path = result.isNew() ? "/onboarding" : "/main";
+        // 기술 스택이 비어 있으면 온보딩 미완료로 보고 온보딩으로 보낸다.
+        String path = result.user().isOnboardingIncomplete() ? "/onboarding" : "/main";
         getRedirectStrategy().sendRedirect(request, response, frontendBaseUrl + path);
     }
 }

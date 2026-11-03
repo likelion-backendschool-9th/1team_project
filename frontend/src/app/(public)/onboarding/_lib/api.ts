@@ -1,5 +1,5 @@
 import "server-only";
-import { isMockMode } from "@/app/_lib/api/client";
+import { apiFetch, ApiRequestError, isMockMode, type ApiResponse } from "@/app/_lib/api/client";
 import { mockUsers } from "@/app/(user)/_lib/mock";
 
 export type SocialProfile = {
@@ -7,16 +7,62 @@ export type SocialProfile = {
   githubUsername: string;
 };
 
-// 소셜 로그인으로 받아 온 기본 정보. 온보딩 입력칸의 초기값으로 쓴다.
-// TODO(백엔드 연동): 기획서에 명세가 생기면 실제 API로 교체한다.
+type UserMe = {
+  nickname: string;
+  githubUsername: string | null;
+  bio: string | null;
+  techStacks: string[];
+};
+
+/**
+ * 소셜 로그인으로 받아 온 기본 정보. 온보딩 입력칸의 초기값으로 쓴다.
+ * 실서버에서는 GET /users/me 응답을 쓴다.
+ */
 export async function getSocialProfile(): Promise<SocialProfile> {
   if (isMockMode) return { nickname: "새내기개발자", githubUsername: "new-dipper" };
-  return { nickname: "", githubUsername: "" };
+  try {
+    const { data } = await apiFetch<ApiResponse<UserMe>>("/api/v1/users/me");
+    return {
+      nickname: data.nickname ?? "",
+      githubUsername: data.githubUsername ?? "",
+    };
+  } catch {
+    return { nickname: "", githubUsername: "" };
+  }
 }
 
-// 이미 쓰는 닉네임인지 확인한다. 목 모드에서는 목 회원의 닉네임을 사용 중으로 본다.
+/** 이미 쓰는 닉네임인지 확인한다. */
 export async function isNicknameTaken(nickname: string): Promise<boolean> {
   if (isMockMode)
     return Object.values(mockUsers).some((user) => user.nickname.toLowerCase() === nickname.toLowerCase());
-  return false;
+
+  try {
+    const { data } = await apiFetch<ApiResponse<{ available: boolean }>>(
+      `/api/v1/users/nicknames/available?nickname=${encodeURIComponent(nickname)}`,
+    );
+    return !data.available;
+  } catch (error) {
+    if (error instanceof ApiRequestError) throw error;
+    return false;
+  }
+}
+
+/** 온보딩 마지막 단계: 프로필·태그를 한 번에 저장한다. */
+export async function completeOnboardingProfile(body: {
+  nickname: string;
+  bio: string;
+  githubUsername: string;
+  techStacks: string[];
+  interestTags: string[];
+}): Promise<void> {
+  await apiFetch<ApiResponse<UserMe>>("/api/v1/users/me/profile", {
+    method: "POST",
+    body: JSON.stringify({
+      nickname: body.nickname,
+      bio: body.bio || null,
+      githubUsername: body.githubUsername || null,
+      techStacks: body.techStacks,
+      interestTags: body.interestTags,
+    }),
+  });
 }

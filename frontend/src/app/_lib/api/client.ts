@@ -35,7 +35,17 @@ export async function apiFetch<T>(
     },
     cache: "no-store",
   });
-  if (!response.ok)
-    throw new ApiRequestError(response.status, await response.json());
+  if (!response.ok) {
+    const body: unknown = await response.json().catch(() => null);
+    // 백엔드는 { error: { code, message } }, 예전 형식은 { code, message }일 수 있다.
+    const error =
+      body && typeof body === "object" && "error" in body
+        ? (body as { error: ApiError }).error
+        : (body as ApiError);
+    throw new ApiRequestError(
+      response.status,
+      error?.code && error?.message ? error : { code: "UNKNOWN", message: "요청에 실패했어요." },
+    );
+  }
   return response.status === 204 ? (undefined as T) : response.json();
 }
