@@ -22,7 +22,7 @@ main ──────────●────────────●─
   │  hotfix/* ─┘(긴급)       │
   └ dev ───●────●────────┘
                ↑    ↑
-        feat/* ┘    └ fix/*
+     feature/* ┘    └ fix/*
 ```
 
 - `main`, `dev`에는 직접 커밋/푸시하지 않는다. 항상 PR로만 반영한다.
@@ -35,7 +35,7 @@ main ──────────●────────────●─
 
 | 타입        | 설명                       | 예시                    |
 | ----------- | -------------------------- | ----------------------- |
-| `feat/`     | 새로운 기능 개발           | `feat/seat-reservation` |
+| `feature/`  | 새로운 기능 개발           | `feature/seat-reservation` |
 | `fix/`      | 버그 수정                  | `fix/login-error`       |
 | `refactor/` | 기능 변경 없는 코드 개선   | `refactor/order-service`|
 | `docs/`     | 문서 작성 및 수정          | `docs/api-document`     |
@@ -52,7 +52,7 @@ main ──────────●────────────●─
 - 작업 내용을 알아볼 수 있도록 작성
 - 하나의 브랜치는 가급적 하나의 기능 또는 작업 단위로 생성
 
-예: `feat/branch-menu-management`
+예: `feature/branch-menu-management`
 
 ---
 
