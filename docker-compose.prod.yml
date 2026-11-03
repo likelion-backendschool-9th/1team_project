@@ -32,8 +32,6 @@ services:
     image: ${IMAGE_FRONTEND}
     container_name: dipsource-frontend
     restart: always
-    environment:
-      API_ORIGIN: http://backend:8080
     depends_on:
       - backend
 
