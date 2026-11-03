@@ -3,6 +3,7 @@
 import { runForm } from "@/app/_lib/api/formAction";
 import { mutate } from "@/app/_lib/api/mutate";
 import { readValues, type FormState } from "@/app/_lib/formState";
+import { endSession } from "@/app/(user)/_lib/session";
 
 function isId(value: number) {
   return Number.isSafeInteger(value) && value > 0;
@@ -64,8 +65,11 @@ export async function verifyCompany() {
   return { ok: false, message: "회사 인증은 준비 중이에요. 조금만 기다려 주세요." };
 }
 
+/** 마이페이지 로그아웃. 백엔드 쿠키 만료 + 로컬 세션 정리를 한다. */
 export async function logout() {
-  return mutate("/api/v1/auth/logout", "POST", undefined, "로그아웃했어요.");
+  const result = await mutate("/api/v1/auth/logout", "POST", undefined, "로그아웃했어요.");
+  await endSession();
+  return result;
 }
 
 export async function withdraw() {

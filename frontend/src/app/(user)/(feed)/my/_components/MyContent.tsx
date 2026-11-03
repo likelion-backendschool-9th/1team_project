@@ -5,9 +5,10 @@ import kit from "@/app/_components/ui/kit.module.css";
 import { formatCount, formatDate } from "@/app/_lib/format";
 import { UserBadges } from "@/app/(user)/_components/UserBadges";
 import { getMe } from "@/app/(user)/_lib/api";
-import { logout, verifyCompany, withdraw } from "../_actions";
+import { verifyCompany, withdraw } from "../_actions";
 import { getAccount } from "../_lib/api";
 import { AccountForm } from "./AccountForm";
+import { LogoutConfirm } from "./LogoutConfirm";
 import styles from "./My.module.css";
 
 const providers = { github: "GitHub", kakao: "카카오", google: "구글" };
@@ -97,12 +98,7 @@ export async function MyContent() {
           계정
         </h2>
         <div className={kit.row} style={{ marginTop: 14 }}>
-          <ConfirmButton
-            label="로그아웃"
-            title="로그아웃할까요?"
-            confirmLabel="로그아웃"
-            onConfirm={logout}
-          />
+          <LogoutConfirm />
           <ConfirmButton
             label="회원 탈퇴"
             title="정말 탈퇴할까요?"
