@@ -12,6 +12,7 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
@@ -49,6 +50,13 @@ public class SecurityConfig {
                         // 그 외 API는 인증 필요 (이후 공개 API는 여기서 풀면 된다)
                         .anyRequest().authenticated()
                 )
+                // /api/** 요청이 인증 실패하면 OAuth 리다이렉트 대신 401 JSON 반환
+                .exceptionHandling(ex -> ex
+                        .defaultAuthenticationEntryPointFor(
+                                apiAuthenticationEntryPoint(),
+                                request -> request.getServletPath().startsWith("/api/")
+                        )
+                )
                 .oauth2Login(oauth -> oauth
                         .successHandler(oAuth2SuccessHandler)
                 )
@@ -56,6 +64,16 @@ public class SecurityConfig {
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
+    }
+
+    /** API 요청에 인증이 없으면 OAuth 리다이렉트 대신 401을 반환한다. */
+    @Bean
+    public AuthenticationEntryPoint apiAuthenticationEntryPoint() {
+        return (request, response, authException) -> {
+            response.setStatus(401);
+            response.setContentType("application/json");
+            response.getWriter().write("{\"error\":\"Unauthorized\"}");
+        };
     }
 
     /** 로컬 프론트(localhost:3000)에서 API를 호출할 수 있게 CORS를 연다. */
