@@ -83,6 +83,10 @@ public class Demo extends BaseEntity {
     @Column(name = "like_count", nullable = false)
     private int likeCount = 0;
 
+    /** 피드백(댓글) 수 */
+    @Column(name = "feedback_count", nullable = false)
+    private int feedbackCount = 0;
+
     /** 상태 */
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)

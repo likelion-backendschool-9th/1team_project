@@ -54,7 +54,7 @@ public class Post extends BaseEntity {
     @Column(name = "thumbnail_url", length = 500)
     private String thumbnailUrl;
 
-    /** 유료 글 여부 */
+    /** 유료 글 여부. 유료 글은 블로그 구독자에게 무료이고, 구독하지 않은 회원만 단건 구매할 수 있다 */
     @Column(name = "is_paid", nullable = false)
     private boolean paid = false;
 
@@ -74,6 +74,10 @@ public class Post extends BaseEntity {
     /** 좋아요 수 */
     @Column(name = "like_count", nullable = false)
     private int likeCount = 0;
+
+    /** 댓글 수 */
+    @Column(name = "comment_count", nullable = false)
+    private int commentCount = 0;
 
     /** 삭제 시각. 삭제하지 않았으면 null */
     @Column(name = "deleted_at")
