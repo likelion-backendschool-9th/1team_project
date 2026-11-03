@@ -39,7 +39,8 @@ com/dipsource
 │  └─ common/                 BaseEntity, ApiResponse, PageResponse
 │
 ├─ controller/<기능>/         [1층] 요청 파싱, 응답 포장만
-├─ service/<기능>/            [2층] 비즈니스 로직, @Transactional
+├─ service/<기능>/            [2층] 서비스 인터페이스
+│  └─ impl/                   서비스 구현체 (비즈니스 로직, @Transactional)
 ├─ repository/<기능>/         [3층] 데이터 접근
 ├─ entity/<기능>/             [3층] JPA 엔티티
 └─ dto/<기능>/                요청·응답 record
@@ -176,7 +177,8 @@ public abstract class BaseEntity {
 | 테이블 | 복수형 snake_case | `users`, `demos`, `mini_homes` |
 | 컬럼 | snake_case | `user_id`, `like_count`, `is_paid` |
 | Repository | `엔티티명 + Repository` | `UserRepository`, `DemoRepository` |
-| Service | `엔티티명 + Service` | `UserService`, `DemoService` |
+| Service | `엔티티명 + Service` (인터페이스) | `UserService`, `DemoService` |
+| Service 구현체 | `Service명 + Impl`, `service/<기능>/impl/`에 둔다 | `UserServiceImpl`, `DemoServiceImpl` |
 | Controller | `엔티티명 + Controller` | `UserController`, `DemoController` |
 | DTO | `동작 + 엔티티명 + Request/Response` | `CreateDemoRequest`, `DemoResponse` |
 
