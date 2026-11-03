@@ -72,10 +72,12 @@ public class NewsRssParser {
     }
 
     private static String summary(SyndEntry entry) {
-        if (entry.getDescription() == null) {
-            return "";
+        String description = entry.getDescription() == null ? null : entry.getDescription().getValue();
+        // GeekNews는 Atom이라 description 없이 본문이 <content type="html">에 들어온다.
+        if ((description == null || description.isBlank()) && !entry.getContents().isEmpty()) {
+            description = entry.getContents().get(0).getValue();
         }
-        return abbreviate(clean(entry.getDescription().getValue()));
+        return abbreviate(clean(description));
     }
 
     static String clean(String raw) {

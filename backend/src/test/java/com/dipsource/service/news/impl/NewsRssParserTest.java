@@ -92,6 +92,39 @@ class NewsRssParserTest {
     }
 
     @Test
+    void usesHtmlContentWhenGeekNewsAtomHasNoDescription() {
+        String xml = """
+                <?xml version='1.0' encoding='UTF-8'?>
+                <feed xmlns='http://www.w3.org/2005/Atom'>
+                <title>GeekNews - 개발/기술/스타트업 뉴스 서비스</title>
+                <id>https://news.hada.io/rss/news</id>
+                <updated>2026-11-03T15:32:47+09:00</updated>
+                <entry>
+                  <title><![CDATA[Claude 에이전트로 GPU 클러스터 운영하기]]></title>
+                  <link rel='alternate' type='text/html' href='https://news.hada.io/topic?id=5&amp;utm_source=geeknews' />
+                  <id>https://news.hada.io/topic?id=5</id>
+                  <updated>2026-11-03T15:32:47+09:00</updated>
+                  <published>2026-11-03T15:32:47+09:00</published>
+                  <author>
+                    <name>neo</name>
+                  </author>
+                  <content type='html' xml:lang='ko'><![CDATA[<div><ul><li><strong>운영 자동화</strong>를 다룬 글 &amp; 사례</li><li>%s</li></ul></div>]]></content>
+                </entry>
+                </feed>
+                """.formatted("나".repeat(130));
+
+        var items = parser.parse(xml);
+
+        assertThat(items).hasSize(1);
+        assertThat(items.get(0).url()).isEqualTo("https://news.hada.io/topic?id=5&utm_source=geeknews");
+        assertThat(items.get(0).summary()).startsWith("운영 자동화 를 다룬 글 & 사례 나");
+        assertThat(items.get(0).summary()).hasSize(NewsRssParser.SUMMARY_LENGTH);
+        assertThat(items.get(0).summary()).doesNotContain("<", ">");
+        assertThat(items.get(0).category()).isEqualTo("ai");
+        assertThat(items.get(0).publishedAt()).isEqualTo(OffsetDateTime.parse("2026-11-03T15:32:47+09:00"));
+    }
+
+    @Test
     void rejectsBrokenXml() {
         assertThatThrownBy(() -> parser.parse("<rss>"))
                 .isInstanceOf(IllegalStateException.class);

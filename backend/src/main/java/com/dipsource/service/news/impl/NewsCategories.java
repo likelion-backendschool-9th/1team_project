@@ -11,7 +11,8 @@ final class NewsCategories {
 
     private static final List<String> SECURITY = List.of("보안", "취약점", "해킹", "cve", "xss", "csrf", "openssl");
     private static final List<String> AI = List.of(
-            "인공지능", "머신러닝", "딥러닝", "machine learning", "deep learning", "openai", "chatgpt", "llm", "claude", "gemini");
+            "인공지능", "머신러닝", "딥러닝", "machine learning", "deep learning", "openai", "chatgpt", "llm", "claude", "gemini",
+            "anthropic", "에이전트", "agent");
     private static final List<String> GAME = List.of("게임", "unity", "unreal", "webgpu");
     private static final List<String> FRONTEND = List.of(
             "프론트엔드", "프론트", "react", "vue", "angular", "next.js", "nextjs", "svelte", "typescript", "javascript", "자바스크립트");
@@ -29,8 +30,17 @@ final class NewsCategories {
     private NewsCategories() {
     }
 
+    /** 요약은 주제와 상관없는 단어가 섞이기 쉬워서, 제목으로 정해지지 않을 때만 함께 본다. */
     static String classify(String title, String summary) {
-        String text = (title + " " + summary).toLowerCase(Locale.ROOT);
+        String byTitle = classifyText(title);
+        if (!ETC.equals(byTitle)) {
+            return byTitle;
+        }
+        return classifyText(title + " " + summary);
+    }
+
+    private static String classifyText(String raw) {
+        String text = raw.toLowerCase(Locale.ROOT);
         if (containsAny(text, SECURITY) || WORD_SECURITY.matcher(text).find()) {
             return "security";
         }
