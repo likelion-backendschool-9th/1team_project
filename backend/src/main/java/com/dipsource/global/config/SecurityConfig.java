@@ -44,10 +44,10 @@ public class SecurityConfig {
                                 "/oauth2/**",
                                 "/login/oauth2/**"
                         ).permitAll()
-                        // 피드 조회는 비로그인도 가능
-                        .requestMatchers(HttpMethod.GET, "/api/v1/feeds").permitAll()
+                        // GET 요청은 비로그인도 허용 (읽기 전용)
+                        .requestMatchers(HttpMethod.GET, "/api/v1/**").permitAll()
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                        // 그 외 API는 인증 필요 (이후 공개 API는 여기서 풀면 된다)
+                        // 쓰기(POST/PUT/DELETE 등)는 인증 필요
                         .anyRequest().authenticated()
                 )
                 // /api/** 요청이 인증 실패하면 OAuth 리다이렉트 대신 401 JSON 반환
