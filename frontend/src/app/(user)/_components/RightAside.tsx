@@ -1,7 +1,5 @@
-import Link from "next/link";
 import { connection } from "next/server";
 import { Suspense } from "react";
-import { GearIcon } from "@/app/_components/ui/Icons";
 import {
   getFollowings,
   getMe,
@@ -31,12 +29,6 @@ async function RightAsideContent() {
     <>
       <ProfileCard me={me} unreadCount={unreadCount} notifications={notifications} now={now} />
       <FollowingList followings={followings} />
-      <div className={styles.footer}>
-        <Link href="/my/settings" className={styles.settings}>
-          <GearIcon className={styles.settingsIcon} />
-          설정
-        </Link>
-      </div>
     </>
   );
 }

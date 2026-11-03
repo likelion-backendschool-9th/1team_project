@@ -1,4 +1,4 @@
-import { mockUsers } from "@/app/(user)/_lib/mock";
+import { mockUsers } from "./mock";
 import type { DmMessage, DmRoom } from "@/app/_lib/types/dm";
 
 const MINUTE = 60_000;

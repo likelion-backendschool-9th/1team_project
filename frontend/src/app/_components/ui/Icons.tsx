@@ -190,3 +190,19 @@ export function DotsIcon(props: Props) {
     </Svg>
   );
 }
+
+export function ChatIcon(props: Props) {
+  return (
+    <Svg {...props}>
+      <path d="M4.500 11.500a7.500 7 0 1 1 3.600 6l-3.600 1 1-3.200a6.700 6.700 0 0 1-1-3.800Z" />
+    </Svg>
+  );
+}
+
+export function CloseIcon(props: Props) {
+  return (
+    <Svg {...props}>
+      <path d="M6 6l12 12M18 6 6 18" />
+    </Svg>
+  );
+}
