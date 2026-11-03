@@ -22,8 +22,10 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 @Getter
 @Entity
 @EntityListeners(AuditingEntityListener.class)
-@Table(name = "notifications",
-        indexes = @Index(name = "idx_notifications_receiver_created", columnList = "receiver_id, created_at"))
+@Table(name = "notifications", indexes = {
+        @Index(name = "idx_notifications_receiver_created", columnList = "receiver_id, created_at"),
+        @Index(name = "idx_notifications_receiver_read", columnList = "receiver_id, is_read")
+})
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Notification {
 

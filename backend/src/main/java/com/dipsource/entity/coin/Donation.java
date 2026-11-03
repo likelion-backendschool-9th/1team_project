@@ -18,7 +18,7 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 /**
  * 미니홈피 후원. 테이블: donations
- * 후원한 칩 수는 이 테이블에 없고 chip_transactions(ref_type = DONATION, ref_id = 이 ID)에 남는다.
+ * 칩 이동 내역은 chip_transactions(ref_type = DONATION, ref_id = 이 ID)에도 남는다.
  */
 @Getter
 @Entity
@@ -41,14 +41,19 @@ public class Donation {
     @Column(name = "mini_home_id", nullable = false)
     private Long miniHomeId;
 
+    /** 후원한 칩 수 */
+    @Column(nullable = false)
+    private int chips;
+
     /** 후원 시각 */
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
     @Builder
-    private Donation(Long senderId, Long miniHomeId) {
+    private Donation(Long senderId, Long miniHomeId, int chips) {
         this.senderId = senderId;
         this.miniHomeId = miniHomeId;
+        this.chips = chips;
     }
 }

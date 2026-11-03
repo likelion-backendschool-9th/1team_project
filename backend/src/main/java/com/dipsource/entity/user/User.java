@@ -79,6 +79,10 @@ public class User extends BaseEntity {
     @Column(name = "chip_balance", nullable = false)
     private int chipBalance = 0;
 
+    /** 블로그 월 구독료(원). 0이면 구독을 받지 않는다. 이미 구독한 사람은 구독 시점 가격(blog_subscriptions.paid_price)을 낸다 */
+    @Column(name = "blog_subscription_price", nullable = false)
+    private int blogSubscriptionPrice = 0;
+
     /** 마지막 활동 시각. DM에서 "활동중"을 판단하는 기준이다. */
     @Column(name = "last_active_at")
     private LocalDateTime lastActiveAt;
@@ -109,6 +113,10 @@ public class User extends BaseEntity {
         this.bio = bio;
         this.techStacks = techStacks == null ? new ArrayList<>() : new ArrayList<>(techStacks);
         this.githubUsername = githubUsername;
+    }
+
+    public void changeBlogSubscriptionPrice(int price) {
+        this.blogSubscriptionPrice = price;
     }
 
     /** 활동이 있을 때 호출해 마지막 활동 시각을 갱신한다. */
