@@ -2,10 +2,10 @@
 
 import { redirect } from "next/navigation";
 import { startMockSession } from "@/app/(user)/_lib/session";
-import { isMockMode } from "@/app/_lib/api/client";
+import { ApiRequestError, isMockMode } from "@/app/_lib/api/client";
 import { readValues, type FormState } from "@/app/_lib/formState";
 import { parseRedirect } from "@/app/_lib/redirect";
-import { isNicknameTaken } from "./_lib/api";
+import { completeOnboardingProfile, isNicknameTaken } from "./_lib/api";
 import { clearDraft, saveDraft } from "./_lib/draft";
 import { BIO_MAX, validateGithubUsername, validateNickname } from "./_lib/rules";
 import { firstIncompleteStep, isTagStep, nextStep, stepUrl, validateTags } from "./_lib/steps";
@@ -20,7 +20,7 @@ export async function checkNickname(nickname: string): Promise<NicknameCheck> {
   return { ok: true, message: "사용할 수 있는 닉네임이에요." };
 }
 
-// 1단계: 기본 정보. 통과하면 임시로 보관하고 다음 단계로 간다.
+/** 1단계: 기본 정보. 통과하면 draft 쿠키에 보관하고 다음 단계로 간다. */
 export async function saveProfile(previous: FormState, formData: FormData): Promise<FormState> {
   const values = readValues(formData, ["nickname", "bio", "githubUsername", "redirect"]);
   const attempt = previous.attempt + 1;
@@ -49,7 +49,7 @@ export async function saveProfile(previous: FormState, formData: FormData): Prom
   redirect(stepUrl("stack", parseRedirect(values.redirect)));
 }
 
-// 2~4단계: 기술 스택, 관심분야, 관심주제. 마지막 단계에서 가입을 마친다.
+/** 2~4단계: 기술 스택·관심분야·관심주제. 마지막에서 백엔드에 한 번 저장한다. */
 export async function saveTagStep(step: string, previous: FormState, formData: FormData): Promise<FormState> {
   const values = readValues(formData, ["redirect"]);
   const attempt = previous.attempt + 1;
@@ -68,11 +68,27 @@ export async function saveTagStep(step: string, previous: FormState, formData: F
   const missing = firstIncompleteStep(draft);
   if (missing) redirect(stepUrl(missing, redirectTo));
 
-  // TODO(백엔드 연동): 기획서에 온보딩 저장 API가 생기면 draft 전체를 보낸다.
-  if (!isMockMode)
-    return { ok: false, message: "가입 정보 저장 API 연결 전이에요.", errors: {}, values, attempt };
+  if (isMockMode) {
+    await startMockSession();
+    await clearDraft();
+    redirect(redirectTo);
+  }
 
-  await startMockSession();
+  // 실서버: draft 전체를 온보딩 저장 API로 보낸다.
+  try {
+    await completeOnboardingProfile({
+      nickname: draft.nickname ?? "",
+      bio: draft.bio ?? "",
+      githubUsername: draft.githubUsername ?? "",
+      techStacks: draft.stack ?? [],
+      interestTags: [...(draft.fields ?? []), ...(draft.topics ?? [])],
+    });
+  } catch (err) {
+    const message =
+      err instanceof ApiRequestError ? err.error.message : "가입 정보 저장에 실패했어요. 다시 시도해 주세요.";
+    return { ok: false, message, errors: {}, values, attempt };
+  }
+
   await clearDraft();
   redirect(redirectTo);
 }
