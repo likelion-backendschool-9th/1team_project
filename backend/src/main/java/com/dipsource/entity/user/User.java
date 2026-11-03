@@ -65,7 +65,7 @@ public class User extends BaseEntity {
     @Column(name = "github_username", length = 50)
     private String githubUsername;
 
-    /** 권한. 관리자는 admins 테이블에 따로 있어 회원은 USER만 쓴다 */
+    /** 권한. 관리자도 회원 테이블에서 role=ADMIN으로 구분한다 */
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 10)
     private Role role = Role.USER;

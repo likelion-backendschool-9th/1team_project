@@ -55,7 +55,7 @@ public class Report {
     @Column(nullable = false, length = 20)
     private ReportStatus status = ReportStatus.PENDING;
 
-    /** 처리한 관리자 ID(admins.id) */
+    /** 처리한 관리자 ID(users.id, role=ADMIN) */
     @Column(name = "handled_by")
     private Long handledBy;
 

@@ -66,7 +66,7 @@ public class Settlement {
     @Column(nullable = false, length = 20)
     private SettlementStatus status = SettlementStatus.PENDING;
 
-    /** 확정한 관리자 ID(admins.id) */
+    /** 확정한 관리자 ID(users.id, role=ADMIN) */
     @Column(name = "confirmed_by")
     private Long confirmedBy;
 

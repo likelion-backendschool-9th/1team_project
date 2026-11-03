@@ -70,7 +70,7 @@ public class Payment {
     @Column(name = "refunded_at")
     private LocalDateTime refundedAt;
 
-    /** 환불 처리한 관리자 ID(admins.id) */
+    /** 환불 처리한 관리자 ID(users.id, role=ADMIN) */
     @Column(name = "refunded_by")
     private Long refundedBy;
 

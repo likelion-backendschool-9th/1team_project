@@ -38,7 +38,7 @@ public class UserSanction {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    /** 제재한 관리자(admins.id). admin 엔티티를 직접 참조하지 않고 id만 가진다. */
+    /** 제재한 관리자 ID(users.id, role=ADMIN). User 엔티티를 직접 참조하지 않고 id만 가진다. */
     @Column(name = "admin_id", nullable = false)
     private Long adminId;
 

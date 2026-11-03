@@ -65,7 +65,7 @@ public class ChipTransaction {
     @Column(length = 200)
     private String description;
 
-    /** 조정한 관리자 ID(admins.id). ADMIN_ADJUST일 때만 사용 */
+    /** 조정한 관리자 ID(users.id, role=ADMIN). ADMIN_ADJUST일 때만 사용 */
     @Column(name = "admin_id")
     private Long adminId;
 
