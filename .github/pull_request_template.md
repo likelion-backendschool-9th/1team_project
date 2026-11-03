@@ -1,16 +1,19 @@
 <!--
 커밋 메시지 컨벤션 (참고용)
 
-타입        설명                              예시
-feat        새로운 기능 추가                  feat: 예약 기능 구현
-fix         버그 수정                         fix: 로그인 토큰 만료 오류 수정
-refactor    동작은 그대로, 코드 구조만 개선    refactor: 응답 포맷 공통 함수로 분리
-style       포맷팅, 세미콜론 등 의미 변화 없음 style: prettier 적용
-docs        문서 수정                         docs: README 설치 방법 추가
-test        테스트 추가/수정                  test: 로그인 실패 케이스 테스트 추가
-chore       빌드, 설정, 패키지 등 기타        chore: eslint 9 버전으로 업데이트
-perf        성능 개선                         perf: 피드 목록 쿼리 최적화
-design      디자인 변경                       design: 메인 페이지 레이아웃 수정
+타입        설명                        예시
+feature     새로운 기능 추가            feature: 좌석 예약 기능 구현
+fix         버그 수정                   fix: 로그인 오류 수정
+refactor    기능 변경 없는 코드 개선    refactor: 주문 서비스 로직 분리
+docs        문서 작성 및 수정           docs: README 수정
+style       코드 포맷팅, 세미콜론 등    style: 코드 들여쓰기 수정
+test        테스트 코드 추가 및 수정    test: 주문 서비스 단위 테스트 추가
+chore       기타 유지보수 작업          chore: 불필요한 파일 삭제
+perf        성능 개선                   perf: 메뉴 조회 쿼리 최적화
+build       빌드 및 의존성 설정         build: Gradle 의존성 추가
+ci          CI/CD 설정 및 수정          ci: Github Actions 배포 설정
+revert      이전 커밋 되돌리기          revert: 좌석 예약 기능 변경 취소
+design      디자인 변경                 design: 마이페이지 디자인 변경
 
 - 제목: 한국어, 50자 이내, 마침표 없이 "~ 추가 / ~ 수정 / ~ 삭제"
 - 본문: "왜 바꿨는지" 필요할 때만
@@ -36,15 +39,18 @@ design      디자인 변경                       design: 메인 페이지 레�
 
 ## 변경 유형
 
-- [ ] feat: 새로운 기능
+- [ ] feature: 새로운 기능 추가
 - [ ] fix: 버그 수정
-- [ ] refactor: 코드 구조 개선
-- [ ] style: 포맷팅, 세미콜론 등
-- [ ] docs: 문서 수정
-- [ ] test: 테스트 추가/수정
-- [ ] chore: 빌드, 설정, 패키지 등
+- [ ] refactor: 기능 변경 없는 코드 개선
+- [ ] docs: 문서 작성 및 수정
+- [ ] style: 코드 포맷팅, 세미콜론 등
+- [ ] test: 테스트 코드 추가 및 수정
+- [ ] chore: 기타 유지보수 작업
 - [ ] perf: 성능 개선
-- [ ] design: 디자인 개선
+- [ ] build: 빌드 및 의존성 설정
+- [ ] ci: CI/CD 설정 및 수정
+- [ ] revert: 이전 커밋 되돌리기
+- [ ] design: 디자인 변경
 
 ## 테스트
 
