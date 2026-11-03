@@ -32,7 +32,7 @@ public class Event {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    /** 등록한 관리자 ID(admins.id) */
+    /** 등록한 관리자 ID(users.id, role=ADMIN) */
     @Column(name = "admin_id", nullable = false)
     private Long adminId;
 

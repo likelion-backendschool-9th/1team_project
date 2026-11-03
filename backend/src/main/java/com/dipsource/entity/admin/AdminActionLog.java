@@ -1,5 +1,6 @@
 package com.dipsource.entity.admin;
 
+import com.dipsource.entity.user.User;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;
@@ -35,10 +36,10 @@ public class AdminActionLog {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    /** 작업한 관리자 */
+    /** 작업한 관리자(role=ADMIN인 회원) */
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "admin_id", nullable = false)
-    private Admin admin;
+    private User admin;
 
     /** 작업 종류. 예: HIDE_FEED, SUSPEND_USER, REFUND_PAYMENT */
     @Column(name = "action_type", nullable = false, length = 30)
@@ -62,7 +63,7 @@ public class AdminActionLog {
     private LocalDateTime createdAt;
 
     @Builder
-    private AdminActionLog(Admin admin, String actionType, String targetType, Long targetId, String reason) {
+    private AdminActionLog(User admin, String actionType, String targetType, Long targetId, String reason) {
         this.admin = admin;
         this.actionType = actionType;
         this.targetType = targetType;
