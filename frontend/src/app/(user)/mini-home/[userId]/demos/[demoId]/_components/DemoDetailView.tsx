@@ -8,6 +8,7 @@ import kit from "@/app/_components/ui/kit.module.css";
 import { formatCount, formatDate } from "@/app/_lib/format";
 import type { DemoFeedbackType } from "@/app/_lib/types/demo";
 import { CommentList } from "@/app/(user)/_components/CommentList";
+import { DmOpenButton } from "@/app/(user)/_components/DmOpenButton";
 import { getMe } from "@/app/(user)/_lib/api";
 import {
   createDemoComment,
@@ -100,9 +101,9 @@ export async function DemoDetailView({ params }: Props) {
               </span>
             </Link>
             {!mine && (
-              <Link href={`/dm/${demo.author.id}`} className={`${kit.btnGhost} ${kit.sm}`}>
+              <DmOpenButton user={demo.author} className={`${kit.btnGhost} ${kit.sm}`}>
                 DM 보내기
-              </Link>
+              </DmOpenButton>
             )}
           </div>
           {mine ? (

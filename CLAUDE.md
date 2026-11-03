@@ -22,6 +22,7 @@ docs/        기획서, ERD, 테이블정의서, 개발 문서
 | [docs/database-design.md](docs/database-design.md) | DB 설계 결정, 인덱스, 동시성, 구현 순서 |
 | [docs/FRONTEND.md](docs/FRONTEND.md) | 프론트엔드 개발 규칙 (라우트, 폴더, 상태, 컴포넌트, 접근성) |
 | [docs/frontend-청사진.md](docs/frontend-청사진.md) | 사용자 흐름, 개발 단계 체크리스트 |
+| [docs/임시-목업-현황.md](docs/임시-목업-현황.md) | 아직 없는 백엔드 API를 대신하는 목 데이터, DM 확인용 더미 데이터·스위치(`MOCK_EXCEPT_DM`) |
 
 ## 기술 스택
 

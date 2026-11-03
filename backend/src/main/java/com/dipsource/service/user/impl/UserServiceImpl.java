@@ -3,18 +3,25 @@ package com.dipsource.service.user.impl;
 import com.dipsource.dto.user.CompleteProfileRequest;
 import com.dipsource.dto.user.NicknameAvailableResponse;
 import com.dipsource.dto.user.UserMeResponse;
+import com.dipsource.dto.user.UserSummaryResponse;
 import com.dipsource.entity.tag.Tag;
 import com.dipsource.entity.user.User;
 import com.dipsource.entity.user.UserInterestTag;
+import com.dipsource.entity.user.UserStatus;
 import com.dipsource.global.exception.BusinessException;
 import com.dipsource.global.exception.ErrorCode;
 import com.dipsource.repository.tag.TagRepository;
 import com.dipsource.repository.user.UserInterestTagRepository;
 import com.dipsource.repository.user.UserRepository;
 import com.dipsource.service.user.UserService;
+import java.time.Duration;
+import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,6 +34,9 @@ public class UserServiceImpl implements UserService {
     private static final Pattern NICKNAME_PATTERN = Pattern.compile("^[가-힣a-zA-Z0-9_]+$");
     private static final Pattern GITHUB_PATTERN = Pattern.compile("^[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,38})$");
     private static final Pattern SLUG_PATTERN = Pattern.compile("^[a-z0-9]+(?:-[a-z0-9]+)*$");
+
+    /** 마지막 활동이 이 시간 안이면 "접속 중"으로 본다. */
+    private static final Duration ONLINE_THRESHOLD = Duration.ofMinutes(5);
 
     private final UserRepository userRepository;
     private final TagRepository tagRepository;
@@ -127,5 +137,33 @@ public class UserServiceImpl implements UserService {
             unique.add(slug);
         }
         return List.copyOf(unique);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public boolean isActiveUser(Long userId) {
+        return userRepository.existsByIdAndStatus(userId, UserStatus.ACTIVE);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Map<Long, UserSummaryResponse> getSummaries(Collection<Long> userIds) {
+        return userRepository.findAllById(userIds).stream()
+                .collect(Collectors.toMap(User::getId, UserSummaryResponse::from));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Set<Long> getOnlineUserIds(Collection<Long> userIds) {
+        return userRepository.findAllById(userIds).stream()
+                .filter(user -> !user.isWithdrawn() && user.isActiveWithin(ONLINE_THRESHOLD))
+                .map(User::getId)
+                .collect(Collectors.toSet());
+    }
+
+    @Override
+    @Transactional
+    public void markActive(Long userId) {
+        userRepository.findById(userId).ifPresent(User::markActive);
     }
 }

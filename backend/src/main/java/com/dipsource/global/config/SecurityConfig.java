@@ -4,6 +4,7 @@ import com.dipsource.global.auth.JwtAuthenticationFilter;
 import com.dipsource.global.auth.OAuth2SuccessHandler;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -79,11 +80,12 @@ public class SecurityConfig {
         };
     }
 
-    /** 로컬 프론트(localhost:3000)에서 API를 호출할 수 있게 CORS를 연다. */
+    /** 프론트 주소(app.frontend-base-url, 기본 localhost:3000)에서 API·WebSocket을 호출할 수 있게 CORS를 연다. */
     @Bean
-    public CorsConfigurationSource corsConfigurationSource() {
+    public CorsConfigurationSource corsConfigurationSource(
+            @Value("${app.frontend-base-url}") String frontendBaseUrl) {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(List.of("http://localhost:3000"));
+        config.setAllowedOrigins(List.of(frontendBaseUrl));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
         config.setAllowCredentials(true);

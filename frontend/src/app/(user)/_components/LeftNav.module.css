@@ -10,16 +10,6 @@
   padding: 24px 20px;
 }
 
-.ranking {
-  padding-top: 20px;
-  border-top: 1px solid var(--border);
-}
-
-.loading {
-  color: var(--ink-faint);
-  font-size: 13px;
-}
-
 .copy {
   margin-top: auto;
   color: var(--ink-faint);
@@ -44,7 +34,6 @@
     border-bottom: 1px solid var(--border);
   }
 
-  .ranking,
   .copy {
     display: none;
   }

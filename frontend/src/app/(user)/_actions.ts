@@ -3,10 +3,27 @@
 import { redirect } from "next/navigation";
 import { apiFetch, isMockMode } from "@/app/_lib/api/client";
 import { mutate } from "@/app/_lib/api/mutate";
+import type { DmMessage, DmRoom } from "@/app/_lib/types/dm";
+import { getMe, getServerTime } from "./_lib/api";
+import { getMessages, getRooms } from "./_lib/dmApi";
 import { endSession } from "./_lib/session";
 
 export async function updatePresence() {
   return mutate("/api/v1/users/me/presence", "PUT", { online: true }, "접속 상태를 갱신했어요.");
+}
+
+// DM 창은 어느 화면에서나 열고 닫는 클라이언트 창이라, 열 때 이 Action으로 데이터를 받아 온다.
+export async function loadDmRooms(): Promise<{ myId: number; rooms: DmRoom[]; now: number }> {
+  const me = await getMe();
+  if (!me) redirect("/login");
+  const [rooms, now] = await Promise.all([getRooms(), getServerTime()]);
+  return { myId: me.id, rooms, now };
+}
+
+/** 대화 내역. 백엔드는 이 조회로 대화방을 읽음 처리한다. */
+export async function loadDmMessages(myId: number, partnerId: number): Promise<DmMessage[]> {
+  if (!Number.isSafeInteger(partnerId) || partnerId <= 0) return [];
+  return getMessages(myId, partnerId);
 }
 
 export async function markNotificationsRead(ids: number[]) {
