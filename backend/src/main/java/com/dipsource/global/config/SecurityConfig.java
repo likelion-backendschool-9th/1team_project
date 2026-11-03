@@ -43,6 +43,8 @@ public class SecurityConfig {
                                 "/oauth2/**",
                                 "/login/oauth2/**"
                         ).permitAll()
+                        // 피드 조회는 비로그인도 가능
+                        .requestMatchers(HttpMethod.GET, "/api/v1/feeds").permitAll()
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         // 그 외 API는 인증 필요 (이후 공개 API는 여기서 풀면 된다)
                         .anyRequest().authenticated()
