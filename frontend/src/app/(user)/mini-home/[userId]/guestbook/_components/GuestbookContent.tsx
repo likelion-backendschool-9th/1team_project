@@ -22,7 +22,7 @@ export async function GuestbookContent({ params }: Props) {
   if (!userId || !profile) notFound();
 
   const [me, entries, now] = await Promise.all([getMe(), getGuestbook(userId), getServerTime()]);
-  const isOwner = me.id === userId;
+  const isOwner = me?.id === userId;
 
   return (
     <section className={kit.card} aria-labelledby="guestbook-list-title">
@@ -38,7 +38,7 @@ export async function GuestbookContent({ params }: Props) {
       ) : (
         <ol className={styles.list}>
           {entries.map((entry) => {
-            const canDelete = isOwner || entry.author.id === me.id;
+            const canDelete = isOwner || entry.author.id === me?.id;
             const hidden = entry.secret && !canDelete;
             return (
               <li key={entry.id} className={styles.entry}>

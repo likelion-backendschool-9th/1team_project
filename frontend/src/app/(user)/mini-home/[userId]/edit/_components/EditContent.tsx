@@ -19,6 +19,7 @@ export async function EditContent({ params }: Props) {
 
   const [me, demos] = await Promise.all([getMe(), getDemos(userId, 20)]);
 
+  if (!me) notFound();
   if (me.id !== userId)
     return (
       <section className={kit.card}>
