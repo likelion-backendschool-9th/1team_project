@@ -6,7 +6,6 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.Index;
 import jakarta.persistence.Table;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -19,8 +18,7 @@ import lombok.NoArgsConstructor;
  */
 @Getter
 @Entity
-@Table(name = "mini_homes",
-        indexes = @Index(name = "idx_mini_homes_user", columnList = "user_id"))
+@Table(name = "mini_homes")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class MiniHome extends BaseEntity {
 
@@ -30,7 +28,7 @@ public class MiniHome extends BaseEntity {
     private Long id;
 
     /** 주인 회원 ID(users.id) */
-    @Column(name = "user_id", nullable = false)
+    @Column(name = "user_id", nullable = false, unique = true)
     private Long userId;
 
     /** 대표 데모 1 ID(demos.id) */
