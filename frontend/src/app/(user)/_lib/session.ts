@@ -1,6 +1,6 @@
 import "server-only";
 import { cookies } from "next/headers";
-import { isMockMode } from "@/app/_lib/api/client";
+import { hasBackend } from "@/app/_lib/api/client";
 
 const ACCESS_TOKEN_COOKIE = "access_token";
 const REFRESH_TOKEN_COOKIE = "refresh_token";
@@ -13,7 +13,7 @@ const MOCK_SESSION_COOKIE = "mock_session";
  */
 export async function isLoggedIn(): Promise<boolean> {
   const store = await cookies();
-  if (isMockMode) {
+  if (!hasBackend) {
     const mock = store.get(MOCK_SESSION_COOKIE)?.value;
     if (mock) return mock === "user";
     return process.env.MOCK_GUEST !== "1";
@@ -29,7 +29,7 @@ export async function startMockSession(): Promise<void> {
 /** 로그아웃 시 프론트가 들고 있는 인증 쿠키를 지운다. */
 export async function endSession(): Promise<void> {
   const store = await cookies();
-  if (isMockMode) {
+  if (!hasBackend) {
     store.set(MOCK_SESSION_COOKIE, "guest", { path: "/", httpOnly: true, sameSite: "lax" });
     return;
   }

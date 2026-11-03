@@ -1,7 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { isMockMode } from "@/app/_lib/api/client";
+import { hasBackend } from "@/app/_lib/api/client";
 import { startMockSession } from "@/app/(user)/_lib/session";
 import { isOAuthProvider } from "@/app/_lib/types/auth";
 import { parseRedirect } from "@/app/_lib/redirect";
@@ -18,7 +18,7 @@ export async function startLogin(formData: FormData) {
   const target = parseRedirect(String(formData.get("redirect") ?? ""));
 
   // API_ORIGIN이 없으면 백엔드 연결 전 → 목 로그인
-  if (isMockMode) {
+  if (!hasBackend) {
     if (provider === "kakao") redirect(`/onboarding?redirect=${encodeURIComponent(target)}`);
     await startMockSession();
     redirect(target);

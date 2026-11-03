@@ -1,32 +1,33 @@
 "use client";
 
-import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { Suspense } from "react";
 import { Avatar } from "@/app/_components/ui/Avatar";
 import { formatRelativeTime } from "@/app/_lib/format";
 import type { DmRoom } from "@/app/_lib/types/dm";
+import type { UserSummary } from "@/app/_lib/types/user";
 import styles from "./Dm.module.css";
 
 type Props = {
   rooms: DmRoom[];
   now: number;
+  activeId: number | null;
+  onSelect: (user: UserSummary) => void;
 };
 
-function Rooms({ rooms, now, pathname }: Props & { pathname: string | null }) {
+export function DmRoomList({ rooms, now, activeId, onSelect }: Props) {
   return (
     <nav aria-label="대화 목록" className={styles.rooms}>
       <p className={styles.roomsTitle}>메시지</p>
+      {rooms.length === 0 && <p className={styles.loading}>아직 대화가 없어요.</p>}
       <ul>
         {rooms.map((room) => {
-          const href = `/dm/${room.user.id}`;
-          const active = pathname === href;
+          const active = room.user.id === activeId;
           return (
             <li key={room.user.id}>
-              <Link
-                href={href}
+              <button
+                type="button"
                 className={`${styles.room} ${active ? styles.activeRoom : ""}`}
-                aria-current={active ? "page" : undefined}
+                aria-current={active ? "true" : undefined}
+                onClick={() => onSelect(room.user)}
               >
                 <span className={styles.avatarWrap}>
                   <Avatar name={room.user.nickname} size={44} />
@@ -45,23 +46,11 @@ function Rooms({ rooms, now, pathname }: Props & { pathname: string | null }) {
                     <span className="sr-only">개 안 읽음</span>
                   </span>
                 )}
-              </Link>
+              </button>
             </li>
           );
         })}
       </ul>
     </nav>
-  );
-}
-
-function ActiveRooms(props: Props) {
-  return <Rooms {...props} pathname={usePathname()} />;
-}
-
-export function RoomLinks(props: Props) {
-  return (
-    <Suspense fallback={<Rooms {...props} pathname={null} />}>
-      <ActiveRooms {...props} />
-    </Suspense>
   );
 }
