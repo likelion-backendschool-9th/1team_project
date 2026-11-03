@@ -44,14 +44,14 @@ export async function MainContent({ searchParams }: Props) {
     getHotDemos(),
     getFeeds(activeTag, feedType),
     getServerTime(),
-    getMyDemos(me.id),
+    me ? getMyDemos(me.id) : Promise.resolve([]),
   ]);
 
   return (
     <>
       <TagChips tags={tags} activeTag={activeTag} />
       <HotDemos demos={demos} />
-      <FeedComposer nickname={me.nickname} myDemos={myDemos} />
+      {me && <FeedComposer nickname={me.nickname} myDemos={myDemos} />}
       <section aria-labelledby="feed-list-title">
         <h2 id="feed-list-title" className="sr-only">
           피드 목록
@@ -76,7 +76,7 @@ export async function MainContent({ searchParams }: Props) {
           <ul className={styles.list}>
             {feeds.map((feed) => (
               <li key={feed.id}>
-                <FeedCard feed={feed} myId={me.id} now={now} />
+                <FeedCard feed={feed} myId={me?.id} now={now} />
               </li>
             ))}
           </ul>
