@@ -30,8 +30,12 @@ export async function getNews(q: string | undefined, category: string | undefine
           (!category || item.category === category) &&
           (!q || `${item.title} ${item.summary}`.toLowerCase().includes(q.toLowerCase())),
       );
+  const params = new URLSearchParams();
+  if (q) params.set("q", q);
+  if (category) params.set("category", category);
+  const query = params.toString();
   const { data } = await apiFetch<ApiResponse<NewsItem[]>>(
-    `/api/v1/search/news?${new URLSearchParams({ q: q ?? "개발" })}`,
+    `/api/v1/search/news${query ? `?${query}` : ""}`,
   );
   return data;
 }
