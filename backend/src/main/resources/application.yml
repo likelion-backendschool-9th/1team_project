@@ -18,5 +18,27 @@ spring:
   jackson:
     default-property-inclusion: non_null
 
+  security:
+    oauth2:
+      client:
+        registration:
+          github:
+            client-id: ${GITHUB_CLIENT_ID}
+            client-secret: ${GITHUB_CLIENT_SECRET}
+            scope:
+              - read:user
+              - user:email
+        provider:
+          github:
+            user-name-attribute: id
+
 server:
   port: 8080
+
+app:
+  # 로그인 성공 후 리다이렉트할 프론트 주소
+  frontend-base-url: ${FRONTEND_BASE_URL:http://localhost:3000}
+  jwt:
+    secret: ${JWT_SECRET}
+    access-token-validity: 1800
+    refresh-token-validity: 1209600

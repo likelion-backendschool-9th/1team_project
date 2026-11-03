@@ -9,6 +9,7 @@
 | 저장소 규칙 | [../AGENTS.md](../AGENTS.md) | [../CLAUDE.md](../CLAUDE.md) |
 | 프론트엔드 작업 | [FRONTEND.md](FRONTEND.md) | [../frontend/AGENTS.md](../frontend/AGENTS.md) |
 | 백엔드 작업 | [BACKEND.md](BACKEND.md) | [환경설정.md](환경설정.md) |
+| GitHub OAuth 로컬 설정 | [GitHub-API사용설명서.md](GitHub-API사용설명서.md) | [환경설정.md](환경설정.md) |
 | DB 구조와 결정 | [database-design.md](database-design.md) | [테이블정의서.md](테이블정의서.md), [../erd-v2.sql](../erd-v2.sql) |
 | 데모 업로드 흐름 | [데모-업로드-가이드.md](데모-업로드-가이드.md) | 코드 구현과 함께 확인 |
 | 피드 추천 설계 | [피드-추천-알고리즘.md](피드-추천-알고리즘.md) | 제안 설계이며 구현 여부는 코드에서 확인 |
