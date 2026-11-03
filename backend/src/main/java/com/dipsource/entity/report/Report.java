@@ -10,6 +10,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Index;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import java.time.LocalDateTime;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -18,11 +19,13 @@ import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
-/** 신고. 대상은 여러 기능에 걸쳐 있어 종류(target_type)와 ID로만 가리킨다. 테이블: reports */
+/** 신고. 대상은 여러 기능에 걸쳐 있어 종류(target_type)와 ID로만 가리킨다. 한 회원은 같은 대상을 한 번만 신고한다. 테이블: reports */
 @Getter
 @Entity
 @EntityListeners(AuditingEntityListener.class)
-@Table(name = "reports", indexes = {
+@Table(name = "reports", uniqueConstraints = @UniqueConstraint(
+        name = "uk_reports_reporter_target", columnNames = {"reporter_id", "target_type", "target_id"}),
+        indexes = {
         @Index(name = "idx_reports_status_created", columnList = "status, created_at"),
         @Index(name = "idx_reports_target", columnList = "target_type, target_id")
 })
