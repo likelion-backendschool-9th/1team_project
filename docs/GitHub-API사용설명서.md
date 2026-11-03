@@ -67,3 +67,17 @@ openssl rand -base64 48
 ```
 
 Callback URL(앱에 이미 등록됨): `http://localhost:8080/login/oauth2/code/github`
+
+---
+
+## 5. 미니홈피용 GitHub API (선택)
+
+잔디·레포·언어는 **공개 API**로 조회한다. 로그인 OAuth Client Secret과 다른 값이다.
+
+| 키 | 설명 |
+|----|------|
+| `GITHUB_TOKEN` | (선택) Personal Access Token. 없으면 동작하지만 rate limit이 낮다 |
+
+```env
+GITHUB_TOKEN=
+```
