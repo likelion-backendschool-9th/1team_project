@@ -49,7 +49,7 @@ public class Badge {
     private String description;
 
     /** 획득 조건 유형 */
-    @Column(name = "condition_type", length = 30)
+    @Column(name = "condition_type", nullable = false, length = 30)
     private String conditionType;
 
     /** 획득 조건 값 */
