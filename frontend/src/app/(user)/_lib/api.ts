@@ -21,13 +21,26 @@ import {
   mockUnreadCount,
 } from "./mock";
 
-export async function getMe(): Promise<MyProfile | null> {
+const guest: MyProfile = {
+  id: 0,
+  nickname: "",
+  profileImage: null,
+  techStacks: [],
+  badges: [],
+  plus: false,
+  company: null,
+  followerCount: 0,
+  followingCount: 0,
+  chipBalance: 0,
+};
+
+export async function getMe(): Promise<MyProfile> {
   if (isMockMode) return mockMe;
   try {
     const { data } = await apiFetch<ApiResponse<MyProfile>>("/api/v1/users/me");
     return data;
   } catch (e) {
-    if (e instanceof ApiRequestError && e.status === 401) return null;
+    if (e instanceof ApiRequestError && e.status === 401) return guest;
     throw e;
   }
 }
