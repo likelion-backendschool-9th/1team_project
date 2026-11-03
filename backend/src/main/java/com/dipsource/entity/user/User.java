@@ -119,6 +119,11 @@ public class User extends BaseEntity {
         this.blogSubscriptionPrice = price;
     }
 
+    /** 온보딩 미완료: 기술 스택을 아직 고르지 않았다. */
+    public boolean isOnboardingIncomplete() {
+        return techStacks == null || techStacks.isEmpty();
+    }
+
     /** 활동이 있을 때 호출해 마지막 활동 시각을 갱신한다. */
     public void markActive() {
         this.lastActiveAt = LocalDateTime.now();
