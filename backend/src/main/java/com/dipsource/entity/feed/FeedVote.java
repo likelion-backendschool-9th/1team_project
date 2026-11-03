@@ -7,10 +7,10 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import java.time.LocalDateTime;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -19,12 +19,12 @@ import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
-/** 피드 투표 참여. 테이블: feed_votes */
+/** 피드 투표 참여. 한 회원은 피드 하나에 한 번만 투표한다. 테이블: feed_votes */
 @Getter
 @Entity
 @EntityListeners(AuditingEntityListener.class)
 @Table(name = "feed_votes",
-        indexes = @Index(name = "idx_feed_votes_feed_user", columnList = "feed_id, user_id"))
+        uniqueConstraints = @UniqueConstraint(name = "uk_feed_votes_feed_user", columnNames = {"feed_id", "user_id"}))
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class FeedVote {
 
