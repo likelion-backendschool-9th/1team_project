@@ -8,6 +8,7 @@ import { startLogin } from "./_actions";
 import { ProviderIcon } from "./_components/ProviderIcon";
 import styles from "./page.module.css";
 
+
 export const metadata: Metadata = {
   title: "로그인",
   description: "GitHub, 카카오, 구글 계정으로 찍먹을 시작하세요.",
@@ -19,6 +20,22 @@ const providerLabels: Record<OAuthProvider, string> = {
   kakao: "카카오로 계속하기",
   google: "구글로 계속하기",
 };
+
+const loginErrors: Record<string, string> = {
+  suspended: "이용이 정지된 계정이에요.",
+  deleted: "탈퇴한 계정이에요.",
+};
+
+async function LoginError({ searchParams }: Pick<PageProps<"/login">, "searchParams">) {
+  const { error } = await searchParams;
+  const message = typeof error === "string" ? loginErrors[error] : undefined;
+  if (!message) return null;
+  return (
+    <p role="alert" className={styles.error}>
+      {message}
+      </p>
+  );
+}
 
 async function ProviderList({ searchParams }: Pick<PageProps<"/login">, "searchParams">) {
   const redirectTo = parseRedirect((await searchParams).redirect);
@@ -51,6 +68,7 @@ export default function LoginPage({ searchParams }: PageProps<"/login">) {
         </h1>
         <p className={styles.desc}>별도 가입 없이 소셜 계정으로 바로 시작할 수 있어요.</p>
         <Suspense fallback={<p role="status" aria-busy="true">불러오는 중…</p>}>
+          <LoginError searchParams={searchParams} />
           <ProviderList searchParams={searchParams} />
         </Suspense>
         {process.env.DEV_LOGIN_ENABLED === "true" && (
