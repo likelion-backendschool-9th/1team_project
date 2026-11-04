@@ -5,6 +5,9 @@ import type { UserSummary } from "@/app/_lib/types/user";
 
 export type SearchType = "all" | "user" | "demo" | "post";
 
+/** 검색 결과 정렬. relevance(관련도순)가 기본값이다 */
+export type SearchSort = "relevance" | "latest";
+
 export type SearchResult = {
   users: UserSummary[];
   demos: { id: number; title: string; description: string; author: string; likeCount: number }[];
@@ -30,14 +33,21 @@ function match(text: string, q: string) {
   return text.toLowerCase().includes(q.toLowerCase());
 }
 
-export async function search(q: string): Promise<SearchResult> {
+/** 목 데이터는 작성 시각이 없어서 id가 클수록 최신이라고 본다 */
+function latestFirst<T extends { id: number }>(items: T[], sort: SearchSort) {
+  return sort === "latest" ? [...items].sort((a, b) => b.id - a.id) : items;
+}
+
+export async function search(q: string, sort: SearchSort): Promise<SearchResult> {
   if (isMockMode)
     return {
-      users: Object.values(mockUsers).filter((user) => match(`${user.nickname} ${user.techStacks.join(" ")}`, q)),
-      demos: demos.filter((demo) => match(`${demo.title} ${demo.description}`, q)),
-      posts: posts.filter((post) => match(`${post.title} ${post.excerpt}`, q)),
+      users: latestFirst(Object.values(mockUsers).filter((user) => match(`${user.nickname} ${user.techStacks.join(" ")}`, q)), sort),
+      demos: latestFirst(demos.filter((demo) => match(`${demo.title} ${demo.description}`, q)), sort),
+      posts: latestFirst(posts.filter((post) => match(`${post.title} ${post.excerpt}`, q)), sort),
     };
-  const { data } = await apiFetch<ApiResponse<SearchResult>>(`/api/v1/search?${new URLSearchParams({ q })}`);
+  const query = new URLSearchParams({ q });
+  if (sort !== "relevance") query.set("sort", sort);
+  const { data } = await apiFetch<ApiResponse<SearchResult>>(`/api/v1/search?${query}`);
   return data;
 }
 
