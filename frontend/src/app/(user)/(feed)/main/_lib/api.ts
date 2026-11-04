@@ -20,11 +20,16 @@ export async function getTags(): Promise<Tag[]> {
 }
 
 export async function getHotDemos(): Promise<DemoSummary[]> {
+  // TODO: 데모 API 구현 후 mock fallback 제거
   if (isMockMode) return mockHotDemos;
-  const { data } = await apiFetch<ApiResponse<PageResponse<DemoSummary>>>(
-    "/api/v1/demos?sort=trending&size=7",
-  );
-  return data.content;
+  try {
+    const { data } = await apiFetch<ApiResponse<PageResponse<DemoSummary>>>(
+      "/api/v1/demos?sort=trending&size=7",
+    );
+    return data.content.length > 0 ? data.content : mockHotDemos;
+  } catch {
+    return mockHotDemos;
+  }
 }
 
 export type FeedType = "recommended" | "following";

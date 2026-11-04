@@ -10,6 +10,7 @@ export const metadata: Metadata = { title: "데모 올리기", robots: { index: 
 
 async function UploadContent() {
   const [me, demos] = await Promise.all([getMe(), getDemos(undefined, "latest")]);
+  if (!me) return null;
   const used = demos.filter((demo) => demo.author.id === me.id).length;
   return <UploadForm used={used} capacity={inventoryCapacity(me.plus, 0)} />;
 }

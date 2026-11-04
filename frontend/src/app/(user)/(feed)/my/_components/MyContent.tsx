@@ -15,6 +15,7 @@ const providers = { github: "GitHub", kakao: "카카오", google: "구글" };
 
 export async function MyContent() {
   const [me, account] = await Promise.all([getMe(), getAccount()]);
+  if (!me) return null;
 
   return (
     <div className={kit.stack}>

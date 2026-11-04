@@ -1,6 +1,7 @@
 package com.dipsource.controller.feed;
 
 import com.dipsource.dto.feed.FeedCursorResponse;
+import com.dipsource.global.common.ApiResponse;
 import com.dipsource.service.feed.FeedRecommendationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -24,7 +25,7 @@ public class FeedRecommendationController {
      * - 비로그인: 트렌딩 + 최신
      */
     @GetMapping
-    public ResponseEntity<FeedCursorResponse> getFeeds(
+    public ResponseEntity<ApiResponse<FeedCursorResponse>> getFeeds(
             // type: 피드 종류. "recommended"(추천), "following"(팔로잉). 기본값 recommended
             @RequestParam(defaultValue = "recommended") String type,
             // size: 한 번에 가져올 피드 수. 기본값 20
@@ -44,6 +45,6 @@ public class FeedRecommendationController {
             response = recommendationService.getRecommendedFeeds(userId, cursor, size);
         }
 
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(ApiResponse.of(response));
     }
 }

@@ -49,6 +49,7 @@ server:
   forward-headers-strategy: framework
 
 app:
+  dev-login-enabled: ${DEV_LOGIN_ENABLED:false}
   cookie:
     secure: ${COOKIE_SECURE:false}
   # 로그인 성공 후 리다이렉트할 프론트 주소

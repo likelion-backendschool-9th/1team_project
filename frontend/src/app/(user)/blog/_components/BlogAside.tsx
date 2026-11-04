@@ -24,7 +24,7 @@ async function BlogAsideContent() {
 
   return (
     <>
-      <BlogProfileCard me={me} unreadCount={unreadCount} notifications={notifications} now={now} />
+      <BlogProfileCard me={me!} unreadCount={unreadCount} notifications={notifications} now={now} />
       <SubscribedAuthors authors={authors} />
       <Link href="/my/settings" className={styles.settings}>
         <GearIcon className={styles.settingsIcon} />

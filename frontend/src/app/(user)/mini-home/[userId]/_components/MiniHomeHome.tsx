@@ -55,7 +55,7 @@ export async function MiniHomeHome({ params }: Props) {
         variant={featuredIndex}
         postId={profile.featuredPostId}
         comments={featuredComments}
-        me={me}
+        me={me!}
         now={now}
       />
       <PublicDemos userId={userId} demos={demos} featuredId={featured?.id} />

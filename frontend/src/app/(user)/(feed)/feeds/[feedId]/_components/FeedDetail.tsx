@@ -34,7 +34,7 @@ export async function FeedDetail({ params, searchParams }: Props) {
     getServerTime(),
     searchParams,
   ]);
-  const editing = query.edit === "1" && feed.author.id === me.id;
+  const editing = query.edit === "1" && feed.author.id === me?.id;
 
   return (
     <div className={kit.stack}>
@@ -44,7 +44,7 @@ export async function FeedDetail({ params, searchParams }: Props) {
       {editing ? (
         <FeedEditForm action={updateFeed.bind(null, feed.id)} feedId={feed.id} content={feed.content} />
       ) : (
-        <FeedCard feed={feed} myId={me.id} now={now} />
+        <FeedCard feed={feed} myId={me?.id} now={now} />
       )}
       <section id="comments" className={`${kit.card} ${kit.stack}`} aria-labelledby="comments-title">
         <h2 id="comments-title" className={kit.cardTitle}>
@@ -54,7 +54,7 @@ export async function FeedDetail({ params, searchParams }: Props) {
         <CommentList
           comments={comments}
           now={now}
-          me={me}
+          me={me ?? undefined}
           updateComment={updateFeedComment}
           deleteComment={deleteFeedComment}
           likeComment={toggleFeedCommentLike}

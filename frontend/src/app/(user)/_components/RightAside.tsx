@@ -27,7 +27,7 @@ async function RightAsideContent() {
 
   return (
     <>
-      <ProfileCard me={me} unreadCount={unreadCount} notifications={notifications} now={now} />
+      <ProfileCard me={me!} unreadCount={unreadCount} notifications={notifications} now={now} />
       <FollowingList followings={followings} />
     </>
   );

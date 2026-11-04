@@ -6,7 +6,7 @@ import styles from "./MiniHomeFrame.module.css";
 
 type Props = {
   userId: number;
-  myId: number;
+  myId?: number;
 };
 
 // "홈"은 파도타기로 남의 홈피를 구경하다가도 내 홈피로 돌아오는 탭이다. 나머지 탭은 지금 보는 홈피 기준.

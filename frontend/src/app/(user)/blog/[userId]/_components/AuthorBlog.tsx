@@ -28,7 +28,7 @@ export async function AuthorBlog({ params }: Props) {
     getServerTime(),
   ]);
   const series = allSeries.filter((item) => item.author.id === userId);
-  const mine = me.id === userId;
+  const mine = me?.id === userId;
 
   return (
     <div className={kit.stack}>

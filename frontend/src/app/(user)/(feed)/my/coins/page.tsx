@@ -15,6 +15,7 @@ const historyLabels = { charge: "충전", use: "사용", refund: "환불" };
 
 async function CoinsContent() {
   const [me, packages, history] = await Promise.all([getMe(), getPackages(), getChipHistory()]);
+  if (!me) return null;
 
   return (
     <>
