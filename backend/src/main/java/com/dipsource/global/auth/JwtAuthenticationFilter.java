@@ -29,7 +29,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String accessToken = readCookie(request, AuthCookieNames.ACCESS);
 
         // 유효한 Access Token이 있으면 인증 정보를 세팅한다.
-        if (accessToken != null && jwtProvider.validate(accessToken)) {
+        if (accessToken != null && jwtProvider.isAccessToken(accessToken)) {
             Long userId = jwtProvider.getUserId(accessToken);
             String role = jwtProvider.getRole(accessToken);
             UserPrincipal principal = new UserPrincipal(userId, role == null ? "USER" : role);

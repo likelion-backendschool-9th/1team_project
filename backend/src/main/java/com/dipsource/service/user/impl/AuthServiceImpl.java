@@ -3,6 +3,10 @@ package com.dipsource.service.user.impl;
 import com.dipsource.entity.user.SocialAccount;
 import com.dipsource.entity.user.SocialProvider;
 import com.dipsource.entity.user.User;
+import com.dipsource.entity.user.UserStatus;
+import com.dipsource.global.auth.JwtProvider;
+import com.dipsource.global.exception.BusinessException;
+import com.dipsource.global.exception.ErrorCode;
 import com.dipsource.repository.user.SocialAccountRepository;
 import com.dipsource.repository.user.UserRepository;
 import com.dipsource.service.user.AuthResult;
@@ -18,6 +22,7 @@ public class AuthServiceImpl implements AuthService {
 
     private final UserRepository userRepository;
     private final SocialAccountRepository socialAccountRepository;
+    private final JwtProvider jwtProvider;
 
     @Override
     @Transactional
@@ -31,6 +36,22 @@ public class AuthServiceImpl implements AuthService {
                 .findByProviderAndProviderId(SocialProvider.GITHUB, providerId)
                 .map(account -> new AuthResult(account.getUser(), false))
                 .orElseGet(() -> createGithubUser(providerId, email, githubLogin, avatarUrl));
+    }
+
+    @Override 
+    @Transactional(readOnly = true)
+    public User findUserByRefreshToken(String refreshToken) {
+        if (refreshToken == null || !jwtProvider.isRefreshToken(refreshToken)) {
+            throw new BusinessException(ErrorCode.UNAUTHORIZED);
+        }
+        Long userId = jwtProvider.getUserId(refreshToken);
+        User user = userRepository.findById(userId)
+                    .orElseThrow(() -> new BusinessException(ErrorCode.UNAUTHORIZED));
+        
+        if (user.getStatus() != UserStatus.ACTIVE) {
+            throw new BusinessException(ErrorCode.UNAUTHORIZED);
+        }
+        return user;
     }
 
     private AuthResult createGithubUser(
