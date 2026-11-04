@@ -48,7 +48,7 @@ public class SecurityConfig {
                         // 피드 ,블로그, 뉴스, 이벤트 조회는 비로그인도 가능
                         .requestMatchers(HttpMethod.GET, "/api/v1/feeds", "/api/v1/feeds/*", "/api/v1/feeds/*/comments", 
                                                         "/api/v1/posts/list", "/api/v1/users/*/posts", "/api/v1/posts/*/comments", 
-                                                        "/api/v1/search/news", "/api/v1/events", "/api/v1/events/*", "/api/v1/posts/*" ).permitAll()
+                                                        "/api/v1/search", "/api/v1/search/news", "/api/v1/events", "/api/v1/events/*", "/api/v1/posts/*" ).permitAll()
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/error").permitAll()
                         // 그 외 API는 인증 필요 (이후 공개 API는 여기서 풀면 된다)

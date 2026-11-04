@@ -19,6 +19,9 @@ configurations {
     }
 }
 
+// Docker Engine 29 이상과 호환되는 버전 (Boot 3.4.1 기본값 1.20.4는 Docker API 협상에 실패한다)
+ext['testcontainers.version'] = '1.21.4'
+
 repositories {
     mavenCentral()
 }
@@ -42,6 +45,9 @@ dependencies {
 
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.springframework.security:spring-security-test'
+    testImplementation 'org.springframework.boot:spring-boot-testcontainers'
+    testImplementation 'org.testcontainers:junit-jupiter'
+    testImplementation 'org.testcontainers:postgresql'
 }
 
 tasks.named('test') {
