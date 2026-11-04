@@ -1,6 +1,7 @@
 package com.dipsource.global.auth;
 
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.stereotype.Component;
@@ -10,9 +11,11 @@ import org.springframework.stereotype.Component;
 public class AuthCookieWriter {
 
     private final JwtProperties jwtProperties;
+    private final boolean secure;
 
-    public AuthCookieWriter(JwtProperties jwtProperties) {
+    public AuthCookieWriter(JwtProperties jwtProperties, @Value("${app.cookie.secure}") boolean secure) {
         this.jwtProperties = jwtProperties;
+        this.secure = secure;
     }
 
     /** 로그인 성공 시 Access / Refresh 쿠키를 응답에 넣는다. */
@@ -32,7 +35,7 @@ public class AuthCookieWriter {
     private ResponseCookie buildCookie(String name, String value, long maxAgeSeconds) {
         return ResponseCookie.from(name, value)
                 .httpOnly(true)   // JS에서 읽지 못하게 한다
-                .secure(false)    // 로컬 HTTP용. 배포 시 true로 바꾼다
+                .secure(secure)    // 로컬(http)은 false, 배포(https)는 true — COOKIE_SECURE로 정한다
                 .sameSite("Lax")
                 .path("/")
                 .maxAge(maxAgeSeconds)
