@@ -3,6 +3,7 @@ package com.dipsource.service.user;
 import com.dipsource.dto.user.CompleteProfileRequest;
 import com.dipsource.dto.user.NicknameAvailableResponse;
 import com.dipsource.dto.user.UserMeResponse;
+import com.dipsource.dto.user.UserProfileResponse;
 import com.dipsource.dto.user.UserSummaryResponse;
 import java.util.Collection;
 import java.util.Map;
@@ -13,6 +14,8 @@ public interface UserService {
 
     /** 내 정보 조회 */
     UserMeResponse getMe(Long userId);
+
+    UserProfileResponse getProfile(Long userId, Long viewerId);
 
     /** 닉네임 사용 가능 여부 (본인 닉네임은 사용 가능으로 본다) */
     NicknameAvailableResponse isNicknameAvailable(Long userId, String nickname);
