@@ -1,7 +1,10 @@
 package com.dipsource.service.search.impl;
 
 import com.dipsource.dto.search.SearchAllResponse;
+import com.dipsource.dto.search.SearchCondition;
+import com.dipsource.dto.search.SearchOperator;
 import com.dipsource.dto.search.SearchSection;
+import com.dipsource.dto.search.SearchSort;
 import com.dipsource.dto.search.SearchType;
 import com.dipsource.global.common.PageResponse;
 import com.dipsource.global.exception.BusinessException;
@@ -34,28 +37,29 @@ public class SearchServiceImpl implements SearchService {
     private final UserSearchService userSearchService;
 
     @Override
-    public SearchAllResponse searchAll(String query) {
-        String keyword = normalize(query);
+    public SearchAllResponse searchAll(String query, SearchOperator operator, SearchSort sort) {
+        SearchCondition condition = SearchCondition.of(normalize(query), operator, sort);
         Pageable preview = PageRequest.of(0, PREVIEW_SIZE);
         return new SearchAllResponse(
-                SearchSection.from(postSearchService.search(keyword, preview)),
-                SearchSection.from(feedSearchService.search(keyword, preview)),
-                SearchSection.from(demoSearchService.search(keyword, preview)),
-                SearchSection.from(userSearchService.search(keyword, preview))
+                SearchSection.from(postSearchService.search(condition, preview)),
+                SearchSection.from(feedSearchService.search(condition, preview)),
+                SearchSection.from(demoSearchService.search(condition, preview)),
+                SearchSection.from(userSearchService.search(condition, preview))
         );
     }
 
     @Override
-    public PageResponse<?> search(String query, SearchType type, Pageable pageable) {
-        String keyword = normalize(query);
-        // 정렬은 검색 방식이 정하므로 클라이언트가 보낸 sort는 쓰지 않는다
+    public PageResponse<?> search(String query, SearchType type, SearchOperator operator, SearchSort sort,
+                                  Pageable pageable) {
+        SearchCondition condition = SearchCondition.of(normalize(query), operator, sort);
+        // 정렬은 SearchSort로 받으므로 Pageable에 들어온 정렬은 쓰지 않는다
         Pageable page = PageRequest.of(pageable.getPageNumber(), Math.min(pageable.getPageSize(), MAX_PAGE_SIZE));
 
         return switch (type) {
-            case POST -> postSearchService.search(keyword, page);
-            case FEED -> feedSearchService.search(keyword, page);
-            case DEMO -> demoSearchService.search(keyword, page);
-            case USER -> userSearchService.search(keyword, page);
+            case POST -> postSearchService.search(condition, page);
+            case FEED -> feedSearchService.search(condition, page);
+            case DEMO -> demoSearchService.search(condition, page);
+            case USER -> userSearchService.search(condition, page);
             case ALL -> throw new IllegalArgumentException("전체 검색은 searchAll을 쓴다");
         };
     }

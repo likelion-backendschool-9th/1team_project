@@ -1,6 +1,7 @@
 package com.dipsource.service.feed;
 
 import com.dipsource.dto.feed.FeedSearchItemResponse;
+import com.dipsource.dto.search.SearchCondition;
 import com.dipsource.global.common.PageResponse;
 import org.springframework.data.domain.Pageable;
 
@@ -8,9 +9,9 @@ import org.springframework.data.domain.Pageable;
 public interface FeedSearchService {
 
     /**
-     * 공개된 피드를 키워드로 검색한다. 숨김·삭제된 피드는 빠진다.
+     * 공개된 피드를 검색 조건으로 검색한다. 숨김·삭제된 피드는 빠진다.
      *
-     * @param keyword 앞뒤 공백을 제거한, 비어 있지 않은 검색어
+     * @param condition 정리된 검색어, and/or, 정렬
      */
-    PageResponse<FeedSearchItemResponse> search(String keyword, Pageable pageable);
+    PageResponse<FeedSearchItemResponse> search(SearchCondition condition, Pageable pageable);
 }

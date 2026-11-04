@@ -1,6 +1,7 @@
 package com.dipsource.service.demo.impl;
 
 import com.dipsource.dto.demo.DemoSearchItemResponse;
+import com.dipsource.dto.search.SearchCondition;
 import com.dipsource.dto.user.UserSummaryResponse;
 import com.dipsource.entity.demo.Demo;
 import com.dipsource.global.common.PageResponse;
@@ -24,8 +25,8 @@ public class DemoSearchServiceImpl implements DemoSearchService {
 
     @Override
     @Transactional(readOnly = true)
-    public PageResponse<DemoSearchItemResponse> search(String keyword, Pageable pageable) {
-        Page<Demo> demos = demoSearchRepository.searchByKeyword(keyword, pageable);
+    public PageResponse<DemoSearchItemResponse> search(SearchCondition condition, Pageable pageable) {
+        Page<Demo> demos = demoSearchRepository.search(condition, pageable);
         Map<Long, UserSummaryResponse> authors = userService.getSummaries(
                 demos.getContent().stream().map(Demo::getUserId).distinct().toList());
         return PageResponse.of(demos, demo -> {
