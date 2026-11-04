@@ -29,6 +29,8 @@ services:
       # OAuth 로그인 후 돌아갈 프론트 주소. 비어 있으면 localhost:3000으로 튕기므로 필수로 둔다.
       FRONTEND_BASE_URL: ${FRONTEND_BASE_URL:?FRONTEND_BASE_URL을 서버 .env에 설정해야 합니다}
       COOKIE_SECURE: "true"
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
     depends_on:
       db:
         condition: service_healthy
