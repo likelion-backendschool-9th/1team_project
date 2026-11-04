@@ -51,9 +51,17 @@ public class MiniHome extends BaseEntity {
     @Column(length = 300)
     private String intro;
 
-    /** 스킨 이름. default 등 기본 스킨 이름이고, custom이면 custom_skin_json을 읽는다 */
+    /** 스킨 이름. 화면 스킨 이름이고, custom이면 custom_skin_json을 읽는다 */
     @Column(name = "skin_theme", length = 50)
-    private String skinTheme = "default";
+    private String skinTheme = "cream";
+
+    /** 개인 도메인 */
+    @Column(length = 100)
+    private String domain;
+
+    /** 배경음악 곡 id */
+    @Column(length = 50)
+    private String bgm;
 
     /** 커스텀 스킨 JSON. 배경색·글자색·배경 이미지 URL 등. skin_theme이 custom일 때 사용 */
     @Column(name = "custom_skin_json", length = 5000)
@@ -74,9 +82,11 @@ public class MiniHome extends BaseEntity {
         this.intro = intro;
     }
 
-    public void update(String title, String intro) {
+    public void update(String title, String intro, String domain, String bgm) {
         this.title = title;
         this.intro = intro;
+        this.domain = domain;
+        this.bgm = bgm;
     }
 
     public void changeSkin(String skinTheme, String customSkinJson) {

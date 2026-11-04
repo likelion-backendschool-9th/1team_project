@@ -1,0 +1,202 @@
+package com.dipsource.service.minihome.impl;
+
+import com.dipsource.dto.minihome.MiniHomeResponse;
+import com.dipsource.dto.minihome.UpdateMiniHomeRequest;
+import com.dipsource.dto.user.UserSummaryResponse;
+import com.dipsource.entity.minihome.MiniHome;
+import com.dipsource.global.exception.BusinessException;
+import com.dipsource.global.exception.ErrorCode;
+import com.dipsource.repository.minihome.MiniHomeRepository;
+import com.dipsource.service.minihome.MiniHomeService;
+import com.dipsource.service.user.UserService;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+/** {@link MiniHomeService} 구현체. */
+@Service
+@RequiredArgsConstructor
+public class MiniHomeServiceImpl implements MiniHomeService {
+
+    private static final String DEFAULT_SKIN = "cream";
+
+    private final MiniHomeRepository miniHomeRepository;
+    private final UserService userService;
+
+    @Override
+    @Transactional
+    public MiniHomeResponse getOrCreate(Long userId) {
+        return toResponse(loadOrCreate(userId));
+    }
+
+    @Override
+    @Transactional
+    public MiniHomeResponse update(Long userId, UpdateMiniHomeRequest request) {
+        MiniHome home = loadOrCreate(userId);
+        String headline = requireHeadline(request.headline());
+        String quote = optional(request.quote(), 80, "오늘의 한마디는 80자 이하로 입력해 주세요.");
+        String domain = optional(request.domain(), 100, "개인 도메인은 100자 이하로 입력해 주세요.");
+        String bgm = optional(request.bgm(), 50, "배경음악 값이 너무 길어요.");
+        List<Long> ordered = arrange(request.showcaseDemoIds(), parseFeatured(request.featuredDemoId()));
+        home.update(headline, quote, domain, bgm);
+        home.changeSkin(normalizeSkin(request.skin()), home.getCustomSkinJson());
+        applyShowcase(home, ordered);
+        return toResponse(miniHomeRepository.save(home));
+    }
+
+    @Override
+    @Transactional
+    public MiniHomeResponse updateFeaturedDemo(Long userId, Long demoId) {
+        if (demoId == null || demoId <= 0) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "대표 데모를 골라 주세요.");
+        }
+        MiniHome home = loadOrCreate(userId);
+        List<Long> current = showcaseIds(home);
+        if (!current.contains(demoId)) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "대표 데모는 공개할 데모 중에서 골라 주세요.");
+        }
+        applyShowcase(home, arrange(current, demoId));
+        return toResponse(miniHomeRepository.save(home));
+    }
+
+    private MiniHome loadOrCreate(Long userId) {
+        if (!userService.isActiveUser(userId)) {
+            throw new BusinessException(ErrorCode.NOT_FOUND, "회원을 찾을 수 없습니다");
+        }
+        return miniHomeRepository.findByUserId(userId)
+                .orElseGet(() -> miniHomeRepository.save(MiniHome.builder()
+                        .userId(userId)
+                        .title(nickname(userId))
+                        .build()));
+    }
+
+    private String nickname(Long userId) {
+        Map<Long, UserSummaryResponse> summaries = userService.getSummaries(List.of(userId));
+        UserSummaryResponse summary = summaries.get(userId);
+        if (summary == null || summary.nickname() == null || summary.nickname().isBlank()) {
+            throw new BusinessException(ErrorCode.NOT_FOUND, "회원을 찾을 수 없습니다");
+        }
+        String nickname = summary.nickname().trim();
+        return nickname.length() <= 50 ? nickname : nickname.substring(0, 50);
+    }
+
+    private static String requireHeadline(String headline) {
+        if (headline == null || headline.isBlank()) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "한 줄 소개를 입력해 주세요.");
+        }
+        String value = headline.trim();
+        if (value.length() > 30) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "한 줄 소개는 30자 이하로 입력해 주세요.");
+        }
+        return value;
+    }
+
+    private static String optional(String value, int max, String message) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        String trimmed = value.trim();
+        if (trimmed.length() > max) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, message);
+        }
+        return trimmed;
+    }
+
+    private static String normalizeSkin(String skin) {
+        if (skin == null || skin.isBlank() || "default".equals(skin)) {
+            return DEFAULT_SKIN;
+        }
+        String value = skin.trim();
+        if (value.length() > 50) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "스킨 이름이 너무 길어요.");
+        }
+        return value;
+    }
+
+    private static Long parseFeatured(String raw) {
+        if (raw == null || raw.isBlank()) {
+            return null;
+        }
+        try {
+            long id = Long.parseLong(raw.trim());
+            if (id <= 0) {
+                throw new BusinessException(ErrorCode.BAD_REQUEST, "대표 데모는 공개할 데모 중에서 골라 주세요.");
+            }
+            return id;
+        } catch (NumberFormatException ex) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "대표 데모는 공개할 데모 중에서 골라 주세요.");
+        }
+    }
+
+    /** featured가 있으면 1번으로 옮기고 나머지 순서는 유지한다. */
+    private static List<Long> arrange(List<Long> showcase, Long featured) {
+        if (showcase == null || showcase.isEmpty() || showcase.size() > 3) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "공개할 데모는 1~3개만 고를 수 있어요.");
+        }
+        List<Long> ids = new ArrayList<>();
+        for (Long id : showcase) {
+            if (id == null || id <= 0) {
+                throw new BusinessException(ErrorCode.BAD_REQUEST, "공개할 데모를 다시 골라 주세요.");
+            }
+            ids.add(id);
+        }
+        if (featured != null && !ids.contains(featured)) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "대표 데모는 공개할 데모 중에서 골라 주세요.");
+        }
+        List<Long> ordered = new ArrayList<>();
+        if (featured != null) {
+            ordered.add(featured);
+        }
+        for (Long id : ids) {
+            if (featured != null && featured.equals(id)) {
+                continue;
+            }
+            ordered.add(id);
+        }
+        return List.copyOf(ordered);
+    }
+
+    private static void applyShowcase(MiniHome home, List<Long> ordered) {
+        home.changeShowcase(
+                ordered.get(0),
+                ordered.size() > 1 ? ordered.get(1) : null,
+                ordered.size() > 2 ? ordered.get(2) : null
+        );
+    }
+
+    private static MiniHomeResponse toResponse(MiniHome home) {
+        return new MiniHomeResponse(
+                home.getTitle(),
+                home.getIntro(),
+                displaySkin(home.getSkinTheme()),
+                home.getDomain(),
+                home.getBgm(),
+                showcaseIds(home),
+                home.getShowcaseDemo1Id()
+        );
+    }
+
+    private static List<Long> showcaseIds(MiniHome home) {
+        List<Long> ids = new ArrayList<>();
+        if (home.getShowcaseDemo1Id() != null) {
+            ids.add(home.getShowcaseDemo1Id());
+        }
+        if (home.getShowcaseDemo2Id() != null) {
+            ids.add(home.getShowcaseDemo2Id());
+        }
+        if (home.getShowcaseDemo3Id() != null) {
+            ids.add(home.getShowcaseDemo3Id());
+        }
+        return List.copyOf(ids);
+    }
+
+    private static String displaySkin(String skin) {
+        if (skin == null || skin.isBlank() || "default".equals(skin)) {
+            return DEFAULT_SKIN;
+        }
+        return skin;
+    }
+}
