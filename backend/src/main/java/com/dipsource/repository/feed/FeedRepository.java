@@ -4,6 +4,7 @@ import com.dipsource.entity.feed.Feed;
 import java.util.List;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -119,8 +120,36 @@ public interface FeedRepository extends JpaRepository<Feed, Long> {
     );
 
     /**
+     * 내가 쓴 피드 조회 (커서 지원).
+     */
+    @Query(nativeQuery = true, value = """
+        SELECT f.*
+        FROM feeds f
+        WHERE f.status = 'ACTIVE'
+          AND f.user_id = :userId
+          AND (:cursorId IS NULL OR f.id < :cursorId)
+        ORDER BY f.id DESC
+        LIMIT :size
+        """)
+    List<Feed> findMyFeeds(
+            @Param("userId") Long userId,
+            @Param("cursorId") Long cursorId,
+            @Param("size") int size
+    );
+
+    /**
      * 최신 피드 조회 (비로그인 사용자용).
      */
     @Query("SELECT f FROM Feed f WHERE f.status = 'ACTIVE' ORDER BY f.id DESC")
     List<Feed> findLatestFeeds(Pageable pageable);
+
+    /** 좋아요 수 +1. 엔티티 필드 갱신 대신 DB UPDATE로 동시성 처리. */
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("UPDATE Feed f SET f.likeCount = f.likeCount + 1 WHERE f.id = :feedId AND f.status = com.dipsource.entity.feed.FeedStatus.ACTIVE")
+    int incrementLikeCount(@Param("feedId") Long feedId);
+
+    /** 좋아요 수 -1 (0 미만으로 내려가지 않음). */
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("UPDATE Feed f SET f.likeCount = f.likeCount - 1 WHERE f.id = :feedId AND f.likeCount > 0")
+    int decrementLikeCount(@Param("feedId") Long feedId);
 }

@@ -50,6 +50,7 @@ public class UserTagProfile {
     }
 
     public void addWeight(int delta) {
-        this.weight += delta;
+        // 좋아요 취소 등으로 음수가 되지 않게 하한을 0으로 둔다
+        this.weight = Math.max(0, this.weight + delta);
     }
 }

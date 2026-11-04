@@ -1,6 +1,7 @@
 package com.dipsource.service.feed;
 
 import com.dipsource.dto.feed.FeedCreateRequest;
+import com.dipsource.dto.feed.FeedCursorResponse;
 import com.dipsource.dto.feed.FeedResponse;
 import com.dipsource.dto.feed.FeedUpdateRequest;
 import com.dipsource.entity.feed.Feed;
@@ -119,6 +120,20 @@ public class FeedService {
     public void delete(Long userId, Long feedId) {
         Feed feed = findOwnActiveFeed(userId, feedId);
         feed.delete();
+    }
+
+    /**
+     * 내가 쓴 피드 목록 조회 (커서 페이지네이션)
+     */
+    @Transactional(readOnly = true)
+    public FeedCursorResponse getMyFeeds(Long userId, Long cursor, int size) {
+        List<Feed> feeds = feedRepository.findMyFeeds(userId, cursor, size);
+        User author = userRepository.findById(userId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "사용자를 찾을 수 없습니다"));
+        List<FeedResponse> responses = feeds.stream()
+                .map(feed -> FeedResponse.from(feed, author))
+                .toList();
+        return FeedCursorResponse.of(responses, size);
     }
 
     /**

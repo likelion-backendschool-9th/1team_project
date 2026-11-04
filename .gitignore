@@ -61,3 +61,7 @@ next-env.d.ts
 *_local.md
 *_LOCAL.md
 docs/_local/
+
+### Cursor local rules (개인 작업 절차 — GitHub에 올리지 않음) ###
+.cursor/rules/*.mdc
+.cursor/hooks/.pending-handoff

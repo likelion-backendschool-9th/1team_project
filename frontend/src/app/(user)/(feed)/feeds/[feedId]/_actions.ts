@@ -30,7 +30,11 @@ export async function updateFeed(feedId: number, previous: FormState, formData: 
   const state = await runForm(previous, values, errors, () =>
     mutate(`/api/v1/feeds/${feedId}`, "PUT", values, "피드를 수정했어요."),
   );
-  if (state.ok) revalidatePath(`/feeds/${feedId}`);
+  if (state.ok) {
+    revalidatePath(`/feeds/${feedId}`);
+    revalidatePath("/my/feeds");
+    revalidatePath("/main");
+  }
   return state;
 }
 

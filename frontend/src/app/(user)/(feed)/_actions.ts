@@ -1,5 +1,6 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { apiFetch, ApiRequestError, isMockMode } from "@/app/_lib/api/client";
 
 export type ActionResult = { ok: boolean; message?: string };
@@ -61,5 +62,10 @@ export async function blockUser(userId: number) {
 export async function deleteFeed(feedId: number) {
   if (!isId(feedId)) return { ok: false, message: "잘못된 요청이에요." };
   const result = await request(`/api/v1/feeds/${feedId}`, "DELETE");
+  if (result.ok) {
+    revalidatePath("/my/feeds");
+    revalidatePath("/main");
+    revalidatePath(`/feeds/${feedId}`);
+  }
   return { ok: result.ok, message: result.message ?? "피드를 삭제했어요." };
 }
