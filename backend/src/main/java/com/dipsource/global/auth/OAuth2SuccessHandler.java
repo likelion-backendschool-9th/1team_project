@@ -1,9 +1,12 @@
 package com.dipsource.global.auth;
 
+import com.dipsource.entity.user.UserStatus;
 import com.dipsource.service.user.AuthResult;
 import com.dipsource.service.user.AuthService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
+
 import java.io.IOException;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
@@ -42,6 +45,19 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
         String avatarUrl = (String) attributes.get("avatar_url");
 
         AuthResult result = authService.findOrCreateFromGithub(providerId, email, login, avatarUrl);
+
+        UserStatus status = result.user().getStatus();
+        if (status != UserStatus.ACTIVE) {
+            HttpSession session = request.getSession(false);
+            if (session != null) {
+                session.invalidate();
+            }
+            authCookieWriter.clear(response);
+            String reason = status.name().toLowerCase();
+            getRedirectStrategy().sendRedirect(request, response, frontendBaseUrl + "/login?error=" + reason);
+            return;
+            
+        } 
 
         // 우리 서비스용 JWT를 발급한다.
         String accessToken = jwtProvider.createAccessToken(
