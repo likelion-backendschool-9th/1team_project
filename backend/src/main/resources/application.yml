@@ -38,6 +38,7 @@ spring:
 
 server:
   port: 8080
+  forward-headers-strategy: framework
 
 app:
   # 로그인 성공 후 리다이렉트할 프론트 주소
