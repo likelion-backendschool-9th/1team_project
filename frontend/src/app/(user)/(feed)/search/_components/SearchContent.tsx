@@ -3,7 +3,8 @@ import { connection } from "next/server";
 import { Avatar } from "@/app/_components/ui/Avatar";
 import kit from "@/app/_components/ui/kit.module.css";
 import { LinkTabs } from "@/app/_components/ui/LinkTabs";
-import { getPopularKeywords, search, type SearchType } from "../_lib/api";
+import { getPopularKeywords, search, type SearchSort, type SearchType } from "../_lib/api";
+import styles from "./SearchContent.module.css";
 
 type Props = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
@@ -16,13 +17,19 @@ const types: { value: SearchType; label: string }[] = [
   { value: "post", label: "글" },
 ];
 
+const sorts: { value: SearchSort; label: string }[] = [
+  { value: "relevance", label: "관련도순" },
+  { value: "latest", label: "최신순" },
+];
+
 function first(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value;
 }
 
-function href(q: string, type: SearchType) {
+function href(q: string, type: SearchType, sort: SearchSort = "relevance") {
   const query = new URLSearchParams({ q });
   if (type !== "all") query.set("type", type);
+  if (sort !== "relevance") query.set("sort", sort);
   return `/search?${query}`;
 }
 
@@ -31,6 +38,7 @@ export async function SearchContent({ searchParams }: Props) {
   const params = await searchParams;
   const q = first(params.q)?.trim().slice(0, 50) ?? "";
   const type = types.find((item) => item.value === first(params.type))?.value ?? "all";
+  const sort = sorts.find((item) => item.value === first(params.sort))?.value ?? "relevance";
   const popular = await getPopularKeywords();
 
   if (!q)
@@ -51,7 +59,7 @@ export async function SearchContent({ searchParams }: Props) {
       </section>
     );
 
-  const result = await search(q);
+  const result = await search(q, sort);
   const total = result.users.length + result.demos.length + result.posts.length;
   const show = (target: SearchType) => type === "all" || type === target;
 
@@ -64,7 +72,7 @@ export async function SearchContent({ searchParams }: Props) {
         label="검색 대상"
         variant="line"
         items={types.map((item) => ({
-          href: href(q, item.value),
+          href: href(q, item.value, sort),
           label: item.label,
           active: item.value === type,
           count:
@@ -77,6 +85,23 @@ export async function SearchContent({ searchParams }: Props) {
                   : total,
         }))}
       />
+      <form action="/search" method="get" className={styles.sortForm}>
+        <input type="hidden" name="q" value={q} />
+        {type !== "all" && <input type="hidden" name="type" value={type} />}
+        <label htmlFor="search-sort" className={kit.label}>
+          정렬
+        </label>
+        <select id="search-sort" name="sort" defaultValue={sort} className={`${kit.select} ${styles.sortSelect}`}>
+          {sorts.map((item) => (
+            <option key={item.value} value={item.value}>
+              {item.label}
+            </option>
+          ))}
+        </select>
+        <button type="submit" className={kit.btn}>
+          적용
+        </button>
+      </form>
       {total === 0 && (
         <p className={kit.empty}>
           검색 결과가 없어요. 다른 키워드로 찾아보세요.

@@ -1,0 +1,11 @@
+.sortForm {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.sortSelect {
+  width: auto;
+  padding: 8px 12px;
+}
