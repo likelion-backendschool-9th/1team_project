@@ -10,6 +10,7 @@ import com.dipsource.global.exception.BusinessException;
 import com.dipsource.global.exception.ErrorCode;
 import com.dipsource.repository.feed.FeedRepository;
 import com.dipsource.repository.feed.FeedTagRepository;
+import com.dipsource.repository.tag.TagRepository;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -25,6 +26,7 @@ public class FeedService {
 
     private final FeedRepository feedRepository;
     private final FeedTagRepository feedTagRepository;
+    private final TagRepository tagRepository;
 
     /**
      * 피드 생성
@@ -40,12 +42,18 @@ public class FeedService {
                 .userId(userId)
                 .content(request.content())
                 .demoId(request.demoId())
+                .imageUrls(request.imageUrls())
+                .linkUrl(request.linkUrl())
                 .pollOptions(request.pollOptions())
                 .build();
         feedRepository.save(feed);
 
-        // 태그가 있으면 feed_tags 테이블에 저장
+        // 태그가 있으면 존재 여부 확인 후 feed_tags 테이블에 저장
         if (request.tagIds() != null && !request.tagIds().isEmpty()) {
+            long existCount = tagRepository.countByIdIn(request.tagIds());
+            if (existCount != request.tagIds().size()) {
+                throw new BusinessException(ErrorCode.NOT_FOUND, "존재하지 않는 태그가 포함되어 있습니다");
+            }
             List<FeedTag> tags = request.tagIds().stream()
                     .map(tagId -> new FeedTag(feed, tagId))
                     .toList();

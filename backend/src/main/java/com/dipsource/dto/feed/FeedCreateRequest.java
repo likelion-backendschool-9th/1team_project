@@ -19,6 +19,12 @@ public record FeedCreateRequest(
         /** 피드에 달 태그 ID 목록. 태그가 없으면 null 또는 빈 리스트 */
         List<Long> tagIds,
 
+        /** 첨부 이미지 URL 목록. 이미지가 없으면 null */
+        List<String> imageUrls,
+
+        /** 첨부 링크 URL. 링크가 없으면 null */
+        String linkUrl,
+
         /** 투표 선택지. 투표가 없는 피드면 null. 예: ["Spring", "Node"] */
         List<String> pollOptions
 ) {}
