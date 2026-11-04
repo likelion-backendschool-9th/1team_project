@@ -2,7 +2,9 @@ package com.dipsource.service.post;
 
 import com.dipsource.dto.post.PostSearchItemResponse;
 import com.dipsource.dto.search.SearchCondition;
+import com.dipsource.dto.search.SearchTermCandidate;
 import com.dipsource.global.common.PageResponse;
+import java.util.Optional;
 import org.springframework.data.domain.Pageable;
 
 /** 블로그 글 검색. 통합 검색(search)에서 쓴다. */
@@ -15,4 +17,12 @@ public interface PostSearchService {
      * @param condition 정리된 검색어, and/or, 정렬
      */
     PageResponse<PostSearchItemResponse> search(SearchCondition condition, Pageable pageable);
+
+    /**
+     * 오타 교정 후보. 공개 글 제목에 나오는 단어 중 검색 단어와 가장 가까운 단어.
+     *
+     * @param word        소문자 검색 단어
+     * @param maxDistance 허용하는 최대 편집 거리
+     */
+    Optional<SearchTermCandidate> findClosestTerm(String word, int maxDistance);
 }

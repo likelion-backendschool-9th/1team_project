@@ -3,9 +3,11 @@ package com.dipsource.repository.post;
 import com.dipsource.dto.search.SearchCondition;
 import com.dipsource.dto.search.SearchOperator;
 import com.dipsource.dto.search.SearchSort;
+import com.dipsource.dto.search.SearchTermCandidate;
 import com.dipsource.entity.post.Post;
 import com.dipsource.global.common.LikePattern;
 import java.util.Locale;
+import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Query;
@@ -85,4 +87,48 @@ public interface PostSearchRepository extends Repository<Post, Long> {
             @Param("matchAll") boolean matchAll,
             @Param("relevance") boolean relevance,
             Pageable pageable);
+
+    /**
+     * 3단계: 오타 교정 후보. 공개(ACTIVE)이면서 삭제되지 않은 글의 제목에서 검색 단어와 가장 가까운 단어 하나.
+     * 유료 글도 제목은 공개라서 사전에 넣는다. 본문은 유료 글 보호를 위해 쓰지 않는다.
+     * 검색 단어를 포함하는 단어가 있으면 그것이 먼저 나온다(오타가 아니라는 뜻).
+     *
+     * @param word        소문자 검색 단어
+     * @param maxDistance 허용하는 최대 편집 거리
+     */
+    default Optional<SearchTermCandidate> findClosestTerm(String word, int maxDistance) {
+        return findClosestTitleTerm(word, LikePattern.contains(word), maxDistance);
+    }
+
+    /**
+     * 단어 사전(w)은 제목을 영문·숫자·한글·일부 기호(_ . # + -)가 아닌 글자로 잘라 만들고, 단어별 등장 횟수를 센다.
+     * 거리가 같으면 등장 횟수가 많은 단어를 고른다. 제목에 오타(spirng)가 섞여 있어도 바른 철자(spring)가 더 자주 나온다.
+     * levenshtein_less_equal은 거리가 maxDistance를 넘으면 계산을 멈춰서 levenshtein보다 빠르다.
+     * 글자 수 차이가 maxDistance보다 크면 거리도 그보다 크므로 먼저 거른다.
+     */
+    @Query(nativeQuery = true, value = """
+            SELECT w.term AS term,
+                   w.term LIKE :pattern AS contained,
+                   levenshtein(:word, w.term) AS distance,
+                   w.frequency AS frequency,
+                   CAST(similarity(:word, w.term) AS double precision) AS similarity
+            FROM (
+                SELECT s.term, count(*) AS frequency
+                FROM posts p
+                CROSS JOIN LATERAL regexp_split_to_table(lower(p.title), '[^a-z0-9가-힣_.#+-]+') AS s(term)
+                WHERE p.status = 'ACTIVE'
+                  AND p.deleted_at IS NULL
+                GROUP BY s.term
+            ) w
+            WHERE length(w.term) BETWEEN 1 AND 50
+              AND (w.term LIKE :pattern
+                   OR (abs(length(w.term) - length(:word)) <= :maxDistance
+                       AND levenshtein_less_equal(:word, w.term, :maxDistance) <= :maxDistance))
+            ORDER BY contained DESC, distance, frequency DESC, similarity DESC, term
+            LIMIT 1
+            """)
+    Optional<SearchTermCandidate> findClosestTitleTerm(
+            @Param("word") String word,
+            @Param("pattern") String pattern,
+            @Param("maxDistance") int maxDistance);
 }

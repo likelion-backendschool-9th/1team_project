@@ -32,6 +32,8 @@ public class SearchController {
      *   - and(기본값): 모든 단어가 들어 있는 결과. 예: "spring jpa" → spring과 jpa가 둘 다 있는 글
      *   - or: 하나라도 들어 있는 결과. 많이 일치할수록 relevance 점수가 높다
      * - page, size: 0부터 시작, size는 최대 50
+     * - 결과가 0건이면 오타를 고쳐서 한 번 더 검색한다. 고쳐서 찾았으면 응답에 correctedQuery(고친 검색어)가 붙는다
+     *   예: q=sprng → correctedQuery "spring"과 spring 검색 결과
      */
     @GetMapping
     public ApiResponse<?> search(

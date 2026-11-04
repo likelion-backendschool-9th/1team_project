@@ -2,6 +2,7 @@ package com.dipsource.service.demo.impl;
 
 import com.dipsource.dto.demo.DemoSearchItemResponse;
 import com.dipsource.dto.search.SearchCondition;
+import com.dipsource.dto.search.SearchTermCandidate;
 import com.dipsource.dto.user.UserSummaryResponse;
 import com.dipsource.entity.demo.Demo;
 import com.dipsource.global.common.PageResponse;
@@ -9,6 +10,7 @@ import com.dipsource.repository.demo.DemoSearchRepository;
 import com.dipsource.service.demo.DemoSearchService;
 import com.dipsource.service.user.UserService;
 import java.util.Map;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -44,5 +46,11 @@ public class DemoSearchServiceImpl implements DemoSearchService {
                     demo.getCreatedAt()
             );
         });
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<SearchTermCandidate> findClosestTerm(String word, int maxDistance) {
+        return demoSearchRepository.findClosestTerm(word, maxDistance);
     }
 }
