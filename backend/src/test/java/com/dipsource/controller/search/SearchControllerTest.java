@@ -11,6 +11,7 @@ import com.dipsource.entity.demo.Demo;
 import com.dipsource.entity.demo.DemoType;
 import com.dipsource.entity.feed.Feed;
 import com.dipsource.entity.post.Post;
+import com.dipsource.entity.tag.Tag;
 import com.dipsource.entity.user.User;
 import jakarta.persistence.EntityManager;
 import java.util.List;
@@ -19,6 +20,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -34,7 +36,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 /**
  * 통합 검색 테스트. 실제 PostgreSQL 16 컨테이너에서 돈다.
- * 1단계(LOWER() + LIKE)와 2단계(단어별 LIKE + 관련도 정렬, and/or)를 함께 검증한다.
+ * 1단계(LOWER() + LIKE), 2단계(단어별 LIKE + 관련도 정렬, and/or), 3단계(결과가 0건일 때 오타 교정)를 함께 검증한다.
  * [한계]로 시작하는 테스트는 "지금 방식으로는 안 되는 것"을 현재 동작 그대로 고정해 둔 것이다.
  * 다음 단계에서 개선하면 이 테스트들이 깨지고, 기대값을 새 동작으로 바꾸게 된다.
  */
@@ -64,7 +66,7 @@ class SearchControllerTest {
 
     @BeforeEach
     void setUp() {
-        jdbc.execute("TRUNCATE posts, feeds, demos, users RESTART IDENTITY CASCADE");
+        jdbc.execute("TRUNCATE posts, feeds, demos, users, tags RESTART IDENTITY CASCADE");
         author = user("작성자", "글 쓰는 사람", List.of());
     }
 
@@ -674,6 +676,188 @@ class SearchControllerTest {
     }
 
     @Nested
+    @DisplayName("3단계 - 오타 교정")
+    class TypoCorrection {
+
+        @Test
+        @DisplayName("결과가 0건이면 가까운 단어로 고쳐서 다시 검색하고, 고친 검색어를 알려 준다 (sprng → spring)")
+        void correctTypo() throws Exception {
+            savePost("Spring Security 입문", "본문");
+
+            search("Sprng")
+                    .andExpect(jsonPath("$.data.totalElements").value(1))
+                    .andExpect(jsonPath("$.data.content[0].title").value("Spring Security 입문"))
+                    .andExpect(jsonPath("$.data.correctedQuery").value("spring"));
+        }
+
+        @ParameterizedTest(name = "{0} → {1}")
+        @CsvSource({
+                "kafak, kafka, Kafka 컨슈머 랙 줄이기",      // 자리 바뀜 (거리 2, 5글자)
+                "spirng, spring, Spring Security 입문",    // 자리 바뀜 (거리 2, 6글자)
+                "rdis, redis, Redis 캐시 전략",             // 빠진 글자 (거리 1, 4글자)
+                "리엑트, 리액트, 리액트 상태 관리"             // 한글 한 글자 (거리 1, trigram으로는 0.143)
+        })
+        @DisplayName("자리 바뀜, 빠진 글자, 한글 오타도 고친다")
+        void typoKinds(String typo, String expected, String title) throws Exception {
+            savePost(title, "본문");
+
+            search(typo)
+                    .andExpect(jsonPath("$.data.totalElements").value(1))
+                    .andExpect(jsonPath("$.data.correctedQuery").value(expected));
+        }
+
+        @Test
+        @DisplayName("여러 단어 중 오타인 단어만 고친다")
+        void correctOnlyTypoWord() throws Exception {
+            savePost("Spring JPA 정리", "본문");
+
+            search("sprng jpa")
+                    .andExpect(jsonPath("$.data.totalElements").value(1))
+                    .andExpect(jsonPath("$.data.correctedQuery").value("spring jpa"));
+        }
+
+        @Test
+        @DisplayName("거리가 같으면 더 자주 나오는 단어로 고친다 (제목 오타 spirng보다 spring)")
+        void preferFrequentTerm() throws Exception {
+            savePost("Spirng 설정 정리", "본문");
+            savePost("Spring 입문", "본문");
+            savePost("Spring 실전", "본문");
+
+            // sprng와의 거리·trigram 유사도는 spirng과 spring이 같고, 사전순이면 spirng이 먼저다
+            search("sprng").andExpect(jsonPath("$.data.correctedQuery").value("spring"));
+        }
+
+        @Test
+        @DisplayName("정확한 결과가 있으면 고치지 않는다")
+        void noCorrectionWhenFound() throws Exception {
+            savePost("Spring 입문", "본문");
+            savePost("Sprng 오타 모음", "본문");
+
+            search("sprng")
+                    .andExpect(jsonPath("$.data.totalElements").value(1))
+                    .andExpect(jsonPath("$.data.content[0].title").value("Sprng 오타 모음"))
+                    .andExpect(jsonPath("$.data.correctedQuery").doesNotExist());
+        }
+
+        @Test
+        @DisplayName("범위를 넘은 페이지라 목록이 비어도 결과가 있으면 고치지 않는다")
+        void noCorrectionOutOfRangePage() throws Exception {
+            savePost("Spring 입문", "본문");
+
+            search("spring", "post", "page", "9")
+                    .andExpect(jsonPath("$.data.content", hasSize(0)))
+                    .andExpect(jsonPath("$.data.totalElements").value(1))
+                    .andExpect(jsonPath("$.data.correctedQuery").doesNotExist());
+        }
+
+        @ParameterizedTest(name = "q={0}")
+        @ValueSource(strings = {"ga", "jap"})
+        @DisplayName("1~2글자는 고치지 않고, 3~4글자는 거리 1까지만 고친다 (jap → jpa는 거리 2)")
+        void shortWords(String q) throws Exception {
+            savePost("Go 언어 입문", "본문");
+            savePost("JPA 영속성", "본문");
+
+            search(q)
+                    .andExpect(jsonPath("$.data.totalElements").value(0))
+                    .andExpect(jsonPath("$.data.correctedQuery").doesNotExist());
+        }
+
+        @Test
+        @DisplayName("4글자에서 거리 2는 고치지 않는다 (jaav → java)")
+        void fourLettersDistanceTwo() throws Exception {
+            savePost("Java 입문", "본문");
+
+            search("jaav").andExpect(jsonPath("$.data.totalElements").value(0));
+        }
+
+        @Test
+        @DisplayName("태그 이름도 사전으로 쓴다: 본문에만 있는 단어도 태그에 있으면 고친다")
+        void tagDictionary() throws Exception {
+            tag("Elasticsearch");
+            savePost("검색 엔진 비교", "elasticsearch와 opensearch를 비교했다");
+
+            search("elasticsaerch")
+                    .andExpect(jsonPath("$.data.totalElements").value(1))
+                    .andExpect(jsonPath("$.data.correctedQuery").value("elasticsearch"));
+        }
+
+        @Test
+        @DisplayName("데모 제목도 사전으로 쓴다")
+        void demoDictionary() throws Exception {
+            saveDemo("WebSocket 채팅", null);
+
+            search("websoket", "demo").andExpect(jsonPath("$.data.correctedQuery").value("websocket"));
+        }
+
+        @Test
+        @DisplayName("고쳐서 다시 검색해도 0건이면 원래 결과(0건)를 주고 correctedQuery를 붙이지 않는다")
+        void correctedButStillEmpty() throws Exception {
+            tag("Kotlin");
+
+            search("kotlinn")
+                    .andExpect(jsonPath("$.data.totalElements").value(0))
+                    .andExpect(jsonPath("$.data.correctedQuery").doesNotExist());
+        }
+
+        @Test
+        @DisplayName("[보안] 숨김·삭제 글의 제목은 사전에 들어가지 않는다")
+        void hiddenTitlesNotInDictionary() throws Exception {
+            Post hidden = post("Kubernetes 숨김 글", "본문", false);
+            hidden.hide();
+            persist(hidden);
+            Post deleted = post("Kubernetes 삭제 글", "본문", false);
+            deleted.delete();
+            persist(deleted);
+            saveFeed("kubernetes 공부 중");
+
+            // 사전에 kubernetes가 있었다면 피드가 검색됐을 것이다
+            search("kubernetis", "feed")
+                    .andExpect(jsonPath("$.data.totalElements").value(0))
+                    .andExpect(jsonPath("$.data.correctedQuery").doesNotExist());
+        }
+
+        @Test
+        @DisplayName("[보안] 유료 글 본문의 단어는 사전에 들어가지 않는다")
+        void paidContentNotInDictionary() throws Exception {
+            persist(post("유료 강의", "terraform 비밀 노하우", true));
+            saveFeed("terraform 써 봤다");
+
+            search("terraforn", "feed")
+                    .andExpect(jsonPath("$.data.totalElements").value(0))
+                    .andExpect(jsonPath("$.data.correctedQuery").doesNotExist());
+        }
+
+        @Test
+        @DisplayName("전체 검색: 모든 대상이 0건일 때만 고친다")
+        void allTypes() throws Exception {
+            savePost("Spring 입문", "본문");
+
+            search("sprng", "all")
+                    .andExpect(jsonPath("$.data.posts.totalElements").value(1))
+                    .andExpect(jsonPath("$.data.correctedQuery").value("spring"));
+
+            saveFeed("sprng 오타 났다");
+            search("sprng", "all")
+                    .andExpect(jsonPath("$.data.posts.totalElements").value(0))
+                    .andExpect(jsonPath("$.data.feeds.totalElements").value(1))
+                    .andExpect(jsonPath("$.data.correctedQuery").doesNotExist());
+        }
+
+        @Test
+        @DisplayName("고친 검색에도 sort와 op가 그대로 적용된다")
+        void keepsSortAndOperator() throws Exception {
+            savePost("Spring 실전", "본문");
+            savePost("오늘의 회고", "spring 공부함");
+
+            search("sprng", "post", "sort", "latest")
+                    .andExpect(jsonPath("$.data.content[*].title", contains("오늘의 회고", "Spring 실전")));
+            search("sprng 없는단어zz", "post", "op", "or")
+                    .andExpect(jsonPath("$.data.totalElements").value(2))
+                    .andExpect(jsonPath("$.data.correctedQuery").value("spring 없는단어zz"));
+        }
+    }
+
+    @Nested
     @DisplayName("잘못된 요청")
     class BadRequest {
 
@@ -727,11 +911,30 @@ class SearchControllerTest {
     class Limitations {
 
         @Test
-        @DisplayName("[한계] 오타(Sprng)는 Spring 글을 찾지 못한다 → 3단계")
-        void typo() throws Exception {
-            savePost("Spring Security 입문", "본문");
+        @DisplayName("[한계] 본문에만 나오는 단어의 오타는 고치지 못한다(사전이 제목·태그뿐) → 사전 확장 또는 8단계")
+        void typoOnlyInContent() throws Exception {
+            savePost("채팅 서버 회고", "netty로 소켓 서버를 만들었다");
 
-            search("Sprng").andExpect(jsonPath("$.data.totalElements").value(0));
+            search("nettty").andExpect(jsonPath("$.data.totalElements").value(0));
+        }
+
+        @Test
+        @DisplayName("[한계] 띄어쓰기 오타(springboot)는 고치지 못한다(단어 하나와만 비교) → 7·8단계 형태소/n-gram")
+        void spacingTypo() throws Exception {
+            savePost("Spring Boot 시작하기", "본문");
+
+            search("springboot").andExpect(jsonPath("$.data.totalElements").value(0));
+        }
+
+        @Test
+        @DisplayName("[한계] 결과가 1건이라도 있으면 오타를 고치지 않아서, 오타가 우연히 들어간 글만 나온다")
+        void correctionOnlyWhenEmpty() throws Exception {
+            savePost("Spring 입문", "본문");
+            savePost("회고", "sprng 이라고 잘못 쳤다");
+
+            search("sprng")
+                    .andExpect(jsonPath("$.data.totalElements").value(1))
+                    .andExpect(jsonPath("$.data.content[0].title").value("회고"));
         }
 
         @Test
@@ -809,6 +1012,10 @@ class SearchControllerTest {
                 .bio(bio)
                 .techStacks(techStacks)
                 .build());
+    }
+
+    private void tag(String name) {
+        persist(Tag.builder().name(name).build());
     }
 
     private void savePost(String title, String content) {
