@@ -49,6 +49,8 @@ server:
   forward-headers-strategy: framework
 
 app:
+  cookie:
+    secure: ${COOKIE_SECURE:false}
   # 로그인 성공 후 리다이렉트할 프론트 주소
   frontend-base-url: ${FRONTEND_BASE_URL:http://localhost:3000}
   # 미니홈피 GitHub API rate limit용 (선택). 로그인 OAuth secret과 별개
