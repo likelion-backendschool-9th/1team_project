@@ -33,7 +33,8 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 /**
- * 1단계(LOWER() + LIKE) 통합 검색 테스트. 실제 PostgreSQL 16 컨테이너에서 돈다.
+ * 통합 검색 테스트. 실제 PostgreSQL 16 컨테이너에서 돈다.
+ * 1단계(LOWER() + LIKE)와 2단계(단어별 LIKE + 관련도 정렬, and/or)를 함께 검증한다.
  * [한계]로 시작하는 테스트는 "지금 방식으로는 안 되는 것"을 현재 동작 그대로 고정해 둔 것이다.
  * 다음 단계에서 개선하면 이 테스트들이 깨지고, 기대값을 새 동작으로 바꾸게 된다.
  */
@@ -475,6 +476,204 @@ class SearchControllerTest {
     }
 
     @Nested
+    @DisplayName("2단계 - 여러 단어 검색 (op)")
+    class MultiKeyword {
+
+        @Test
+        @DisplayName("단어 순서가 달라도 찾는다 ('boot spring' → 'Spring Boot')")
+        void wordOrder() throws Exception {
+            savePost("Spring Boot 시작하기", "본문");
+
+            search("boot spring").andExpect(jsonPath("$.data.totalElements").value(1));
+        }
+
+        @Test
+        @DisplayName("op를 보내지 않으면 and: 모든 단어가 있는 글만 나온다")
+        void defaultAnd() throws Exception {
+            savePost("Spring JPA N+1 해결", "본문");
+            savePost("JPA 영속성 컨텍스트", "본문");
+
+            search("spring jpa")
+                    .andExpect(jsonPath("$.data.totalElements").value(1))
+                    .andExpect(jsonPath("$.data.content[0].title").value("Spring JPA N+1 해결"));
+            search("spring jpa", "post", "op", "and").andExpect(jsonPath("$.data.totalElements").value(1));
+        }
+
+        @Test
+        @DisplayName("op=or: 하나라도 있으면 나오고, 둘 다 있는 글이 먼저 나온다")
+        void orOperator() throws Exception {
+            savePost("Spring JPA N+1 해결", "본문");
+            savePost("JPA 영속성 컨텍스트", "본문");
+
+            search("spring jpa", "post", "op", "or")
+                    .andExpect(jsonPath("$.data.content[*].title", contains("Spring JPA N+1 해결", "JPA 영속성 컨텍스트")));
+        }
+
+        @Test
+        @DisplayName("and는 단어가 제목과 본문에 나뉘어 있어도 찾는다")
+        void andAcrossFields() throws Exception {
+            savePost("Spring 실전", "JPA 연관관계 정리");
+
+            search("spring jpa").andExpect(jsonPath("$.data.totalElements").value(1));
+        }
+
+        @Test
+        @DisplayName("단어 사이 공백이 여러 개여도 한 칸과 같다")
+        void manySpaces() throws Exception {
+            savePost("Spring Boot 시작하기", "본문");
+
+            search("spring    boot").andExpect(jsonPath("$.data.totalElements").value(1));
+        }
+
+        @Test
+        @DisplayName("같은 단어를 반복해도 한 번으로 친다 (대소문자 무시)")
+        void duplicateKeywords() throws Exception {
+            savePost("Spring 입문", "본문");
+
+            search("spring Spring SPRING").andExpect(jsonPath("$.data.totalElements").value(1));
+        }
+
+        @Test
+        @DisplayName("단어는 앞에서부터 5개까지만 쓰고 나머지는 버린다")
+        void maxKeywords() throws Exception {
+            savePost("spring boot jpa redis kafka", "본문");
+
+            search("spring boot jpa redis kafka 없는단어").andExpect(jsonPath("$.data.totalElements").value(1));
+            search("없는단어 spring boot jpa redis kafka").andExpect(jsonPath("$.data.totalElements").value(0));
+        }
+
+        @Test
+        @DisplayName("유료 글은 and에서도 본문 단어를 인정하지 않는다")
+        void paidContentAnd() throws Exception {
+            persist(post("Kafka 유료 강의", "Redis 비밀 노하우", true));
+
+            search("kafka redis").andExpect(jsonPath("$.data.totalElements").value(0));
+            search("kafka redis", "post", "op", "or").andExpect(jsonPath("$.data.totalElements").value(1));
+        }
+
+        @Test
+        @DisplayName("특수문자는 단어별로도 글자 그대로 비교한다")
+        void escapePerKeyword() throws Exception {
+            savePost("목표 100% 달성 user_id", "본문");
+            savePost("목표 1000건 달성 userXid", "본문");
+
+            search("100% user_id").andExpect(jsonPath("$.data.totalElements").value(1));
+        }
+    }
+
+    @Nested
+    @DisplayName("2단계 - 관련도 정렬 (sort)")
+    class Relevance {
+
+        @Test
+        @DisplayName("sort를 보내지 않으면 관련도순: 제목에 있는 글이 본문에만 있는 최신 글보다 먼저")
+        void titleBeforeBody() throws Exception {
+            savePost("Redis 캐시 전략 총정리", "본문");
+            savePost("오늘의 회고", "점심 먹고 redis 잠깐 봤다");
+
+            search("redis").andExpect(jsonPath("$.data.content[*].title", contains("Redis 캐시 전략 총정리", "오늘의 회고")));
+            search("redis", "post", "sort", "relevance")
+                    .andExpect(jsonPath("$.data.content[0].title").value("Redis 캐시 전략 총정리"));
+        }
+
+        @Test
+        @DisplayName("sort=latest는 1단계처럼 최신순")
+        void latest() throws Exception {
+            savePost("Redis 캐시 전략 총정리", "본문");
+            savePost("오늘의 회고", "점심 먹고 redis 잠깐 봤다");
+
+            search("redis", "post", "sort", "latest")
+                    .andExpect(jsonPath("$.data.content[*].title", contains("오늘의 회고", "Redis 캐시 전략 총정리")));
+        }
+
+        @Test
+        @DisplayName("제목이 검색어와 같으면 가장 먼저, 다음은 검색어가 그대로 들어 있는 제목")
+        void exactAndPhrase() throws Exception {
+            savePost("Boot로 배우는 Spring", "본문");
+            savePost("Spring Boot", "본문");
+            savePost("Spring Boot 시작하기", "본문");
+
+            search("spring boot").andExpect(jsonPath("$.data.content[*].title",
+                    contains("Spring Boot", "Spring Boot 시작하기", "Boot로 배우는 Spring")));
+        }
+
+        @Test
+        @DisplayName("점수가 같으면 최신순")
+        void tieBreakLatest() throws Exception {
+            savePost("Spring 첫 글", "본문");
+            savePost("Spring 두 번째 글", "본문");
+
+            search("spring").andExpect(jsonPath("$.data.content[*].title", contains("Spring 두 번째 글", "Spring 첫 글")));
+        }
+
+        @Test
+        @DisplayName("유료 글은 본문 점수를 받지 않는다")
+        void paidContentNoScore() throws Exception {
+            savePost("Kafka 무료 정리", "redis 연동");
+            persist(post("Kafka 유료 강의", "redis 연동", true));
+
+            // 둘 다 제목 kafka(10점)지만 무료 글만 본문 redis(3점)를 받는다
+            search("kafka redis", "post", "op", "or")
+                    .andExpect(jsonPath("$.data.content[*].title", contains("Kafka 무료 정리", "Kafka 유료 강의")));
+        }
+
+        @Test
+        @DisplayName("관련도순에서도 페이지가 겹치거나 빠지지 않는다")
+        void stablePaging() throws Exception {
+            for (int i = 1; i <= 5; i++) {
+                savePost("Spring 글 " + i, "본문");
+            }
+
+            search("spring", "post", "page", "0", "size", "3")
+                    .andExpect(jsonPath("$.data.content[*].title", contains("Spring 글 5", "Spring 글 4", "Spring 글 3")));
+            search("spring", "post", "page", "1", "size", "3")
+                    .andExpect(jsonPath("$.data.content[*].title", contains("Spring 글 2", "Spring 글 1")));
+        }
+
+        @Test
+        @DisplayName("피드: 본문이 검색어와 같은 피드가 먼저")
+        void feedContent() throws Exception {
+            saveFeed("Spring");
+            saveFeed("오늘 spring 공부함");
+
+            search("spring", "feed").andExpect(jsonPath("$.data.content[*].content", contains("Spring", "오늘 spring 공부함")));
+        }
+
+        @Test
+        @DisplayName("데모: 제목에 있는 데모가 설명에만 있는 데모보다 먼저")
+        void demoTitle() throws Exception {
+            saveDemo("실시간 채팅앱", "WebSocket + STOMP");
+            saveDemo("오목 게임", "WebSocket으로 대전");
+
+            search("채팅 websocket", "demo", "op", "or")
+                    .andExpect(jsonPath("$.data.content[*].title", contains("실시간 채팅앱", "오목 게임")));
+        }
+
+        @Test
+        @DisplayName("사람: 닉네임이 일치하는 회원이 자기소개에만 있는 회원보다 먼저")
+        void userNickname() throws Exception {
+            user("redis", "아무개", List.of());
+            user("캐시러버", "redis를 좋아함", List.of());
+
+            search("redis", "user").andExpect(jsonPath("$.data.content[*].nickname", contains("redis", "캐시러버")));
+            search("redis", "user", "sort", "latest")
+                    .andExpect(jsonPath("$.data.content[*].nickname", contains("캐시러버", "redis")));
+        }
+
+        @Test
+        @DisplayName("전체 검색에도 sort와 op가 적용된다")
+        void allTypes() throws Exception {
+            savePost("Redis 캐시 전략 총정리", "본문");
+            savePost("오늘의 회고", "점심 먹고 redis 잠깐 봤다");
+
+            search("redis", "all").andExpect(jsonPath("$.data.posts.content[0].title").value("Redis 캐시 전략 총정리"));
+            search("redis", "all", "sort", "latest").andExpect(jsonPath("$.data.posts.content[0].title").value("오늘의 회고"));
+            search("redis 회고", "all").andExpect(jsonPath("$.data.posts.totalElements").value(1));
+            search("redis 회고", "all", "op", "or").andExpect(jsonPath("$.data.posts.totalElements").value(2));
+        }
+    }
+
+    @Nested
     @DisplayName("잘못된 요청")
     class BadRequest {
 
@@ -507,6 +706,20 @@ class SearchControllerTest {
         void unsupportedType(String type) throws Exception {
             search("spring", type).andExpect(status().isBadRequest());
         }
+        @ParameterizedTest(name = "sort={0}")
+        @ValueSource(strings = {"", "popular", "RELEVANCE", "createdAt,desc"})
+        @DisplayName("지원하지 않는 sort면 400")
+        void unsupportedSort(String sort) throws Exception {
+            search("spring", "post", "sort", sort).andExpect(status().isBadRequest());
+            search("spring", "all", "sort", sort).andExpect(status().isBadRequest());
+        }
+
+        @ParameterizedTest(name = "op={0}")
+        @ValueSource(strings = {"", "AND", "xor", "not"})
+        @DisplayName("지원하지 않는 op면 400")
+        void unsupportedOperator(String op) throws Exception {
+            search("spring", "post", "op", op).andExpect(status().isBadRequest());
+        }
     }
 
     @Nested
@@ -531,21 +744,24 @@ class SearchControllerTest {
         }
 
         @Test
-        @DisplayName("[한계] 'boot spring'은 'Spring Boot' 글을 찾지 못한다(문장 전체를 한 덩어리로 비교) → 2단계")
-        void wordOrder() throws Exception {
-            savePost("Spring Boot 시작하기", "본문");
+        @DisplayName("[한계] op=or는 한 단어만 맞아도 나와서 관련 없는 글이 섞인다 → 7·8단계(일치 비율·BM25)")
+        void orNoise() throws Exception {
+            savePost("Spring JPA N+1 해결", "본문");
+            savePost("Spring Security 입문", "본문");
+            savePost("Spring 배치 정리", "본문");
 
-            search("spring boot").andExpect(jsonPath("$.data.totalElements").value(1));
-            search("boot spring").andExpect(jsonPath("$.data.totalElements").value(0));
+            search("spring jpa", "post", "op", "or")
+                    .andExpect(jsonPath("$.data.totalElements").value(3))
+                    .andExpect(jsonPath("$.data.content[0].title").value("Spring JPA N+1 해결"));
         }
 
         @Test
-        @DisplayName("[한계] 제목에 있는 글보다 본문에 한 번 나온 최신 글이 먼저 나온다(관련도 없음) → 2단계")
-        void noRelevance() throws Exception {
-            savePost("Redis 캐시 전략 총정리", "본문");
-            savePost("오늘의 회고", "점심 먹고 redis 잠깐 봤다");
+        @DisplayName("[한계] 본문에 단어가 여러 번 나와도 한 번과 같은 점수다(빈도 무시) → 7단계(ts_rank)")
+        void noTermFrequency() throws Exception {
+            savePost("캐시 이야기", "redis redis redis redis redis");
+            savePost("다른 캐시 이야기", "redis 한 번");
 
-            search("redis").andExpect(jsonPath("$.data.content[*].title", contains("오늘의 회고", "Redis 캐시 전략 총정리")));
+            search("redis").andExpect(jsonPath("$.data.content[*].title", contains("다른 캐시 이야기", "캐시 이야기")));
         }
 
         @Test
