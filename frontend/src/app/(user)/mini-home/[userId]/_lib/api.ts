@@ -17,6 +17,16 @@ import type {
   MiniHomeProfile,
   VisitorStats,
 } from "@/app/_lib/types/miniHome";
+
+type MiniHomeSettings = {
+  headline: string;
+  quote: string | null;
+  skin: MiniHomeProfile["skin"];
+  domain: string | null;
+  bgm: string | null;
+  showcaseDemoIds: number[];
+  featuredDemoId: number | null;
+};
 import {
   createMockComments,
   findMockDemos,
@@ -35,15 +45,33 @@ export async function getServerTime(): Promise<number> {
 }
 
 // 레이아웃과 페이지가 같은 요청 안에서 함께 쓰므로 cache로 한 번만 조회한다.
-export const getProfile = cache(async (userId: number): Promise<MiniHomeProfile | null> => {
-  if (isMockMode) return findMockProfile(userId);
+async function loadOrNull<T>(path: string): Promise<T | null> {
   try {
-    const { data } = await apiFetch<ApiResponse<MiniHomeProfile>>(`/api/v1/users/${userId}`);
+    const { data } = await apiFetch<ApiResponse<T>>(path);
     return data;
   } catch (error) {
     if (error instanceof ApiRequestError && error.status === 404) return null;
     throw error;
   }
+}
+
+export const getProfile = cache(async (userId: number): Promise<MiniHomeProfile | null> => {
+  if (isMockMode) return findMockProfile(userId);
+  const [user, home] = await Promise.all([
+    loadOrNull<MiniHomeProfile>(`/api/v1/users/${userId}`),
+    loadOrNull<MiniHomeSettings>(`/api/v1/mini-homes/${userId}`),
+  ]);
+  if (!user || !home) return null;
+  return {
+    ...user,
+    headline: home.headline,
+    quote: home.quote,
+    skin: home.skin,
+    domain: home.domain,
+    bgm: home.bgm,
+    showcaseDemoIds: home.showcaseDemoIds,
+    featuredDemoId: home.featuredDemoId,
+  };
 });
 
 export async function getVisitors(userId: number): Promise<VisitorStats> {
