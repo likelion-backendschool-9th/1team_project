@@ -83,6 +83,9 @@ public class AuthServiceImpl implements AuthService {
                 .providerId(providerId)
                 .build();
 
+                // 지금 바로 DB에 반영해서, 중복 가입이면 여기서 DataIntegrityViolationException이 나게 한다.
+        userRepository.flush();
+
         return new AuthResult(user, true);
     }
 

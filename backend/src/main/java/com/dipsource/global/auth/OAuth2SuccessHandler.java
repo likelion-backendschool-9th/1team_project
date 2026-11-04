@@ -11,6 +11,7 @@ import java.io.IOException;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
@@ -44,8 +45,13 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
         String login = (String) attributes.get("login");
         String avatarUrl = (String) attributes.get("avatar_url");
 
-        AuthResult result = authService.findOrCreateFromGithub(providerId, email, login, avatarUrl);
-
+        AuthResult result;
+        try {
+            result = authService.findOrCreateFromGithub(providerId, email, login, avatarUrl);
+        } catch (DataIntegrityViolationException e) {
+            result = authService.findOrCreateFromGithub(providerId, email, login, avatarUrl);
+        }
+ 
         UserStatus status = result.user().getStatus();
         if (status != UserStatus.ACTIVE) {
             HttpSession session = request.getSession(false);
