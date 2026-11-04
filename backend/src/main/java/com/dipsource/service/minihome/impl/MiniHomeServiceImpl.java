@@ -1,7 +1,9 @@
 package com.dipsource.service.minihome.impl;
 
 import com.dipsource.dto.minihome.MiniHomeResponse;
+import com.dipsource.dto.minihome.RandomMiniHomeResponse;
 import com.dipsource.dto.minihome.UpdateMiniHomeRequest;
+import com.dipsource.dto.minihome.VisitorStatsResponse;
 import com.dipsource.dto.user.UserSummaryResponse;
 import com.dipsource.entity.minihome.MiniHome;
 import com.dipsource.global.exception.BusinessException;
@@ -60,6 +62,45 @@ public class MiniHomeServiceImpl implements MiniHomeService {
         }
         applyShowcase(home, arrange(current, demoId));
         return toResponse(miniHomeRepository.save(home));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public VisitorStatsResponse getVisitors(Long userId) {
+        if (!userService.isActiveUser(userId)) {
+            throw new BusinessException(ErrorCode.NOT_FOUND, "회원을 찾을 수 없습니다");
+        }
+        return miniHomeRepository.findByUserId(userId)
+                .map(MiniHomeServiceImpl::stats)
+                .orElse(new VisitorStatsResponse(0, 0));
+    }
+
+    @Override
+    @Transactional
+    public VisitorStatsResponse recordVisit(Long viewerId, Long ownerId) {
+        MiniHome home = loadOrCreate(ownerId);
+        if (viewerId.equals(ownerId)) {
+            return stats(home);
+        }
+        miniHomeRepository.incrementVisitCounts(ownerId);
+        return miniHomeRepository.findByUserId(ownerId)
+                .map(MiniHomeServiceImpl::stats)
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "미니홈피를 찾을 수 없습니다"));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public RandomMiniHomeResponse pickRandom(Long viewerId, Long excludeUserId) {
+        Long excludeId = excludeUserId == null ? viewerId : excludeUserId;
+        return miniHomeRepository.findRandomUserId(viewerId, excludeId)
+                .map(RandomMiniHomeResponse::new)
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "이동할 미니홈피가 없습니다"));
+    }
+
+    @Override
+    @Transactional
+    public void resetTodayCount() {
+        miniHomeRepository.resetTodayCount();
     }
 
     private MiniHome loadOrCreate(Long userId) {
@@ -191,6 +232,10 @@ public class MiniHomeServiceImpl implements MiniHomeService {
             ids.add(home.getShowcaseDemo3Id());
         }
         return List.copyOf(ids);
+    }
+
+    private static VisitorStatsResponse stats(MiniHome home) {
+        return new VisitorStatsResponse(home.getTodayCount(), home.getTotalCount());
     }
 
     private static String displaySkin(String skin) {
