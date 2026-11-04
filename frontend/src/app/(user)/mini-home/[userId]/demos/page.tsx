@@ -28,7 +28,7 @@ async function DemosContent({ params }: { params: Promise<{ userId: string }> })
   const [me, demos] = await Promise.all([getMe(), getDemos(userId, 20)]);
   const capacity = inventoryCapacity(profile.plus, profile.extraInventorySlots);
   const shown = profile.showcaseDemoIds.slice(0, showcaseLimit(profile.plus));
-  const isOwner = me.id === userId;
+  const isOwner = me?.id === userId;
 
   return (
     <>

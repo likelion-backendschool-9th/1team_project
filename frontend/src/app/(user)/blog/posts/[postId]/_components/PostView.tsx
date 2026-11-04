@@ -37,7 +37,7 @@ export async function PostView({ params }: Props) {
   if (!post) notFound();
 
   const [me, comments, now] = await Promise.all([getMe(), getPostComments(postId), getServerTime()]);
-  const mine = me.id === post.author.id;
+  const mine = me?.id === post.author.id;
   const locked = post.price > 0 && !post.purchased && !mine;
   const category = categories.find((item) => item.value === post.category)?.label;
 
@@ -112,13 +112,13 @@ export async function PostView({ params }: Props) {
               이어지는 내용은 {post.price}칩({formatWon(chipsToWon(post.price))})으로 열람할 수 있어요
             </h3>
             <p className={kit.muted}>
-              보유 칩 {formatCount(me.chipBalance)}개 · 열람 후 24시간 안에 코드가 동작하지 않으면 100% 환불돼요.
+              보유 칩 {formatCount(me?.chipBalance ?? 0)}개 · 열람 후 24시간 안에 코드가 동작하지 않으면 100% 환불돼요.
             </p>
             <div className={kit.row} style={{ justifyContent: "center" }}>
               <ConfirmButton
                 label={`${post.price}칩으로 열람하기`}
                 title={`${post.price}칩을 사용할까요?`}
-                description={`사용 후 남는 칩: ${formatCount(me.chipBalance - post.price)}개`}
+                description={`사용 후 남는 칩: ${formatCount((me?.chipBalance ?? 0) - post.price)}개`}
                 confirmLabel="열람하기"
                 className={kit.btnPrimary}
                 onConfirm={unlockPost.bind(null, post.id)}
@@ -169,7 +169,7 @@ export async function PostView({ params }: Props) {
         <CommentList
           comments={comments}
           now={now}
-          me={me}
+          me={me ?? undefined}
           updateComment={updatePostComment}
           deleteComment={deletePostComment}
           likeComment={togglePostCommentLike}

@@ -18,7 +18,7 @@ async function EditForm({ params }: { params: Promise<{ postId: string }> }) {
   if (!post) notFound();
   const [me, demos] = await Promise.all([getMe(), getDemoOptions()]);
 
-  if (me.id !== post.author.id)
+  if (!me || me.id !== post.author.id)
     return (
       <p className={`${kit.card} ${kit.empty}`}>
         본인이 쓴 글만 수정할 수 있어요.{" "}

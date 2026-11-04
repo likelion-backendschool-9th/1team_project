@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { Suspense } from "react";
 import { Brand } from "@/app/(user)/_components/Brand";
 import { oauthProviders, type OAuthProvider } from "@/app/_lib/types/auth";
@@ -52,6 +53,11 @@ export default function LoginPage({ searchParams }: PageProps<"/login">) {
         <Suspense fallback={<p role="status" aria-busy="true">불러오는 중…</p>}>
           <ProviderList searchParams={searchParams} />
         </Suspense>
+        {process.env.DEV_LOGIN_ENABLED === "true" && (
+          <Link href="/login/dev" className={styles.button} style={{ marginTop: 8, textAlign: "center", background: "#f3f4f6", color: "#374151" }}>
+            테스트 계정으로 로그인
+          </Link>
+        )}
         <p className={styles.terms}>
           계속하면 찍먹의 이용약관과 개인정보 처리방침에 동의하는 것으로 간주돼요.
         </p>

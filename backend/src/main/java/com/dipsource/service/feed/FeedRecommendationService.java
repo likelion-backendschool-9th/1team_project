@@ -3,12 +3,17 @@ package com.dipsource.service.feed;
 import com.dipsource.dto.feed.FeedCursorResponse;
 import com.dipsource.dto.feed.FeedResponse;
 import com.dipsource.entity.feed.Feed;
+import com.dipsource.entity.user.User;
 import com.dipsource.repository.feed.FeedRepository;
 import com.dipsource.repository.follow.FollowRepository;
 import com.dipsource.repository.user.UserInterestTagRepository;
+import com.dipsource.repository.user.UserRepository;
 import com.dipsource.repository.user.UserTagProfileRepository;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -23,6 +28,7 @@ public class FeedRecommendationService {
     private final FollowRepository followRepository;
     private final UserInterestTagRepository userInterestTagRepository;
     private final UserTagProfileRepository userTagProfileRepository;
+    private final UserRepository userRepository;
 
     /**
      * 로그인 사용자용 추천 피드.
@@ -110,8 +116,13 @@ public class FeedRecommendationService {
     }
 
     private FeedCursorResponse toResponse(List<Feed> feeds, int size) {
+        // 유저 정보를 한 번에 조회 (N+1 방지)
+        List<Long> userIds = feeds.stream().map(Feed::getUserId).distinct().toList();
+        Map<Long, User> userMap = userRepository.findAllById(userIds).stream()
+                .collect(Collectors.toMap(User::getId, Function.identity()));
+
         List<FeedResponse> responses = feeds.stream()
-                .map(FeedResponse::from)
+                .map(feed -> FeedResponse.from(feed, userMap.get(feed.getUserId())))
                 .toList();
         return FeedCursorResponse.of(responses, size);
     }

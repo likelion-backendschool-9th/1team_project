@@ -11,7 +11,7 @@ import styles from "./FeedCard.module.css";
 
 type Props = {
   feed: Feed;
-  myId: number;
+  myId?: number;
   now: number;
 };
 

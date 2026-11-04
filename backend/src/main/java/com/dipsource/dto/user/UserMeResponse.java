@@ -12,7 +12,13 @@ public record UserMeResponse(
         String profileImage,
         String githubUsername,
         List<String> techStacks,
-        boolean onboardingIncomplete
+        boolean onboardingIncomplete,
+        List<Object> badges,
+        boolean plus,
+        String company,
+        int followerCount,
+        int followingCount,
+        int chipBalance
 ) {
     public static UserMeResponse from(User user) {
         return new UserMeResponse(
@@ -23,7 +29,13 @@ public record UserMeResponse(
                 user.getProfileImage(),
                 user.getGithubUsername(),
                 user.getTechStacks() == null ? List.of() : List.copyOf(user.getTechStacks()),
-                user.isOnboardingIncomplete()
+                user.isOnboardingIncomplete(),
+                List.of(),   // badges — 아직 미구현
+                false,       // plus
+                null,        // company
+                0,           // followerCount — 추후 팔로우 테이블에서 조회
+                0,           // followingCount
+                0            // chipBalance
         );
     }
 }

@@ -43,7 +43,7 @@ export async function DemoDetailView({ params }: Props) {
   if (String(demo.author.id) !== userId) redirect(`/mini-home/${demo.author.id}/demos/${demo.id}`);
 
   const [me, comments, now] = await Promise.all([getMe(), getDemoComments(demoId), getServerTime()]);
-  const mine = me.id === demo.author.id;
+  const mine = me?.id === demo.author.id;
 
   return (
     <div className={kit.stack}>
@@ -155,7 +155,7 @@ export async function DemoDetailView({ params }: Props) {
             label: <span className={kit.pill}>{feedbackLabels[comment.type]}</span>,
           }))}
           now={now}
-          me={me}
+          me={me ?? undefined}
           updateComment={updateDemoComment}
           deleteComment={deleteDemoComment}
           likeComment={toggleDemoCommentLike}

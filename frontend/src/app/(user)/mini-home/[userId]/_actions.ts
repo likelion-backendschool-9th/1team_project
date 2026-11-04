@@ -41,7 +41,7 @@ export async function surf(currentUserId: number) {
   const me = await getMe();
   let nextId: number;
   if (isMockMode) {
-    nextId = pickRandomMockUserId([me.id, isId(currentUserId) ? currentUserId : 0]);
+    nextId = pickRandomMockUserId([me?.id ?? 0, isId(currentUserId) ? currentUserId : 0]);
   } else {
     const { data } = await apiFetch<ApiResponse<{ userId: number }>>(
       "/api/v1/mini-homes/random",
@@ -116,6 +116,7 @@ export async function deleteGuestbook(guestbookId: number) {
 
 export async function saveMiniHome(previous: FormState, formData: FormData): Promise<FormState> {
   const me = await getMe();
+  if (!me) return { ok: false, message: "로그인이 필요해요.", errors: {}, values: {}, attempt: 0 };
   const values = readValues(formData, ["skin", "headline", "domain", "bgm", "quote", "stackTags"]);
   const showcase = formData.getAll("showcaseDemoIds").map(Number).filter(isId);
   const featuredDemoId = Number(formData.get("featuredDemoId"));

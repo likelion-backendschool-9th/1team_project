@@ -8,9 +8,11 @@ import com.dipsource.entity.feed.FeedStatus;
 import com.dipsource.entity.feed.FeedTag;
 import com.dipsource.global.exception.BusinessException;
 import com.dipsource.global.exception.ErrorCode;
+import com.dipsource.entity.user.User;
 import com.dipsource.repository.feed.FeedRepository;
 import com.dipsource.repository.feed.FeedTagRepository;
 import com.dipsource.repository.tag.TagRepository;
+import com.dipsource.repository.user.UserRepository;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -27,6 +29,7 @@ public class FeedService {
     private final FeedRepository feedRepository;
     private final FeedTagRepository feedTagRepository;
     private final TagRepository tagRepository;
+    private final UserRepository userRepository;
 
     /**
      * 피드 생성
@@ -60,7 +63,9 @@ public class FeedService {
             feedTagRepository.saveAll(tags);
         }
 
-        return FeedResponse.from(feed);
+        User author = userRepository.findById(userId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "사용자를 찾을 수 없습니다"));
+        return FeedResponse.from(feed, author);
     }
 
     /**
@@ -76,7 +81,9 @@ public class FeedService {
         Feed feed = feedRepository.findById(feedId)
                 .filter(f -> f.getStatus() == FeedStatus.ACTIVE)
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "피드를 찾을 수 없습니다"));
-        return FeedResponse.from(feed);
+        User author = userRepository.findById(feed.getUserId())
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "사용자를 찾을 수 없습니다"));
+        return FeedResponse.from(feed, author);
     }
 
     /**
@@ -94,7 +101,9 @@ public class FeedService {
     public FeedResponse update(Long userId, Long feedId, FeedUpdateRequest request) {
         Feed feed = findOwnActiveFeed(userId, feedId);
         feed.update(request.content());
-        return FeedResponse.from(feed);
+        User author = userRepository.findById(userId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "사용자를 찾을 수 없습니다"));
+        return FeedResponse.from(feed, author);
     }
 
     /**
