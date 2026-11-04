@@ -23,6 +23,7 @@ export type MyProfile = UserSummary & {
   followerCount: number;
   followingCount: number;
   chipBalance: number;
+  onboardingIncomplete?: boolean;
 };
 
 export type Following = UserSummary & {
