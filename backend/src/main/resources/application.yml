@@ -11,6 +11,11 @@ spring:
     username: ${SPRING_DATASOURCE_USERNAME:dipsource}
     password: ${SPRING_DATASOURCE_PASSWORD:dipsource}
 
+  sql:
+    init:
+      # schema.sql로 PostgreSQL 확장(pg_trgm, fuzzystrmatch)을 만든다. 내장 DB가 아니어도 실행하려면 always가 필요하다
+      mode: always
+
   jpa:
     hibernate:
       ddl-auto: update
