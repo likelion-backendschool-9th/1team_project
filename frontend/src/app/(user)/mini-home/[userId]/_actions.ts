@@ -44,7 +44,7 @@ export async function surf(currentUserId: number) {
     nextId = pickRandomMockUserId([me.id, isId(currentUserId) ? currentUserId : 0]);
   } else {
     const { data } = await apiFetch<ApiResponse<{ userId: number }>>(
-      "/api/v1/mini-homes/random",
+      `/api/v1/mini-homes/random?exclude=${currentUserId}`,
     );
     nextId = data.userId;
   }
