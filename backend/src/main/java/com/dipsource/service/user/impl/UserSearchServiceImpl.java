@@ -1,5 +1,6 @@
 package com.dipsource.service.user.impl;
 
+import com.dipsource.dto.search.SearchCondition;
 import com.dipsource.dto.user.UserSearchItemResponse;
 import com.dipsource.global.common.PageResponse;
 import com.dipsource.repository.user.UserSearchRepository;
@@ -18,7 +19,7 @@ public class UserSearchServiceImpl implements UserSearchService {
 
     @Override
     @Transactional(readOnly = true)
-    public PageResponse<UserSearchItemResponse> search(String keyword, Pageable pageable) {
-        return PageResponse.of(userSearchRepository.searchByKeyword(keyword, pageable), UserSearchItemResponse::from);
+    public PageResponse<UserSearchItemResponse> search(SearchCondition condition, Pageable pageable) {
+        return PageResponse.of(userSearchRepository.search(condition, pageable), UserSearchItemResponse::from);
     }
 }

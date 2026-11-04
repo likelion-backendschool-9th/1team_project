@@ -1,6 +1,7 @@
 package com.dipsource.service.post.impl;
 
 import com.dipsource.dto.post.PostSearchItemResponse;
+import com.dipsource.dto.search.SearchCondition;
 import com.dipsource.dto.user.UserSummaryResponse;
 import com.dipsource.entity.post.Post;
 import com.dipsource.global.common.PageResponse;
@@ -27,8 +28,8 @@ public class PostSearchServiceImpl implements PostSearchService {
 
     @Override
     @Transactional(readOnly = true)
-    public PageResponse<PostSearchItemResponse> search(String keyword, Pageable pageable) {
-        Page<Post> posts = postSearchRepository.searchByKeyword(keyword, pageable);
+    public PageResponse<PostSearchItemResponse> search(SearchCondition condition, Pageable pageable) {
+        Page<Post> posts = postSearchRepository.search(condition, pageable);
         Map<Long, UserSummaryResponse> authors = userService.getSummaries(
                 posts.getContent().stream().map(Post::getUserId).distinct().toList());
         return PageResponse.of(posts, post -> toSearchItem(post, authors.get(post.getUserId())));

@@ -1,6 +1,7 @@
 package com.dipsource.service.feed.impl;
 
 import com.dipsource.dto.feed.FeedSearchItemResponse;
+import com.dipsource.dto.search.SearchCondition;
 import com.dipsource.dto.user.UserSummaryResponse;
 import com.dipsource.entity.feed.Feed;
 import com.dipsource.global.common.PageResponse;
@@ -24,8 +25,8 @@ public class FeedSearchServiceImpl implements FeedSearchService {
 
     @Override
     @Transactional(readOnly = true)
-    public PageResponse<FeedSearchItemResponse> search(String keyword, Pageable pageable) {
-        Page<Feed> feeds = feedSearchRepository.searchByKeyword(keyword, pageable);
+    public PageResponse<FeedSearchItemResponse> search(SearchCondition condition, Pageable pageable) {
+        Page<Feed> feeds = feedSearchRepository.search(condition, pageable);
         Map<Long, UserSummaryResponse> authors = userService.getSummaries(
                 feeds.getContent().stream().map(Feed::getUserId).distinct().toList());
         return PageResponse.of(feeds, feed -> {
