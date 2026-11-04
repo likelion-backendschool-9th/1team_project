@@ -24,6 +24,10 @@ services:
       SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
       JWT_SECRET: ${JWT_SECRET}
+      GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID}
+      GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET}
+      # OAuth 로그인 후 돌아갈 프론트 주소. 비어 있으면 localhost:3000으로 튕기므로 필수로 둔다.
+      FRONTEND_BASE_URL: ${FRONTEND_BASE_URL:?FRONTEND_BASE_URL을 서버 .env에 설정해야 합니다}
     depends_on:
       db:
         condition: service_healthy
@@ -32,6 +36,9 @@ services:
     image: ${IMAGE_FRONTEND}
     container_name: dipsource-frontend
     restart: always
+    environment:
+      API_ORIGIN: http://backend:8080
+      BROWSER_API_ORIGIN: ""
     depends_on:
       - backend
 

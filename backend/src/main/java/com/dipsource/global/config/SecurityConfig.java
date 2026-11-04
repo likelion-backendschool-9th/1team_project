@@ -4,6 +4,7 @@ import com.dipsource.global.auth.JwtAuthenticationFilter;
 import com.dipsource.global.auth.OAuth2SuccessHandler;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -47,7 +48,7 @@ public class SecurityConfig {
                         // 피드 ,블로그, 뉴스, 이벤트 조회는 비로그인도 가능
                         .requestMatchers(HttpMethod.GET, "/api/v1/feeds", "/api/v1/feeds/*", "/api/v1/feeds/*/comments", 
                                                         "/api/v1/posts/list", "/api/v1/users/*/posts", "/api/v1/posts/*/comments", 
-                                                        "/api/v1/search/news", "/api/v1/events", "/api/v1/events/*", "/api/v1/posts/*" ).permitAll()
+                                                        "/api/v1/search", "/api/v1/search/news", "/api/v1/events", "/api/v1/events/*", "/api/v1/posts/*" ).permitAll()
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/error").permitAll()
                         // 그 외 API는 인증 필요 (이후 공개 API는 여기서 풀면 된다)
@@ -79,11 +80,12 @@ public class SecurityConfig {
         };
     }
 
-    /** 로컬 프론트(localhost:3000)에서 API를 호출할 수 있게 CORS를 연다. */
+    /** 프론트 주소(app.frontend-base-url, 기본 localhost:3000)에서 API·WebSocket을 호출할 수 있게 CORS를 연다. */
     @Bean
-    public CorsConfigurationSource corsConfigurationSource() {
+    public CorsConfigurationSource corsConfigurationSource(
+            @Value("${app.frontend-base-url}") String frontendBaseUrl) {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(List.of("http://localhost:3000"));
+        config.setAllowedOrigins(List.of(frontendBaseUrl));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
         config.setAllowCredentials(true);

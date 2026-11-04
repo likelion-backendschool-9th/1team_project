@@ -2,6 +2,7 @@ import "server-only";
 import {
   apiFetch,
   ApiRequestError,
+  hasBackend,
   isMockMode,
   type ApiResponse,
   type PageResponse,
@@ -9,23 +10,21 @@ import {
 import type {
   Following,
   MyProfile,
-  RankingEntry,
-  RankingPeriod,
 } from "@/app/_lib/types/user";
 import type { AppNotification } from "@/app/_lib/types/notification";
 import {
   createMockNotifications,
   mockFollowings,
   mockMe,
-  mockRanking,
   mockUnreadCount,
 } from "./mock";
 
 export async function getMe(): Promise<MyProfile | null> {
-  if (isMockMode) return mockMe;
+  if (!hasBackend) return mockMe;
   try {
     const { data } = await apiFetch<ApiResponse<MyProfile>>("/api/v1/users/me");
-    return data;
+    // TEMP-DM-PREVIEW: 목 데이터와 섞어 쓸 때는 백엔드 응답에 없는 필드(뱃지·팔로워 수 등)를 목업으로 채운다.
+    return isMockMode ? { ...mockMe, ...data } : data;
   } catch (e) {
     if (e instanceof ApiRequestError && e.status === 401) return null;
     throw e;
@@ -42,14 +41,6 @@ export async function getFollowings(): Promise<Following[]> {
   ]);
   const online = new Set(presence.data.filter((item) => item.online).map((item) => item.userId));
   return data.content.map((user) => ({ ...user, online: online.has(user.id) }));
-}
-
-export async function getRanking(period: RankingPeriod): Promise<RankingEntry[]> {
-  if (isMockMode) return mockRanking[period];
-  const { data } = await apiFetch<ApiResponse<RankingEntry[]>>(
-    `/api/v1/rankings?type=follower&period=${period}`,
-  );
-  return data;
 }
 
 export async function getUnreadCount(): Promise<number> {

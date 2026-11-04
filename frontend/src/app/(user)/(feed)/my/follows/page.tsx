@@ -5,6 +5,7 @@ import { Suspense } from "react";
 import { Avatar } from "@/app/_components/ui/Avatar";
 import kit from "@/app/_components/ui/kit.module.css";
 import { LinkTabs } from "@/app/_components/ui/LinkTabs";
+import { DmOpenButton } from "@/app/(user)/_components/DmOpenButton";
 import { FollowButton } from "../../_components/FollowButton";
 import { getFollowers, getFollowings } from "../_lib/api";
 import styles from "../_components/My.module.css";
@@ -44,9 +45,9 @@ async function FollowsContent({ searchParams }: { searchParams: Promise<{ tab?: 
                     </span>
                   </span>
                 </Link>
-                <Link href={`/dm/${user.id}`} className={`${kit.btnGhost} ${kit.sm}`}>
+                <DmOpenButton user={user} className={`${kit.btnGhost} ${kit.sm}`}>
                   DM
-                </Link>
+                </DmOpenButton>
                 <FollowButton userId={user.id} nickname={user.nickname} following={user.following} />
               </li>
             ))}

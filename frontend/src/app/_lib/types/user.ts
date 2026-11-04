@@ -31,9 +31,3 @@ export type Following = UserSummary & {
 };
 
 export type RankingPeriod = "daily" | "weekly" | "monthly";
-
-export type RankingEntry = {
-  rank: number;
-  user: UserSummary;
-  score: number;
-};

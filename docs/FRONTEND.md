@@ -51,7 +51,7 @@
 | `/search` | `GET search` | 통합 검색 |
 | `/news` | `GET search/news` | IT/개발 기사 (네이버 뉴스 API) |
 | `/rankings` | `GET rankings` | 순위 (데모/블로그/팔로워/홈피) |
-| `/dm/[userId]` | `GET/POST dm/{userId}`, WebSocket | DM 대화 |
+| (페이지 없음) DM 창 | `GET dm/rooms`, `GET dm/{userId}`, WebSocket | 오른쪽 아래 DM 버튼으로 여닫는 창 (`(user)/_components/DmWidget.tsx`) |
 | `/my` | `GET users/{id}` | 마이페이지 |
 | `/my/edit` | `PUT users/{id}` | 프로필 수정 |
 | `/my/followings` | `GET follows/followings` | 팔로잉 목록 |

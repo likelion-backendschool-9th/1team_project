@@ -20,7 +20,11 @@ export class ApiRequestError extends Error {
 }
 
 // API_ORIGIN이 없으면 백엔드 연결 전으로 보고 목 데이터를 쓴다.
-export const isMockMode = !API_ORIGIN;
+export const hasBackend = Boolean(API_ORIGIN);
+
+// TEMP-DM-PREVIEW: MOCK_EXCEPT_DM=1이면 백엔드가 있어도 DM·로그인 정보만 실서버를 쓰고 나머지는 목 데이터를 쓴다.
+// 백엔드 API가 다 준비되면 이 줄과 hasBackend를 쓰는 곳을 isMockMode = !API_ORIGIN로 되돌린다. (docs/임시-목업-현황.md)
+export const isMockMode = !hasBackend || process.env.MOCK_EXCEPT_DM === "1";
 
 export async function apiFetch<T>(
   path: `/api/v1/${string}`,

@@ -2,8 +2,6 @@ import type { AppNotification } from "@/app/_lib/types/notification";
 import type {
   Following,
   MyProfile,
-  RankingEntry,
-  RankingPeriod,
   UserBadge,
   UserSummary,
 } from "@/app/_lib/types/user";
@@ -71,24 +69,6 @@ export const mockFollowings: Following[] = [
   { ...withBadges(mockUsers.minjun), online: true },
   { ...withBadges(mockUsers.jiwoo), online: false },
 ];
-
-export const mockRanking: Record<RankingPeriod, RankingEntry[]> = {
-  daily: [
-    { rank: 1, user: mockUsers.cha, score: 128 },
-    { rank: 2, user: mockUsers.kwak, score: 96 },
-    { rank: 3, user: mockUsers.seungjo, score: 71 },
-  ],
-  weekly: [
-    { rank: 1, user: mockUsers.cha, score: 1204 },
-    { rank: 2, user: mockUsers.kwak, score: 980 },
-    { rank: 3, user: mockUsers.seungjo, score: 742 },
-  ],
-  monthly: [
-    { rank: 1, user: mockUsers.kwak, score: 4210 },
-    { rank: 2, user: mockUsers.cha, score: 3980 },
-    { rank: 3, user: mockUsers.junha, score: 2875 },
-  ],
-};
 
 export const mockUnreadCount = 3;
 
