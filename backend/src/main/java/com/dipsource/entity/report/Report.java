@@ -12,10 +12,13 @@ import jakarta.persistence.Index;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import java.time.LocalDateTime;
+import java.util.List;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
@@ -53,6 +56,15 @@ public class Report {
     @Column(nullable = false, length = 500)
     private String reason;
 
+    /** 신고 시점 텍스트 내용 복사본 */
+    @Column(name = "content_snapshot", columnDefinition = "TEXT")
+    private String contentSnapshot;
+
+    /** 신고 시점 이미지 URL 목록 복사본 */
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "image_snapshot_urls", columnDefinition = "jsonb")
+    private List<String> imageSnapshotUrls;
+
     /** 처리 상태 */
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
@@ -76,11 +88,14 @@ public class Report {
     private LocalDateTime handledAt;
 
     @Builder
-    private Report(Long reporterId, String targetType, Long targetId, String reason) {
+    private Report(Long reporterId, String targetType, Long targetId, String reason,
+                   String contentSnapshot, List<String> imageSnapshotUrls) {
         this.reporterId = reporterId;
         this.targetType = targetType;
         this.targetId = targetId;
         this.reason = reason;
+        this.contentSnapshot = contentSnapshot;
+        this.imageSnapshotUrls = imageSnapshotUrls;
     }
 
     public void resolve(Long adminId, String adminNote) {

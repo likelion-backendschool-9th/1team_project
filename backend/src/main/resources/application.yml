@@ -36,6 +36,14 @@ spring:
           github:
             user-name-attribute: id
 
+r2:
+  enabled: ${R2_ENABLED:false}
+  endpoint: ${R2_ENDPOINT:https://placeholder.r2.cloudflarestorage.com}
+  access-key: ${R2_ACCESS_KEY:placeholder}
+  secret-key: ${R2_SECRET_KEY:placeholder}
+  bucket: ${R2_BUCKET:placeholder}
+  public-url: ${R2_PUBLIC_URL:https://placeholder.example.com}
+
 server:
   port: 8080
   forward-headers-strategy: framework

@@ -67,6 +67,15 @@ public class Feed extends BaseEntity {
     @Column(name = "repost_count", nullable = false)
     private int repostCount = 0;
 
+    /** 첨부 이미지 URL 목록. 이미지가 없으면 null */
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "image_urls", columnDefinition = "jsonb")
+    private List<String> imageUrls;
+
+    /** 첨부 링크 URL. 링크가 없으면 null */
+    @Column(name = "link_url", length = 500)
+    private String linkUrl;
+
     /** 투표 선택지. 투표가 없는 피드면 null. 예: ["Spring", "Node"] */
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "poll_options", columnDefinition = "jsonb")
@@ -77,10 +86,13 @@ public class Feed extends BaseEntity {
     private LocalDateTime deletedAt;
 
     @Builder
-    private Feed(Long userId, String content, Long demoId, List<String> pollOptions) {
+    private Feed(Long userId, String content, Long demoId,
+                 List<String> imageUrls, String linkUrl, List<String> pollOptions) {
         this.userId = userId;
         this.content = content;
         this.demoId = demoId;
+        this.imageUrls = imageUrls == null ? null : new ArrayList<>(imageUrls);
+        this.linkUrl = linkUrl;
         this.pollOptions = pollOptions == null ? null : new ArrayList<>(pollOptions);
     }
 
