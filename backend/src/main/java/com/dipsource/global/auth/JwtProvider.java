@@ -12,6 +12,10 @@ import org.springframework.stereotype.Component;
 @Component
 public class JwtProvider {
 
+    private static final String TYPE_CLAIM = "type";
+    private static final String TYPE_ACCESS = "ACCESS";
+    private static final String TYPE_REFRESH = "REFRESH";
+
     private final JwtProperties properties;
     private final SecretKey secretKey;
 
@@ -23,19 +27,25 @@ public class JwtProvider {
 
     /** API 요청 인증에 쓰는 Access Token을 발급한다. */
     public String createAccessToken(Long userId, String role) {
-        return createToken(userId, role, properties.accessTokenValidity());
+        return createToken(userId, role, properties.accessTokenValidity(), TYPE_ACCESS);
     }
 
     /** Access Token 재발급에 쓰는 Refresh Token을 발급한다. */
     public String createRefreshToken(Long userId) {
-        return createToken(userId, null, properties.refreshTokenValidity());
+        return createToken(userId, null, properties.refreshTokenValidity(), TYPE_REFRESH);
     }
 
-    /** 토큰이 유효한지 확인한다. */
-    public boolean validate(String token) {
+    public boolean isAccessToken(String token) {
+        return hasType(token, TYPE_ACCESS);
+    }
+
+    public boolean isRefreshToken(String token) {
+        return hasType(token, TYPE_REFRESH);
+    }
+
+    private boolean hasType(String token, String type) {
         try {
-            parseClaims(token);
-            return true;
+            return type.equals(parseClaims(token).get(TYPE_CLAIM, String.class));
         } catch (Exception e) {
             return false;
         }
@@ -51,12 +61,13 @@ public class JwtProvider {
         return parseClaims(token).get("role", String.class);
     }
 
-    private String createToken(Long userId, String role, long validitySeconds) {
+    private String createToken(Long userId, String role, long validitySeconds, String type) {
         Date now = new Date();
         Date expiry = new Date(now.getTime() + validitySeconds * 1000);
 
         var builder = Jwts.builder()
                 .subject(String.valueOf(userId))
+                .claim(TYPE_CLAIM, type)
                 .issuedAt(now)
                 .expiration(expiry);
 
