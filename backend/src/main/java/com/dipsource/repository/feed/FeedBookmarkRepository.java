@@ -21,4 +21,15 @@ public interface FeedBookmarkRepository extends JpaRepository<FeedBookmark, Feed
             ON CONFLICT (user_id, feed_id) DO NOTHING
             """, nativeQuery = true)
     int insertIgnore(@Param("userId") Long userId, @Param("feedId") Long feedId);
+
+    /**
+     * 북마크 삭제. 행이 없으면 0 반환 (race-safe)
+     * @return 삭제된 행 수 (0이면 이미 없음, 1이면 삭제됨)
+     */
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query(value = """
+            DELETE FROM feed_bookmarks
+            WHERE user_id = :userId AND feed_id = :feedId
+            """, nativeQuery = true)
+    int deleteByUserIdAndFeedId(@Param("userId") Long userId, @Param("feedId") Long feedId);
 }

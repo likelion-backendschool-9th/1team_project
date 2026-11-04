@@ -60,7 +60,7 @@ class FeedLikeApiTest {
 
     @BeforeEach
     void setUp() {
-        jdbc.execute("TRUNCATE feed_likes, feeds, users, user_tag_profile, feed_tags RESTART IDENTITY CASCADE");
+        jdbc.execute("TRUNCATE feed_likes, feed_bookmarks, feeds, users, user_tag_profile, feed_tags RESTART IDENTITY CASCADE");
         author = persist(User.builder().email("author@test.local").nickname("author").techStacks(List.of()).build());
         liker = persist(User.builder().email("liker@test.local").nickname("liker").techStacks(List.of()).build());
         feed = persist(Feed.builder().userId(author.getId()).content("좋아요 테스트 피드").build());

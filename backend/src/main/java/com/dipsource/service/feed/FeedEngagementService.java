@@ -2,7 +2,7 @@ package com.dipsource.service.feed;
 
 import com.dipsource.entity.feed.Feed;
 import com.dipsource.entity.feed.FeedStatus;
-import com.dipsource.entity.feed.FeedUserId;
+
 import com.dipsource.entity.user.User;
 import com.dipsource.global.exception.BusinessException;
 import com.dipsource.global.exception.ErrorCode;
@@ -53,16 +53,17 @@ public class FeedEngagementService {
 
     /**
      * 좋아요 취소. 없으면 no-op (멱등).
+     * DELETE 결과로 실제 삭제 여부를 판단해 race condition 방지
      */
     @Transactional
     public void unlike(Long userId, Long feedId) {
         findActiveFeed(feedId);
-        FeedUserId id = new FeedUserId(userId, feedId);
-        if (!feedLikeRepository.existsById(id)) {
+
+        int deleted = feedLikeRepository.deleteByUserIdAndFeedId(userId, feedId);
+        if (deleted == 0) {
             return;
         }
 
-        feedLikeRepository.deleteById(id);
         feedRepository.decrementLikeCount(feedId);
         tagWeightService.decreaseWeight(requireUser(userId), feedId, ENGAGEMENT_TAG_WEIGHT);
     }
@@ -85,16 +86,17 @@ public class FeedEngagementService {
 
     /**
      * 북마크 취소. 없으면 no-op (멱등).
+     * DELETE 결과로 실제 삭제 여부를 판단해 race condition 방지
      */
     @Transactional
     public void unbookmark(Long userId, Long feedId) {
         findActiveFeed(feedId);
-        FeedUserId id = new FeedUserId(userId, feedId);
-        if (!feedBookmarkRepository.existsById(id)) {
+
+        int deleted = feedBookmarkRepository.deleteByUserIdAndFeedId(userId, feedId);
+        if (deleted == 0) {
             return;
         }
 
-        feedBookmarkRepository.deleteById(id);
         tagWeightService.decreaseWeight(requireUser(userId), feedId, ENGAGEMENT_TAG_WEIGHT);
     }
 
