@@ -15,7 +15,7 @@
 | 0.1 | ERD 설계 | - | - | - | |
 | 0.2 | API 명세 작성 | - | - | - | |
 | 0.3 | 인증 처리 (로그인 여부 확인, 미로그인 시 /login 이동) | 공통 | - | - | |
-| 0.4 | 왼쪽 어사이드 레이아웃 (로고 · 피드/블로그/개발 뉴스/이벤트 메뉴 · 팔로잉/추천 탭) | 공통 | - | - | 메뉴 바로가기 링크 포함 |
+| 0.4 | 왼쪽 어사이드 레이아웃 (로고 · 피드/내 피드/블로그/개발 뉴스/이벤트 메뉴 · 팔로잉/추천 탭) | 공통 | - | - | 메뉴 바로가기 링크 포함 |
 | 0.5 | 오른쪽 어사이드 레이아웃 (프로필 카드 · 미니홈피/내정보 바로가기 · 알림 · 팔로잉 목록 · 설정) | 공통 | - | - | 데이터는 내 정보(1.3)·팔로잉 목록(3.4)·안 읽은 알림 수(8.2) API 재사용 |
 | 0.6 | 미니홈피 헤더 메뉴바 (홈·데모·방명록·블로그·수정·메인 피드 바로가기) | /mini-home/[userId] 하위 공통 | - | - | |
 | 0.7 | 검색창 (Ctrl K) | 공통 | - | - | |
@@ -63,6 +63,7 @@
 | 2.17 | 피드 북마크 | /main, /feeds/[feedId] | POST | feeds/{feedId}/bookmark | |
 | 2.18 | 피드 북마크 취소 | /main, /feeds/[feedId] | DELETE | feeds/{feedId}/bookmark | |
 | 2.19 | 내 북마크 목록 | /my/bookmarks | GET | users/me/bookmarks?type= | type: feed / post / demo. 피드·블로그·데모 북마크를 한 페이지에서 모아봄 (페이지 위치 팀 확인) |
+| 2.20 | 내 피드 목록 | /my/feeds | GET | users/me/feeds | 내가 작성한 피드 모아보기. 수정·삭제는 기존 2.6·2.7 API 재사용 |
 
 ---
 
@@ -125,11 +126,12 @@
 | 6.4 | 깃허브 잔디 조회 | /mini-home/[userId] | GET | users/{userId}/github/contributions | |
 | 6.5 | 깃허브 대표 레포 조회 | /mini-home/[userId] | GET | users/{userId}/github/repos | |
 | 6.6 | 언어 사용 통계 조회 | /mini-home/[userId] | GET | users/{userId}/github/languages | |
-| 6.7 | 일촌평 목록 | /mini-home/[userId] | GET | mini-homes/{userId}/comments | 일촌평과 방명록 차이 팀 확인 |
-| 6.8 | 일촌평 작성 | /mini-home/[userId] | POST | mini-homes/{userId}/comments | |
+| 6.7 | 일촌평 목록 | /mini-home/[userId] | GET | mini-homes/{userId}/comments | 팔로우 관계인 사용자만 작성 가능. 테이블: mini_home_comments (varchar(100)) |
+| 6.8 | 일촌평 작성 | /mini-home/[userId] | POST | mini-homes/{userId}/comments | 팔로우 상태 확인 후 작성 허용 |
+| 6.8-1 | 일촌평 삭제 | /mini-home/[userId] | DELETE | mini-homes/comments/{commentId} | 작성자 본인 또는 미니홈피 주인만 삭제 가능 |
 | 6.9 | 방명록 목록 | /mini-home/[userId]/guestbook | GET | mini-homes/{userId}/guestbook | |
 | 6.10 | 방명록 작성 | /mini-home/[userId]/guestbook | POST | mini-homes/{userId}/guestbook | |
-| 6.11 | 방명록 삭제 | /mini-home/[userId]/guestbook | DELETE | mini-homes/guestbook/{guestbookId} | |
+| 6.11 | 방명록 삭제 | /mini-home/[userId]/guestbook | DELETE | mini-homes/guestbook/{guestbookId} | 작성자 본인 또는 미니홈피 주인 삭제 가능 |
 | 6.12 | 미니홈피 수정 (본인만) | /mini-home/[userId]/edit | PUT | mini-homes/me | |
 | 6.13 | 대표 데모 설정 | /mini-home/[userId]/edit | PUT | mini-homes/me/featured-demo | |
 | 6.14 | 사용자 데모 목록 | /mini-home/[userId]/demos | GET | demos?userId={userId} | 데모 목록(7.2) API 재사용 |

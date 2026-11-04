@@ -28,15 +28,32 @@ public class TagWeightService {
     @Transactional
     public void increaseWeight(User user, Long feedId, int delta) {
         List<Long> tagIds = feedTagRepository.findTagIdsByFeedId(feedId);
-
-        for (Long tagId : tagIds) {
-            UserTagId id = new UserTagId(user.getId(), tagId);
-            UserTagProfile profile = userTagProfileRepository.findById(id)
-                    .orElseGet(() -> new UserTagProfile(user, tagId, 0));
-
-            profile.addWeight(delta);
-            userTagProfileRepository.save(profile);
+        if (tagIds.isEmpty()) {
+            return;
         }
+
+        List<UserTagId> ids = tagIds.stream()
+                .map(tagId -> new UserTagId(user.getId(), tagId))
+                .toList();
+
+        // 기존 프로필을 한 번에 조회
+        List<UserTagProfile> existing = userTagProfileRepository.findAllById(ids);
+        java.util.Map<Long, UserTagProfile> byTagId = new java.util.HashMap<>();
+        for (UserTagProfile p : existing) {
+            byTagId.put(p.getId().getTagId(), p);
+        }
+
+        // 없는 태그는 새로 생성, 있는 건 가중치 갱신
+        List<UserTagProfile> toSave = new java.util.ArrayList<>();
+        for (Long tagId : tagIds) {
+            UserTagProfile profile = byTagId.get(tagId);
+            if (profile == null) {
+                profile = new UserTagProfile(user, tagId, 0);
+            }
+            profile.addWeight(delta);
+            toSave.add(profile);
+        }
+        userTagProfileRepository.saveAll(toSave);
     }
 
     /**

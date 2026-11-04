@@ -8,11 +8,13 @@ import {
   GridIcon,
   NewsIcon,
   TicketIcon,
+  UserIcon,
 } from "@/app/_components/ui/Icons";
 import styles from "./NavLinks.module.css";
 
 const items = [
   { href: "/main", label: "피드", Icon: GridIcon },
+  { href: "/my/feeds", label: "내 피드", Icon: UserIcon },
   { href: "/blog", label: "블로그", Icon: BookIcon },
   { href: "/news", label: "개발자 뉴스", Icon: NewsIcon },
   { href: "/events", label: "이벤트", Icon: TicketIcon },
