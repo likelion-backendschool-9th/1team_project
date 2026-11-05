@@ -1,29 +1,42 @@
 package com.dipsource.global.exception;
 
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 /** 예외를 공통 에러 JSON으로 변환한다. */
+
+@Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    @ExceptionHandler(BusinessException.class)
-    public ResponseEntity<ErrorResponse> handleBusiness(BusinessException ex) {
-        ErrorCode code = ex.getErrorCode();
-        return ResponseEntity.status(code.getStatus())
-                .body(ErrorResponse.of(code.getCode(), ex.getMessage()));
-    }
+        @ExceptionHandler(BusinessException.class)
+        public ResponseEntity<ErrorResponse> handleBusiness(BusinessException ex) {
+                ErrorCode code = ex.getErrorCode();
+                return ResponseEntity.status(code.getStatus())
+                                .body(ErrorResponse.of(code.getCode(), ex.getMessage()));
+        }
 
-    @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ErrorResponse> handleValidation(MethodArgumentNotValidException ex) {
-        String message = ex.getBindingResult().getFieldErrors().stream()
-                .findFirst()
-                .map(err -> err.getDefaultMessage() == null ? ErrorCode.BAD_REQUEST.getDefaultMessage()
-                        : err.getDefaultMessage())
-                .orElse(ErrorCode.BAD_REQUEST.getDefaultMessage());
-        return ResponseEntity.badRequest()
-                .body(ErrorResponse.of(ErrorCode.BAD_REQUEST.getCode(), message));
-    }
+        @ExceptionHandler(MethodArgumentNotValidException.class)
+        public ResponseEntity<ErrorResponse> handleValidation(MethodArgumentNotValidException ex) {
+                String message = ex.getBindingResult().getFieldErrors().stream()
+                                .findFirst()
+                                .map(err -> err.getDefaultMessage() == null ? ErrorCode.BAD_REQUEST.getDefaultMessage()
+                                                : err.getDefaultMessage())
+                                .orElse(ErrorCode.BAD_REQUEST.getDefaultMessage());
+                return ResponseEntity.badRequest()
+                                .body(ErrorResponse.of(ErrorCode.BAD_REQUEST.getCode(), message));
+        }
+
+
+        /** 위에서 잡지 못한 모든 예외 → 500 반환. 스택 트레이스는 서버 로그에만 기록한다. */
+        @ExceptionHandler(Exception.class)
+        public ResponseEntity<ErrorResponse> handleUnexpected(Exception ex) {
+                log.error("예상치 못한 에러 발생", ex);
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                                .body(ErrorResponse.of("INTERNAL_ERROR", "서버 에러가 발생했습니다"));
+        }
 }
