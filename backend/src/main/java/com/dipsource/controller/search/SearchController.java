@@ -34,6 +34,8 @@ public class SearchController {
      * - page, size: 0부터 시작, size는 최대 50
      * - 결과가 0건이면 오타를 고쳐서 한 번 더 검색한다. 고쳐서 찾았으면 응답에 correctedQuery(고친 검색어)가 붙는다
      *   예: q=sprng → correctedQuery "spring"과 spring 검색 결과
+     * - 결과가 1~4건이고 사전에 훨씬 자주 나오는 비슷한 단어가 있으면, 결과는 그대로 두고 suggestedQuery(제안 검색어)가 붙는다
+     *   예: sprng로 쓴 글이 1건 있을 때 q=sprng → sprng 결과 1건과 suggestedQuery "spring"
      */
     @GetMapping
     public ApiResponse<?> search(

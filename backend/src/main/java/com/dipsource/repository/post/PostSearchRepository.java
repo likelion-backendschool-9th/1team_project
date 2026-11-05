@@ -6,8 +6,8 @@ import com.dipsource.dto.search.SearchSort;
 import com.dipsource.dto.search.SearchTermCandidate;
 import com.dipsource.entity.post.Post;
 import com.dipsource.global.common.LikePattern;
+import java.util.List;
 import java.util.Locale;
-import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Query;
@@ -89,15 +89,16 @@ public interface PostSearchRepository extends Repository<Post, Long> {
             Pageable pageable);
 
     /**
-     * 3단계: 오타 교정 후보. 공개(ACTIVE)이면서 삭제되지 않은 글의 제목에서 검색 단어와 가장 가까운 단어 하나.
+     * 3단계: 오타 교정 후보. 공개(ACTIVE)이면서 삭제되지 않은 글의 제목에서 검색 단어와 가까운 단어 두 개(가까운 순).
      * 유료 글도 제목은 공개라서 사전에 넣는다. 본문은 유료 글 보호를 위해 쓰지 않는다.
      * 검색 단어를 포함하는 단어가 있으면 그것이 먼저 나온다(오타가 아니라는 뜻).
+     * 두 개를 주는 이유: 검색 단어 자체가 사전에 있을 때(sprng로 쓴 글) 그다음 후보(spring)까지 봐야 제안할 수 있다.
      *
      * @param word        소문자 검색 단어
      * @param maxDistance 허용하는 최대 편집 거리
      */
-    default Optional<SearchTermCandidate> findClosestTerm(String word, int maxDistance) {
-        return findClosestTitleTerm(word, LikePattern.contains(word), maxDistance);
+    default List<SearchTermCandidate> findClosestTerms(String word, int maxDistance) {
+        return findClosestTitleTerms(word, LikePattern.contains(word), maxDistance);
     }
 
     /**
@@ -125,9 +126,9 @@ public interface PostSearchRepository extends Repository<Post, Long> {
                    OR (abs(length(w.term) - length(:word)) <= :maxDistance
                        AND levenshtein_less_equal(:word, w.term, :maxDistance) <= :maxDistance))
             ORDER BY contained DESC, distance, frequency DESC, similarity DESC, term
-            LIMIT 1
+            LIMIT 2
             """)
-    Optional<SearchTermCandidate> findClosestTitleTerm(
+    List<SearchTermCandidate> findClosestTitleTerms(
             @Param("word") String word,
             @Param("pattern") String pattern,
             @Param("maxDistance") int maxDistance);

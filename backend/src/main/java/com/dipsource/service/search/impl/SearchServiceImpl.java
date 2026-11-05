@@ -19,6 +19,7 @@ import com.dipsource.service.tag.TagSearchService;
 import com.dipsource.service.user.UserSearchService;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
@@ -30,6 +31,10 @@ import org.springframework.stereotype.Service;
  *
  * <p>오타 교정(3단계): 결과가 0건이면 검색 단어를 공개된 제목·태그의 가장 가까운 단어로 고쳐서 한 번 더 검색한다.
  * 고친 검색으로 결과가 나오면 그 결과와 correctedQuery를 주고, 그래도 0건이면 원래 결과(0건)를 준다.
+ *
+ * <p>검색어 제안(3단계): 결과가 1건 이상 {@value #SUGGEST_BELOW_TOTAL}건 미만이면 결과는 그대로 두고 suggestedQuery만 붙인다.
+ * sprng로 쓴 글이 있어서 sprng 검색 결과가 0건이 아니어도, 사전에서 spring이 훨씬 자주 나오면 spring을 제안한다.
+ * 제안한 검색어로 결과가 있을 때만 붙인다.
  */
 @Service
 @RequiredArgsConstructor
@@ -41,6 +46,10 @@ public class SearchServiceImpl implements SearchService {
     static final int MAX_PAGE_SIZE = 50;
     /** 전체 검색에서 대상별로 미리 보여 줄 건수 */
     static final int PREVIEW_SIZE = 5;
+    /** 결과 총개수가 이 값보다 적으면(0건 제외) 검색어 제안을 찾는다. 모든 검색에 붙이면 사전 조회 비용이 너무 크다 */
+    static final int SUGGEST_BELOW_TOTAL = 5;
+    /** 제안 단어는 검색 단어보다 사전에 이 배수 이상 자주 나와야 한다. 오타보다 바른 철자가 훨씬 흔하다는 가정 */
+    static final int SUGGEST_FREQUENCY_RATIO = 3;
 
     private final PostSearchService postSearchService;
     private final FeedSearchService feedSearchService;
@@ -52,12 +61,19 @@ public class SearchServiceImpl implements SearchService {
     public SearchAllResponse searchAll(String query, SearchOperator operator, SearchSort sort) {
         SearchCondition condition = SearchCondition.of(normalize(query), operator, sort);
         SearchAllResponse result = searchAll(condition, null);
-        if (!isEmpty(result)) {
+        long total = total(result);
+        if (total == 0) {
+            return correct(condition)
+                    .map(corrected -> searchAll(corrected, corrected.phrase()))
+                    .filter(corrected -> total(corrected) > 0)
+                    .orElse(result);
+        }
+        if (total >= SUGGEST_BELOW_TOTAL) {
             return result;
         }
-        return correct(condition)
-                .map(corrected -> searchAll(corrected, corrected.phrase()))
-                .filter(corrected -> !isEmpty(corrected))
+        return suggest(condition)
+                .filter(suggested -> total(searchAll(suggested, null)) > 0)
+                .map(suggested -> result.withSuggestedQuery(suggested.phrase()))
                 .orElse(result);
     }
 
@@ -68,15 +84,23 @@ public class SearchServiceImpl implements SearchService {
         // 정렬은 SearchSort로 받으므로 Pageable에 들어온 정렬은 쓰지 않는다
         Pageable page = PageRequest.of(pageable.getPageNumber(), Math.min(pageable.getPageSize(), MAX_PAGE_SIZE));
 
-        PageResponse<?> result = search(condition, type, page);
-        if (result.totalElements() > 0) {
-            return SearchPageResponse.of(result, null);
+        SearchPageResponse<?> result = SearchPageResponse.of(search(condition, type, page));
+        long total = result.totalElements();
+        if (total == 0) {
+            return correct(condition)
+                    .<SearchPageResponse<?>>map(corrected ->
+                            SearchPageResponse.corrected(search(corrected, type, page), corrected.phrase()))
+                    .filter(corrected -> corrected.totalElements() > 0)
+                    .orElse(result);
         }
-        return correct(condition)
-                .<SearchPageResponse<?>>map(corrected ->
-                        SearchPageResponse.of(search(corrected, type, page), corrected.phrase()))
-                .filter(corrected -> corrected.totalElements() > 0)
-                .orElseGet(() -> SearchPageResponse.of(result, null));
+        if (total >= SUGGEST_BELOW_TOTAL) {
+            return result;
+        }
+        // 총개수만 보면 되므로 한 건만 가져온다
+        return suggest(condition)
+                .filter(suggested -> search(suggested, type, PageRequest.of(0, 1)).totalElements() > 0)
+                .<SearchPageResponse<?>>map(suggested -> result.withSuggestedQuery(suggested.phrase()))
+                .orElse(result);
     }
 
     private SearchAllResponse searchAll(SearchCondition condition, String correctedQuery) {
@@ -86,7 +110,8 @@ public class SearchServiceImpl implements SearchService {
                 SearchSection.from(feedSearchService.search(condition, preview)),
                 SearchSection.from(demoSearchService.search(condition, preview)),
                 SearchSection.from(userSearchService.search(condition, preview)),
-                correctedQuery
+                correctedQuery,
+                null
         );
     }
 
@@ -100,20 +125,27 @@ public class SearchServiceImpl implements SearchService {
         };
     }
 
-    private static boolean isEmpty(SearchAllResponse result) {
-        return result.posts().totalElements() == 0
-                && result.feeds().totalElements() == 0
-                && result.demos().totalElements() == 0
-                && result.users().totalElements() == 0;
+    private static long total(SearchAllResponse result) {
+        return result.posts().totalElements() + result.feeds().totalElements()
+                + result.demos().totalElements() + result.users().totalElements();
     }
 
     /** 단어마다 오타를 고친 조건. 고친 단어가 하나도 없으면 비어 있다. */
     private Optional<SearchCondition> correct(SearchCondition condition) {
-        List<String> corrected = condition.keywords().stream().map(this::correctWord).toList();
-        if (corrected.equals(condition.keywords())) {
+        return rewrite(condition, this::correctWord);
+    }
+
+    /** 단어마다 제안 단어로 바꾼 조건. 바꾼 단어가 하나도 없으면 비어 있다. */
+    private Optional<SearchCondition> suggest(SearchCondition condition) {
+        return rewrite(condition, this::suggestWord);
+    }
+
+    private static Optional<SearchCondition> rewrite(SearchCondition condition, UnaryOperator<String> rewriteWord) {
+        List<String> rewritten = condition.keywords().stream().map(rewriteWord).toList();
+        if (rewritten.equals(condition.keywords())) {
             return Optional.empty();
         }
-        return Optional.of(condition.withKeywords(corrected));
+        return Optional.of(condition.withKeywords(rewritten));
     }
 
     /**
@@ -121,19 +153,47 @@ public class SearchServiceImpl implements SearchService {
      * 가까운 단어가 없거나, 검색 단어를 그대로 포함하는 단어가 있으면(오타가 아님) 그대로 둔다.
      */
     private String correctWord(String word) {
-        int maxDistance = maxDistance(word);
-        if (maxDistance == 0) {
-            return word;
-        }
-        return Stream.of(
-                        tagSearchService.findClosestTerm(word, maxDistance),
-                        postSearchService.findClosestTerm(word, maxDistance),
-                        demoSearchService.findClosestTerm(word, maxDistance))
-                .flatMap(Optional::stream)
+        return candidates(word).stream()
                 .min(SearchTermCandidate.BEST_FIRST)
                 .filter(candidate -> !candidate.getContained())
                 .map(SearchTermCandidate::getTerm)
                 .orElse(word);
+    }
+
+    /**
+     * 검색 단어보다 사전에 {@value #SUGGEST_FREQUENCY_RATIO}배 이상 자주 나오는 가까운 단어로 바꾼다.
+     * 검색 단어를 포함하는 다른 단어(jav → java)가 있으면 이미 그 단어로도 찾히므로 그대로 둔다.
+     * 등장 횟수는 사전 출처(태그·글 제목·데모 제목)별로 센 값이라, 출처를 합친 횟수는 아니다.
+     */
+    private String suggestWord(String word) {
+        List<SearchTermCandidate> candidates = candidates(word);
+        if (candidates.stream().anyMatch(candidate -> candidate.getContained() && !candidate.getTerm().equals(word))) {
+            return word;
+        }
+        long ownFrequency = candidates.stream()
+                .filter(candidate -> candidate.getTerm().equals(word))
+                .mapToLong(SearchTermCandidate::getFrequency)
+                .sum();
+        return candidates.stream()
+                .filter(candidate -> !candidate.getContained())
+                .min(SearchTermCandidate.BEST_FIRST)
+                .filter(candidate -> candidate.getFrequency() >= ownFrequency * SUGGEST_FREQUENCY_RATIO)
+                .map(SearchTermCandidate::getTerm)
+                .orElse(word);
+    }
+
+    /** 태그, 공개 글 제목, 공개 데모 제목에서 찾은 가까운 단어들. 짧은 단어는 찾지 않는다 */
+    private List<SearchTermCandidate> candidates(String word) {
+        int maxDistance = maxDistance(word);
+        if (maxDistance == 0) {
+            return List.of();
+        }
+        return Stream.of(
+                        tagSearchService.findClosestTerms(word, maxDistance),
+                        postSearchService.findClosestTerms(word, maxDistance),
+                        demoSearchService.findClosestTerms(word, maxDistance))
+                .flatMap(List::stream)
+                .toList();
     }
 
     /**

@@ -9,8 +9,8 @@ import com.dipsource.global.common.PageResponse;
 import com.dipsource.repository.demo.DemoSearchRepository;
 import com.dipsource.service.demo.DemoSearchService;
 import com.dipsource.service.user.UserService;
+import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -50,7 +50,7 @@ public class DemoSearchServiceImpl implements DemoSearchService {
 
     @Override
     @Transactional(readOnly = true)
-    public Optional<SearchTermCandidate> findClosestTerm(String word, int maxDistance) {
-        return demoSearchRepository.findClosestTerm(word, maxDistance);
+    public List<SearchTermCandidate> findClosestTerms(String word, int maxDistance) {
+        return demoSearchRepository.findClosestTerms(word, maxDistance);
     }
 }

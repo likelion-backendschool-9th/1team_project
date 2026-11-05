@@ -3,7 +3,7 @@ package com.dipsource.repository.tag;
 import com.dipsource.dto.search.SearchTermCandidate;
 import com.dipsource.entity.tag.Tag;
 import com.dipsource.global.common.LikePattern;
-import java.util.Optional;
+import java.util.List;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.Repository;
 import org.springframework.data.repository.query.Param;
@@ -14,15 +14,15 @@ import org.springframework.data.repository.query.Param;
 public interface TagSearchRepository extends Repository<Tag, Long> {
 
     /**
-     * 3단계: 오타 교정 후보. 태그 이름에서 검색 단어와 가장 가까운 단어 하나.
+     * 3단계: 오타 교정 후보. 태그 이름에서 검색 단어와 가까운 단어 두 개(가까운 순).
      * 태그는 이름만 있고 공개 범위가 없어서 모두 사전에 넣는다. "Spring Boot"처럼 띄어 쓴 태그는 단어로 나눈다.
-     * 쿼리 설명은 {@code PostSearchRepository#findClosestTitleTerm}과 같다.
+     * 쿼리 설명은 {@code PostSearchRepository#findClosestTitleTerms}과 같다.
      *
      * @param word        소문자 검색 단어
      * @param maxDistance 허용하는 최대 편집 거리
      */
-    default Optional<SearchTermCandidate> findClosestTerm(String word, int maxDistance) {
-        return findClosestNameTerm(word, LikePattern.contains(word), maxDistance);
+    default List<SearchTermCandidate> findClosestTerms(String word, int maxDistance) {
+        return findClosestNameTerms(word, LikePattern.contains(word), maxDistance);
     }
 
     @Query(nativeQuery = true, value = """
@@ -42,9 +42,9 @@ public interface TagSearchRepository extends Repository<Tag, Long> {
                    OR (abs(length(w.term) - length(:word)) <= :maxDistance
                        AND levenshtein_less_equal(:word, w.term, :maxDistance) <= :maxDistance))
             ORDER BY contained DESC, distance, frequency DESC, similarity DESC, term
-            LIMIT 1
+            LIMIT 2
             """)
-    Optional<SearchTermCandidate> findClosestNameTerm(
+    List<SearchTermCandidate> findClosestNameTerms(
             @Param("word") String word,
             @Param("pattern") String pattern,
             @Param("maxDistance") int maxDistance);

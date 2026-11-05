@@ -9,8 +9,8 @@ import com.dipsource.global.common.PageResponse;
 import com.dipsource.repository.post.PostSearchRepository;
 import com.dipsource.service.post.PostSearchService;
 import com.dipsource.service.user.UserService;
+import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -39,8 +39,8 @@ public class PostSearchServiceImpl implements PostSearchService {
 
     @Override
     @Transactional(readOnly = true)
-    public Optional<SearchTermCandidate> findClosestTerm(String word, int maxDistance) {
-        return postSearchRepository.findClosestTerm(word, maxDistance);
+    public List<SearchTermCandidate> findClosestTerms(String word, int maxDistance) {
+        return postSearchRepository.findClosestTerms(word, maxDistance);
     }
 
     private PostSearchItemResponse toSearchItem(Post post, UserSummaryResponse author) {

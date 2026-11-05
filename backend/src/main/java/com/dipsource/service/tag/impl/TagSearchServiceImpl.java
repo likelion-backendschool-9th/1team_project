@@ -3,7 +3,7 @@ package com.dipsource.service.tag.impl;
 import com.dipsource.dto.search.SearchTermCandidate;
 import com.dipsource.repository.tag.TagSearchRepository;
 import com.dipsource.service.tag.TagSearchService;
-import java.util.Optional;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,7 +17,7 @@ public class TagSearchServiceImpl implements TagSearchService {
 
     @Override
     @Transactional(readOnly = true)
-    public Optional<SearchTermCandidate> findClosestTerm(String word, int maxDistance) {
-        return tagSearchRepository.findClosestTerm(word, maxDistance);
+    public List<SearchTermCandidate> findClosestTerms(String word, int maxDistance) {
+        return tagSearchRepository.findClosestTerms(word, maxDistance);
     }
 }
