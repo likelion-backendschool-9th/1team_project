@@ -96,7 +96,7 @@ SELECT pg_temp.bench('2단계 spring jpa or 전체 일치', pg_temp.stage2('{spr
 
 
 -- 3단계: 오타 교정 후보 (PostSearchRepository#findClosestTitleTerm과 같은 SQL)
--- 결과가 0건일 때만, 검색 단어마다 태그·글 제목·데모 제목에서 한 번씩 실행된다. 여기서는 글 제목만 잰다
+-- 결과가 0건(교정)이거나 1~4건(제안)일 때만, 검색 단어마다 태그·글 제목·데모 제목에서 한 번씩 실행된다. 여기서는 글 제목만 잰다
 CREATE EXTENSION IF NOT EXISTS pg_trgm;
 CREATE EXTENSION IF NOT EXISTS fuzzystrmatch;
 
@@ -119,7 +119,7 @@ CREATE FUNCTION pg_temp.stage3(word text, max_distance int) RETURNS text AS $$
                OR (abs(length(w.term) - length(%1$L)) <= %3$s
                    AND levenshtein_less_equal(%1$L, w.term, %3$s) <= %3$s))
         ORDER BY contained DESC, distance, frequency DESC, similarity DESC, term
-        LIMIT 1
+        LIMIT 2
     $q$, word, '%' || word || '%', max_distance);
 $$ LANGUAGE sql;
 
