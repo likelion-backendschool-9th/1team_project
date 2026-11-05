@@ -19,6 +19,8 @@ import com.dipsource.repository.follow.FollowRepository;
 import com.dipsource.repository.tag.TagRepository;
 import com.dipsource.repository.user.UserRepository;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -146,6 +148,21 @@ public class FeedService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "사용자를 찾을 수 없습니다"));
         List<FeedResponse> responses = feeds.stream()
                 .map(feed -> FeedResponse.from(feed, author))
+                .toList();
+        return FeedCursorResponse.of(responses, size);
+    }
+
+    /**
+     * 내가 리포스트한 피드 목록 조회 (커서 페이지네이션)
+     */
+    @Transactional(readOnly = true)
+    public FeedCursorResponse getMyReposts(Long userId, Long cursor, int size) {
+        List<Feed> feeds = feedRepository.findMyReposts(userId, cursor, size);
+        List<Long> authorIds = feeds.stream().map(Feed::getUserId).distinct().toList();
+        Map<Long, User> userMap = userRepository.findAllById(authorIds).stream()
+                .collect(Collectors.toMap(User::getId, u -> u));
+        List<FeedResponse> responses = feeds.stream()
+                .map(feed -> FeedResponse.from(feed, userMap.get(feed.getUserId())))
                 .toList();
         return FeedCursorResponse.of(responses, size);
     }
