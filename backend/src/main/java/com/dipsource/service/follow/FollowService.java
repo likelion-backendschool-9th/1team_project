@@ -15,11 +15,11 @@ public interface FollowService {
     /** 언팔로우. 팔로우 중이 아니어도 오류 없이 넘어간다 (멱등). 나 자신이면 예외. */
     void unfollow(Long followerId, Long targetId);
 
-    /** 내가 팔로우하는 회원 목록. 최근에 팔로우한 순, 활동 중인 회원만. */
-    PageResponse<FollowUserResponse> getFollowings(Long userId, Pageable pageable);
+    /** 내가 팔로우하는 회원 목록. 최근에 팔로우한 순, 활동 중인 회원만. query가 있으면 닉네임에 포함된 회원만. */
+    PageResponse<FollowUserResponse> getFollowings(Long userId, String query, Pageable pageable);
 
-    /** 나를 팔로우하는 회원 목록. 최근에 팔로우한 순, 활동 중인 회원만. 맞팔 여부를 함께 준다. */
-    PageResponse<FollowUserResponse> getFollowers(Long userId, Pageable pageable);
+    /** 나를 팔로우하는 회원 목록. 최근에 팔로우한 순, 활동 중인 회원만. 맞팔 여부를 함께 준다. query는 닉네임 검색. */
+    PageResponse<FollowUserResponse> getFollowers(Long userId, String query, Pageable pageable);
 
     /**
      * userIds 가운데 내가 팔로우 중인 활동 회원의 접속 상태. DM과 같은 기준(최근 활동 시각)으로 판단한다.

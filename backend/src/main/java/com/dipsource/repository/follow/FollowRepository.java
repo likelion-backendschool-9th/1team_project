@@ -20,29 +20,47 @@ public interface FollowRepository extends JpaRepository<Follow, FollowId> {
 
     boolean existsByIdFollowerIdAndIdFollowingId(Long followerId, Long followingId);
 
-    /** 내가 팔로우하는 회원 ID. 최근에 팔로우한 순, 해당 상태의 회원만. */
+    /**
+     * 내가 팔로우하는 회원 ID. 최근에 팔로우한 순, 해당 상태의 회원만.
+     * nicknamePattern은 소문자 LIKE 패턴이다. 검색하지 않으면 "%".
+     */
     @Query(value = """
             SELECT f.id.followingId FROM Follow f JOIN User u ON u.id = f.id.followingId
             WHERE f.id.followerId = :userId AND u.status = :status
+              AND LOWER(u.nickname) LIKE :nicknamePattern ESCAPE '\\'
             ORDER BY f.createdAt DESC, f.id.followingId DESC
             """,
             countQuery = """
             SELECT COUNT(f) FROM Follow f JOIN User u ON u.id = f.id.followingId
             WHERE f.id.followerId = :userId AND u.status = :status
+              AND LOWER(u.nickname) LIKE :nicknamePattern ESCAPE '\\'
             """)
-    Page<Long> findFollowingIds(@Param("userId") Long userId, @Param("status") UserStatus status, Pageable pageable);
+    Page<Long> findFollowingIds(
+            @Param("userId") Long userId,
+            @Param("status") UserStatus status,
+            @Param("nicknamePattern") String nicknamePattern,
+            Pageable pageable);
 
-    /** 나를 팔로우하는 회원 ID. 최근에 팔로우한 순, 해당 상태의 회원만. */
+    /**
+     * 나를 팔로우하는 회원 ID. 최근에 팔로우한 순, 해당 상태의 회원만.
+     * nicknamePattern은 소문자 LIKE 패턴이다. 검색하지 않으면 "%".
+     */
     @Query(value = """
             SELECT f.id.followerId FROM Follow f JOIN User u ON u.id = f.id.followerId
             WHERE f.id.followingId = :userId AND u.status = :status
+              AND LOWER(u.nickname) LIKE :nicknamePattern ESCAPE '\\'
             ORDER BY f.createdAt DESC, f.id.followerId DESC
             """,
             countQuery = """
             SELECT COUNT(f) FROM Follow f JOIN User u ON u.id = f.id.followerId
             WHERE f.id.followingId = :userId AND u.status = :status
+              AND LOWER(u.nickname) LIKE :nicknamePattern ESCAPE '\\'
             """)
-    Page<Long> findFollowerIds(@Param("userId") Long userId, @Param("status") UserStatus status, Pageable pageable);
+    Page<Long> findFollowerIds(
+            @Param("userId") Long userId,
+            @Param("status") UserStatus status,
+            @Param("nicknamePattern") String nicknamePattern,
+            Pageable pageable);
 
     /** targetIds 가운데 내가 팔로우 중인 회원 ID */
     @Query("SELECT f.id.followingId FROM Follow f WHERE f.id.followerId = :userId AND f.id.followingId IN :targetIds")
