@@ -94,4 +94,38 @@ SELECT pg_temp.bench('1단계 spring 전체 일치', pg_temp.stage1('spring', NU
 SELECT pg_temp.bench('2단계 spring 전체 일치', pg_temp.stage2('{spring}', true, false, NULL));
 SELECT pg_temp.bench('2단계 spring jpa or 전체 일치', pg_temp.stage2('{spring,jpa}', false, false, NULL));
 
+
+-- 3단계: 오타 교정 후보 (PostSearchRepository#findClosestTitleTerm과 같은 SQL)
+-- 결과가 0건(교정)이거나 1~4건(제안)일 때만, 검색 단어마다 태그·글 제목·데모 제목에서 한 번씩 실행된다. 여기서는 글 제목만 잰다
+CREATE EXTENSION IF NOT EXISTS pg_trgm;
+CREATE EXTENSION IF NOT EXISTS fuzzystrmatch;
+
+CREATE FUNCTION pg_temp.stage3(word text, max_distance int) RETURNS text AS $$
+    SELECT format($q$
+        SELECT w.term AS term,
+               w.term LIKE %2$L AS contained,
+               levenshtein(%1$L, w.term) AS distance,
+               w.frequency AS frequency,
+               CAST(similarity(%1$L, w.term) AS double precision) AS similarity
+        FROM (
+            SELECT s.term, count(*) AS frequency
+            FROM bench_posts p
+            CROSS JOIN LATERAL regexp_split_to_table(lower(p.title), '[^a-z0-9가-힣_.#+-]+') AS s(term)
+            WHERE p.status = 'ACTIVE' AND p.deleted_at IS NULL
+            GROUP BY s.term
+        ) w
+        WHERE length(w.term) BETWEEN 1 AND 50
+          AND (w.term LIKE %2$L
+               OR (abs(length(w.term) - length(%1$L)) <= %3$s
+                   AND levenshtein_less_equal(%1$L, w.term, %3$s) <= %3$s))
+        ORDER BY contained DESC, distance, frequency DESC, similarity DESC, term
+        LIMIT 2
+    $q$, word, '%' || word || '%', max_distance);
+$$ LANGUAGE sql;
+
+SELECT pg_temp.bench('2단계 sprng 관련도순 (0건, 교정 전 첫 검색)', pg_temp.stage2('{sprng}', true, true, 20));
+SELECT pg_temp.bench('3단계 교정 후보 sprng (5글자, 거리 2)', pg_temp.stage3('sprng', 2));
+SELECT pg_temp.bench('3단계 교정 후보 kafak (5글자, 거리 2)', pg_temp.stage3('kafak', 2));
+SELECT pg_temp.bench('3단계 교정 후보 캐쉬 (2글자라 실제로는 교정 안 함)', pg_temp.stage3('캐쉬', 1));
+
 SELECT name AS "쿼리", median_ms AS "중앙값(ms)", rows AS "결과 건수" FROM bench_result;

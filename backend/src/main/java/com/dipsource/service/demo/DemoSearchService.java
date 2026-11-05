@@ -2,7 +2,9 @@ package com.dipsource.service.demo;
 
 import com.dipsource.dto.demo.DemoSearchItemResponse;
 import com.dipsource.dto.search.SearchCondition;
+import com.dipsource.dto.search.SearchTermCandidate;
 import com.dipsource.global.common.PageResponse;
+import java.util.List;
 import org.springframework.data.domain.Pageable;
 
 /** 데모 검색. 통합 검색(search)에서 쓴다. 데모 CRUD 서비스와 따로 둔다. */
@@ -14,4 +16,12 @@ public interface DemoSearchService {
      * @param condition 정리된 검색어, and/or, 정렬
      */
     PageResponse<DemoSearchItemResponse> search(SearchCondition condition, Pageable pageable);
+
+    /**
+     * 오타 교정 후보. 공개 데모 제목에 나오는 단어 중 검색 단어와 가까운 단어 두 개(가까운 순).
+     *
+     * @param word        소문자 검색 단어
+     * @param maxDistance 허용하는 최대 편집 거리
+     */
+    List<SearchTermCandidate> findClosestTerms(String word, int maxDistance);
 }

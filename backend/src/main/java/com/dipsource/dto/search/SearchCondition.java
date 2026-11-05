@@ -27,4 +27,10 @@ public record SearchCondition(String phrase, List<String> keywords, SearchOperat
                 .toList();
         return new SearchCondition(String.join(" ", words), keywords, operator, sort);
     }
+
+    /** 단어만 바꾼 조건. 오타를 고친 단어로 다시 검색할 때 쓴다. 검색어 전체는 고친 단어를 이어 붙인 것이다 */
+    public SearchCondition withKeywords(List<String> correctedKeywords) {
+        List<String> distinct = correctedKeywords.stream().distinct().toList();
+        return new SearchCondition(String.join(" ", distinct), distinct, operator, sort);
+    }
 }
