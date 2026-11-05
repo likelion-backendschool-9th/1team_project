@@ -12,6 +12,7 @@ import com.dipsource.global.exception.ErrorCode;
 import com.dipsource.entity.user.User;
 import com.dipsource.repository.feed.FeedBookmarkRepository;
 import com.dipsource.repository.feed.FeedLikeRepository;
+import com.dipsource.repository.feed.FeedRepostRepository;
 import com.dipsource.repository.feed.FeedRepository;
 import com.dipsource.repository.feed.FeedTagRepository;
 import com.dipsource.repository.follow.FollowRepository;
@@ -33,6 +34,7 @@ public class FeedService {
     private final FeedRepository feedRepository;
     private final FeedTagRepository feedTagRepository;
     private final FeedLikeRepository feedLikeRepository;
+    private final FeedRepostRepository feedRepostRepository;
     private final FeedBookmarkRepository feedBookmarkRepository;
     private final FollowRepository followRepository;
     private final TagRepository tagRepository;
@@ -93,9 +95,10 @@ public class FeedService {
         }
 
         boolean liked = feedLikeRepository.existsByIdUserIdAndIdFeedId(userId, feedId);
+        boolean reposted = feedRepostRepository.existsByIdUserIdAndIdFeedId(userId, feedId);
         boolean bookmarked = feedBookmarkRepository.existsByIdUserIdAndIdFeedId(userId, feedId);
         boolean following = followRepository.existsByIdFollowerIdAndIdFollowingId(userId, feed.getUserId());
-        return FeedResponse.from(feed, author, liked, bookmarked, following);
+        return FeedResponse.from(feed, author, liked, reposted, bookmarked, following);
     }
 
     /**

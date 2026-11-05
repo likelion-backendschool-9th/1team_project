@@ -35,6 +35,8 @@ import org.springframework.web.bind.annotation.RestController;
  * DELETE /api/v1/feeds/{feedId}/like      — 좋아요 취소 (인증 필요)
  * POST   /api/v1/feeds/{feedId}/bookmark  — 북마크 (인증 필요)
  * DELETE /api/v1/feeds/{feedId}/bookmark  — 북마크 취소 (인증 필요)
+ * POST   /api/v1/feeds/{feedId}/repost    — 리포스트 (인증 필요)
+ * DELETE /api/v1/feeds/{feedId}/repost    — 리포스트 취소 (인증 필요)
  */
 @RestController
 @RequestMapping("/api/v1/feeds")
@@ -123,6 +125,26 @@ public class FeedController {
             @PathVariable Long feedId
     ) {
         feedEngagementService.unbookmark(requireUserId(principal), feedId);
+        return ResponseEntity.noContent().build();
+    }
+
+    /** 리포스트. 이미 했어도 204 (멱등) */
+    @PostMapping("/{feedId}/repost")
+    public ResponseEntity<Void> repost(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @PathVariable Long feedId
+    ) {
+        feedEngagementService.repost(requireUserId(principal), feedId);
+        return ResponseEntity.noContent().build();
+    }
+
+    /** 리포스트 취소. 없어도 204 (멱등) */
+    @DeleteMapping("/{feedId}/repost")
+    public ResponseEntity<Void> unrepost(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @PathVariable Long feedId
+    ) {
+        feedEngagementService.unrepost(requireUserId(principal), feedId);
         return ResponseEntity.noContent().build();
     }
 

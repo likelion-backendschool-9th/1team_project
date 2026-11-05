@@ -152,4 +152,14 @@ public interface FeedRepository extends JpaRepository<Feed, Long> {
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("UPDATE Feed f SET f.likeCount = f.likeCount - 1 WHERE f.id = :feedId AND f.likeCount > 0")
     int decrementLikeCount(@Param("feedId") Long feedId);
+
+    /** 리포스트 수 +1 */
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("UPDATE Feed f SET f.repostCount = f.repostCount + 1 WHERE f.id = :feedId AND f.status = com.dipsource.entity.feed.FeedStatus.ACTIVE")
+    int incrementRepostCount(@Param("feedId") Long feedId);
+
+    /** 리포스트 수 -1 (0 미만 방지) */
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("UPDATE Feed f SET f.repostCount = f.repostCount - 1 WHERE f.id = :feedId AND f.repostCount > 0")
+    int decrementRepostCount(@Param("feedId") Long feedId);
 }

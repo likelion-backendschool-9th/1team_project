@@ -32,6 +32,8 @@ import org.springframework.web.bind.annotation.RestController;
  * GET    /api/v1/feeds/comments/{commentId}/replies    — 대댓글 목록
  * PUT    /api/v1/feeds/comments/{commentId}            — 댓글 수정 (인증 필요, 본인만)
  * DELETE /api/v1/feeds/comments/{commentId}            — 댓글 삭제 (인증 필요, 본인만)
+ * POST   /api/v1/feeds/comments/{commentId}/like       — 댓글 좋아요 (인증 필요)
+ * DELETE /api/v1/feeds/comments/{commentId}/like       — 댓글 좋아요 취소 (인증 필요)
  */
 @RestController
 @RequestMapping("/api/v1/feeds")
@@ -45,12 +47,14 @@ public class FeedCommentController {
     /** 댓글 목록 (커서 페이지네이션) */
     @GetMapping("/{feedId}/comments")
     public ResponseEntity<ApiResponse<CommentCursorResponse>> getComments(
+            @AuthenticationPrincipal UserPrincipal principal,
             @PathVariable Long feedId,
             @RequestParam(required = false) Long cursor,
             @RequestParam(defaultValue = "20") int size
     ) {
+        Long userId = principal == null ? null : principal.getUserId();
         int safeSize = Math.min(Math.max(size, 1), MAX_SIZE);
-        CommentCursorResponse response = feedCommentService.getComments(feedId, cursor, safeSize);
+        CommentCursorResponse response = feedCommentService.getComments(feedId, userId, cursor, safeSize);
         return ResponseEntity.ok(ApiResponse.of(response));
     }
 
@@ -68,9 +72,11 @@ public class FeedCommentController {
     /** 대댓글 목록 */
     @GetMapping("/comments/{commentId}/replies")
     public ResponseEntity<ApiResponse<List<CommentResponse>>> getReplies(
+            @AuthenticationPrincipal UserPrincipal principal,
             @PathVariable Long commentId
     ) {
-        List<CommentResponse> responses = feedCommentService.getReplies(commentId);
+        Long userId = principal == null ? null : principal.getUserId();
+        List<CommentResponse> responses = feedCommentService.getReplies(commentId, userId);
         return ResponseEntity.ok(ApiResponse.of(responses));
     }
 
@@ -92,6 +98,26 @@ public class FeedCommentController {
             @PathVariable Long commentId
     ) {
         feedCommentService.delete(requireUserId(principal), commentId);
+        return ResponseEntity.noContent().build();
+    }
+
+    /** 댓글 좋아요 */
+    @PostMapping("/comments/{commentId}/like")
+    public ResponseEntity<Void> likeComment(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @PathVariable Long commentId
+    ) {
+        feedCommentService.likeComment(requireUserId(principal), commentId);
+        return ResponseEntity.noContent().build();
+    }
+
+    /** 댓글 좋아요 취소 */
+    @DeleteMapping("/comments/{commentId}/like")
+    public ResponseEntity<Void> unlikeComment(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @PathVariable Long commentId
+    ) {
+        feedCommentService.unlikeComment(requireUserId(principal), commentId);
         return ResponseEntity.noContent().build();
     }
 

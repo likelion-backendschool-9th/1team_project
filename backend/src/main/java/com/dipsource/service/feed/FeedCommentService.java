@@ -9,12 +9,15 @@ import com.dipsource.entity.feed.FeedStatus;
 import com.dipsource.entity.user.User;
 import com.dipsource.global.exception.BusinessException;
 import com.dipsource.global.exception.ErrorCode;
+import com.dipsource.repository.feed.FeedCommentLikeRepository;
 import com.dipsource.repository.feed.FeedCommentRepository;
 import com.dipsource.repository.feed.FeedRepository;
 import com.dipsource.repository.user.UserRepository;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
@@ -26,6 +29,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class FeedCommentService {
 
+    private final FeedCommentLikeRepository feedCommentLikeRepository;
     private final FeedCommentRepository feedCommentRepository;
     private final FeedRepository feedRepository;
     private final UserRepository userRepository;
@@ -35,7 +39,7 @@ public class FeedCommentService {
 
     /** 댓글 목록 조회 (최상위 댓글 + 대댓글 포함) */
     @Transactional(readOnly = true)
-    public CommentCursorResponse getComments(Long feedId, Long cursor, int size) {
+    public CommentCursorResponse getComments(Long feedId, Long userId, Long cursor, int size) {
         findActiveFeed(feedId);
 
         // 삭제된 부모도 포함 (대댓글이 있으면 "삭제된 댓글입니다"로 보여야 함)
@@ -47,6 +51,17 @@ public class FeedCommentService {
         // 대댓글 배치 조회
         List<Long> commentIds = comments.stream().map(FeedComment::getId).toList();
         List<FeedComment> allReplies = feedCommentRepository.findRepliesByParentIds(commentIds);
+
+        // 모든 댓글 ID (부모 + 대댓글) — 좋아요 상태 조회용
+        List<Long> allCommentIds = Stream.concat(
+                commentIds.stream(),
+                allReplies.stream().map(FeedComment::getId)
+        ).toList();
+
+        // 로그인 유저의 댓글 좋아요 상태 배치 조회
+        Set<Long> likedCommentIds = userId != null && !allCommentIds.isEmpty()
+                ? new HashSet<>(feedCommentLikeRepository.findLikedCommentIds(userId, allCommentIds))
+                : Set.of();
 
         // 모든 작성자 배치 조회 (부모 + 대댓글)
         List<Long> allUserIds = Stream.concat(
@@ -68,9 +83,9 @@ public class FeedCommentService {
                 continue;
             }
             List<CommentResponse> replyResponses = replies.stream()
-                    .map(r -> CommentResponse.from(r, userMap.get(r.getUserId())))
+                    .map(r -> CommentResponse.from(r, userMap.get(r.getUserId()), likedCommentIds.contains(r.getId())))
                     .toList();
-            responses.add(CommentResponse.from(c, userMap.get(c.getUserId()), replyResponses));
+            responses.add(CommentResponse.from(c, userMap.get(c.getUserId()), likedCommentIds.contains(c.getId()), replyResponses));
         }
 
         return CommentCursorResponse.of(responses, size);
@@ -78,7 +93,7 @@ public class FeedCommentService {
 
     /** 대댓글 목록 조회 */
     @Transactional(readOnly = true)
-    public List<CommentResponse> getReplies(Long commentId) {
+    public List<CommentResponse> getReplies(Long commentId, Long userId) {
         FeedComment parent = findCommentIncludeDeleted(commentId);
 
         List<FeedComment> replies = feedCommentRepository.findReplies(parent.getId());
@@ -86,12 +101,17 @@ public class FeedCommentService {
             return List.of();
         }
 
+        List<Long> replyIds = replies.stream().map(FeedComment::getId).toList();
+        Set<Long> likedIds = userId != null
+                ? new HashSet<>(feedCommentLikeRepository.findLikedCommentIds(userId, replyIds))
+                : Set.of();
+
         List<Long> userIds = replies.stream().map(FeedComment::getUserId).distinct().toList();
         Map<Long, User> userMap = userRepository.findAllById(userIds).stream()
                 .collect(Collectors.toMap(User::getId, u -> u));
 
         return replies.stream()
-                .map(r -> CommentResponse.from(r, userMap.get(r.getUserId())))
+                .map(r -> CommentResponse.from(r, userMap.get(r.getUserId()), likedIds.contains(r.getId())))
                 .toList();
     }
 
@@ -124,7 +144,7 @@ public class FeedCommentService {
         feedCommentRepository.incrementCommentCount(feedId);
         tagWeightService.increaseWeight(author, feedId, COMMENT_TAG_WEIGHT);
 
-        return CommentResponse.from(comment, author);
+        return CommentResponse.from(comment, author, false);
     }
 
     /** 댓글 수정 (본인만) */
@@ -133,7 +153,27 @@ public class FeedCommentService {
         FeedComment comment = findOwnComment(userId, commentId);
         comment.update(content);
         User author = requireUser(userId);
-        return CommentResponse.from(comment, author);
+        return CommentResponse.from(comment, author, false);
+    }
+
+    /** 댓글 좋아요. 이미 눌렀으면 no-op (멱등) */
+    @Transactional
+    public void likeComment(Long userId, Long commentId) {
+        findComment(commentId);
+        int inserted = feedCommentLikeRepository.insertIgnore(userId, commentId);
+        if (inserted > 0) {
+            feedCommentRepository.incrementCommentLikeCount(commentId);
+        }
+    }
+
+    /** 댓글 좋아요 취소. 없으면 no-op (멱등). 삭제된 댓글도 취소 허용 */
+    @Transactional
+    public void unlikeComment(Long userId, Long commentId) {
+        findCommentIncludeDeleted(commentId);
+        int deleted = feedCommentLikeRepository.deleteByUserIdAndCommentId(userId, commentId);
+        if (deleted > 0) {
+            feedCommentRepository.decrementCommentLikeCount(commentId);
+        }
     }
 
     /** 댓글 삭제 (본인만, 소프트 삭제) */
