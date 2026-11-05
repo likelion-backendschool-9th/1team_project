@@ -39,6 +39,16 @@ public interface FeedCommentRepository extends JpaRepository<FeedComment, Long> 
             """, nativeQuery = true)
     List<FeedComment> findReplies(@Param("parentId") Long parentId);
 
+    /** 여러 부모 댓글의 대댓글 수를 한 번에 조회 (N+1 방지) */
+    @Query(value = """
+            SELECT parent_id, COUNT(*) AS cnt
+            FROM feed_comments
+            WHERE parent_id IN (:parentIds)
+              AND deleted_at IS NULL
+            GROUP BY parent_id
+            """, nativeQuery = true)
+    List<Object[]> countRepliesByParentIds(@Param("parentIds") List<Long> parentIds);
+
     /** 댓글 수 +1 */
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("UPDATE Feed f SET f.commentCount = f.commentCount + 1 WHERE f.id = :feedId")

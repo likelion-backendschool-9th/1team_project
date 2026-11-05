@@ -12,6 +12,7 @@ import com.dipsource.global.exception.ErrorCode;
 import com.dipsource.repository.feed.FeedCommentRepository;
 import com.dipsource.repository.feed.FeedRepository;
 import com.dipsource.repository.user.UserRepository;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -46,13 +47,17 @@ public class FeedCommentService {
         Map<Long, User> userMap = userRepository.findAllById(userIds).stream()
                 .collect(Collectors.toMap(User::getId, u -> u));
 
-        // 대댓글 수 조회
+        // 대댓글 수 배치 조회 (N+1 방지)
+        List<Long> commentIds = comments.stream().map(FeedComment::getId).toList();
+        Map<Long, Integer> replyCountMap = new HashMap<>();
+        feedCommentRepository.countRepliesByParentIds(commentIds)
+                .forEach(row -> replyCountMap.put(((Number) row[0]).longValue(), ((Number) row[1]).intValue()));
+
         List<CommentResponse> responses = comments.stream()
-                .map(c -> {
-                    User author = userMap.get(c.getUserId());
-                    int replyCount = feedCommentRepository.findReplies(c.getId()).size();
-                    return CommentResponse.from(c, author, replyCount);
-                })
+                .map(c -> CommentResponse.from(
+                        c,
+                        userMap.get(c.getUserId()),
+                        replyCountMap.getOrDefault(c.getId(), 0)))
                 .toList();
 
         return CommentCursorResponse.of(responses, size);
