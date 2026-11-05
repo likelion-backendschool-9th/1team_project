@@ -12,12 +12,11 @@ import styles from "./ProfileForm.module.css";
 type Props = {
   defaultNickname: string;
   defaultBio: string;
-  defaultGithubUsername: string;
   defaultTermsAgreed: boolean;
   redirectTo: string;
 };
 
-export function ProfileForm({ defaultNickname, defaultBio, defaultGithubUsername, defaultTermsAgreed, redirectTo }: Props) {
+export function ProfileForm({ defaultNickname, defaultBio, defaultTermsAgreed, redirectTo }: Props) {
   const [state, formAction, pending] = useActionState(saveProfile, initialFormState);
   const [nickname, setNickname] = useState(state.values.nickname ?? defaultNickname);
   const [check, setCheck] = useState<NicknameCheck | null>(null);
@@ -87,24 +86,6 @@ export function ProfileForm({ defaultNickname, defaultBio, defaultGithubUsername
         />
         <p id="onboarding-bio-error" className={kit.error}>
           {state.errors.bio}
-        </p>
-      </div>
-
-      <div className={kit.field}>
-        <label htmlFor="onboarding-github" className={kit.label}>
-          GitHub 사용자명 <span className={kit.faint}>(선택)</span>
-        </label>
-        <input
-          id="onboarding-github"
-          name="githubUsername"
-          defaultValue={state.values.githubUsername ?? defaultGithubUsername}
-          maxLength={39}
-          autoComplete="off"
-          className={kit.input}
-          {...invalid("githubUsername", state.errors.githubUsername)}
-        />
-        <p id="onboarding-githubUsername-error" className={kit.error}>
-          {state.errors.githubUsername}
         </p>
       </div>
 

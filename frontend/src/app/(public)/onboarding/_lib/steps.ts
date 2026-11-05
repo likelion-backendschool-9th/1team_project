@@ -43,7 +43,6 @@ export function isTagStep(value: string): value is TagStepKey {
 export type OnboardingDraft = {
   nickname?: string;
   bio?: string;
-  githubUsername?: string;
   termsAgreed?: boolean;
   stack?: string[];
   fields?: string[];
