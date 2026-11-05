@@ -74,4 +74,14 @@ public interface FeedCommentRepository extends JpaRepository<FeedComment, Long> 
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("UPDATE Feed f SET f.commentCount = f.commentCount - 1 WHERE f.id = :feedId AND f.commentCount > 0")
     int decrementCommentCount(@Param("feedId") Long feedId);
+
+    /** 댓글 좋아요 수 +1 */
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("UPDATE FeedComment c SET c.likeCount = c.likeCount + 1 WHERE c.id = :commentId")
+    int incrementCommentLikeCount(@Param("commentId") Long commentId);
+
+    /** 댓글 좋아요 수 -1 (0 미만 방지) */
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("UPDATE FeedComment c SET c.likeCount = c.likeCount - 1 WHERE c.id = :commentId AND c.likeCount > 0")
+    int decrementCommentLikeCount(@Param("commentId") Long commentId);
 }

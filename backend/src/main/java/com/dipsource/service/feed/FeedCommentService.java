@@ -9,6 +9,7 @@ import com.dipsource.entity.feed.FeedStatus;
 import com.dipsource.entity.user.User;
 import com.dipsource.global.exception.BusinessException;
 import com.dipsource.global.exception.ErrorCode;
+import com.dipsource.repository.feed.FeedCommentLikeRepository;
 import com.dipsource.repository.feed.FeedCommentRepository;
 import com.dipsource.repository.feed.FeedRepository;
 import com.dipsource.repository.user.UserRepository;
@@ -26,6 +27,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class FeedCommentService {
 
+    private final FeedCommentLikeRepository feedCommentLikeRepository;
     private final FeedCommentRepository feedCommentRepository;
     private final FeedRepository feedRepository;
     private final UserRepository userRepository;
@@ -134,6 +136,26 @@ public class FeedCommentService {
         comment.update(content);
         User author = requireUser(userId);
         return CommentResponse.from(comment, author);
+    }
+
+    /** 댓글 좋아요. 이미 눌렀으면 no-op (멱등) */
+    @Transactional
+    public void likeComment(Long userId, Long commentId) {
+        findComment(commentId);
+        int inserted = feedCommentLikeRepository.insertIgnore(userId, commentId);
+        if (inserted > 0) {
+            feedCommentRepository.incrementCommentLikeCount(commentId);
+        }
+    }
+
+    /** 댓글 좋아요 취소. 없으면 no-op (멱등) */
+    @Transactional
+    public void unlikeComment(Long userId, Long commentId) {
+        findComment(commentId);
+        int deleted = feedCommentLikeRepository.deleteByUserIdAndCommentId(userId, commentId);
+        if (deleted > 0) {
+            feedCommentRepository.decrementCommentLikeCount(commentId);
+        }
     }
 
     /** 댓글 삭제 (본인만, 소프트 삭제) */

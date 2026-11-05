@@ -32,6 +32,8 @@ import org.springframework.web.bind.annotation.RestController;
  * GET    /api/v1/feeds/comments/{commentId}/replies    — 대댓글 목록
  * PUT    /api/v1/feeds/comments/{commentId}            — 댓글 수정 (인증 필요, 본인만)
  * DELETE /api/v1/feeds/comments/{commentId}            — 댓글 삭제 (인증 필요, 본인만)
+ * POST   /api/v1/feeds/comments/{commentId}/like       — 댓글 좋아요 (인증 필요)
+ * DELETE /api/v1/feeds/comments/{commentId}/like       — 댓글 좋아요 취소 (인증 필요)
  */
 @RestController
 @RequestMapping("/api/v1/feeds")
@@ -92,6 +94,26 @@ public class FeedCommentController {
             @PathVariable Long commentId
     ) {
         feedCommentService.delete(requireUserId(principal), commentId);
+        return ResponseEntity.noContent().build();
+    }
+
+    /** 댓글 좋아요 */
+    @PostMapping("/comments/{commentId}/like")
+    public ResponseEntity<Void> likeComment(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @PathVariable Long commentId
+    ) {
+        feedCommentService.likeComment(requireUserId(principal), commentId);
+        return ResponseEntity.noContent().build();
+    }
+
+    /** 댓글 좋아요 취소 */
+    @DeleteMapping("/comments/{commentId}/like")
+    public ResponseEntity<Void> unlikeComment(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @PathVariable Long commentId
+    ) {
+        feedCommentService.unlikeComment(requireUserId(principal), commentId);
         return ResponseEntity.noContent().build();
     }
 
