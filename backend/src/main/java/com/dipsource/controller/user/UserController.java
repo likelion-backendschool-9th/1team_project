@@ -3,6 +3,7 @@ package com.dipsource.controller.user;
 import com.dipsource.dto.user.CompleteProfileRequest;
 import com.dipsource.dto.user.NicknameAvailableResponse;
 import com.dipsource.dto.user.UserMeResponse;
+import com.dipsource.dto.user.UserProfileResponse;
 import com.dipsource.global.auth.UserPrincipal;
 import com.dipsource.global.common.ApiResponse;
 import com.dipsource.service.user.UserService;
@@ -13,6 +14,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -52,5 +54,13 @@ public class UserController {
             @Valid @RequestBody CompleteProfileRequest request
     ) {
         return ApiResponse.of(userService.completeProfile(principal.getUserId(), request));
+    }
+
+    @GetMapping("/{userId}")
+    public ApiResponse<UserProfileResponse> getProfile(
+        @PathVariable Long userId,
+        @AuthenticationPrincipal UserPrincipal principal) {
+            Long viewerId = principal == null ? null : principal.getUserId();
+            return ApiResponse.of(userService.getProfile(userId, viewerId));
     }
 }

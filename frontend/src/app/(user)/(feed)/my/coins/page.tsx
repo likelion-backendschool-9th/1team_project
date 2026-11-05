@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { ConfirmButton } from "@/app/_components/ui/ConfirmButton";
+import { ChipIcon, ChipPack } from "@/app/_components/ui/ChipIcon";
 import kit from "@/app/_components/ui/kit.module.css";
 import { formatCount, formatDateTime, formatWon } from "@/app/_lib/format";
 import { CHIP_PRICE_WON, chipsToWon } from "@/app/_lib/policy";
@@ -21,7 +22,9 @@ async function CoinsContent() {
     <>
       <section className={styles.balance} aria-label="보유 칩">
         <div>
-          <p className={kit.strong}>🪙 보유 칩</p>
+          <p className={kit.strong}>
+            <ChipIcon size={22} /> 보유 칩
+          </p>
           <p className={styles.balanceValue}>{formatCount(me.chipBalance)}개</p>
         </div>
         <p style={{ fontSize: 14 }}>
@@ -38,6 +41,7 @@ async function CoinsContent() {
         <ul className={kit.grid4}>
           {packages.map((item) => (
             <li key={item.id} className={styles.package}>
+              <ChipPack chips={item.chips} />
               <span className={styles.packageChips}>{formatCount(item.chips)}칩</span>
               <span className={kit.muted}>{formatWon(chipsToWon(item.chips))}</span>
               <ConfirmButton

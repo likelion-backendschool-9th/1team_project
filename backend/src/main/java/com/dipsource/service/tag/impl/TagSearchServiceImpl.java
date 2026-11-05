@@ -1,0 +1,23 @@
+package com.dipsource.service.tag.impl;
+
+import com.dipsource.dto.search.SearchTermCandidate;
+import com.dipsource.repository.tag.TagSearchRepository;
+import com.dipsource.service.tag.TagSearchService;
+import java.util.List;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+/** {@link TagSearchService} 구현체. */
+@Service
+@RequiredArgsConstructor
+public class TagSearchServiceImpl implements TagSearchService {
+
+    private final TagSearchRepository tagSearchRepository;
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<SearchTermCandidate> findClosestTerms(String word, int maxDistance) {
+        return tagSearchRepository.findClosestTerms(word, maxDistance);
+    }
+}

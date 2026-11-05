@@ -45,11 +45,12 @@ public class SecurityConfig {
                                 "/oauth2/**",
                                 "/login/oauth2/**"
                         ).permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/users/me").authenticated()
                         // 조회성 API는 비로그인도 가능
                         .requestMatchers(HttpMethod.GET,
                                 "/api/v1/tags",
                                 "/api/v1/demos", "/api/v1/demos/*",
-                                "/api/v1/feeds", "/api/v1/feeds/*", "/api/v1/feeds/*/comments",
+                                "/api/v1/feeds", "/api/v1/feeds/*", "/api/v1/feeds/*/comments", "/api/v1/feeds/comments/*/replies",
                                 "/api/v1/posts", "/api/v1/posts/list", "/api/v1/posts/*", "/api/v1/posts/*/comments",
                                 "/api/v1/users/*/posts",
                                 "/api/v1/search", "/api/v1/search/**",
@@ -59,7 +60,7 @@ public class SecurityConfig {
                                 "/api/v1/follows/**",
                                 "/api/v1/mini-homes/**",
                                 "/api/v1/coins/**",
-                                "/api/v1/users/me/bookmarks").permitAll()
+                                "/api/v1/users/me/bookmarks", "/api/v1/users/*").permitAll()
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/error").permitAll()
                         // 그 외 API는 인증 필요 (이후 공개 API는 여기서 풀면 된다)

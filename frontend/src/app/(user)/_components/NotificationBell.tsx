@@ -1,22 +1,23 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useId, useRef, useState, useTransition } from "react";
+import { useEffect, useId, useRef, useState, useTransition, type ReactNode } from "react";
 import { Avatar } from "@/app/_components/ui/Avatar";
+import { ChipIcon } from "@/app/_components/ui/ChipIcon";
 import { BellIcon } from "@/app/_components/ui/Icons";
 import { formatRelativeTime } from "@/app/_lib/format";
 import type { AppNotification, NotificationType } from "@/app/_lib/types/notification";
 import { markNotificationsRead } from "../_actions";
 import styles from "./NotificationBell.module.css";
 
-const icons: Record<NotificationType, string> = {
+const icons: Record<NotificationType, ReactNode> = {
   like: "❤️",
   comment: "💬",
   follow: "👋",
   guestbook: "📖",
   repost: "🔁",
   subscribe: "⭐",
-  sponsor: "🪙",
+  sponsor: <ChipIcon size={16} />,
 };
 
 type Props = {
