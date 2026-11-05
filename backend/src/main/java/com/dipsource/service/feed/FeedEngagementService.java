@@ -8,6 +8,7 @@ import com.dipsource.global.exception.BusinessException;
 import com.dipsource.global.exception.ErrorCode;
 import com.dipsource.repository.feed.FeedBookmarkRepository;
 import com.dipsource.repository.feed.FeedLikeRepository;
+import com.dipsource.repository.feed.FeedRepostRepository;
 import com.dipsource.repository.feed.FeedRepository;
 import com.dipsource.repository.user.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -29,6 +30,7 @@ public class FeedEngagementService {
     private final FeedRepository feedRepository;
     private final FeedLikeRepository feedLikeRepository;
     private final FeedBookmarkRepository feedBookmarkRepository;
+    private final FeedRepostRepository feedRepostRepository;
     private final UserRepository userRepository;
     private final TagWeightService tagWeightService;
 
@@ -97,6 +99,34 @@ public class FeedEngagementService {
             return;
         }
 
+        tagWeightService.decreaseWeight(requireUser(userId), feedId, ENGAGEMENT_TAG_WEIGHT);
+    }
+
+    /** 리포스트. 이미 했으면 no-op (멱등) */
+    @Transactional
+    public void repost(Long userId, Long feedId) {
+        findActiveFeed(feedId);
+
+        int inserted = feedRepostRepository.insertIgnore(userId, feedId);
+        if (inserted == 0) {
+            return;
+        }
+
+        feedRepository.incrementRepostCount(feedId);
+        tagWeightService.increaseWeight(requireUser(userId), feedId, ENGAGEMENT_TAG_WEIGHT);
+    }
+
+    /** 리포스트 취소. 없으면 no-op (멱등) */
+    @Transactional
+    public void unrepost(Long userId, Long feedId) {
+        findActiveFeed(feedId);
+
+        int deleted = feedRepostRepository.deleteByUserIdAndFeedId(userId, feedId);
+        if (deleted == 0) {
+            return;
+        }
+
+        feedRepository.decrementRepostCount(feedId);
         tagWeightService.decreaseWeight(requireUser(userId), feedId, ENGAGEMENT_TAG_WEIGHT);
     }
 

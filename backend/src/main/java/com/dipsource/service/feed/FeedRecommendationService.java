@@ -6,6 +6,7 @@ import com.dipsource.entity.feed.Feed;
 import com.dipsource.entity.user.User;
 import com.dipsource.repository.feed.FeedBookmarkRepository;
 import com.dipsource.repository.feed.FeedLikeRepository;
+import com.dipsource.repository.feed.FeedRepostRepository;
 import com.dipsource.repository.feed.FeedRepository;
 import com.dipsource.repository.follow.FollowRepository;
 import com.dipsource.repository.user.UserInterestTagRepository;
@@ -30,6 +31,7 @@ public class FeedRecommendationService {
 
     private final FeedRepository feedRepository;
     private final FeedLikeRepository feedLikeRepository;
+    private final FeedRepostRepository feedRepostRepository;
     private final FeedBookmarkRepository feedBookmarkRepository;
     private final FollowRepository followRepository;
     private final UserInterestTagRepository userInterestTagRepository;
@@ -134,18 +136,21 @@ public class FeedRecommendationService {
         Map<Long, User> userMap = userRepository.findAllById(authorIds).stream()
                 .collect(Collectors.toMap(User::getId, Function.identity()));
 
-        // 로그인 유저의 좋아요/북마크/팔로우 상태 배치 조회
+        // 로그인 유저의 좋아요/리포스트/북마크/팔로우 상태 배치 조회
         Set<Long> likedIds = Set.of();
+        Set<Long> repostedIds = Set.of();
         Set<Long> bookmarkedIds = Set.of();
         Set<Long> followingAuthorIds = Set.of();
 
         if (userId != null) {
             likedIds = new HashSet<>(feedLikeRepository.findLikedFeedIds(userId, feedIds));
+            repostedIds = new HashSet<>(feedRepostRepository.findRepostedFeedIds(userId, feedIds));
             bookmarkedIds = new HashSet<>(feedBookmarkRepository.findBookmarkedFeedIds(userId, feedIds));
             followingAuthorIds = new HashSet<>(followRepository.findFollowingIdsIn(userId, authorIds));
         }
 
         Set<Long> finalLikedIds = likedIds;
+        Set<Long> finalRepostedIds = repostedIds;
         Set<Long> finalBookmarkedIds = bookmarkedIds;
         Set<Long> finalFollowingIds = followingAuthorIds;
 
@@ -154,6 +159,7 @@ public class FeedRecommendationService {
                         feed,
                         userMap.get(feed.getUserId()),
                         finalLikedIds.contains(feed.getId()),
+                        finalRepostedIds.contains(feed.getId()),
                         finalBookmarkedIds.contains(feed.getId()),
                         finalFollowingIds.contains(feed.getUserId())
                 ))

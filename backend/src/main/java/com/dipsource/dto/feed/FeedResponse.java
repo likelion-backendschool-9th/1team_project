@@ -25,11 +25,11 @@ public record FeedResponse(
 ) {
     /** 비로그인용 — 상호작용 상태 전부 false */
     public static FeedResponse from(Feed feed, User author) {
-        return from(feed, author, false, false, false);
+        return from(feed, author, false, false, false, false);
     }
 
-    /** 로그인용 — 좋아요/북마크/팔로우 상태 반영 */
-    public static FeedResponse from(Feed feed, User author, boolean liked, boolean bookmarked, boolean following) {
+    /** 로그인용 — 좋아요/리포스트/북마크/팔로우 상태 반영 */
+    public static FeedResponse from(Feed feed, User author, boolean liked, boolean reposted, boolean bookmarked, boolean following) {
         return new FeedResponse(
                 feed.getId(),
                 UserSummaryResponse.from(author),
@@ -41,7 +41,7 @@ public record FeedResponse(
                 feed.getCommentCount(),
                 feed.getRepostCount(),
                 liked,
-                false,
+                reposted,
                 bookmarked,
                 following,
                 feed.getPollOptions(),
