@@ -1,8 +1,10 @@
 package com.dipsource.service.post.impl;
 
 import com.dipsource.dto.post.PostSearchItemResponse;
+import com.dipsource.dto.search.AutocompletePrefix;
 import com.dipsource.dto.search.SearchCondition;
 import com.dipsource.dto.search.SearchTermCandidate;
+import com.dipsource.dto.search.SearchTermFrequency;
 import com.dipsource.dto.user.UserSummaryResponse;
 import com.dipsource.entity.post.Post;
 import com.dipsource.global.common.PageResponse;
@@ -41,6 +43,12 @@ public class PostSearchServiceImpl implements PostSearchService {
     @Transactional(readOnly = true)
     public List<SearchTermCandidate> findClosestTerms(String word, int maxDistance) {
         return postSearchRepository.findClosestTerms(word, maxDistance);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<SearchTermFrequency> findTermsByPrefix(AutocompletePrefix prefix, int limit) {
+        return postSearchRepository.findTermsByPrefix(prefix, limit);
     }
 
     private PostSearchItemResponse toSearchItem(Post post, UserSummaryResponse author) {

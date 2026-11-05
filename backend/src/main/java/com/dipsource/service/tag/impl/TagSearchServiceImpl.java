@@ -1,6 +1,8 @@
 package com.dipsource.service.tag.impl;
 
+import com.dipsource.dto.search.AutocompletePrefix;
 import com.dipsource.dto.search.SearchTermCandidate;
+import com.dipsource.dto.search.SearchTermFrequency;
 import com.dipsource.repository.tag.TagSearchRepository;
 import com.dipsource.service.tag.TagSearchService;
 import java.util.List;
@@ -19,5 +21,17 @@ public class TagSearchServiceImpl implements TagSearchService {
     @Transactional(readOnly = true)
     public List<SearchTermCandidate> findClosestTerms(String word, int maxDistance) {
         return tagSearchRepository.findClosestTerms(word, maxDistance);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<SearchTermFrequency> findTermsByPrefix(AutocompletePrefix prefix, int limit) {
+        return tagSearchRepository.findTermsByPrefix(prefix, limit);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<String> findNamesByPrefix(AutocompletePrefix prefix, int limit) {
+        return tagSearchRepository.findNamesByPrefix(prefix, limit);
     }
 }

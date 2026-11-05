@@ -1,9 +1,11 @@
 package com.dipsource.repository.post;
 
+import com.dipsource.dto.search.AutocompletePrefix;
 import com.dipsource.dto.search.SearchCondition;
 import com.dipsource.dto.search.SearchOperator;
 import com.dipsource.dto.search.SearchSort;
 import com.dipsource.dto.search.SearchTermCandidate;
+import com.dipsource.dto.search.SearchTermFrequency;
 import com.dipsource.entity.post.Post;
 import com.dipsource.global.common.LikePattern;
 import java.util.List;
@@ -132,4 +134,41 @@ public interface PostSearchRepository extends Repository<Post, Long> {
             @Param("word") String word,
             @Param("pattern") String pattern,
             @Param("maxDistance") int maxDistance);
+
+    /**
+     * 4단계: 자동완성 단어 후보. 공개(ACTIVE)이면서 삭제되지 않은 글의 제목에서 접두어로 시작하는 단어와 등장 횟수.
+     * 3단계 오타 교정과 같은 단어 사전(유료 글은 제목만, 본문은 쓰지 않음)이다. 자주 나온 단어 → 짧은 단어 순.
+     * 다음 글자 범위 비교는 바이트 순서(COLLATE "C")로 해서 DB 정렬 규칙과 상관없이 유니코드 순서로 비교한다.
+     *
+     * @param prefix 마지막 단어의 접두어 조건(한글 조합 중 받침 처리 포함)
+     * @param limit  최대 개수
+     */
+    default List<SearchTermFrequency> findTermsByPrefix(AutocompletePrefix prefix, int limit) {
+        return findTitleTermsByPrefix(prefix.pattern(), prefix.composing(), prefix.stemPattern(), prefix.stemLength(),
+                prefix.nextFrom(), prefix.nextTo(), limit);
+    }
+
+    @Query(nativeQuery = true, value = """
+            SELECT s.term AS term, count(*) AS frequency
+            FROM posts p
+            CROSS JOIN LATERAL regexp_split_to_table(lower(p.title), '[^a-z0-9가-힣_.#+-]+') AS s(term)
+            WHERE length(s.term) BETWEEN 1 AND 50
+                  AND p.status = 'ACTIVE'
+                  AND p.deleted_at IS NULL
+              AND (s.term LIKE :pattern
+                   OR (:composing
+                       AND s.term LIKE :stemPattern
+                       AND substr(s.term, :stemLength + 1, 1) COLLATE "C" BETWEEN :nextFrom AND :nextTo))
+            GROUP BY s.term
+            ORDER BY frequency DESC, length(s.term), s.term
+            LIMIT :limit
+            """)
+    List<SearchTermFrequency> findTitleTermsByPrefix(
+            @Param("pattern") String pattern,
+            @Param("composing") boolean composing,
+            @Param("stemPattern") String stemPattern,
+            @Param("stemLength") int stemLength,
+            @Param("nextFrom") String nextFrom,
+            @Param("nextTo") String nextTo,
+            @Param("limit") int limit);
 }

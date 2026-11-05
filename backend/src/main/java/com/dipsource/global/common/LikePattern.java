@@ -17,6 +17,11 @@ public final class LikePattern {
         return "%" + escape(keyword) + "%";
     }
 
+    /** 검색어로 시작하면 일치하는 패턴 */
+    public static String startsWith(String keyword) {
+        return escape(keyword) + "%";
+    }
+
     /** %, _, \ 를 글자 그대로 비교하도록 앞에 \ 를 붙인다. */
     static String escape(String keyword) {
         StringBuilder escaped = new StringBuilder(keyword.length());

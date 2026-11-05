@@ -1,8 +1,10 @@
 package com.dipsource.service.demo.impl;
 
 import com.dipsource.dto.demo.DemoSearchItemResponse;
+import com.dipsource.dto.search.AutocompletePrefix;
 import com.dipsource.dto.search.SearchCondition;
 import com.dipsource.dto.search.SearchTermCandidate;
+import com.dipsource.dto.search.SearchTermFrequency;
 import com.dipsource.dto.user.UserSummaryResponse;
 import com.dipsource.entity.demo.Demo;
 import com.dipsource.global.common.PageResponse;
@@ -52,5 +54,11 @@ public class DemoSearchServiceImpl implements DemoSearchService {
     @Transactional(readOnly = true)
     public List<SearchTermCandidate> findClosestTerms(String word, int maxDistance) {
         return demoSearchRepository.findClosestTerms(word, maxDistance);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<SearchTermFrequency> findTermsByPrefix(AutocompletePrefix prefix, int limit) {
+        return demoSearchRepository.findTermsByPrefix(prefix, limit);
     }
 }
