@@ -1,9 +1,9 @@
 "use client";
 
-import { usePathname, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
 import kit from "@/app/_components/ui/kit.module.css";
-import { MAX_FOLLOW_QUERY, type FollowTab } from "../_lib/params";
+import { followsHref, MAX_FOLLOW_QUERY, type FollowTab } from "../_lib/params";
 import list from "./FollowList.module.css";
 
 const DEBOUNCE_MS = 300;
@@ -16,19 +16,21 @@ type Props = {
 // 입력을 잠깐 멈추면 주소의 ?q=를 바꿔서 서버가 검색 결과 첫 페이지를 다시 그린다.
 export function FollowSearch({ tab, q }: Props) {
   const router = useRouter();
-  const pathname = usePathname();
   const [value, setValue] = useState(q);
+  const [syncedQ, setSyncedQ] = useState(q);
+  // 뒤로 가기 등으로 주소의 q가 바뀌면 입력 칸도 맞춘다 (렌더 중에 맞춰서 effect를 거치지 않는다).
+  // 주소에는 앞뒤 공백을 뺀 값이 들어가서, 입력 중인 값과 같은 검색어면 그대로 둔다 ("시드 " 입력 중 공백이 지워지지 않게).
+  if (q !== syncedQ) {
+    setSyncedQ(q);
+    if (q !== value.trim()) setValue(q);
+  }
   const [pending, startTransition] = useTransition();
   const timer = useRef<number | undefined>(undefined);
 
   useEffect(() => () => window.clearTimeout(timer.current), []);
 
   function search(next: string) {
-    const params = new URLSearchParams();
-    if (tab === "followers") params.set("tab", "followers");
-    if (next.trim()) params.set("q", next.trim());
-    const query = params.toString();
-    startTransition(() => router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false }));
+    startTransition(() => router.replace(followsHref(tab, next.trim()), { scroll: false }));
   }
 
   return (

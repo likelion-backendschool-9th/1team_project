@@ -7,7 +7,7 @@ import { getFollowers, getFollowings } from "../_lib/api";
 import { FollowList } from "./_components/FollowList";
 import { FollowSearch } from "./_components/FollowSearch";
 import list from "./_components/FollowList.module.css";
-import { parseFollowQuery, parseFollowTab } from "./_lib/params";
+import { followsHref, parseFollowQuery, parseFollowTab } from "./_lib/params";
 
 export const metadata: Metadata = { title: "팔로우", robots: { index: false } };
 
@@ -32,8 +32,9 @@ async function FollowsContent({ searchParams }: { searchParams: SearchParams }) 
         label="팔로우 목록"
         variant="line"
         items={[
-          { href: "/my/follows", label: "팔로잉", active: tab === "followings", count: followingCount },
-          { href: "/my/follows?tab=followers", label: "팔로워", active: tab === "followers", count: followerCount },
+          // 검색 중에 탭을 바꿔도 검색어를 유지한다.
+          { href: followsHref("followings", q), label: "팔로잉", active: tab === "followings", count: followingCount },
+          { href: followsHref("followers", q), label: "팔로워", active: tab === "followers", count: followerCount },
         ]}
       />
       <FollowSearch key={tab} tab={tab} q={q} />
