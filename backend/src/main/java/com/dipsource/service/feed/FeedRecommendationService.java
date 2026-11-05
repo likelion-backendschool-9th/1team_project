@@ -161,15 +161,14 @@ public class FeedRecommendationService {
                         finalLikedIds.contains(feed.getId()),
                         finalRepostedIds.contains(feed.getId()),
                         finalBookmarkedIds.contains(feed.getId()),
-                        finalFollowingIds.contains(feed.getUserId())
-                ))
+                        finalFollowingIds.contains(feed.getUserId())))
                 .toList();
         return FeedCursorResponse.of(responses, size);
     }
 
     private List<Feed> mergeAndDeduplicate(List<Feed> primary, List<Feed> secondary) {
         List<Feed> merged = new ArrayList<>(primary);
-        List<Long> primaryIds = primary.stream().map(Feed::getId).toList();
+        Set<Long> primaryIds = primary.stream().map(Feed::getId).collect(Collectors.toSet());
 
         for (Feed feed : secondary) {
             if (!primaryIds.contains(feed.getId())) {

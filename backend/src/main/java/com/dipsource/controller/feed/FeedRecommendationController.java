@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/v1/feeds")
 @RequiredArgsConstructor
 public class FeedRecommendationController {
-
+    private static final int MAX_SIZE = 100;
     private final FeedRecommendationService recommendationService;
 
     /**
@@ -36,17 +36,17 @@ public class FeedRecommendationController {
             // size: 한 번에 가져올 피드 수. 기본값 20
             @RequestParam(defaultValue = "20") int size,
             // cursor: 마지막으로 본 피드 ID. 무한스크롤 시 이전 응답의 nextCursor 값을 넘김. 첫 요청이면 안 보냄
-            @RequestParam(required = false) Long cursor
-    ) {
+            @RequestParam(required = false) Long cursor) {
         Long userId = principal == null ? null : principal.getUserId();
+        int safeSize = Math.min(Math.max(size, 1), MAX_SIZE);
         FeedCursorResponse response;
 
         if (userId == null) {
-            response = recommendationService.getGuestFeeds(cursor, size);
+            response = recommendationService.getGuestFeeds(cursor, safeSize);
         } else if ("following".equals(type)) {
-            response = recommendationService.getFollowingFeeds(userId, cursor, size);
+            response = recommendationService.getFollowingFeeds(userId, cursor, safeSize);
         } else {
-            response = recommendationService.getRecommendedFeeds(userId, cursor, size);
+            response = recommendationService.getRecommendedFeeds(userId, cursor, safeSize);
         }
 
         return ResponseEntity.ok(ApiResponse.of(response));
