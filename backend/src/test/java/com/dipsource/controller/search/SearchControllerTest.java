@@ -858,6 +858,128 @@ class SearchControllerTest {
     }
 
     @Nested
+    @DisplayName("3단계 - 검색어 제안 (결과가 적을 때)")
+    class QuerySuggestion {
+
+        @Test
+        @DisplayName("결과가 몇 건뿐이면 결과는 그대로 두고 제안 검색어를 붙인다 (본문에만 sprng가 있는 글)")
+        void suggestWhenFewResults() throws Exception {
+            savePost("Spring 입문", "본문");
+            savePost("회고", "sprng 이라고 잘못 쳤다");
+
+            search("sprng")
+                    .andExpect(jsonPath("$.data.totalElements").value(1))
+                    .andExpect(jsonPath("$.data.content[0].title").value("회고"))
+                    .andExpect(jsonPath("$.data.suggestedQuery").value("spring"))
+                    .andExpect(jsonPath("$.data.correctedQuery").doesNotExist());
+        }
+
+        @Test
+        @DisplayName("제목이 sprng인 글이 있어도, spring이 3배 이상 자주 나오면 제안한다")
+        void suggestWhenTypoInTitle() throws Exception {
+            savePost("Sprng 설정 정리", "본문");
+            savePost("Spring 입문", "본문");
+            savePost("Spring 실전", "본문");
+            savePost("Spring 회고", "본문");
+
+            search("sprng")
+                    .andExpect(jsonPath("$.data.content[*].title", contains("Sprng 설정 정리")))
+                    .andExpect(jsonPath("$.data.suggestedQuery").value("spring"));
+        }
+
+        @Test
+        @DisplayName("비슷한 단어가 3배 미만으로 나오면 제안하지 않는다 (오타가 아닐 수도 있다)")
+        void noSuggestionWhenNotFrequentEnough() throws Exception {
+            savePost("Sprng 설정 정리", "본문");
+            savePost("Spring 입문", "본문");
+            savePost("Spring 실전", "본문");
+
+            search("sprng").andExpect(jsonPath("$.data.suggestedQuery").doesNotExist());
+        }
+
+        @Test
+        @DisplayName("결과가 5건 이상이면 제안을 찾지 않는다 (경계: 4건은 제안, 5건은 안 함)")
+        void noSuggestionWhenEnoughResults() throws Exception {
+            savePost("Spring 입문", "본문");
+            for (int i = 1; i <= 4; i++) {
+                savePost("회고 " + i, "sprng");
+            }
+            search("sprng")
+                    .andExpect(jsonPath("$.data.totalElements").value(4))
+                    .andExpect(jsonPath("$.data.suggestedQuery").value("spring"));
+
+            savePost("회고 5", "sprng");
+            search("sprng")
+                    .andExpect(jsonPath("$.data.totalElements").value(5))
+                    .andExpect(jsonPath("$.data.suggestedQuery").doesNotExist());
+        }
+
+        @Test
+        @DisplayName("검색 단어를 포함하는 다른 단어가 있으면 이미 찾히므로 제안하지 않는다 (redi는 redis로 찾힌다)")
+        void noSuggestionWhenContainedTermExists() throws Exception {
+            savePost("Redis 캐시", "본문");
+            savePost("Redo 로그 1", "본문");
+            savePost("Redo 로그 2", "본문");
+            savePost("Redo 로그 3", "본문");
+
+            search("redi")
+                    .andExpect(jsonPath("$.data.totalElements").value(1))
+                    .andExpect(jsonPath("$.data.suggestedQuery").doesNotExist());
+        }
+
+        @Test
+        @DisplayName("제안 검색어로 결과가 없으면 제안하지 않는다")
+        void noSuggestionWhenSuggestedEmpty() throws Exception {
+            tag("Kotlin");
+            saveFeed("kotlnn 정리");
+
+            search("kotlnn", "feed")
+                    .andExpect(jsonPath("$.data.totalElements").value(1))
+                    .andExpect(jsonPath("$.data.suggestedQuery").doesNotExist());
+        }
+
+        @Test
+        @DisplayName("[보안] 숨김 글 제목은 제안에도 쓰지 않는다")
+        void hiddenTitlesNotSuggested() throws Exception {
+            for (int i = 1; i <= 3; i++) {
+                Post hidden = post("Kubernetes 숨김 " + i, "본문", false);
+                hidden.hide();
+                persist(hidden);
+            }
+            saveFeed("kubernetis 오타");
+            saveFeed("kubernetes 공부 중");
+
+            search("kubernetis", "feed")
+                    .andExpect(jsonPath("$.data.totalElements").value(1))
+                    .andExpect(jsonPath("$.data.suggestedQuery").doesNotExist());
+        }
+
+        @Test
+        @DisplayName("전체 검색: 모든 대상 합계가 5건 미만이면 제안한다")
+        void allTypes() throws Exception {
+            savePost("Spring 입문", "본문");
+            saveFeed("sprng 오타 났다");
+
+            search("sprng", "all")
+                    .andExpect(jsonPath("$.data.posts.totalElements").value(0))
+                    .andExpect(jsonPath("$.data.feeds.totalElements").value(1))
+                    .andExpect(jsonPath("$.data.suggestedQuery").value("spring"))
+                    .andExpect(jsonPath("$.data.correctedQuery").doesNotExist());
+        }
+
+        @Test
+        @DisplayName("여러 단어 중 바꿀 단어만 바꿔서 제안한다")
+        void suggestOnlyTypoWord() throws Exception {
+            savePost("Spring JPA 입문", "본문");
+            savePost("회고", "sprng jpa 공부");
+
+            search("sprng jpa")
+                    .andExpect(jsonPath("$.data.totalElements").value(1))
+                    .andExpect(jsonPath("$.data.suggestedQuery").value("spring jpa"));
+        }
+    }
+
+    @Nested
     @DisplayName("잘못된 요청")
     class BadRequest {
 
@@ -927,14 +1049,16 @@ class SearchControllerTest {
         }
 
         @Test
-        @DisplayName("[한계] 결과가 1건이라도 있으면 오타를 고치지 않아서, 오타가 우연히 들어간 글만 나온다")
-        void correctionOnlyWhenEmpty() throws Exception {
-            savePost("Spring 입문", "본문");
-            savePost("회고", "sprng 이라고 잘못 쳤다");
+        @DisplayName("[한계] 드문 바른 단어도 더 흔한 비슷한 단어가 있으면 제안된다 (rust → rest) → 8단계(검색 로그 기반 제안)")
+        void suggestsCommonNeighbor() throws Exception {
+            savePost("Rust 입문", "본문");
+            savePost("Rest API 설계", "본문");
+            savePost("Rest 문서화", "본문");
+            savePost("Rest 버전 관리", "본문");
 
-            search("sprng")
+            search("rust")
                     .andExpect(jsonPath("$.data.totalElements").value(1))
-                    .andExpect(jsonPath("$.data.content[0].title").value("회고"));
+                    .andExpect(jsonPath("$.data.suggestedQuery").value("rest"));
         }
 
         @Test
