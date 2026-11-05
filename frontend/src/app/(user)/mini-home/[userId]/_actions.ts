@@ -100,7 +100,7 @@ export async function writeGuestbook(
   const secret = formData.get("secret") === "on";
   const errors: Record<string, string> = {};
   if (!values.content) errors.content = "방명록 내용을 입력해 주세요.";
-  else if (values.content.length > 300) errors.content = "300자 이하로 입력해 주세요.";
+  else if (values.content.length > 500) errors.content = "500자 이하로 입력해 주세요.";
 
   const state = await runForm(previous, values, errors, () =>
     mutate(`/api/v1/mini-homes/${userId}/guestbook`, "POST", { ...values, secret }, "방명록을 남겼어요."),

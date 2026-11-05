@@ -4,16 +4,13 @@ import com.dipsource.dto.minihome.MiniHomeResponse;
 import com.dipsource.dto.minihome.RandomMiniHomeResponse;
 import com.dipsource.dto.minihome.UpdateMiniHomeRequest;
 import com.dipsource.dto.minihome.VisitorStatsResponse;
-import com.dipsource.dto.user.UserSummaryResponse;
 import com.dipsource.entity.minihome.MiniHome;
 import com.dipsource.global.exception.BusinessException;
 import com.dipsource.global.exception.ErrorCode;
 import com.dipsource.repository.minihome.MiniHomeRepository;
 import com.dipsource.service.minihome.MiniHomeService;
-import com.dipsource.service.user.UserService;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,25 +22,26 @@ public class MiniHomeServiceImpl implements MiniHomeService {
 
     private static final String DEFAULT_SKIN = "cream";
 
+    private final MiniHomeLoader miniHomeLoader;
     private final MiniHomeRepository miniHomeRepository;
-    private final UserService userService;
 
     @Override
     @Transactional
     public MiniHomeResponse getOrCreate(Long userId) {
-        return toResponse(loadOrCreate(userId));
+        return toResponse(miniHomeLoader.loadOrCreate(userId));
     }
 
     @Override
     @Transactional
     public MiniHomeResponse update(Long userId, UpdateMiniHomeRequest request) {
-        MiniHome home = loadOrCreate(userId);
+        MiniHome home = miniHomeLoader.loadOrCreate(userId);
         String headline = requireHeadline(request.headline());
         String quote = optional(request.quote(), 80, "오늘의 한마디는 80자 이하로 입력해 주세요.");
         String domain = optional(request.domain(), 100, "개인 도메인은 100자 이하로 입력해 주세요.");
         String bgm = optional(request.bgm(), 50, "배경음악 값이 너무 길어요.");
         List<Long> ordered = arrange(request.showcaseDemoIds(), parseFeatured(request.featuredDemoId()));
         home.update(headline, quote, domain, bgm);
+        home.changeStackTags(parseStackTags(request.stackTags()));
         home.changeSkin(normalizeSkin(request.skin()), home.getCustomSkinJson());
         applyShowcase(home, ordered);
         return toResponse(miniHomeRepository.save(home));
@@ -55,7 +53,7 @@ public class MiniHomeServiceImpl implements MiniHomeService {
         if (demoId == null || demoId <= 0) {
             throw new BusinessException(ErrorCode.BAD_REQUEST, "대표 데모를 골라 주세요.");
         }
-        MiniHome home = loadOrCreate(userId);
+        MiniHome home = miniHomeLoader.loadOrCreate(userId);
         List<Long> current = showcaseIds(home);
         if (!current.contains(demoId)) {
             throw new BusinessException(ErrorCode.BAD_REQUEST, "대표 데모는 공개할 데모 중에서 골라 주세요.");
@@ -67,10 +65,7 @@ public class MiniHomeServiceImpl implements MiniHomeService {
     @Override
     @Transactional(readOnly = true)
     public VisitorStatsResponse getVisitors(Long userId) {
-        if (!userService.isActiveUser(userId)) {
-            throw new BusinessException(ErrorCode.NOT_FOUND, "회원을 찾을 수 없습니다");
-        }
-        return miniHomeRepository.findByUserId(userId)
+        return miniHomeLoader.findByUserId(userId)
                 .map(MiniHomeServiceImpl::stats)
                 .orElse(new VisitorStatsResponse(0, 0));
     }
@@ -78,7 +73,7 @@ public class MiniHomeServiceImpl implements MiniHomeService {
     @Override
     @Transactional
     public VisitorStatsResponse recordVisit(Long viewerId, Long ownerId) {
-        MiniHome home = loadOrCreate(ownerId);
+        MiniHome home = miniHomeLoader.loadOrCreate(ownerId);
         if (viewerId.equals(ownerId)) {
             return stats(home);
         }
@@ -103,27 +98,6 @@ public class MiniHomeServiceImpl implements MiniHomeService {
         miniHomeRepository.resetTodayCount();
     }
 
-    private MiniHome loadOrCreate(Long userId) {
-        if (!userService.isActiveUser(userId)) {
-            throw new BusinessException(ErrorCode.NOT_FOUND, "회원을 찾을 수 없습니다");
-        }
-        return miniHomeRepository.findByUserId(userId)
-                .orElseGet(() -> miniHomeRepository.save(MiniHome.builder()
-                        .userId(userId)
-                        .title(nickname(userId))
-                        .build()));
-    }
-
-    private String nickname(Long userId) {
-        Map<Long, UserSummaryResponse> summaries = userService.getSummaries(List.of(userId));
-        UserSummaryResponse summary = summaries.get(userId);
-        if (summary == null || summary.nickname() == null || summary.nickname().isBlank()) {
-            throw new BusinessException(ErrorCode.NOT_FOUND, "회원을 찾을 수 없습니다");
-        }
-        String nickname = summary.nickname().trim();
-        return nickname.length() <= 50 ? nickname : nickname.substring(0, 50);
-    }
-
     private static String requireHeadline(String headline) {
         if (headline == null || headline.isBlank()) {
             throw new BusinessException(ErrorCode.BAD_REQUEST, "한 줄 소개를 입력해 주세요.");
@@ -144,6 +118,28 @@ public class MiniHomeServiceImpl implements MiniHomeService {
             throw new BusinessException(ErrorCode.BAD_REQUEST, message);
         }
         return trimmed;
+    }
+
+    /** 쉼표로 나누고, 앞뒤 공백과 빈 값은 버린 뒤 개수·길이를 검사한다. */
+    private static List<String> parseStackTags(String raw) {
+        if (raw == null || raw.isBlank()) {
+            return List.of();
+        }
+        List<String> tags = new ArrayList<>();
+        for (String part : raw.split(",")) {
+            String tag = part.trim();
+            if (tag.isEmpty()) {
+                continue;
+            }
+            if (tag.length() > 20) {
+                throw new BusinessException(ErrorCode.BAD_REQUEST, "기술 스택은 20자 이하로 입력해 주세요.");
+            }
+            tags.add(tag);
+        }
+        if (tags.size() > 5) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "기술 스택은 5개까지만 적을 수 있어요.");
+        }
+        return List.copyOf(tags);
     }
 
     private static String normalizeSkin(String skin) {
@@ -216,7 +212,9 @@ public class MiniHomeServiceImpl implements MiniHomeService {
                 home.getDomain(),
                 home.getBgm(),
                 showcaseIds(home),
-                home.getShowcaseDemo1Id()
+                home.getShowcaseDemo1Id(),
+                home.getStackTags() == null ? List.of() : List.copyOf(home.getStackTags()),
+                home.getFeaturedPostId()
         );
     }
 

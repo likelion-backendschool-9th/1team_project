@@ -26,6 +26,8 @@ type MiniHomeSettings = {
   bgm: string | null;
   showcaseDemoIds: number[];
   featuredDemoId: number | null;
+  stackTags: string[];
+  featuredPostId: number | null;
 };
 import {
   createMockComments,
@@ -71,6 +73,8 @@ export const getProfile = cache(async (userId: number): Promise<MiniHomeProfile 
     bgm: home.bgm,
     showcaseDemoIds: home.showcaseDemoIds,
     featuredDemoId: home.featuredDemoId,
+    stackTags: home.stackTags ?? [],
+    featuredPostId: home.featuredPostId ?? null,
   };
 });
 

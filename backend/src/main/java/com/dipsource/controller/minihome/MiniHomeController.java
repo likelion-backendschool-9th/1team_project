@@ -1,16 +1,25 @@
 package com.dipsource.controller.minihome;
 
 import com.dipsource.dto.minihome.FeaturedDemoRequest;
+import com.dipsource.dto.minihome.GuestbookRequest;
+import com.dipsource.dto.minihome.MiniHomeCommentRequest;
+import com.dipsource.dto.minihome.MiniHomeCommentResponse;
 import com.dipsource.dto.minihome.MiniHomeResponse;
 import com.dipsource.dto.minihome.RandomMiniHomeResponse;
 import com.dipsource.dto.minihome.UpdateMiniHomeRequest;
 import com.dipsource.dto.minihome.VisitorStatsResponse;
 import com.dipsource.global.auth.UserPrincipal;
 import com.dipsource.global.common.ApiResponse;
+import com.dipsource.global.common.PageResponse;
+import com.dipsource.service.minihome.GuestbookService;
+import com.dipsource.service.minihome.MiniHomeCommentService;
 import com.dipsource.service.minihome.MiniHomeService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -20,13 +29,15 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-/** 미니홈피 조회·수정. */
+/** 미니홈피 조회·수정, 일촌평, 방명록. */
 @RestController
 @RequestMapping("/api/v1/mini-homes")
 @RequiredArgsConstructor
 public class MiniHomeController {
 
     private final MiniHomeService miniHomeService;
+    private final MiniHomeCommentService miniHomeCommentService;
+    private final GuestbookService guestbookService;
 
     @GetMapping("/random")
     public ApiResponse<RandomMiniHomeResponse> random(
@@ -68,5 +79,59 @@ public class MiniHomeController {
             @Valid @RequestBody FeaturedDemoRequest request
     ) {
         return ApiResponse.of(miniHomeService.updateFeaturedDemo(principal.getUserId(), request.demoId()));
+    }
+
+    @GetMapping("/{userId}/comments")
+    public ApiResponse<PageResponse<MiniHomeCommentResponse>> comments(
+            @PathVariable Long userId,
+            @PageableDefault(size = 20) Pageable pageable
+    ) {
+        return ApiResponse.of(miniHomeCommentService.list(userId, pageable));
+    }
+
+    @PostMapping("/{userId}/comments")
+    public ApiResponse<MiniHomeCommentResponse> writeComment(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @PathVariable Long userId,
+            @RequestBody MiniHomeCommentRequest request
+    ) {
+        return ApiResponse.of(miniHomeCommentService.write(principal.getUserId(), userId, request.content()));
+    }
+
+    @DeleteMapping("/comments/{commentId}")
+    public ApiResponse<Void> deleteComment(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @PathVariable Long commentId
+    ) {
+        miniHomeCommentService.delete(principal.getUserId(), commentId);
+        return ApiResponse.of(null);
+    }
+
+    @GetMapping("/{userId}/guestbook")
+    public ApiResponse<PageResponse<MiniHomeCommentResponse>> guestbook(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @PathVariable Long userId,
+            @PageableDefault(size = 20) Pageable pageable
+    ) {
+        return ApiResponse.of(guestbookService.list(principal.getUserId(), userId, pageable));
+    }
+
+    @PostMapping("/{userId}/guestbook")
+    public ApiResponse<MiniHomeCommentResponse> writeGuestbook(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @PathVariable Long userId,
+            @RequestBody GuestbookRequest request
+    ) {
+        return ApiResponse.of(guestbookService.write(
+                principal.getUserId(), userId, request.content(), request.secret()));
+    }
+
+    @DeleteMapping("/guestbook/{guestbookId}")
+    public ApiResponse<Void> deleteGuestbook(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @PathVariable Long guestbookId
+    ) {
+        guestbookService.delete(principal.getUserId(), guestbookId);
+        return ApiResponse.of(null);
     }
 }

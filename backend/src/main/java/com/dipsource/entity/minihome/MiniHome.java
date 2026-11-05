@@ -7,10 +7,14 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 /**
  * 미니홈피. 회원 한 명에 하나. 테이블: mini_homes
@@ -67,6 +71,15 @@ public class MiniHome extends BaseEntity {
     @Column(name = "custom_skin_json", length = 5000)
     private String customSkinJson;
 
+    /** 미니홈피에 보여 줄 기술 스택. 최대 5개, 각 20자 */
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "stack_tags", columnDefinition = "jsonb")
+    private List<String> stackTags = new ArrayList<>();
+
+    /** 대표 글 ID. 저장과 조회만 하고, 수정 요청으로는 바꾸지 않는다 */
+    @Column(name = "featured_post_id")
+    private Long featuredPostId;
+
     /** 오늘 방문자 수 */
     @Column(name = "today_count", nullable = false)
     private int todayCount = 0;
@@ -87,6 +100,10 @@ public class MiniHome extends BaseEntity {
         this.intro = intro;
         this.domain = domain;
         this.bgm = bgm;
+    }
+
+    public void changeStackTags(List<String> stackTags) {
+        this.stackTags = new ArrayList<>(stackTags);
     }
 
     public void changeSkin(String skinTheme, String customSkinJson) {
