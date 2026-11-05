@@ -30,17 +30,23 @@ export async function proxy(request: NextRequest) {
   // 백엔드가 보낸 Set-Cookie 목록 ("access_token=...; Path=/; HttpOnly; ...")
   const setCookies = res.headers.getSetCookie();
 
-  // ① 이번 요청: 서버 컴포넌트가 새 Access Token을 보도록 요청 쿠키를 바꿔 끼운다
-  const cookieMap = new Map(request.cookies.getAll().map((c) => [c.name, c.value]));
+  // ① 이번 요청: 서버 컴포넌트가 새 Access Token을 보도록 요청 쿠키를 바꿔 끼운다.
+  //    request.cookies는 값을 디코딩해 돌려주므로(한글 등), 원래 Cookie 헤더 문자열을 그대로 쓴다.
+  const renewed = new Map<string, string>();
   for (const header of setCookies) {
     const [pair] = header.split(";"); // "access_token=eyJ..."
     const i = pair.indexOf("=");
-    cookieMap.set(pair.slice(0, i), pair.slice(i + 1));
+    renewed.set(pair.slice(0, i), pair.slice(i + 1));
   }
+  const kept = (request.headers.get("cookie") ?? "")
+    .split(";")
+    .map((part) => part.trim())
+    .filter((part) => part && !renewed.has(part.split("=")[0]));
+  
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set(
     "cookie",
-    [...cookieMap].map(([name, value]) => `${name}=${value}`).join("; "),
+    [...kept, ...[...renewed].map(([name, value]) => `${name}=${value}`)].join("; "),
   );
   const response = NextResponse.next({ request: { headers: requestHeaders } });
 
