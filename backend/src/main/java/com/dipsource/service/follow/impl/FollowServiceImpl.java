@@ -74,13 +74,21 @@ public class FollowServiceImpl implements FollowService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<FollowPresenceResponse> getFollowingPresence(Long userId) {
-        List<Long> ids = followRepository.findFollowingIdsByUserId(userId);
-        if (ids.isEmpty()) {
+    public List<FollowPresenceResponse> getFollowingPresence(Long userId, List<Long> userIds) {
+        if (userIds == null || userIds.isEmpty()) {
             return List.of();
         }
-        Set<Long> online = userService.getOnlineUserIds(ids);
-        return ids.stream()
+        List<Long> requested = userIds.stream().distinct().limit(MAX_PAGE_SIZE).toList();
+        // 목록과 같은 기준: 내가 팔로우 중이고 활동 중인 회원만 본다.
+        Set<Long> followed = new HashSet<>(
+                followRepository.findFollowingIdsInWithStatus(userId, requested, UserStatus.ACTIVE));
+        if (followed.isEmpty()) {
+            return List.of();
+        }
+        Set<Long> online = userService.getOnlineUserIds(followed);
+        // 요청한 순서(화면 순서)를 그대로 지킨다.
+        return requested.stream()
+                .filter(followed::contains)
                 .map(id -> new FollowPresenceResponse(id, online.contains(id)))
                 .toList();
     }

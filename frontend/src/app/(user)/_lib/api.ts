@@ -34,12 +34,13 @@ export async function getMe(): Promise<MyProfile | null> {
 export async function getFollowings(): Promise<Following[]> {
   // 팔로우 API는 백엔드에 있어서, 백엔드가 연결돼 있으면 MOCK_EXCEPT_DM이어도 실서버를 쓴다.
   if (!hasBackend) return mockFollowings;
-  const [{ data }, presence] = await Promise.all([
-    apiFetch<ApiResponse<PageResponse<Following>>>("/api/v1/follows/followings"),
-    apiFetch<ApiResponse<{ userId: number; online: boolean }[]>>(
-      "/api/v1/follows/followings/presence",
-    ),
-  ]);
+  const { data } = await apiFetch<ApiResponse<PageResponse<Following>>>("/api/v1/follows/followings");
+  if (data.content.length === 0) return [];
+  // 접속 상태는 지금 받은 사람들의 아이디만 물어본다.
+  const userIds = data.content.map((user) => user.id).join(",");
+  const presence = await apiFetch<ApiResponse<{ userId: number; online: boolean }[]>>(
+    `/api/v1/follows/followings/presence?userIds=${userIds}`,
+  );
   const online = new Set(presence.data.filter((item) => item.online).map((item) => item.userId));
   return data.content.map((user) => ({ ...user, online: online.has(user.id) }));
 }

@@ -48,6 +48,16 @@ public interface FollowRepository extends JpaRepository<Follow, FollowId> {
     @Query("SELECT f.id.followingId FROM Follow f WHERE f.id.followerId = :userId AND f.id.followingId IN :targetIds")
     List<Long> findFollowingIdsIn(@Param("userId") Long userId, @Param("targetIds") Collection<Long> targetIds);
 
+    /** targetIds 가운데 내가 팔로우 중이고 해당 상태인 회원 ID */
+    @Query("""
+            SELECT f.id.followingId FROM Follow f JOIN User u ON u.id = f.id.followingId
+            WHERE f.id.followerId = :userId AND f.id.followingId IN :targetIds AND u.status = :status
+            """)
+    List<Long> findFollowingIdsInWithStatus(
+            @Param("userId") Long userId,
+            @Param("targetIds") Collection<Long> targetIds,
+            @Param("status") UserStatus status);
+
     /** targetIds 가운데 나를 팔로우 중인 회원 ID */
     @Query("SELECT f.id.followerId FROM Follow f WHERE f.id.followingId = :userId AND f.id.followerId IN :targetIds")
     List<Long> findFollowerIdsIn(@Param("userId") Long userId, @Param("targetIds") Collection<Long> targetIds);

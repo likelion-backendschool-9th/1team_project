@@ -20,6 +20,7 @@ import com.dipsource.service.user.UserService;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.LongStream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -168,20 +169,30 @@ class FollowServiceImplTest {
         }
 
         @Test
-        void presenceMarksOnlineFollowings() {
-            when(repository.findFollowingIdsByUserId(1L)).thenReturn(List.of(2L, 3L));
-            when(userService.getOnlineUserIds(List.of(2L, 3L))).thenReturn(Set.of(3L));
+        void presenceOnlyForActiveFollowedIdsInRequestOrder() {
+            when(repository.findFollowingIdsInWithStatus(1L, List.of(3L, 9L, 2L), UserStatus.ACTIVE))
+                    .thenReturn(List.of(2L, 3L));
+            when(userService.getOnlineUserIds(Set.of(2L, 3L))).thenReturn(Set.of(3L));
 
-            assertThat(service.getFollowingPresence(1L)).containsExactly(
-                    new FollowPresenceResponse(2L, false),
-                    new FollowPresenceResponse(3L, true));
+            assertThat(service.getFollowingPresence(1L, List.of(3L, 9L, 2L))).containsExactly(
+                    new FollowPresenceResponse(3L, true),
+                    new FollowPresenceResponse(2L, false));
         }
 
         @Test
-        void presenceWithoutFollowingsSkipsUserLookup() {
-            when(repository.findFollowingIdsByUserId(1L)).thenReturn(List.of());
+        void presenceWithoutIdsSkipsQueries() {
+            assertThat(service.getFollowingPresence(1L, null)).isEmpty();
+            assertThat(service.getFollowingPresence(1L, List.of())).isEmpty();
+            verifyNoInteractions(repository, userService);
+        }
 
-            assertThat(service.getFollowingPresence(1L)).isEmpty();
+        @Test
+        void presenceChecksAtMost100Ids() {
+            List<Long> many = LongStream.rangeClosed(1, 150).boxed().toList();
+            when(repository.findFollowingIdsInWithStatus(1L, many.subList(0, 100), UserStatus.ACTIVE))
+                    .thenReturn(List.of());
+
+            assertThat(service.getFollowingPresence(1L, many)).isEmpty();
             verifyNoInteractions(userService);
         }
 

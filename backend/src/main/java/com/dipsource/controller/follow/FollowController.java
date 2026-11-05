@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /** 팔로우·언팔로우와 팔로잉·팔로워 목록. "나"는 JWT에서만 가져온다. */
@@ -67,12 +68,13 @@ public class FollowController {
         return ResponseEntity.ok(ApiResponse.of(followService.getFollowers(requireUserId(principal), pageable)));
     }
 
-    /** 내가 팔로우하는 회원 전체의 접속 상태. */
+    /** 화면에 나온 팔로잉 회원의 접속 상태. ?userIds=1,2,3 (최대 100개) */
     @GetMapping("/followings/presence")
     public ResponseEntity<ApiResponse<List<FollowPresenceResponse>>> followingPresence(
-            @AuthenticationPrincipal UserPrincipal principal
+            @AuthenticationPrincipal UserPrincipal principal,
+            @RequestParam(required = false) List<Long> userIds
     ) {
-        return ResponseEntity.ok(ApiResponse.of(followService.getFollowingPresence(requireUserId(principal))));
+        return ResponseEntity.ok(ApiResponse.of(followService.getFollowingPresence(requireUserId(principal), userIds)));
     }
 
     private static Long requireUserId(UserPrincipal principal) {
