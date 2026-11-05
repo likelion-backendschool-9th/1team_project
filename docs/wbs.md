@@ -120,21 +120,22 @@
 
 | # | 작업명 | 페이지 URL | Method | API URL | 비고 |
 |---|--------|-----------|--------|---------|------|
-| 6.1 | 방문자 통계 조회 | /mini-home/[userId] | GET | mini-homes/{userId}/visitors | |
-| 6.2 | 방문 카운트 증가 | /mini-home/[userId] | POST | mini-homes/{userId}/visits | 방문한 수만큼 증가 (기존 비고). 하루 1회 제한 여부 팀 확인 |
-| 6.3 | 파도타기 (랜덤 방문) | /mini-home/[userId] | GET | mini-homes/random | |
-| 6.4 | 깃허브 잔디 조회 | /mini-home/[userId] | GET | users/{userId}/github/contributions | |
-| 6.5 | 깃허브 대표 레포 조회 | /mini-home/[userId] | GET | users/{userId}/github/repos | |
-| 6.6 | 언어 사용 통계 조회 | /mini-home/[userId] | GET | users/{userId}/github/languages | |
-| 6.7 | 일촌평 목록 | /mini-home/[userId] | GET | mini-homes/{userId}/comments | 팔로우 관계인 사용자만 작성 가능. 테이블: mini_home_comments (varchar(100)) |
-| 6.8 | 일촌평 작성 | /mini-home/[userId] | POST | mini-homes/{userId}/comments | 팔로우 상태 확인 후 작성 허용 |
-| 6.8-1 | 일촌평 삭제 | /mini-home/[userId] | DELETE | mini-homes/comments/{commentId} | 작성자 본인 또는 미니홈피 주인만 삭제 가능 |
-| 6.9 | 방명록 목록 | /mini-home/[userId]/guestbook | GET | mini-homes/{userId}/guestbook | |
-| 6.10 | 방명록 작성 | /mini-home/[userId]/guestbook | POST | mini-homes/{userId}/guestbook | |
-| 6.11 | 방명록 삭제 | /mini-home/[userId]/guestbook | DELETE | mini-homes/guestbook/{guestbookId} | 작성자 본인 또는 미니홈피 주인 삭제 가능 |
-| 6.12 | 미니홈피 수정 (본인만) | /mini-home/[userId]/edit | PUT | mini-homes/me | |
-| 6.13 | 대표 데모 설정 | /mini-home/[userId]/edit | PUT | mini-homes/me/featured-demo | |
-| 6.14 | 사용자 데모 목록 | /mini-home/[userId]/demos | GET | demos?userId={userId} | 데모 목록(7.2) API 재사용 |
+| 6.1 | 미니홈피 조회 | /mini-home/[userId] | GET | mini-homes/{userId} | 없으면 기본값으로 생성 |
+| 6.2 | 방문자 통계 조회 | /mini-home/[userId] | GET | mini-homes/{userId}/visitors | |
+| 6.3 | 방문 카운트 증가 | /mini-home/[userId] | POST | mini-homes/{userId}/visits | 새로고침해도 증가. 본인 방문은 제외 |
+| 6.4 | 파도타기 (랜덤 방문) | /mini-home/[userId] | GET | mini-homes/random | 본인과 exclude를 빼고, 활성 회원의 미니홈피 중 하나 |
+| 6.5 | 깃허브 잔디 조회 | /mini-home/[userId] | GET | users/{userId}/github/contributions | |
+| 6.6 | 깃허브 대표 레포 조회 | /mini-home/[userId] | GET | users/{userId}/github/repos | |
+| 6.7 | 언어 사용 통계 조회 | /mini-home/[userId] | GET | users/{userId}/github/languages | |
+| 6.8 | 일촌평 목록 | /mini-home/[userId] | GET | mini-homes/{userId}/comments | 1인 1개, updated_at 최신순. 맞팔한 사람만 작성 |
+| 6.9 | 일촌평 작성 | /mini-home/[userId] | POST | mini-homes/{userId}/comments | 본인 작성 불가. 있으면 수정, 지워진 글이면 되살림 |
+| 6.10 | 일촌평 삭제 | /mini-home/[userId] | DELETE | mini-homes/comments/{commentId} | 작성자 본인 또는 미니홈피 주인만 삭제 가능 |
+| 6.11 | 방명록 목록 | /mini-home/[userId]/guestbook | GET | mini-homes/{userId}/guestbook | 비밀글은 작성자·주인만 내용 |
+| 6.12 | 방명록 작성 | /mini-home/[userId]/guestbook | POST | mini-homes/{userId}/guestbook | 500자. 여러 번 가능 |
+| 6.13 | 방명록 삭제 | /mini-home/[userId]/guestbook | DELETE | mini-homes/guestbook/{guestbookId} | 작성자 본인 또는 미니홈피 주인 삭제 가능 |
+| 6.14 | 미니홈피 수정 (본인만) | /mini-home/[userId]/edit | PUT | mini-homes/me | stackTags 저장. featuredPostId는 요청으로 바꾸지 않음 |
+| 6.15 | 대표 데모 설정 | /mini-home/[userId]/edit | PUT | mini-homes/me/featured-demo | |
+| 6.16 | 사용자 데모 목록 | /mini-home/[userId]/demos | GET | demos?userId={userId} | 데모 목록(7.2) API 재사용 |
 
 ---
 
@@ -177,7 +178,7 @@
 
 | # | 작업명 | 페이지 URL | Method | API URL | 비고 |
 |---|--------|-----------|--------|---------|------|
-| 9.1 | 개발 뉴스 (네이버 뉴스 API 프록시) | /news | GET | search/news?q= | |
+| 9.1 | 개발 뉴스 (GeekNews RSS) | /news | GET | search/news?q=&category= | |
 | 9.2 | 순위 (demo / blog / follower / home) | /rankings | GET | rankings?type= | |
 | 9.3 | 주간 순위 위젯 | 공통(왼쪽 어사이드) | GET | rankings?type=&period=weekly | 9.2 재사용 |
 | 9.4 | 이벤트 목록 | /events | GET | events?status= | status: ONGOING / ENDED |
@@ -287,4 +288,4 @@
 | 1.10 닉네임 중복 확인 | 시트는 `nicknames/available`, 현재 구현은 `users/nicknames/available` |
 | 2.4 태그 목록 | HTTP Method 비어 있음 |
 | 5.1 블로그 전체 글 목록 | 시트는 `posts/list`, 현재 프론트는 `posts?...`로 호출 |
-| 비고의 옛 번호 | 시트 비고가 옛 번호를 가리키던 곳은 이 문서에서 현재 번호로 고쳤다 (0.5, 3.10, 6.14, 7.1, 12.2) |
+| 비고의 옛 번호 | 시트 비고가 옛 번호를 가리키던 곳은 이 문서에서 현재 번호로 고쳤다 (0.5, 3.10, 6.16, 7.1, 12.2) |

@@ -5,7 +5,7 @@ import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.Size;
 import java.util.List;
 
-/** 내 미니홈피 수정 요청. stackTags는 회원 기술 스택이라 받지 않는다. */
+/** 내 미니홈피 수정 요청. stackTags는 쉼표로 구분한 문자열이다. featuredPostId는 받지 않는다. */
 public record UpdateMiniHomeRequest(
         @NotBlank(message = "한 줄 소개를 입력해 주세요.")
         @Size(max = 30, message = "한 줄 소개는 30자 이하로 입력해 주세요.")
@@ -22,6 +22,9 @@ public record UpdateMiniHomeRequest(
 
         @Size(max = 50, message = "배경음악 값이 너무 길어요.")
         String bgm,
+
+        /** "React, TypeScript"처럼 쉼표로 구분한다. 비어 있으면 태그를 지운다. */
+        String stackTags,
 
         @NotEmpty(message = "공개할 데모를 1개 이상 골라 주세요.")
         @Size(min = 1, max = 3, message = "공개할 데모는 1~3개만 고를 수 있어요.")

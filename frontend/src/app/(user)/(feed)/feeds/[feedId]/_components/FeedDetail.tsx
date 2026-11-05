@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { CommentForm } from "@/app/_components/ui/CommentForm";
+import { LoginModal } from "@/app/_components/ui/LoginModal";
 import kit from "@/app/_components/ui/kit.module.css";
 import { CommentList } from "@/app/(user)/_components/CommentList";
 import { getMe } from "@/app/(user)/_lib/api";
@@ -50,7 +51,11 @@ export async function FeedDetail({ params, searchParams }: Props) {
         <h2 id="comments-title" className={kit.cardTitle}>
           댓글 {comments.length}
         </h2>
-        <CommentForm action={createComment.bind(null, feedId)} />
+        {me ? (
+          <CommentForm action={createComment.bind(null, feedId)} />
+        ) : (
+          <LoginModal />
+        )}
         <CommentList
           comments={comments}
           now={now}

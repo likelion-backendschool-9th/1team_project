@@ -56,8 +56,12 @@ public class FeedController {
 
     /** 피드 단건 조회. 비로그인도 가능 (SecurityConfig에서 GET /api/v1/feeds/* permitAll) */
     @GetMapping("/{feedId}")
-    public ResponseEntity<ApiResponse<FeedResponse>> getById(@PathVariable Long feedId) {
-        FeedResponse response = feedService.getById(feedId);
+    public ResponseEntity<ApiResponse<FeedResponse>> getById(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @PathVariable Long feedId
+    ) {
+        Long userId = principal == null ? null : principal.getUserId();
+        FeedResponse response = feedService.getById(feedId, userId);
         return ResponseEntity.ok(ApiResponse.of(response));
     }
 

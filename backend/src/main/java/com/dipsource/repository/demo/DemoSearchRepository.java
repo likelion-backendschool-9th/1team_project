@@ -3,8 +3,10 @@ package com.dipsource.repository.demo;
 import com.dipsource.dto.search.SearchCondition;
 import com.dipsource.dto.search.SearchOperator;
 import com.dipsource.dto.search.SearchSort;
+import com.dipsource.dto.search.SearchTermCandidate;
 import com.dipsource.entity.demo.Demo;
 import com.dipsource.global.common.LikePattern;
+import java.util.List;
 import java.util.Locale;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -70,4 +72,43 @@ public interface DemoSearchRepository extends Repository<Demo, Long> {
             @Param("matchAll") boolean matchAll,
             @Param("relevance") boolean relevance,
             Pageable pageable);
+
+    /**
+     * 3단계: 오타 교정 후보. 공개(ACTIVE)이면서 삭제되지 않은 데모의 제목에서 검색 단어와 가까운 단어 두 개(가까운 순).
+     * 검색 단어를 포함하는 단어가 있으면 그것이 먼저 나온다(오타가 아니라는 뜻).
+     * 두 개를 주는 이유: 검색 단어 자체가 사전에 있을 때(sprng로 쓴 글) 그다음 후보(spring)까지 봐야 제안할 수 있다.
+     *
+     * @param word        소문자 검색 단어
+     * @param maxDistance 허용하는 최대 편집 거리
+     */
+    default List<SearchTermCandidate> findClosestTerms(String word, int maxDistance) {
+        return findClosestTitleTerms(word, LikePattern.contains(word), maxDistance);
+    }
+
+    /** 쿼리 설명은 {@code PostSearchRepository#findClosestTitleTerms}과 같다. */
+    @Query(nativeQuery = true, value = """
+            SELECT w.term AS term,
+                   w.term LIKE :pattern AS contained,
+                   levenshtein(:word, w.term) AS distance,
+                   w.frequency AS frequency,
+                   CAST(similarity(:word, w.term) AS double precision) AS similarity
+            FROM (
+                SELECT s.term, count(*) AS frequency
+                FROM demos d
+                CROSS JOIN LATERAL regexp_split_to_table(lower(d.title), '[^a-z0-9가-힣_.#+-]+') AS s(term)
+                WHERE d.status = 'ACTIVE'
+                  AND d.deleted_at IS NULL
+                GROUP BY s.term
+            ) w
+            WHERE length(w.term) BETWEEN 1 AND 50
+              AND (w.term LIKE :pattern
+                   OR (abs(length(w.term) - length(:word)) <= :maxDistance
+                       AND levenshtein_less_equal(:word, w.term, :maxDistance) <= :maxDistance))
+            ORDER BY contained DESC, distance, frequency DESC, similarity DESC, term
+            LIMIT 2
+            """)
+    List<SearchTermCandidate> findClosestTitleTerms(
+            @Param("word") String word,
+            @Param("pattern") String pattern,
+            @Param("maxDistance") int maxDistance);
 }

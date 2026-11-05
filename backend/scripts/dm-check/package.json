@@ -4,8 +4,7 @@
   "description": "로컬 백엔드의 DM(WebSocket + REST)이 동작하는지 확인하는 스크립트",
   "type": "module",
   "scripts": {
-    "check": "node check.mjs",
-    "preview": "node preview.mjs"
+    "check": "node check.mjs"
   },
   "dependencies": {
     "@stomp/stompjs": "7.5.0",
