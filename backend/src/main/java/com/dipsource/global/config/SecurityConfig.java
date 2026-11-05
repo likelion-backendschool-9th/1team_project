@@ -58,7 +58,6 @@ public class SecurityConfig {
                                 "/api/v1/rankings",
                                 "/api/v1/notifications", "/api/v1/notifications/**",
                                 "/api/v1/follows/**",
-                                "/api/v1/mini-homes/**",
                                 "/api/v1/coins/**",
                                 "/api/v1/users/me/bookmarks", "/api/v1/users/*").permitAll()
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()

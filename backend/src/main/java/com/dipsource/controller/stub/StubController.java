@@ -83,19 +83,6 @@ public class StubController {
         return ok(Map.of("count", 0));
     }
 
-    // ── 미니홈피 ──
-    // visitors, random은 MiniHomeController에서 실제 구현됨 — 스텁 제거
-
-    @GetMapping("/mini-homes/{userId}/comments")
-    public ResponseEntity<ApiResponse<List<Object>>> miniHomeComments(@PathVariable Long userId) {
-        return ok(List.of());
-    }
-
-    @GetMapping("/mini-homes/{userId}/guestbook")
-    public ResponseEntity<ApiResponse<Map<String, Object>>> guestbook(@PathVariable Long userId) {
-        return ok(EMPTY_PAGE);
-    }
-
     // ── 코인 ──
 
     @GetMapping("/coins/history")

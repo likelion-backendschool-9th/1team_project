@@ -1,4 +1,4 @@
-package com.dipsource.service.minihome;
+package com.dipsource.service.minihome.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -12,7 +12,6 @@ import com.dipsource.entity.minihome.MiniHome;
 import com.dipsource.global.exception.BusinessException;
 import com.dipsource.global.exception.ErrorCode;
 import com.dipsource.repository.minihome.MiniHomeRepository;
-import com.dipsource.service.minihome.impl.MiniHomeServiceImpl;
 import com.dipsource.service.user.UserService;
 import java.util.List;
 import java.util.Map;
@@ -30,7 +29,7 @@ class MiniHomeServiceImplTest {
     void setUp() {
         repository = mock(MiniHomeRepository.class);
         userService = mock(UserService.class);
-        service = new MiniHomeServiceImpl(repository, userService);
+        service = new MiniHomeServiceImpl(new MiniHomeLoader(repository, userService), repository);
         when(repository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
         when(userService.isActiveUser(1L)).thenReturn(true);
         when(userService.getSummaries(List.of(1L))).thenReturn(Map.of(
@@ -48,6 +47,8 @@ class MiniHomeServiceImplTest {
         assertThat(response.skin()).isEqualTo("cream");
         assertThat(response.showcaseDemoIds()).isEmpty();
         assertThat(response.featuredDemoId()).isNull();
+        assertThat(response.stackTags()).isEmpty();
+        assertThat(response.featuredPostId()).isNull();
     }
 
     @Test
@@ -70,6 +71,8 @@ class MiniHomeServiceImplTest {
         assertThat(response.featuredDemoId()).isEqualTo(20L);
         assertThat(response.headline()).isEqualTo("한 줄");
         assertThat(response.quote()).isEqualTo("한마디");
+        assertThat(response.stackTags()).containsExactly("React", "TypeScript");
+        assertThat(response.featuredPostId()).isNull();
     }
 
     @Test
@@ -128,6 +131,25 @@ class MiniHomeServiceImplTest {
     }
 
     @Test
+    void storesTrimmedStackTags() {
+        when(repository.findByUserId(1L)).thenReturn(Optional.of(home()));
+
+        var response = service.update(1L, request(List.of(10L), "", " React, , TypeScript "));
+
+        assertThat(response.stackTags()).containsExactly("React", "TypeScript");
+    }
+
+    @Test
+    void rejectsTooManyStackTags() {
+        when(repository.findByUserId(1L)).thenReturn(Optional.of(home()));
+
+        assertThatThrownBy(() -> service.update(1L, request(List.of(10L), "", "a,b,c,d,e,f")))
+                .isInstanceOf(BusinessException.class)
+                .extracting(ex -> ((BusinessException) ex).getErrorCode())
+                .isEqualTo(ErrorCode.BAD_REQUEST);
+    }
+
+    @Test
     void missingUserIsNotFound() {
         when(userService.isActiveUser(9L)).thenReturn(false);
 
@@ -142,6 +164,11 @@ class MiniHomeServiceImplTest {
     }
 
     private static UpdateMiniHomeRequest request(List<Long> showcase, String featured) {
-        return new UpdateMiniHomeRequest("한 줄", "한마디", "mint", "example.dev", "track", showcase, featured);
+        return request(showcase, featured, "React, TypeScript");
+    }
+
+    private static UpdateMiniHomeRequest request(List<Long> showcase, String featured, String stackTags) {
+        return new UpdateMiniHomeRequest(
+                "한 줄", "한마디", "mint", "example.dev", "track", stackTags, showcase, featured);
     }
 }
