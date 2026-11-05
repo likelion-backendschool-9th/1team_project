@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { formatCount } from "@/app/_lib/format";
 import type { MiniHomeProfile, VisitorStats } from "@/app/_lib/types/miniHome";
+import { DmOpenButton } from "@/app/(user)/_components/DmOpenButton";
 import { surf } from "../_actions";
 import { IlchonButton } from "./IlchonButton";
 import { SponsorButton } from "./SponsorButton";
@@ -51,6 +52,18 @@ export function MiniHomeHeader({ profile, visitors, isOwner, chipBalance }: Prop
               nickname={profile.nickname}
               following={profile.following}
             />
+            {/* 팔로우하지 않아도 누구에게나 DM을 보낼 수 있다. 화면 이동 없이 DM 창이 열린다. */}
+            <DmOpenButton
+              user={{
+                id: profile.id,
+                nickname: profile.nickname,
+                profileImage: profile.profileImage,
+                techStacks: profile.techStacks,
+              }}
+              className={styles.button}
+            >
+              <span aria-hidden="true">💬</span> 메시지
+            </DmOpenButton>
             <SponsorButton userId={profile.id} nickname={profile.nickname} chipBalance={chipBalance} />
           </>
         )}
