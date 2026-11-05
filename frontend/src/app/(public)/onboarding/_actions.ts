@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { startMockSession } from "@/app/(user)/_lib/session";
-import { ApiRequestError, isMockMode } from "@/app/_lib/api/client";
+import { ApiRequestError, hasBackend } from "@/app/_lib/api/client";
 import { readValues, type FormState } from "@/app/_lib/formState";
 import { parseRedirect } from "@/app/_lib/redirect";
 import { completeOnboardingProfile, isNicknameTaken } from "./_lib/api";
@@ -64,7 +64,7 @@ export async function saveTagStep(step: string, previous: FormState, formData: F
   const missing = firstIncompleteStep(draft);
   if (missing) redirect(stepUrl(missing, redirectTo));
 
-  if (isMockMode) {
+  if (!hasBackend) {
     await startMockSession();
     await clearDraft();
     redirect(redirectTo);
