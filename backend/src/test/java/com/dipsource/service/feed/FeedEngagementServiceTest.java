@@ -10,7 +10,6 @@ import static org.mockito.Mockito.when;
 
 import com.dipsource.entity.feed.Feed;
 import com.dipsource.entity.feed.FeedStatus;
-import com.dipsource.entity.feed.FeedUserId;
 import com.dipsource.entity.user.User;
 import com.dipsource.global.exception.BusinessException;
 import com.dipsource.global.exception.ErrorCode;
@@ -104,12 +103,11 @@ class FeedEngagementServiceTest {
         @DisplayName("좋아요가 있으면 삭제하고 count·가중치를 내린다")
         void unlikeExisting() {
             when(feedRepository.findById(FEED_ID)).thenReturn(Optional.of(activeFeed()));
-            when(feedLikeRepository.existsById(new FeedUserId(USER_ID, FEED_ID))).thenReturn(true);
+            when(feedLikeRepository.deleteByUserIdAndFeedId(USER_ID, FEED_ID)).thenReturn(1);
             when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user()));
 
             service.unlike(USER_ID, FEED_ID);
 
-            verify(feedLikeRepository).deleteById(new FeedUserId(USER_ID, FEED_ID));
             verify(feedRepository).decrementLikeCount(FEED_ID);
             verify(tagWeightService).decreaseWeight(any(User.class), eq(FEED_ID), eq(1));
         }
@@ -118,11 +116,10 @@ class FeedEngagementServiceTest {
         @DisplayName("좋아요가 없으면 no-op (멱등)")
         void unlikeMissing() {
             when(feedRepository.findById(FEED_ID)).thenReturn(Optional.of(activeFeed()));
-            when(feedLikeRepository.existsById(new FeedUserId(USER_ID, FEED_ID))).thenReturn(false);
+            when(feedLikeRepository.deleteByUserIdAndFeedId(USER_ID, FEED_ID)).thenReturn(0);
 
             service.unlike(USER_ID, FEED_ID);
 
-            verify(feedLikeRepository, never()).deleteById(any());
             verify(feedRepository, never()).decrementLikeCount(any());
             verifyNoInteractions(tagWeightService);
         }
@@ -178,12 +175,11 @@ class FeedEngagementServiceTest {
         @DisplayName("북마크가 있으면 삭제하고 가중치를 내린다")
         void unbookmarkExisting() {
             when(feedRepository.findById(FEED_ID)).thenReturn(Optional.of(activeFeed()));
-            when(feedBookmarkRepository.existsById(new FeedUserId(USER_ID, FEED_ID))).thenReturn(true);
+            when(feedBookmarkRepository.deleteByUserIdAndFeedId(USER_ID, FEED_ID)).thenReturn(1);
             when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user()));
 
             service.unbookmark(USER_ID, FEED_ID);
 
-            verify(feedBookmarkRepository).deleteById(new FeedUserId(USER_ID, FEED_ID));
             verify(tagWeightService).decreaseWeight(any(User.class), eq(FEED_ID), eq(1));
         }
 
@@ -191,11 +187,10 @@ class FeedEngagementServiceTest {
         @DisplayName("북마크가 없으면 no-op (멱등)")
         void unbookmarkMissing() {
             when(feedRepository.findById(FEED_ID)).thenReturn(Optional.of(activeFeed()));
-            when(feedBookmarkRepository.existsById(new FeedUserId(USER_ID, FEED_ID))).thenReturn(false);
+            when(feedBookmarkRepository.deleteByUserIdAndFeedId(USER_ID, FEED_ID)).thenReturn(0);
 
             service.unbookmark(USER_ID, FEED_ID);
 
-            verify(feedBookmarkRepository, never()).deleteById(any());
             verifyNoInteractions(tagWeightService);
         }
     }

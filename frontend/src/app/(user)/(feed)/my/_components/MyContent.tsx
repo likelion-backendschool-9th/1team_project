@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Avatar } from "@/app/_components/ui/Avatar";
 import { ConfirmButton } from "@/app/_components/ui/ConfirmButton";
+import { ChipIcon } from "@/app/_components/ui/ChipIcon";
 import kit from "@/app/_components/ui/kit.module.css";
 import { formatCount, formatDate } from "@/app/_lib/format";
 import { UserBadges } from "@/app/(user)/_components/UserBadges";
@@ -47,7 +48,9 @@ export async function MyContent() {
           </div>
           <div>
             <dt>보유 칩</dt>
-            <dd className={styles.chip}>{formatCount(me.chipBalance)}</dd>
+            <dd className={styles.chip}>
+              <ChipIcon size={18} /> {formatCount(me.chipBalance)}
+            </dd>
           </div>
         </dl>
       </section>
@@ -63,7 +66,8 @@ export async function MyContent() {
           <span aria-hidden="true">📦</span>데모 올리기
         </Link>
         <Link href="/my/coins" className={styles.shortcut}>
-          <span aria-hidden="true">🪙</span>칩 충전
+          <ChipIcon size={32} />
+          칩 충전
         </Link>
       </div>
 
