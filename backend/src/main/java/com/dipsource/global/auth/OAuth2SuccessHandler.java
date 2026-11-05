@@ -3,23 +3,24 @@ package com.dipsource.global.auth;
 import com.dipsource.entity.user.UserStatus;
 import com.dipsource.service.user.AuthResult;
 import com.dipsource.service.user.AuthService;
+import com.dipsource.service.user.SocialProfile;
+
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
-import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.oauth2.core.user.OAuth2User;
+import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
 
-/** GitHub OAuth 로그인 성공 후 JWT 쿠키를 심고 프론트로 보낸다. */
-@Slf4j 
+/** 소셜 로그인 성공 후 JWT 쿠키를 심고 프론트로 보낸다. */
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
@@ -36,26 +37,20 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
     public void onAuthenticationSuccess(
             HttpServletRequest request,
             HttpServletResponse response,
-            Authentication authentication
-    ) throws IOException {
-        OAuth2User oauthUser = (OAuth2User) authentication.getPrincipal();
-        Map<String, Object> attributes = oauthUser.getAttributes();
-
-        // GitHub 프로필에서 필요한 값만 꺼낸다.
-        String providerId = String.valueOf(attributes.get("id"));
-        String email = (String) attributes.get("email");
-        String login = (String) attributes.get("login");
-        String avatarUrl = (String) attributes.get("avatar_url");
+            Authentication authentication) throws IOException {
+        OAuth2AuthenticationToken token = (OAuth2AuthenticationToken) authentication;
+        SocialProfile profile = SocialProfile.of(
+                token.getAuthorizedClientRegistrationId(),
+                token.getPrincipal().getAttributes());
 
         AuthResult result;
         try {
-            result = authService.findOrCreateFromGithub(providerId, email, login, avatarUrl);
+            result = authService.findOrCreate(profile);
         } catch (DataIntegrityViolationException e) {
-            //같은 GitHub 계정으로 동시에 첫 로그인한 경우: 다른 요청이 먼저 가입시켰으니 다시 찾는다.
-            log.warn("동시 가입 감지, 재시도: providerId={}", providerId);
-            result = authService.findOrCreateFromGithub(providerId, email, login, avatarUrl);
+            // 같은 계정으로 동시에 첫 로그인한 경우: 다른 요청이 먼저 가입시켰으니 다시 찾는다.
+            log.warn("동시 가입 감지, 재시도: provider={}, providerId={}", profile.provider(), profile.providerId());
+            result = authService.findOrCreate(profile);
         }
- 
         UserStatus status = result.user().getStatus();
         if (status != UserStatus.ACTIVE) {
             HttpSession session = request.getSession(false);
@@ -66,8 +61,8 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
             String reason = status.name().toLowerCase();
             getRedirectStrategy().sendRedirect(request, response, frontendBaseUrl + "/login?error=" + reason);
             return;
-            
-        } 
+
+        }
 
         // 우리 서비스용 JWT를 발급한다.
         String accessToken = jwtProvider.createAccessToken(
