@@ -3,6 +3,8 @@ package com.dipsource.controller.feed;
 import com.dipsource.dto.feed.FeedCursorResponse;
 import com.dipsource.global.auth.UserPrincipal;
 import com.dipsource.global.common.ApiResponse;
+import com.dipsource.global.exception.BusinessException;
+import com.dipsource.global.exception.ErrorCode;
 import com.dipsource.service.feed.FeedRecommendationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -45,8 +47,10 @@ public class FeedRecommendationController {
             response = recommendationService.getGuestFeeds(cursor, safeSize);
         } else if ("following".equals(type)) {
             response = recommendationService.getFollowingFeeds(userId, cursor, safeSize);
-        } else {
+        } else if ("recommended".equals(type)) {
             response = recommendationService.getRecommendedFeeds(userId, cursor, safeSize);
+        } else {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "지원하지 않는 피드 타입입니다:" + type);
         }
 
         return ResponseEntity.ok(ApiResponse.of(response));
