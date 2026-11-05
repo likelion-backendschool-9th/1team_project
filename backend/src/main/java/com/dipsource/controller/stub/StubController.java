@@ -83,23 +83,6 @@ public class StubController {
         return ok(Map.of("count", 0));
     }
 
-    // ── 팔로우 ──
-
-    @GetMapping("/follows/followings")
-    public ResponseEntity<ApiResponse<Map<String, Object>>> followings() {
-        return ok(EMPTY_PAGE);
-    }
-
-    @GetMapping("/follows/followings/presence")
-    public ResponseEntity<ApiResponse<List<Object>>> followingsPresence() {
-        return ok(List.of());
-    }
-
-    @GetMapping("/follows/followers")
-    public ResponseEntity<ApiResponse<Map<String, Object>>> followers() {
-        return ok(EMPTY_PAGE);
-    }
-
     // ── 코인 ──
 
     @GetMapping("/coins/history")
