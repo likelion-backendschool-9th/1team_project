@@ -34,7 +34,11 @@ public class AuthServiceImpl implements AuthService {
     ) {
         return socialAccountRepository
                 .findByProviderAndProviderId(SocialProvider.GITHUB, providerId)
-                .map(account -> new AuthResult(account.getUser(), false))
+                .map(account -> {
+                    User user = account.getUser();
+                    user.syncGithubUsername(githubLogin); // GitHub 아이디가 바뀌었으면 따라간다
+                    return new AuthResult(user, false);
+                })
                 .orElseGet(() -> createGithubUser(providerId, email, githubLogin, avatarUrl));
     }
 
@@ -82,6 +86,9 @@ public class AuthServiceImpl implements AuthService {
                 .provider(SocialProvider.GITHUB)
                 .providerId(providerId)
                 .build();
+
+                // 지금 바로 DB에 반영해서, 중복 가입이면 여기서 DataIntegrityViolationException이 나게 한다.
+        userRepository.flush();
 
         return new AuthResult(user, true);
     }

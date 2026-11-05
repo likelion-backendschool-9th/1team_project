@@ -2,12 +2,14 @@ package com.dipsource.service.post.impl;
 
 import com.dipsource.dto.post.PostSearchItemResponse;
 import com.dipsource.dto.search.SearchCondition;
+import com.dipsource.dto.search.SearchTermCandidate;
 import com.dipsource.dto.user.UserSummaryResponse;
 import com.dipsource.entity.post.Post;
 import com.dipsource.global.common.PageResponse;
 import com.dipsource.repository.post.PostSearchRepository;
 import com.dipsource.service.post.PostSearchService;
 import com.dipsource.service.user.UserService;
+import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -33,6 +35,12 @@ public class PostSearchServiceImpl implements PostSearchService {
         Map<Long, UserSummaryResponse> authors = userService.getSummaries(
                 posts.getContent().stream().map(Post::getUserId).distinct().toList());
         return PageResponse.of(posts, post -> toSearchItem(post, authors.get(post.getUserId())));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<SearchTermCandidate> findClosestTerms(String word, int maxDistance) {
+        return postSearchRepository.findClosestTerms(word, maxDistance);
     }
 
     private PostSearchItemResponse toSearchItem(Post post, UserSummaryResponse author) {

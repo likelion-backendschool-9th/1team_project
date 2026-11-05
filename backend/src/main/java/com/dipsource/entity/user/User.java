@@ -129,6 +129,13 @@ public class User extends BaseEntity {
         this.lastActiveAt = LocalDateTime.now();
     }
 
+     /** GitHub 로그인할 때 받은 아이디로 맞춘다. GitHub에서 아이디를 바꾼 경우를 따라간다. */
+    public void syncGithubUsername(String githubUsername) {
+        if (githubUsername != null && !githubUsername.isBlank()) {
+            this.githubUsername = githubUsername;
+        }
+    }
+
     /** 마지막 활동이 기준 시간 안이면 활동중이다. 활동 기록이 없으면 false. */
     public boolean isActiveWithin(Duration threshold) {
         return lastActiveAt != null

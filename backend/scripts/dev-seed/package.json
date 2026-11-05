@@ -1,0 +1,14 @@
+{
+  "name": "dev-seed",
+  "private": true,
+  "description": "로컬 DB용 통합 테스트 시드(회원 50 + 피드/블로그/데모)와 팀원 로그인 토큰",
+  "type": "module",
+  "scripts": {
+    "preview": "node preview.mjs",
+    "cleanup": "node cleanup.mjs",
+    "seed": "node preview.mjs"
+  },
+  "dependencies": {
+    "pg": "8.13.1"
+  }
+}

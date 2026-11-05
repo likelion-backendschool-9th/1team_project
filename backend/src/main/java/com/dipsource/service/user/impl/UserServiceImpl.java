@@ -3,6 +3,7 @@ package com.dipsource.service.user.impl;
 import com.dipsource.dto.user.CompleteProfileRequest;
 import com.dipsource.dto.user.NicknameAvailableResponse;
 import com.dipsource.dto.user.UserMeResponse;
+import com.dipsource.dto.user.UserProfileResponse;
 import com.dipsource.dto.user.UserSummaryResponse;
 import com.dipsource.entity.tag.Tag;
 import com.dipsource.entity.user.User;
@@ -10,6 +11,7 @@ import com.dipsource.entity.user.UserInterestTag;
 import com.dipsource.entity.user.UserStatus;
 import com.dipsource.global.exception.BusinessException;
 import com.dipsource.global.exception.ErrorCode;
+import com.dipsource.repository.follow.FollowRepository;
 import com.dipsource.repository.tag.TagRepository;
 import com.dipsource.repository.user.UserInterestTagRepository;
 import com.dipsource.repository.user.UserRepository;
@@ -41,6 +43,9 @@ public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final TagRepository tagRepository;
     private final UserInterestTagRepository userInterestTagRepository;
+    private final FollowRepository followRepository;
+
+
 
     @Override
     @Transactional(readOnly = true)
@@ -108,6 +113,19 @@ public class UserServiceImpl implements UserService {
         }
 
         return UserMeResponse.from(user);
+    }
+
+    @Override 
+    @Transactional(readOnly = true)
+    public UserProfileResponse getProfile(Long userId, Long viewerId) {
+        User user = getUser(userId);
+        if (user.isWithdrawn()) {
+            throw new BusinessException(ErrorCode.NOT_FOUND, "회원을 찾을 수 없습니다.");
+        }
+        boolean following = viewerId != null
+                && !viewerId.equals(userId)
+                && followRepository.existsByIdFollowerIdAndIdFollowingId(viewerId, userId);
+        return  UserProfileResponse.of(user, following);
     }
 
     private User getUser(Long userId) {
