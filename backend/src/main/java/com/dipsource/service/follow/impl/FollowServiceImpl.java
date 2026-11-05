@@ -12,6 +12,7 @@ import com.dipsource.service.follow.FollowService;
 import com.dipsource.service.user.UserService;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Predicate;
@@ -29,6 +30,9 @@ public class FollowServiceImpl implements FollowService {
 
     /** 목록 한 번에 최대 몇 명까지 주는지 */
     private static final int MAX_PAGE_SIZE = 100;
+
+    /** 닉네임 검색어 최대 길이 (닉네임 컬럼 길이와 같다) */
+    private static final int MAX_QUERY_LENGTH = 30;
 
     private final FollowRepository followRepository;
     private final UserService userService;
@@ -54,8 +58,9 @@ public class FollowServiceImpl implements FollowService {
 
     @Override
     @Transactional(readOnly = true)
-    public PageResponse<FollowUserResponse> getFollowings(Long userId, Pageable pageable) {
-        Page<Long> page = followRepository.findFollowingIds(userId, UserStatus.ACTIVE, limit(pageable));
+    public PageResponse<FollowUserResponse> getFollowings(Long userId, String query, Pageable pageable) {
+        Page<Long> page = followRepository.findFollowingIds(
+                userId, UserStatus.ACTIVE, nicknamePattern(query), limit(pageable));
         List<Long> ids = page.getContent();
         // 팔로잉 목록이니 내가 팔로우 중인 건 확실하고, 상대가 나를 팔로우하는지만 확인한다.
         Set<Long> followsMe = ids.isEmpty() ? Set.of() : new HashSet<>(followRepository.findFollowerIdsIn(userId, ids));
@@ -64,8 +69,9 @@ public class FollowServiceImpl implements FollowService {
 
     @Override
     @Transactional(readOnly = true)
-    public PageResponse<FollowUserResponse> getFollowers(Long userId, Pageable pageable) {
-        Page<Long> page = followRepository.findFollowerIds(userId, UserStatus.ACTIVE, limit(pageable));
+    public PageResponse<FollowUserResponse> getFollowers(Long userId, String query, Pageable pageable) {
+        Page<Long> page = followRepository.findFollowerIds(
+                userId, UserStatus.ACTIVE, nicknamePattern(query), limit(pageable));
         List<Long> ids = page.getContent();
         // 팔로워 목록이니 상대가 나를 팔로우하는 건 확실하고, 내가 맞팔 중인지만 확인한다.
         Set<Long> following = ids.isEmpty() ? Set.of() : new HashSet<>(followRepository.findFollowingIdsIn(userId, ids));
@@ -116,6 +122,22 @@ public class FollowServiceImpl implements FollowService {
                 .map(id -> FollowUserResponse.of(users.get(id), following.test(id), followsMe.test(id)))
                 .toList();
         return PageResponse.of(page, content);
+    }
+
+    /** 닉네임 검색어를 대소문자 구분 없는 "포함" LIKE 패턴으로 바꾼다. 검색어의 %, _는 글자 그대로 찾는다. */
+    public static String nicknamePattern(String query) {
+        if (query == null || query.isBlank()) {
+            return "%";
+        }
+        String trimmed = query.strip();
+        if (trimmed.length() > MAX_QUERY_LENGTH) {
+            trimmed = trimmed.substring(0, MAX_QUERY_LENGTH);
+        }
+        String escaped = trimmed.toLowerCase(Locale.ROOT)
+                .replace("\\", "\\\\")
+                .replace("%", "\\%")
+                .replace("_", "\\_");
+        return "%" + escaped + "%";
     }
 
     private static Pageable limit(Pageable pageable) {

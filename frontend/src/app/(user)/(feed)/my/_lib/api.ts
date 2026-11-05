@@ -42,23 +42,29 @@ export type FollowPage = { users: FollowUser[]; page: number; totalPages: number
 
 // 팔로우 API는 백엔드에 있어서, 백엔드가 연결돼 있으면 MOCK_EXCEPT_DM이어도 실서버를 쓴다.
 // page는 화면 기준 1부터, 백엔드는 0부터 센다.
+// q는 닉네임 검색어. 비어 있으면 전체.
 async function getFollowPage(
   path: `/api/v1/${string}`,
   mock: FollowUser[],
   page: number,
   size: number,
+  q: string,
 ): Promise<FollowPage> {
-  if (!hasBackend) return { users: mock, page: 1, totalPages: 1, total: mock.length };
-  const { data } = await apiFetch<ApiResponse<PageResponse<FollowUser>>>(
-    `${path}?page=${page - 1}&size=${size}`,
-  );
+  if (!hasBackend) {
+    const keyword = q.toLowerCase();
+    const users = keyword ? mock.filter((user) => user.nickname.toLowerCase().includes(keyword)) : mock;
+    return { users, page: 1, totalPages: 1, total: users.length };
+  }
+  const query = new URLSearchParams({ page: String(page - 1), size: String(size) });
+  if (q) query.set("q", q);
+  const { data } = await apiFetch<ApiResponse<PageResponse<FollowUser>>>(`${path}?${query}`);
   return { users: data.content, page, totalPages: data.totalPages, total: data.totalElements };
 }
 
-export const getFollowings = (page = 1, size = FOLLOW_PAGE_SIZE) =>
-  getFollowPage("/api/v1/follows/followings", mockFollowings, page, size);
-export const getFollowers = (page = 1, size = FOLLOW_PAGE_SIZE) =>
-  getFollowPage("/api/v1/follows/followers", mockFollowers, page, size);
+export const getFollowings = (page = 1, size = FOLLOW_PAGE_SIZE, q = "") =>
+  getFollowPage("/api/v1/follows/followings", mockFollowings, page, size, q);
+export const getFollowers = (page = 1, size = FOLLOW_PAGE_SIZE, q = "") =>
+  getFollowPage("/api/v1/follows/followers", mockFollowers, page, size, q);
 export const getSettings = () => get<Settings>("/api/v1/users/me/settings", mockSettings);
 export const getBlocked = async (): Promise<BlockedUser[]> => mockBlocked;
 export const getPackages = async (): Promise<ChipPackage[]> => mockPackages;

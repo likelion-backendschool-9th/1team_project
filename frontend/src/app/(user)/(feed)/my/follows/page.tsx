@@ -1,38 +1,30 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { connection } from "next/server";
 import { Suspense } from "react";
-import { Avatar } from "@/app/_components/ui/Avatar";
 import kit from "@/app/_components/ui/kit.module.css";
 import { LinkTabs } from "@/app/_components/ui/LinkTabs";
-import { Pagination } from "@/app/_components/ui/Pagination";
-import { DmOpenButton } from "@/app/(user)/_components/DmOpenButton";
-import { FollowButton } from "../../_components/FollowButton";
 import { getFollowers, getFollowings } from "../_lib/api";
-import styles from "../_components/My.module.css";
+import { FollowList } from "./_components/FollowList";
+import { FollowSearch } from "./_components/FollowSearch";
+import list from "./_components/FollowList.module.css";
+import { followsHref, parseFollowQuery, parseFollowTab } from "./_lib/params";
 
 export const metadata: Metadata = { title: "팔로우", robots: { index: false } };
 
-type SearchParams = Promise<{ tab?: string | string[]; page?: string | string[] }>;
-
-function parsePage(value: string | string[] | undefined) {
-  const page = Number(value);
-  return Number.isSafeInteger(page) && page > 0 ? page : 1;
-}
+type SearchParams = Promise<{ tab?: string | string[]; q?: string | string[] }>;
 
 async function FollowsContent({ searchParams }: { searchParams: SearchParams }) {
   await connection();
   const params = await searchParams;
-  const tab = params.tab === "followers" ? "followers" : "followings";
-  const page = parsePage(params.page);
-  // 보고 있는 탭은 해당 페이지를, 다른 탭은 숫자만 필요해서 1명만 받는다.
-  const [followings, followers] = await Promise.all([
-    tab === "followings" ? getFollowings(page) : getFollowings(1, 1),
-    tab === "followers" ? getFollowers(page) : getFollowers(1, 1),
+  const tab = parseFollowTab(params.tab);
+  const q = parseFollowQuery(params.q);
+
+  // 보고 있는 탭은 검색어를 넣은 첫 페이지를, 탭 숫자는 검색과 상관없는 전체 수를 쓴다.
+  const [current, followingCount, followerCount] = await Promise.all([
+    tab === "followers" ? getFollowers(1, undefined, q) : getFollowings(1, undefined, q),
+    getFollowings(1, 1).then((page) => page.total),
+    getFollowers(1, 1).then((page) => page.total),
   ]);
-  const current = tab === "followers" ? followers : followings;
-  const users = current.users;
-  const tabHref = tab === "followers" ? "/my/follows?tab=followers" : "/my/follows";
 
   return (
     <>
@@ -40,41 +32,19 @@ async function FollowsContent({ searchParams }: { searchParams: SearchParams }) 
         label="팔로우 목록"
         variant="line"
         items={[
-          { href: "/my/follows", label: "팔로잉", active: tab === "followings", count: followings.total },
-          { href: "/my/follows?tab=followers", label: "팔로워", active: tab === "followers", count: followers.total },
+          // 검색 중에 탭을 바꿔도 검색어를 유지한다.
+          { href: followsHref("followings", q), label: "팔로잉", active: tab === "followings", count: followingCount },
+          { href: followsHref("followers", q), label: "팔로워", active: tab === "followers", count: followerCount },
         ]}
       />
-      <section className={kit.card} aria-label={tab === "followers" ? "팔로워" : "팔로잉"}>
-        {users.length === 0 ? (
-          <p className={kit.empty}>아직 아무도 없어요.</p>
-        ) : (
-          <ul className={kit.list}>
-            {users.map((user) => (
-              <li key={user.id} className={kit.listItem}>
-                <Link href={`/mini-home/${user.id}`} className={styles.person}>
-                  <Avatar name={user.nickname} size={44} />
-                  <span className={kit.grow}>
-                    <strong>{user.nickname}</strong>
-                    {user.followsMe && tab === "followings" && <span className={kit.pill} style={{ marginLeft: 6 }}>맞팔</span>}
-                    <span className={kit.faint} style={{ display: "block" }}>
-                      {user.techStacks.join(", ") || "기술 스택 미입력"}
-                    </span>
-                  </span>
-                </Link>
-                <DmOpenButton user={user} className={`${kit.btnGhost} ${kit.sm}`}>
-                  DM
-                </DmOpenButton>
-                <FollowButton userId={user.id} nickname={user.nickname} following={user.following} />
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
-      <Pagination
-        page={current.page}
-        totalPages={current.totalPages}
-        hrefFor={(value) => (value === 1 ? tabHref : `${tabHref}${tab === "followers" ? "&" : "?"}page=${value}`)}
-      />
+      <FollowSearch key={tab} tab={tab} q={q} />
+      {q && (
+        <p className={`${kit.faint} ${list.result}`}>
+          &apos;{q}&apos; 검색 결과 {current.total}명
+        </p>
+      )}
+      {/* 탭이나 검색어가 바뀌면 이어 붙이던 목록을 처음부터 다시 시작한다. */}
+      <FollowList key={`${tab}:${q}`} tab={tab} q={q} initial={current} />
     </>
   );
 }

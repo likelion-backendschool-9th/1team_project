@@ -123,12 +123,12 @@ class FollowServiceImplTest {
 
         @Test
         void followingsKeepOrderAndMarkFollowsMe() {
-            when(repository.findFollowingIds(1L, UserStatus.ACTIVE, firstPage))
+            when(repository.findFollowingIds(1L, UserStatus.ACTIVE, "%", firstPage))
                     .thenReturn(new PageImpl<>(List.of(3L, 2L), firstPage, 2));
             when(repository.findFollowerIdsIn(1L, List.of(3L, 2L))).thenReturn(List.of(2L));
             when(userService.getSummaries(List.of(3L, 2L))).thenReturn(Map.of(2L, user(2L), 3L, user(3L)));
 
-            List<FollowUserResponse> content = service.getFollowings(1L, firstPage).content();
+            List<FollowUserResponse> content = service.getFollowings(1L, null, firstPage).content();
 
             assertThat(content).extracting(FollowUserResponse::id).containsExactly(3L, 2L);
             assertThat(content).allMatch(FollowUserResponse::following);
@@ -137,12 +137,12 @@ class FollowServiceImplTest {
 
         @Test
         void followersMarkMutualFollow() {
-            when(repository.findFollowerIds(1L, UserStatus.ACTIVE, firstPage))
+            when(repository.findFollowerIds(1L, UserStatus.ACTIVE, "%", firstPage))
                     .thenReturn(new PageImpl<>(List.of(4L, 5L), firstPage, 2));
             when(repository.findFollowingIdsIn(1L, List.of(4L, 5L))).thenReturn(List.of(5L));
             when(userService.getSummaries(List.of(4L, 5L))).thenReturn(Map.of(4L, user(4L), 5L, user(5L)));
 
-            List<FollowUserResponse> content = service.getFollowers(1L, firstPage).content();
+            List<FollowUserResponse> content = service.getFollowers(1L, null, firstPage).content();
 
             assertThat(content).allMatch(FollowUserResponse::followsMe);
             assertThat(content).extracting(FollowUserResponse::following).containsExactly(false, true);
@@ -150,22 +150,22 @@ class FollowServiceImplTest {
 
         @Test
         void emptyListSkipsExtraQueries() {
-            when(repository.findFollowingIds(1L, UserStatus.ACTIVE, firstPage))
+            when(repository.findFollowingIds(1L, UserStatus.ACTIVE, "%", firstPage))
                     .thenReturn(new PageImpl<>(List.of(), firstPage, 0));
             when(userService.getSummaries(List.of())).thenReturn(Map.of());
 
-            assertThat(service.getFollowings(1L, firstPage).content()).isEmpty();
+            assertThat(service.getFollowings(1L, null, firstPage).content()).isEmpty();
             verify(repository, never()).findFollowerIdsIn(any(), any());
         }
 
         @Test
         void pageSizeIsCappedAt100() {
             PageRequest huge = PageRequest.of(0, 1000);
-            when(repository.findFollowingIds(1L, UserStatus.ACTIVE, PageRequest.of(0, 100)))
+            when(repository.findFollowingIds(1L, UserStatus.ACTIVE, "%", PageRequest.of(0, 100)))
                     .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 100), 0));
             when(userService.getSummaries(List.of())).thenReturn(Map.of());
 
-            assertThat(service.getFollowings(1L, huge).size()).isEqualTo(100);
+            assertThat(service.getFollowings(1L, null, huge).size()).isEqualTo(100);
         }
 
         @Test
@@ -194,6 +194,24 @@ class FollowServiceImplTest {
 
             assertThat(service.getFollowingPresence(1L, many)).isEmpty();
             verifyNoInteractions(userService);
+        }
+
+        @Test
+        void searchQueryIsPassedAsLikePattern() {
+            when(repository.findFollowerIds(1L, UserStatus.ACTIVE, "%시드%", firstPage))
+                    .thenReturn(new PageImpl<>(List.of(), firstPage, 0));
+            when(userService.getSummaries(List.of())).thenReturn(Map.of());
+
+            assertThat(service.getFollowers(1L, "  시드 ", firstPage).content()).isEmpty();
+        }
+
+        @Test
+        void nicknamePatternIgnoresCaseAndEscapesWildcards() {
+            assertThat(FollowServiceImpl.nicknamePattern(null)).isEqualTo("%");
+            assertThat(FollowServiceImpl.nicknamePattern("   ")).isEqualTo("%");
+            assertThat(FollowServiceImpl.nicknamePattern("Dev")).isEqualTo("%dev%");
+            assertThat(FollowServiceImpl.nicknamePattern("50%_a\\b")).isEqualTo("%50\\%\\_a\\\\b%");
+            assertThat(FollowServiceImpl.nicknamePattern("a".repeat(40))).isEqualTo("%" + "a".repeat(30) + "%");
         }
 
         private UserSummaryResponse user(Long id) {

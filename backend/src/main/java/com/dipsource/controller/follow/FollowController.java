@@ -50,22 +50,24 @@ public class FollowController {
         return ResponseEntity.noContent().build();
     }
 
-    /** 내가 팔로우하는 회원 목록. 최근에 팔로우한 순. */
+    /** 내가 팔로우하는 회원 목록. 최근에 팔로우한 순. ?q=로 닉네임 검색. */
     @GetMapping("/followings")
     public ResponseEntity<ApiResponse<PageResponse<FollowUserResponse>>> followings(
             @AuthenticationPrincipal UserPrincipal principal,
+            @RequestParam(required = false) String q,
             @PageableDefault(size = 20) Pageable pageable
     ) {
-        return ResponseEntity.ok(ApiResponse.of(followService.getFollowings(requireUserId(principal), pageable)));
+        return ResponseEntity.ok(ApiResponse.of(followService.getFollowings(requireUserId(principal), q, pageable)));
     }
 
-    /** 나를 팔로우하는 회원 목록. 최근에 팔로우한 순. */
+    /** 나를 팔로우하는 회원 목록. 최근에 팔로우한 순. ?q=로 닉네임 검색. */
     @GetMapping("/followers")
     public ResponseEntity<ApiResponse<PageResponse<FollowUserResponse>>> followers(
             @AuthenticationPrincipal UserPrincipal principal,
+            @RequestParam(required = false) String q,
             @PageableDefault(size = 20) Pageable pageable
     ) {
-        return ResponseEntity.ok(ApiResponse.of(followService.getFollowers(requireUserId(principal), pageable)));
+        return ResponseEntity.ok(ApiResponse.of(followService.getFollowers(requireUserId(principal), q, pageable)));
     }
 
     /** 화면에 나온 팔로잉 회원의 접속 상태. ?userIds=1,2,3 (최대 100개) */
