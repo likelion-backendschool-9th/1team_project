@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState } from "react";
 import { FormMessage } from "@/app/_components/ui/FormMessage";
 import kit from "@/app/_components/ui/kit.module.css";
@@ -76,7 +77,16 @@ export function EditForm({ profile, demos }: Props) {
         <legend className={kit.label}>미니홈피에 보여 줄 데모</legend>
         <p id="edit-showcase-hint" className={kit.hint}>
           최대 {limit}개까지 공개해요{!profile.plus && " (딥소스 플러스는 6개)"}. 대표 데모는 공개한 데모 중 하나를 골라요.
+          데모가 없어도 저장할 수 있어요.
         </p>
+        {demos.length === 0 && (
+          <p className={kit.empty}>
+            아직 올린 데모가 없어요. 데모를 넣어주세요.{" "}
+            <Link href="/demos/upload" className={`${kit.btnPrimary} ${kit.sm}`}>
+              데모 올리기
+            </Link>
+          </p>
+        )}
         <div className={styles.demos}>
           {demos.map((demo) => (
             <div key={demo.id} className={styles.demo}>

@@ -25,9 +25,11 @@ type Props = {
   comments: MiniHomeComment[];
   me: UserSummary;
   now: number;
+  /** 내 미니홈피면 데모가 없을 때 데모를 넣으라고 안내한다 */
+  isOwner?: boolean;
 };
 
-export function FeaturedDemo({ demo, variant, postId, comments, me, now }: Props) {
+export function FeaturedDemo({ demo, variant, postId, comments, me, now, isOwner = false }: Props) {
   return (
     <section className={styles.card} aria-labelledby="featured-title">
       <div className={styles.header}>
@@ -103,6 +105,12 @@ export function FeaturedDemo({ demo, variant, postId, comments, me, now }: Props
             </>
           }
         />
+      ) : isOwner ? (
+        <p className={styles.empty}>
+          아직 공개된 데모가 없어요. 데모를 넣어주세요.
+          <br />
+          <Link href="/demos/upload">데모 올리기</Link> · <Link href={`/mini-home/${me.id}/edit`}>공개할 데모 고르기</Link>
+        </p>
       ) : (
         <p className={styles.empty}>아직 공개된 데모가 없어요.</p>
       )}

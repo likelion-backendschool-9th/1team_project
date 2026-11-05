@@ -1,7 +1,6 @@
 package com.dipsource.dto.minihome;
 
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.Size;
 import java.util.List;
 
@@ -26,8 +25,8 @@ public record UpdateMiniHomeRequest(
         /** "React, TypeScript"처럼 쉼표로 구분한다. 비어 있으면 태그를 지운다. */
         String stackTags,
 
-        @NotEmpty(message = "공개할 데모를 1개 이상 골라 주세요.")
-        @Size(min = 1, max = 3, message = "공개할 데모는 1~3개만 고를 수 있어요.")
+        /** 비어 있어도 된다. 데모가 아직 없는 회원도 미니홈피를 저장할 수 있게 한다. */
+        @Size(max = 3, message = "공개할 데모는 3개까지 고를 수 있어요.")
         List<Long> showcaseDemoIds,
 
         /** 비어 있으면 목록 순서를 그대로 둔다. 프론트는 없을 때 빈 문자열을 보낸다. */

@@ -57,6 +57,7 @@ export async function MiniHomeHome({ params }: Props) {
         comments={featuredComments}
         me={me!}
         now={now}
+        isOwner={me?.id === userId}
       />
       <PublicDemos userId={userId} demos={demos} featuredId={featured?.id} />
       <div className={styles.boards}>
