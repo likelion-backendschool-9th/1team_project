@@ -27,28 +27,8 @@ public class StubController {
 
     // ── 블로그(포스트) ──
 
-    @GetMapping("/posts")
-    public ResponseEntity<ApiResponse<Map<String, Object>>> posts() {
-        return ok(EMPTY_PAGE);
-    }
-
-    @GetMapping("/posts/list")
-    public ResponseEntity<ApiResponse<Map<String, Object>>> postsList() {
-        return ok(EMPTY_PAGE);
-    }
-
-    @GetMapping("/posts/{postId}")
-    public ResponseEntity<ApiResponse<Object>> postDetail(@PathVariable Long postId) {
-        return notFound();
-    }
-
     @GetMapping("/posts/{postId}/comments")
     public ResponseEntity<ApiResponse<Map<String, Object>>> postComments(@PathVariable Long postId) {
-        return ok(EMPTY_PAGE);
-    }
-
-    @GetMapping("/users/{userId}/posts")
-    public ResponseEntity<ApiResponse<Map<String, Object>>> userPosts(@PathVariable Long userId) {
         return ok(EMPTY_PAGE);
     }
 

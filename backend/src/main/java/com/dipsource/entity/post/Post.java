@@ -46,6 +46,11 @@ public class Post extends BaseEntity {
     @Column(nullable = false, length = 200)
     private String title;
 
+    /** 분류 (프론트엔드·백엔드·AI·모바일·커리어·게임·UX/UI) */
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private PostCategory category;
+
     /** 본문(마크다운) */
     @Column(nullable = false, length = 20000)
     private String content;
@@ -84,20 +89,22 @@ public class Post extends BaseEntity {
     private LocalDateTime deletedAt;
 
     @Builder
-    private Post(Long userId, Long demoId, String title, String content, String thumbnailUrl,
-                 boolean paid, int priceChips) {
+    private Post(Long userId, Long demoId, String title, PostCategory category, String content,
+                 String thumbnailUrl, boolean paid, int priceChips) {
         this.userId = userId;
         this.demoId = demoId;
         this.title = title;
+        this.category = category;
         this.content = content;
         this.thumbnailUrl = thumbnailUrl;
         this.paid = paid;
         this.priceChips = paid ? priceChips : 0;
     }
 
-    public void update(String title, String content, String thumbnailUrl, Long demoId,
-                       boolean paid, int priceChips) {
+    public void update(String title, PostCategory category, String content, String thumbnailUrl,
+                       Long demoId, boolean paid, int priceChips) {
         this.title = title;
+        this.category = category;
         this.content = content;
         this.thumbnailUrl = thumbnailUrl;
         this.demoId = demoId;
