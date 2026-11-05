@@ -11,6 +11,8 @@ import com.dipsource.dto.minihome.VisitorStatsResponse;
 import com.dipsource.global.auth.UserPrincipal;
 import com.dipsource.global.common.ApiResponse;
 import com.dipsource.global.common.PageResponse;
+import com.dipsource.global.exception.BusinessException;
+import com.dipsource.global.exception.ErrorCode;
 import com.dipsource.service.minihome.GuestbookService;
 import com.dipsource.service.minihome.MiniHomeCommentService;
 import com.dipsource.service.minihome.MiniHomeService;
@@ -44,7 +46,7 @@ public class MiniHomeController {
             @AuthenticationPrincipal UserPrincipal principal,
             @RequestParam(required = false) Long exclude
     ) {
-        return ApiResponse.of(miniHomeService.pickRandom(principal.getUserId(), exclude));
+        return ApiResponse.of(miniHomeService.pickRandom(requireUserId(principal), exclude));
     }
 
     @GetMapping("/{userId}/visitors")
@@ -57,7 +59,7 @@ public class MiniHomeController {
             @AuthenticationPrincipal UserPrincipal principal,
             @PathVariable Long userId
     ) {
-        return ApiResponse.of(miniHomeService.recordVisit(principal.getUserId(), userId));
+        return ApiResponse.of(miniHomeService.recordVisit(requireUserId(principal), userId));
     }
 
     @GetMapping("/{userId}")
@@ -70,7 +72,7 @@ public class MiniHomeController {
             @AuthenticationPrincipal UserPrincipal principal,
             @Valid @RequestBody UpdateMiniHomeRequest request
     ) {
-        return ApiResponse.of(miniHomeService.update(principal.getUserId(), request));
+        return ApiResponse.of(miniHomeService.update(requireUserId(principal), request));
     }
 
     @PutMapping("/me/featured-demo")
@@ -78,7 +80,7 @@ public class MiniHomeController {
             @AuthenticationPrincipal UserPrincipal principal,
             @Valid @RequestBody FeaturedDemoRequest request
     ) {
-        return ApiResponse.of(miniHomeService.updateFeaturedDemo(principal.getUserId(), request.demoId()));
+        return ApiResponse.of(miniHomeService.updateFeaturedDemo(requireUserId(principal), request.demoId()));
     }
 
     @GetMapping("/{userId}/comments")
@@ -95,7 +97,7 @@ public class MiniHomeController {
             @PathVariable Long userId,
             @RequestBody MiniHomeCommentRequest request
     ) {
-        return ApiResponse.of(miniHomeCommentService.write(principal.getUserId(), userId, request.content()));
+        return ApiResponse.of(miniHomeCommentService.write(requireUserId(principal), userId, request.content()));
     }
 
     @DeleteMapping("/comments/{commentId}")
@@ -103,7 +105,7 @@ public class MiniHomeController {
             @AuthenticationPrincipal UserPrincipal principal,
             @PathVariable Long commentId
     ) {
-        miniHomeCommentService.delete(principal.getUserId(), commentId);
+        miniHomeCommentService.delete(requireUserId(principal), commentId);
         return ApiResponse.of(null);
     }
 
@@ -113,7 +115,7 @@ public class MiniHomeController {
             @PathVariable Long userId,
             @PageableDefault(size = 20) Pageable pageable
     ) {
-        return ApiResponse.of(guestbookService.list(principal.getUserId(), userId, pageable));
+        return ApiResponse.of(guestbookService.list(requireUserId(principal), userId, pageable));
     }
 
     @PostMapping("/{userId}/guestbook")
@@ -123,7 +125,7 @@ public class MiniHomeController {
             @RequestBody GuestbookRequest request
     ) {
         return ApiResponse.of(guestbookService.write(
-                principal.getUserId(), userId, request.content(), request.secret()));
+                requireUserId(principal), userId, request.content(), request.secret()));
     }
 
     @DeleteMapping("/guestbook/{guestbookId}")
@@ -131,7 +133,14 @@ public class MiniHomeController {
             @AuthenticationPrincipal UserPrincipal principal,
             @PathVariable Long guestbookId
     ) {
-        guestbookService.delete(principal.getUserId(), guestbookId);
+        guestbookService.delete(requireUserId(principal), guestbookId);
         return ApiResponse.of(null);
+    }
+
+    private static Long requireUserId(UserPrincipal principal) {
+        if (principal == null) {
+            throw new BusinessException(ErrorCode.UNAUTHORIZED, "로그인이 필요합니다");
+        }
+        return principal.getUserId();
     }
 }

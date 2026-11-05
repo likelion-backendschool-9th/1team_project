@@ -75,7 +75,6 @@ public class GuestbookServiceImpl implements GuestbookService {
             throw new BusinessException(ErrorCode.FORBIDDEN, "방명록을 삭제할 권한이 없어요.");
         }
         entry.delete();
-        guestbookRepository.save(entry);
     }
 
     private Map<Long, UserSummaryResponse> authors(List<Long> writerIds) {

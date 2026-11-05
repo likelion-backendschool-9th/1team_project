@@ -83,7 +83,6 @@ public class MiniHomeCommentServiceImpl implements MiniHomeCommentService {
             throw new BusinessException(ErrorCode.FORBIDDEN, "일촌평을 삭제할 권한이 없어요.");
         }
         comment.delete();
-        commentRepository.save(comment);
     }
 
     private Map<Long, UserSummaryResponse> authors(List<Long> writerIds) {
