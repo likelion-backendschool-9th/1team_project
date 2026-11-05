@@ -1,10 +1,13 @@
 package com.dipsource.controller.search;
 
+import com.dipsource.dto.search.AutocompleteResponse;
 import com.dipsource.dto.search.SearchOperator;
 import com.dipsource.dto.search.SearchSort;
 import com.dipsource.dto.search.SearchType;
 import com.dipsource.global.common.ApiResponse;
+import com.dipsource.service.search.AutocompleteService;
 import com.dipsource.service.search.SearchService;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
@@ -20,6 +23,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class SearchController {
 
     private final SearchService searchService;
+    private final AutocompleteService autocompleteService;
 
     /**
      * 검색. 예: GET /api/v1/search?q=spring jpa&type=post&sort=relevance&op=and&page=0&size=20
@@ -52,5 +56,18 @@ public class SearchController {
             return ApiResponse.of(searchService.searchAll(q, operator, searchSort));
         }
         return ApiResponse.of(searchService.search(q, searchType, operator, searchSort, pageable));
+    }
+
+    /**
+     * 검색어 자동완성. 예: GET /api/v1/search/autocomplete?q=spr
+     * - q: 입력 중인 검색어. 비어 있거나 공백만 있으면 빈 목록, 50자를 넘으면 400
+     * - 응답: 최대 8개. text(검색창에 채울 검색어), type(TAG: 태그 이름, WORD: 공개 제목·태그의 단어)
+     *   - 태그는 입력 전체로 시작하는 것: "spring b" → Spring Boot
+     *   - 단어는 마지막 단어만 완성하고 앞 단어는 그대로: "spring b" → spring boot, spring batch
+     *   - 한글 조합 중인 글자도 찾는다: "스플" → 스프링
+     */
+    @GetMapping("/autocomplete")
+    public ApiResponse<List<AutocompleteResponse>> autocomplete(@RequestParam(required = false) String q) {
+        return ApiResponse.of(autocompleteService.autocomplete(q));
     }
 }

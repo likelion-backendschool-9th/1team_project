@@ -1,9 +1,11 @@
 package com.dipsource.repository.demo;
 
+import com.dipsource.dto.search.AutocompletePrefix;
 import com.dipsource.dto.search.SearchCondition;
 import com.dipsource.dto.search.SearchOperator;
 import com.dipsource.dto.search.SearchSort;
 import com.dipsource.dto.search.SearchTermCandidate;
+import com.dipsource.dto.search.SearchTermFrequency;
 import com.dipsource.entity.demo.Demo;
 import com.dipsource.global.common.LikePattern;
 import java.util.List;
@@ -111,4 +113,40 @@ public interface DemoSearchRepository extends Repository<Demo, Long> {
             @Param("word") String word,
             @Param("pattern") String pattern,
             @Param("maxDistance") int maxDistance);
+
+    /**
+     * 4단계: 자동완성 단어 후보. 공개(ACTIVE)이면서 삭제되지 않은 데모의 제목에서 접두어로 시작하는 단어와 등장 횟수.
+     * 쿼리 설명은 {@code PostSearchRepository#findTermsByPrefix}와 같다.
+     *
+     * @param prefix 마지막 단어의 접두어 조건(한글 조합 중 받침 처리 포함)
+     * @param limit  최대 개수
+     */
+    default List<SearchTermFrequency> findTermsByPrefix(AutocompletePrefix prefix, int limit) {
+        return findTitleTermsByPrefix(prefix.pattern(), prefix.composing(), prefix.stemPattern(), prefix.stemLength(),
+                prefix.nextFrom(), prefix.nextTo(), limit);
+    }
+
+    @Query(nativeQuery = true, value = """
+            SELECT s.term AS term, count(*) AS frequency
+            FROM demos d
+            CROSS JOIN LATERAL regexp_split_to_table(lower(d.title), '[^a-z0-9가-힣_.#+-]+') AS s(term)
+            WHERE length(s.term) BETWEEN 1 AND 50
+                  AND d.status = 'ACTIVE'
+                  AND d.deleted_at IS NULL
+              AND (s.term LIKE :pattern
+                   OR (:composing
+                       AND s.term LIKE :stemPattern
+                       AND substr(s.term, :stemLength + 1, 1) COLLATE "C" BETWEEN :nextFrom AND :nextTo))
+            GROUP BY s.term
+            ORDER BY frequency DESC, length(s.term), s.term
+            LIMIT :limit
+            """)
+    List<SearchTermFrequency> findTitleTermsByPrefix(
+            @Param("pattern") String pattern,
+            @Param("composing") boolean composing,
+            @Param("stemPattern") String stemPattern,
+            @Param("stemLength") int stemLength,
+            @Param("nextFrom") String nextFrom,
+            @Param("nextTo") String nextTo,
+            @Param("limit") int limit);
 }
