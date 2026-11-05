@@ -6,6 +6,7 @@ import com.dipsource.service.user.AuthService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
 import java.util.Map;
@@ -18,6 +19,7 @@ import org.springframework.security.web.authentication.SimpleUrlAuthenticationSu
 import org.springframework.stereotype.Component;
 
 /** GitHub OAuth 로그인 성공 후 JWT 쿠키를 심고 프론트로 보낸다. */
+@Slf4j 
 @Component
 @RequiredArgsConstructor
 public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
@@ -49,6 +51,8 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
         try {
             result = authService.findOrCreateFromGithub(providerId, email, login, avatarUrl);
         } catch (DataIntegrityViolationException e) {
+            //같은 GitHub 계정으로 동시에 첫 로그인한 경우: 다른 요청이 먼저 가입시켰으니 다시 찾는다.
+            log.warn("동시 가입 감지, 재시도: providerId={}", providerId);
             result = authService.findOrCreateFromGithub(providerId, email, login, avatarUrl);
         }
  
