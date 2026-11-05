@@ -10,7 +10,6 @@ import static org.mockito.Mockito.when;
 
 import com.dipsource.entity.feed.Feed;
 import com.dipsource.entity.feed.FeedStatus;
-
 import com.dipsource.entity.user.User;
 import com.dipsource.global.exception.BusinessException;
 import com.dipsource.global.exception.ErrorCode;

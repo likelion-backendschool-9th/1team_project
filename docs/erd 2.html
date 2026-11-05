@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1800">
+<title>찍먹 (Dip Source) — ERD</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #0d1117; color: #c9d1d9; font-family: 'Pretendard', -apple-system, sans-serif; }
+
+  .header {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    background: #161b22; border-bottom: 1px solid #30363d;
+    padding: 16px 32px; display: flex; align-items: center; gap: 24px;
+  }
+  .header h1 { font-size: 20px; color: #f0f6fc; }
+  .header span { font-size: 13px; color: #8b949e; }
+  .legend { display: flex; gap: 16px; margin-left: auto; }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #8b949e; }
+  .legend-dot { width: 10px; height: 10px; border-radius: 2px; }
+
+  .canvas {
+    position: relative;
+    width: 1760px;
+    height: 2600px;
+    margin: 72px auto 40px;
+    padding: 24px;
+  }
+
+  svg.lines {
+    position: absolute; top: 0; left: 0;
+    width: 100%; height: 100%;
+    pointer-events: none; z-index: 1;
+  }
+  svg.lines line {
+    stroke-width: 1.5;
+    opacity: 0.5;
+  }
+  svg.lines line:hover { opacity: 1; stroke-width: 2.5; }
+
+  .table-card {
+    position: absolute; z-index: 10;
+    background: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 8px;
+    min-width: 220px;
+    font-size: 13px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    transition: box-shadow 0.2s;
+  }
+  .table-card:hover { box-shadow: 0 4px 20px rgba(0,0,0,0.5); }
+
+  .table-card .card-header {
+    padding: 10px 14px;
+    border-bottom: 1px solid #30363d;
+    border-radius: 8px 8px 0 0;
+    font-weight: 700;
+    font-size: 14px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .table-card .card-header .badge {
+    font-size: 10px; font-weight: 500;
+    padding: 2px 6px; border-radius: 4px;
+    background: rgba(255,255,255,0.1);
+  }
+
+  .table-card .card-body { padding: 6px 0; }
+  .table-card .row {
+    display: grid;
+    grid-template-columns: 20px 1fr 1fr;
+    gap: 4px;
+    padding: 3px 14px;
+    align-items: center;
+  }
+  .table-card .row:hover { background: rgba(255,255,255,0.03); }
+  .table-card .icon { font-size: 10px; text-align: center; }
+  .table-card .col-name { color: #f0f6fc; font-weight: 500; }
+  .table-card .col-type { color: #8b949e; font-size: 12px; text-align: right; }
+  .pk { color: #f0883e !important; }
+  .fk { color: #a371f7 !important; }
+  .uk { color: #3fb950 !important; }
+
+  .table-card .card-footer {
+    padding: 6px 14px;
+    border-top: 1px solid #21262d;
+    font-size: 11px;
+    color: #6e7681;
+    line-height: 1.5;
+  }
+
+  /* domain colors */
+  .domain-core .card-header { background: #1f3a5f; border-color: #1f6feb; }
+  .domain-home .card-header { background: #2a1f3f; border-color: #8957e5; }
+  .domain-content .card-header { background: #1f3f2a; border-color: #3fb950; }
+  .domain-social .card-header { background: #3f2a1f; border-color: #f0883e; }
+  .domain-payment .card-header { background: #3f3a1f; border-color: #d29922; }
+  .domain-admin .card-header { background: #3f1f1f; border-color: #f85149; }
+
+  .line-core { stroke: #1f6feb; }
+  .line-home { stroke: #8957e5; }
+  .line-content { stroke: #3fb950; }
+  .line-social { stroke: #f0883e; }
+  .line-payment { stroke: #d29922; }
+  .line-admin { stroke: #f85149; }
+
+  /* cardinality labels */
+  .card-label {
+    position: absolute; z-index: 5;
+    font-size: 11px; color: #8b949e;
+    background: #0d1117; padding: 1px 4px; border-radius: 3px;
+  }
+
+  /* tooltip */
+  .rel-note {
+    position: absolute; z-index: 50;
+    background: #1c2128; border: 1px solid #30363d;
+    padding: 8px 12px; border-radius: 6px;
+    font-size: 12px; color: #c9d1d9;
+    max-width: 280px; line-height: 1.5;
+    display: none;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+  }
+
+  .divider-label {
+    position: absolute; z-index: 5;
+    font-size: 12px; color: #484f58;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    font-weight: 600;
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>찍먹 ERD</h1>
+  <span>22 Tables · PostgreSQL</span>
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:#1f6feb"></div>회원</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#8957e5"></div>미니홈피</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#3fb950"></div>콘텐츠</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#f0883e"></div>소셜</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#d29922"></div>결제</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#f85149"></div>관리자</div>
+    <div class="legend-item" style="margin-left:16px">🔑 PK</div>
+    <div class="legend-item">🔗 FK</div>
+    <div class="legend-item">◆ UNIQUE</div>
+  </div>
+</div>
+
+<div class="canvas" id="canvas">
+
+  <!-- ===================== DOMAIN LABELS ===================== -->
+  <div class="divider-label" style="top:0;left:660px">— CORE —</div>
+  <div class="divider-label" style="top:330px;left:30px">— MINI HOME —</div>
+  <div class="divider-label" style="top:330px;left:580px">— CONTENT —</div>
+  <div class="divider-label" style="top:330px;left:1380px">— SOCIAL —</div>
+  <div class="divider-label" style="top:980px;left:30px">— INTERACTION —</div>
+  <div class="divider-label" style="top:1380px;left:30px">— MESSAGING —</div>
+  <div class="divider-label" style="top:1380px;left:880px">— PAYMENT —</div>
+  <div class="divider-label" style="top:1850px;left:30px">— ADMIN —</div>
+
+  <!-- ===================== CORE ===================== -->
+
+  <!-- users -->
+  <div class="table-card domain-core" id="t-users" style="top:30px;left:580px;width:260px">
+    <div class="card-header">users <span class="badge">회원</span></div>
+    <div class="card-body">
+      <div class="row"><div class="icon pk">🔑</div><div class="col-name pk">id</div><div class="col-type">BIGINT PK</div></div>
+      <div class="row"><div class="icon uk">◆</div><div class="col-name">email</div><div class="col-type">VARCHAR(100)</div></div>
+      <div class="row"><div class="icon uk">◆</div><div class="col-name">nickname</div><div class="col-type">VARCHAR(30)</div></div>
+      <div class="row"><div class="icon"></div><div class="col-name">profile_image</div><div class="col-type">VARCHAR(500)</div></div>
+      <div class="row"><div class="icon"></div><div class="col-name">bio</div><div class="col-type">TEXT</div></div>
+      <div class="row"><div class="icon"></div><div class="col-name">tech_stacks</div><div class="col-type">JSONB</div></div>
+      <div class="row"><div class="icon"></div><div class="col-name">github_username</div><div class="col-type">VARCHAR(50)</div></div>
+      <div class="row"><div class="icon"></div><div class="col-name">role</div><div class="col-type">ENUM(USER,ADMIN)</div></div>
+      <div class="row"><div class="icon"></div><div class="col-name">status</div><div class="col-type">ENUM(ACTIVE,SUSPENDED,DELETED)</div></div>
+      <div class="row"><div class="icon"></div><div class="col-name">coin_balance</div><div class="col-type">INT DEFAULT 0</div></div>
+      <div class="row"><div class="icon"></div><div class="col-name">created_at</div><div class="col-type">TIMESTAMP</div></div>
+      <div class="row"><div class="icon"></div><div class="col-name">updated_at</div><div class="col-type">TIMESTAMP</div></div>
+    </div>
+    <div class="card-footer">
+      UK: email, nickname<br>
+      IDX: status, role
+    </div>
+  </div>
+
+  <!-- social_accounts -->
+  <div class="table-card domain-core" id="t-social_accounts" style="top:30px;left:920px;width:260px">
+    <div class="card-header">social_accounts <span class="badge">소셜 연동</span></div>
+    <div class="card-body">
+      <div class="row"><div class="icon pk">🔑</div><div class="col-name pk">id</div><div class="col-type">BIGINT PK</div></div>
+      <div class="row"><div class="icon fk">🔗</div><div class="col-name fk">user_id</div><div class="col-type">FK → users</div></div>
+      <div class="row"><div class="icon"></div><div class="col-name">provider</div><div class="col-type">VARCHAR(20)</div></div>
+      <div class="row"><div class="icon"></div><div class="col-name">provider_id</div><div class="col-type">VARCHAR(100)</div></div>
+      <div class="row"><div class="icon"></div><div class="col-name">created_at</div><div class="col-type">TIMESTAMP</div></div>
+    </div>
+    <div class="card-footer">
+      UK: (provider, provider_id)<br>
+      provider: github / kakao / google
+    </div>
+  </div>
+
+  <!-- ===================== MINI HOME ===================== -->
+
+  <!-- mini_homes -->
+  <div class="table-card domain-home" id="t-mini_homes" style="top:360px;left:30px;width:260px">
+    <div class="card-header">mini_homes <span class="badge">미니홈피</span></div>
+    <div class="card-body">
+      <div class="row"><div class="icon pk">🔑</div><div class="col-name pk">id</div><div class="col-type">BIGINT PK</div></div>
+      <div class="row"><div class="icon fk">🔗</div><div class="col-name fk">user_id</div><div class="col-type">FK → users (UQ)</div></div>
+      <div class="row"><div class="icon fk">🔗</div><div class="col-name fk">featured_demo_id</div><div class="col-type">FK → demos (NULL)</div></div>
+      <div class="row"><div class="icon"></div><div class="col-name">skin_theme</div><div class="col-type">VARCHAR(50)</div></div>
+      <div class="row"><div class="icon"></div><div class="col-name">subscription_price</div><div class="col-type">INT DEFAULT 0</div></div>
+      <div class="row"><div class="icon"></div><div class="col-name">today_count</div><div class="col-type">INT DEFAULT 0</div></div>
+      <div class="row"><div class="icon"></div><div class="col-name">total_count</div><div class="col-type">INT DEFAULT 0</div></div>
+      <div class="row"><div class="icon"></div><div class="col-name">created_at</div><div class="col-type">TIMESTAMP</div></div>
+      <div class="row"><div class="icon"></div><div class="col-name">updated_at</div><div class="col-type">TIMESTAMP</div></div>
+    </div>
+    <div class="card-footer">
+      UK: user_id (1:1)<br>
+      subscription_price: 게시자가 설정하는 월 구독료
+    </div>
+  </div>
+
+  <!-- guestbooks -->
+  <div class="table-card domain-home" id="t-guestbooks" style="top:700px;left:30px;width:250px">
+    <div class="card-header">guestbooks <span class="badge">방명록</span></div>
+    <div class="card-body">
+      <div class="row"><div class="icon pk">🔑</div><div class="col-name pk">id</div><div class="col-type">BIGINT PK</div></div>
+      <div class="row"><div class="icon fk">🔗</div><div class="col-name fk">home_id</div><div class="col-type">FK → mini_homes</div></div>
+      <div class="row"><div class="icon fk">🔗</div><div class="col-name fk">writer_id</div><div class="col-type">FK → users</div></div>
+      <div class="row"><div class="icon"></div><div class="col-name">content</div><div class="col-type">TEXT</div></div>
+      <div class="row"><div class="icon"></div><div class="col-name">is_secret</div><div class="col-type">BOOLEAN</div></div>
+      <div class="row"><div class="icon"></div><div class="col-name">created_at</div><div class="col-type">TIMESTAMP</div></div>
+    </div>
+    <div class="card-footer">is_secret: 미니홈피 주인만 열람</div>
+  </div>
+
+  <!-- ===================== CONTENT ===================== -->
+
+  <!-- demos -->
+  <div class="table-card domain-content" id="t-demos" style="top:360px;left:380px;width:260px">
+    <div class="card-header">demos <span class="badge">데모</span></div>
+    <div class="card-body">
+      <div class="row"><div class="icon pk">🔑</div><div class="col-name pk">id</div><div class="col-type">BIGINT PK</div></div>
+      <div class="row"><div class="icon fk">🔗</div><div class="col-name fk">user_id</div><div class="col-type">FK → users</div></div>
+      <div class="row"><div class="icon"></div><div class="col-name">title</div><div class="col-type">VARCHAR(100)</div></div>
+      <div class="row"><div class="icon"></div><div class="col-name">description</div><div class="col-type">TEXT</div></div>
+      <div class="row"><div class="icon"></div><div class="col-name">file_path</div><div class="col-type">VARCHAR(500)</div></div>
+      <div class="row"><div class="icon"></div><div class="col-name">thumbnail</div><div class="col-type">VARCHAR(500)</div></div>
+      <div class="row"><div class="icon"></div><div class="col-name">is_paid</div><div class="col-type">BOOLEAN</div></div>
+      <div class="row"><div class="icon"></div><div class="col-name">price_coins</div><div class="col-type">INT DEFAULT 0</div></div>
+      <div class="row"><div class="icon"></div><div class="col-name">play_count</div><div class="col-type">INT DEFAULT 0</div></div>
+      <div class="row"><div class="icon"></div><div class="col-name">like_count</div><div class="col-type">INT DEFAULT 0</div></div>
+      <div class="row"><div class="icon"></div><div class="col-name">version</div><div class="col-type">INT DEFAULT 1</div></div>
+      <div class="row"><div class="icon"></div><div class="col-name">created_at</div><div class="col-type">TIMESTAMP</div></div>
+      <div class="row"><div class="icon"></div><div class="col-name">updated_at</div><div class="col-type">TIMESTAMP</div></div>
+    </div>
+    <div class="card-footer">
+      IDX: user_id, is_paid<br>
+      like_count: 비정규화 (성능)
+    </div>
+  </div>
+
+  <!-- tags -->
+  <div class="table-card domain-content" id="t-tags" style="top:360px;left:720px;width:200px">
+    <div class="card-header">tags <span class="badge">태그</span></div>
+    <div class="card-body">
+      <div class="row"><div class="icon pk">🔑</div><div class="col-name pk">id</div><div class="col-type">BIGINT PK</div></div>
+      <div class="row"><div class="icon uk">◆</div><div class="col-name">name</div><div class="col-type">VARCHAR(30) UQ</div></div>
+    </div>
+    <div class="card-footer">ex: Spring, React, Docker</div>
+  </div>
+
+  <!-- demo_tags -->
+  <div class="table-card domain-content" id="t-demo_tags" style="top:500px;left:720px;width:210px">
+    <div class="card-header">demo_tags <span class="badge">데모-태그</span></div>
+    <div class="card-body">
+      <div class="row"><div class="icon pk">🔑</div><div class="col-name pk">id</div><div class="col-type">BIGINT PK</div></div>
+      <div class="row"><div class="icon fk">🔗</div><div class="col-name fk">demo_id</div><div class="col-type">FK → demos</div></div>
+      <div class="row"><div class="icon fk">🔗</div><div class="col-name fk">tag_id</div><div class="col-type">FK → tags</div></div>
+    </div>
+    <div class="card-footer">UK: (demo_id, tag_id)</div>
+  </div>
+
+  <!-- posts -->
+  <div class="table-card domain-content" id="t-posts" style="top:660px;left:380px;width:260px">
+    <div class="card-header">posts <span class="badge">블로그</span></div>
+    <div class="card-body">
+      <div class="row"><div class="icon pk">🔑</div><div class="col-name pk">id</div><div class="col-type">BIGINT PK</div></div>
+      <div class="row"><div class="icon fk">🔗</div><div class="col-name fk">user_id</div><div class="col-type">FK → users</div></div>
+      <div class="row"><div class="icon fk">🔗</div><div class="col-name fk">demo_id</div><div class="col-type">FK → demos (NULL)</div></div>
+      <div class="row"><div class="icon"></div><div class="col-name">title</div><div class="col-type">VARCHAR(200)</div></div>
+      <div class="row"><div class="icon"></div><div class="col-name">content</div><div class="col-type">TEXT</div></div>
+      <div class="row"><div class="icon"></div><div class="col-name">is_paid</div><div class="col-type">BOOLEAN</div></div>
+      <div class="row"><div class="icon"></div><div class="col-name">like_count</div><div class="col-type">INT DEFAULT 0</div></div>
+      <div class="row"><div class="icon"></div><div class="col-name">created_at</div><div class="col-type">TIMESTAMP</div></div>
+      <div class="row"><div class="icon"></div><div class="col-name">updated_at</div><div class="col-type">TIMESTAMP</div></div>
+    </div>
+    <div class="card-footer">
+      demo_id: 데모-블로그 연결 (nullable)<br>
+      IDX: user_id, is_paid
+    </div>
+  </div>
+
+  <!-- feeds -->
+  <div class="table-card domain-content" id="t-feeds" style="top:660px;left:720px;width:260px">
+    <div class="card-header">feeds <span class="badge">피드</span></div>
+    <div class="card-body">
+      <div class="row"><div class="icon pk">🔑</div><div class="col-name pk">id</div><div class="col-type">BIGINT PK</div></div>
+      <div class="row"><div class="icon fk">🔗</div><div class="col-name fk">user_id</div><div class="col-type">FK → users</div></div>
+      <div class="row"><div class="icon"></div><div class="col-name">content</div><div class="col-type">TEXT</div></div>
+      <div class="row"><div class="icon"></div><div class="col-name">like_count</div><div class="col-type">INT DEFAULT 0</div></div>
+      <div class="row"><div class="icon"></div><div class="col-name">repost_count</div><div class="col-type">INT DEFAULT 0</div></div>
+      <div class="row"><div class="icon"></div><div class="col-name">poll_options</div><div class="col-type">JSONB (NULL)</div></div>
+      <div class="row"><div class="icon"></div><div class="col-name">created_at</div><div class="col-type">TIMESTAMP</div></div>
+    </div>
+    <div class="card-footer">
+      poll_options: ["보안","성능","설계"]<br>
+      IDX: user_id, created_at
+    </div>
+  </div>
+
+  <!-- ===================== SOCIAL ===================== -->
+
+  <!-- follows -->
+  <div class="table-card domain-social" id="t-follows" style="top:360px;left:1080px;width:260px">
+    <div class="card-header">follows <span class="badge">팔로우</span></div>
+    <div class="card-body">
+      <div class="row"><div class="icon pk">🔑</div><div class="col-name pk">id</div><div class="col-type">BIGINT PK</div></div>
+      <div class="row"><div class="icon fk">🔗</div><div class="col-name fk">follower_id</div><div class="col-type">FK → users</div></div>
+      <div class="row"><div class="icon fk">🔗</div><div class="col-name fk">following_id</div><div class="col-type">FK → users</div></div>
+      <div class="row"><div class="icon"></div><div class="col-name">created_at</div><div class="col-type">TIMESTAMP</div></div>
+    </div>
+    <div class="card-footer">
+      UK: (follower_id, following_id)<br>
+      자기 자신 팔로우 불가 CHECK
+    </div>
+  </div>
+
+  <!-- dm_messages -->
+  <div class="table-card domain-social" id="t-dm_messages" style="top:540px;left:1080px;width:260px">
+    <div class="card-header">dm_messages <span class="badge">DM</span></div>
+    <div class="card-body">
+      <div class="row"><div class="icon pk">🔑</div><div class="col-name pk">id</div><div class="col-type">BIGINT PK</div></div>
+      <div class="row"><div class="icon fk">🔗</div><div class="col-name fk">sender_id</div><div class="col-type">FK → users</div></div>
+      <div class="row"><div class="icon fk">🔗</div><div class="col-name fk">receiver_id</div><div class="col-type">FK → users</div></div>
+      <div class="row"><div class="icon"></div><div class="col-name">content</div><div class="col-type">TEXT</div></div>
+      <div class="row"><div class="icon"></div><div class="col-name">is_read</div><div class="col-type">BOOLEAN</div></div>
+      <div class="row"><div class="icon"></div><div class="col-name">created_at</div><div class="col-type">TIMESTAMP</div></div>
+    </div>
+    <div class="card-footer">
+      IDX: (sender_id, receiver_id, created_at)<br>
+      대화 조회 시 양방향 쿼리
+    </div>
+  </div>
+
+  <!-- notifications -->
+  <div class="table-card domain-social" id="t-notifications" style="top:760px;left:1080px;width:280px">
+    <div class="card-header">notifications <span class="badge">알림</span></div>
+    <div class="card-body">
+      <div class="row"><div class="icon pk">🔑</div><div class="col-name pk">id</div><div class="col-type">BIGINT PK</div></div>
+      <div class="row"><div class="icon fk">🔗</div><div class="col-name fk">user_id</div><div class="col-type">FK → users</div></div>
+      <div class="row"><div class="icon"></div><div class="col-name">type</div><div class="col-type">VARCHAR(20)</div></div>
+      <div class="row"><div class="icon fk">🔗</div><div class="col-name fk">source_user_id</div><div class="col-type">FK → users</div></div>
+      <div class="row"><div class="icon"></div><div class="col-name">target_type</div><div class="col-type">VARCHAR(20)</div></div>
+      <div class="row"><div class="icon"></div><div class="col-name">target_id</div><div class="col-type">BIGINT</div></div>
+      <div class="row"><div class="icon"></div><div class="col-name">is_read</div><div class="col-type">BOOLEAN</div></div>
+      <div class="row"><div class="icon"></div><div class="col-name">created_at</div><div class="col-type">TIMESTAMP</div></div>
+    </div>
+    <div class="card-footer">
+      type: follow/like/comment/dm/subscription<br>
+      target_type: demo/post/feed/mini_home<br>
+      IDX: (user_id, is_read, created_at)
+    </div>
+  </div>
+
+  <!-- ===================== INTERACTION ===================== -->
+
+  <!-- comments -->
+  <div class="table-card domain-content" id="t-comments" style="top:1010px;left:30px;width:270px">
+    <div class="card-header">comments <span class="badge">댓글</span></div>
+    <div class="card-body">
+      <div class="row"><div class="icon pk">🔑</div><div class="col-name pk">id</div><div class="col-type">BIGINT PK</div></div>
+      <div class="row"><div class="icon fk">🔗</div><div class="col-name fk">user_id</div><div class="col-type">FK → users</div></div>
+      <div class="row"><div class="icon"></div><div class="col-name">target_type</div><div class="col-type">VARCHAR(20)</div></div>
+      <div class="row"><div class="icon"></div><div class="col-name">target_id</div><div class="col-type">BIGINT</div></div>
+      <div class="row"><div class="icon fk">🔗</div><div class="col-name fk">parent_id</div><div class="col-type">FK → comments (NULL)</div></div>
+      <div class="row"><div class="icon"></div><div class="col-name">content</div><div class="col-type">TEXT</div></div>
+      <div class="row"><div class="icon"></div><div class="col-name">created_at</div><div class="col-type">TIMESTAMP</div></div>
+    </div>
+    <div class="card-footer">
+      target_type: demo / post / feed<br>
+      parent_id: 대댓글 (self FK)<br>
+      IDX: (target_type, target_id)
+    </div>
+  </div>
+
+  <!-- likes -->
+  <div class="table-card domain-content" id="t-likes" style="top:1010px;left:370px;width:260px">
+    <div class="card-header">likes <span class="badge">좋아요</span></div>
+    <div class="card-body">
+      <div class="row"><div class="icon pk">🔑</div><div class="col-name pk">id</div><div class="col-type">BIGINT PK</div></div>
+      <div class="row"><div class="icon fk">🔗</div><div class="col-name fk">user_id</div><div class="col-type">FK → users</div></div>
+      <div class="row"><div class="icon"></div><div class="col-name">target_type</div><div class="col-type">VARCHAR(20)</div></div>
+      <div class="row"><div class="icon"></div><div class="col-name">target_id</div><div class="col-type">BIGINT</div></div>
+      <div class="row"><div class="icon"></div><div class="col-name">created_at</div><div class="col-type">TIMESTAMP</div></div>
+    </div>
+    <div class="card-footer">
+      UK: (user_id, target_type, target_id)<br>
+      target_type: demo / post / feed<br>
+      토글 방식 (INSERT/DELETE)
+    </div>
+  </div>
+
+  <!-- bookmarks -->
+  <div class="table-card domain-content" id="t-bookmarks" style="top:1010px;left:700px;width:240px">
+    <div class="card-header">bookmarks <span class="badge">북마크</span></div>
+    <div class="card-body">
+      <div class="row"><div class="icon pk">🔑</div><div class="col-name pk">id</div><div class="col-type">BIGINT PK</div></div>
+      <div class="row"><div class="icon fk">🔗</div><div class="col-name fk">user_id</div><div class="col-type">FK → users</div></div>
+      <div class="row"><div class="icon fk">🔗</div><div class="col-name fk">demo_id</div><div class="col-type">FK → demos</div></div>
+      <div class="row"><div class="icon"></div><div class="col-name">created_at</div><div class="col-type">TIMESTAMP</div></div>
+    </div>
+    <div class="card-footer">UK: (user_id, demo_id)</div>
+  </div>
+
+  <!-- feed_votes -->
+  <div class="table-card domain-content" id="t-feed_votes" style="top:1200px;left:370px;width:240px">
+    <div class="card-header">feed_votes <span class="badge">투표</span></div>
+    <div class="card-body">
+      <div class="row"><div class="icon pk">🔑</div><div class="col-name pk">id</div><div class="col-type">BIGINT PK</div></div>
+      <div class="row"><div class="icon fk">🔗</div><div class="col-name fk">feed_id</div><div class="col-type">FK → feeds</div></div>
+      <div class="row"><div class="icon fk">🔗</div><div class="col-name fk">user_id</div><div class="col-type">FK → users</div></div>
+      <div class="row"><div class="icon"></div><div class="col-name">option_index</div><div class="col-type">SMALLINT</div></div>
+      <div class="row"><div class="icon"></div><div class="col-name">created_at</div><div class="col-type">TIMESTAMP</div></div>
+    </div>
+    <div class="card-footer">
+      UK: (feed_id, user_id)<br>
+      1인 1표, 변경 불가
+    </div>
+  </div>
+
+  <!-- reposts -->
+  <div class="table-card domain-content" id="t-reposts" style="top:1200px;left:700px;width:240px">
+    <div class="card-header">reposts <span class="badge">리포스트</span></div>
+    <div class="card-body">
+      <div class="row"><div class="icon pk">🔑</div><div class="col-name pk">id</div><div class="col-type">BIGINT PK</div></div>
+      <div class="row"><div class="icon fk">🔗</div><div class="col-name fk">user_id</div><div class="col-type">FK → users</div></div>
+      <div class="row"><div class="icon fk">🔗</div><div class="col-name fk">feed_id</div><div class="col-type">FK → feeds</div></div>
+      <div class="row"><div class="icon"></div><div class="col-name">created_at</div><div class="col-type">TIMESTAMP</div></div>
+    </div>
+    <div class="card-footer">UK: (user_id, feed_id)</div>
+  </div>
+
+  <!-- ===================== PAYMENT ===================== -->
+
+  <!-- subscriptions -->
+  <div class="table-card domain-payment" id="t-subscriptions" style="top:1410px;left:880px;width:270px">
+    <div class="card-header">subscriptions <span class="badge">구독</span></div>
+    <div class="card-body">
+      <div class="row"><div class="icon pk">🔑</div><div class="col-name pk">id</div><div class="col-type">BIGINT PK</div></div>
+      <div class="row"><div class="icon fk">🔗</div><div class="col-name fk">subscriber_id</div><div class="col-type">FK → users</div></div>
+      <div class="row"><div class="icon fk">🔗</div><div class="col-name fk">target_user_id</div><div class="col-type">FK → users</div></div>
+      <div class="row"><div class="icon"></div><div class="col-name">monthly_price</div><div class="col-type">INT</div></div>
+      <div class="row"><div class="icon"></div><div class="col-name">status</div><div class="col-type">ENUM(ACTIVE,CANCELLED)</div></div>
+      <div class="row"><div class="icon"></div><div class="col-name">started_at</div><div class="col-type">TIMESTAMP</div></div>
+      <div class="row"><div class="icon"></div><div class="col-name">expires_at</div><div class="col-type">TIMESTAMP</div></div>
+    </div>
+    <div class="card-footer">
+      UK: (subscriber_id, target_user_id) WHERE status='ACTIVE'<br>
+      monthly_price: 구독 시점 가격 스냅샷
+    </div>
+  </div>
+
+  <!-- coin_transactions -->
+  <div class="table-card domain-payment" id="t-coin_transactions" style="top:1410px;left:1220px;width:270px">
+    <div class="card-header">coin_transactions <span class="badge">도토리 내역</span></div>
+    <div class="card-body">
+      <div class="row"><div class="icon pk">🔑</div><div class="col-name pk">id</div><div class="col-type">BIGINT PK</div></div>
+      <div class="row"><div class="icon fk">🔗</div><div class="col-name fk">user_id</div><div class="col-type">FK → users</div></div>
+      <div class="row"><div class="icon"></div><div class="col-name">type</div><div class="col-type">VARCHAR(20)</div></div>
+      <div class="row"><div class="icon"></div><div class="col-name">amount</div><div class="col-type">INT</div></div>
+      <div class="row"><div class="icon"></div><div class="col-name">description</div><div class="col-type">VARCHAR(200)</div></div>
+      <div class="row"><div class="icon"></div><div class="col-name">created_at</div><div class="col-type">TIMESTAMP</div></div>
+    </div>
+    <div class="card-footer">
+      type: charge / spend / gift / refund<br>
+      amount: 충전(+), 사용(-)<br>
+      IDX: (user_id, created_at)
+    </div>
+  </div>
+
+  <!-- settlements -->
+  <div class="table-card domain-payment" id="t-settlements" style="top:1660px;left:880px;width:270px">
+    <div class="card-header">settlements <span class="badge">정산</span></div>
+    <div class="card-body">
+      <div class="row"><div class="icon pk">🔑</div><div class="col-name pk">id</div><div class="col-type">BIGINT PK</div></div>
+      <div class="row"><div class="icon fk">🔗</div><div class="col-name fk">user_id</div><div class="col-type">FK → users</div></div>
+      <div class="row"><div class="icon"></div><div class="col-name">amount</div><div class="col-type">INT</div></div>
+      <div class="row"><div class="icon"></div><div class="col-name">fee</div><div class="col-type">INT</div></div>
+      <div class="row"><div class="icon"></div><div class="col-name">net_amount</div><div class="col-type">INT</div></div>
+      <div class="row"><div class="icon"></div><div class="col-name">period_start</div><div class="col-type">DATE</div></div>
+      <div class="row"><div class="icon"></div><div class="col-name">period_end</div><div class="col-type">DATE</div></div>
+      <div class="row"><div class="icon"></div><div class="col-name">status</div><div class="col-type">ENUM(PENDING,CONFIRMED)</div></div>
+      <div class="row"><div class="icon"></div><div class="col-name">confirmed_at</div><div class="col-type">TIMESTAMP (NULL)</div></div>
+      <div class="row"><div class="icon"></div><div class="col-name">created_at</div><div class="col-type">TIMESTAMP</div></div>
+    </div>
+    <div class="card-footer">
+      수수료율 70:30 (게시자:플랫폼)<br>
+      net_amount = amount - fee
+    </div>
+  </div>
+
+  <!-- ===================== MESSAGING (reusing dm_messages and notifications above) ===================== -->
+
+  <!-- ===================== ADMIN ===================== -->
+
+  <!-- reports -->
+  <div class="table-card domain-admin" id="t-reports" style="top:1880px;left:30px;width:280px">
+    <div class="card-header">reports <span class="badge">신고</span></div>
+    <div class="card-body">
+      <div class="row"><div class="icon pk">🔑</div><div class="col-name pk">id</div><div class="col-type">BIGINT PK</div></div>
+      <div class="row"><div class="icon fk">🔗</div><div class="col-name fk">reporter_id</div><div class="col-type">FK → users</div></div>
+      <div class="row"><div class="icon"></div><div class="col-name">target_type</div><div class="col-type">VARCHAR(20)</div></div>
+      <div class="row"><div class="icon"></div><div class="col-name">target_id</div><div class="col-type">BIGINT</div></div>
+      <div class="row"><div class="icon"></div><div class="col-name">reason</div><div class="col-type">TEXT</div></div>
+      <div class="row"><div class="icon"></div><div class="col-name">status</div><div class="col-type">ENUM(PENDING,RESOLVED,DISMISSED)</div></div>
+      <div class="row"><div class="icon fk">🔗</div><div class="col-name fk">admin_id</div><div class="col-type">FK → users (NULL)</div></div>
+      <div class="row"><div class="icon"></div><div class="col-name">admin_note</div><div class="col-type">TEXT (NULL)</div></div>
+      <div class="row"><div class="icon"></div><div class="col-name">created_at</div><div class="col-type">TIMESTAMP</div></div>
+      <div class="row"><div class="icon"></div><div class="col-name">resolved_at</div><div class="col-type">TIMESTAMP (NULL)</div></div>
+    </div>
+    <div class="card-footer">
+      target_type: demo/post/feed/comment/user<br>
+      admin_id: 처리한 관리자<br>
+      IDX: (status, created_at)
+    </div>
+  </div>
+
+  <!-- user_bans -->
+  <div class="table-card domain-admin" id="t-user_bans" style="top:1880px;left:380px;width:280px">
+    <div class="card-header">user_bans <span class="badge">제재 이력</span></div>
+    <div class="card-body">
+      <div class="row"><div class="icon pk">🔑</div><div class="col-name pk">id</div><div class="col-type">BIGINT PK</div></div>
+      <div class="row"><div class="icon fk">🔗</div><div class="col-name fk">user_id</div><div class="col-type">FK → users</div></div>
+      <div class="row"><div class="icon fk">🔗</div><div class="col-name fk">admin_id</div><div class="col-type">FK → users</div></div>
+      <div class="row"><div class="icon"></div><div class="col-name">reason</div><div class="col-type">TEXT</div></div>
+      <div class="row"><div class="icon"></div><div class="col-name">duration_type</div><div class="col-type">VARCHAR(20)</div></div>
+      <div class="row"><div class="icon"></div><div class="col-name">banned_at</div><div class="col-type">TIMESTAMP</div></div>
+      <div class="row"><div class="icon"></div><div class="col-name">expires_at</div><div class="col-type">TIMESTAMP (NULL)</div></div>
+    </div>
+    <div class="card-footer">
+      duration_type: day/week/month/permanent<br>
+      expires_at: permanent이면 NULL<br>
+      users.status → SUSPENDED로 변경
+    </div>
+  </div>
+
+  <!-- ===================== SVG RELATIONSHIP LINES ===================== -->
+  <svg class="lines" id="svg-lines"></svg>
+
+</div>
+
+<script>
+  // Relationship definitions: [fromTableId, toTableId, fromSide, toSide, cssClass, label]
+  // sides: 'top','bottom','left','right'
+  const rels = [
+    // CORE
+    ['t-users', 't-social_accounts', 'right', 'left', 'line-core', '1:N'],
+
+    // MINI HOME
+    ['t-users', 't-mini_homes', 'bottom', 'top', 'line-home', '1:1'],
+    ['t-mini_homes', 't-guestbooks', 'bottom', 'top', 'line-home', '1:N'],
+    ['t-demos', 't-mini_homes', 'left', 'right', 'line-home', '← featured_demo'],
+
+    // CONTENT
+    ['t-users', 't-demos', 'bottom', 'top', 'line-content', '1:N'],
+    ['t-users', 't-feeds', 'bottom', 'top', 'line-content', '1:N'],
+    ['t-demos', 't-demo_tags', 'right', 'left', 'line-content', '1:N'],
+    ['t-tags', 't-demo_tags', 'bottom', 'top', 'line-content', '1:N'],
+    ['t-demos', 't-posts', 'bottom', 'top', 'line-content', '← demo_id'],
+    ['t-users', 't-posts', 'bottom', 'top', 'line-content', '1:N'],
+    ['t-demos', 't-bookmarks', 'bottom', 'top', 'line-content', '1:N'],
+    ['t-feeds', 't-feed_votes', 'bottom', 'top', 'line-content', '1:N'],
+    ['t-feeds', 't-reposts', 'bottom', 'top', 'line-content', '1:N'],
+
+    // SOCIAL
+    ['t-users', 't-follows', 'right', 'left', 'line-social', '1:N (self)'],
+    ['t-users', 't-dm_messages', 'right', 'left', 'line-social', '1:N'],
+    ['t-users', 't-notifications', 'right', 'left', 'line-social', '1:N'],
+
+    // PAYMENT
+    ['t-users', 't-subscriptions', 'bottom', 'top', 'line-payment', '1:N (both)'],
+    ['t-users', 't-coin_transactions', 'bottom', 'top', 'line-payment', '1:N'],
+    ['t-users', 't-settlements', 'bottom', 'top', 'line-payment', '1:N'],
+
+    // ADMIN
+    ['t-users', 't-reports', 'bottom', 'top', 'line-admin', '1:N'],
+    ['t-users', 't-user_bans', 'bottom', 'top', 'line-admin', '1:N'],
+
+    // INTERACTION back to users
+    ['t-users', 't-comments', 'bottom', 'top', 'line-content', '1:N'],
+    ['t-users', 't-likes', 'bottom', 'top', 'line-content', '1:N'],
+    ['t-users', 't-bookmarks', 'bottom', 'top', 'line-content', '1:N'],
+    ['t-users', 't-feed_votes', 'bottom', 'top', 'line-content', '1:N'],
+    ['t-users', 't-reposts', 'bottom', 'top', 'line-content', '1:N'],
+    ['t-users', 't-guestbooks', 'bottom', 'top', 'line-home', '1:N (writer)'],
+  ];
+
+  function getAnchor(el, side) {
+    const r = el.getBoundingClientRect();
+    const c = document.getElementById('canvas').getBoundingClientRect();
+    const ox = -c.left, oy = -c.top;
+    switch(side) {
+      case 'top':    return { x: r.left+r.width/2+ox, y: r.top+oy };
+      case 'bottom': return { x: r.left+r.width/2+ox, y: r.bottom+oy };
+      case 'left':   return { x: r.left+ox, y: r.top+r.height/2+oy };
+      case 'right':  return { x: r.right+ox, y: r.top+r.height/2+oy };
+    }
+  }
+
+  function drawLines() {
+    const svg = document.getElementById('svg-lines');
+    svg.innerHTML = '';
+    const ns = 'http://www.w3.org/2000/svg';
+
+    rels.forEach(([fromId, toId, fromSide, toSide, cls, label]) => {
+      const fromEl = document.getElementById(fromId);
+      const toEl = document.getElementById(toId);
+      if (!fromEl || !toEl) return;
+
+      const a = getAnchor(fromEl, fromSide);
+      const b = getAnchor(toEl, toSide);
+
+      const line = document.createElementNS(ns, 'line');
+      line.setAttribute('x1', a.x);
+      line.setAttribute('y1', a.y);
+      line.setAttribute('x2', b.x);
+      line.setAttribute('y2', b.y);
+      line.setAttribute('class', cls);
+      svg.appendChild(line);
+
+      // Cardinality label
+      const text = document.createElementNS(ns, 'text');
+      text.setAttribute('x', (a.x + b.x) / 2 + 4);
+      text.setAttribute('y', (a.y + b.y) / 2 - 4);
+      text.setAttribute('fill', '#6e7681');
+      text.setAttribute('font-size', '10');
+      text.setAttribute('font-family', '-apple-system, sans-serif');
+      text.textContent = label;
+      svg.appendChild(text);
+    });
+  }
+
+  window.addEventListener('load', drawLines);
+  window.addEventListener('resize', drawLines);
+</script>
+
+<!-- ===================== RELATIONSHIP SUMMARY TABLE ===================== -->
+<div style="max-width:1760px;margin:0 auto 60px;padding:0 24px">
+  <div style="background:#161b22;border:1px solid #30363d;border-radius:8px;padding:24px">
+    <h2 style="color:#f0f6fc;font-size:18px;margin-bottom:16px">관계 요약 (22 Tables)</h2>
+    <table style="width:100%;border-collapse:collapse;font-size:13px">
+      <thead>
+        <tr style="border-bottom:1px solid #30363d">
+          <th style="text-align:left;padding:8px;color:#8b949e">관계</th>
+          <th style="text-align:left;padding:8px;color:#8b949e">유형</th>
+          <th style="text-align:left;padding:8px;color:#8b949e">FK</th>
+          <th style="text-align:left;padding:8px;color:#8b949e">설명</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr style="border-bottom:1px solid #21262d"><td style="padding:8px">users → social_accounts</td><td>1:N</td><td>user_id</td><td>한 계정에 여러 소셜 연동 (github, kakao, google)</td></tr>
+        <tr style="border-bottom:1px solid #21262d"><td style="padding:8px">users → mini_homes</td><td>1:1</td><td>user_id (UQ)</td><td>사용자당 미니홈피 1개</td></tr>
+        <tr style="border-bottom:1px solid #21262d"><td style="padding:8px">users → demos</td><td>1:N</td><td>user_id</td><td>사용자가 업로드한 데모들</td></tr>
+        <tr style="border-bottom:1px solid #21262d"><td style="padding:8px">users → posts</td><td>1:N</td><td>user_id</td><td>사용자가 작성한 블로그 글</td></tr>
+        <tr style="border-bottom:1px solid #21262d"><td style="padding:8px">users → feeds</td><td>1:N</td><td>user_id</td><td>사용자가 작성한 피드</td></tr>
+        <tr style="border-bottom:1px solid #21262d"><td style="padding:8px">users → comments</td><td>1:N</td><td>user_id</td><td>사용자가 작성한 댓글</td></tr>
+        <tr style="border-bottom:1px solid #21262d"><td style="padding:8px">users → likes</td><td>1:N</td><td>user_id</td><td>사용자의 좋아요 (demo/post/feed)</td></tr>
+        <tr style="border-bottom:1px solid #21262d"><td style="padding:8px">users → follows</td><td>1:N (self)</td><td>follower_id, following_id</td><td>자기참조 — 팔로우/팔로워</td></tr>
+        <tr style="border-bottom:1px solid #21262d"><td style="padding:8px">users → subscriptions</td><td>1:N (양방향)</td><td>subscriber_id, target_user_id</td><td>구독자 ↔ 게시자</td></tr>
+        <tr style="border-bottom:1px solid #21262d"><td style="padding:8px">users → coin_transactions</td><td>1:N</td><td>user_id</td><td>도토리 충전/사용/선물/환불 내역</td></tr>
+        <tr style="border-bottom:1px solid #21262d"><td style="padding:8px">users → dm_messages</td><td>1:N (양방향)</td><td>sender_id, receiver_id</td><td>보낸/받은 DM</td></tr>
+        <tr style="border-bottom:1px solid #21262d"><td style="padding:8px">users → notifications</td><td>1:N</td><td>user_id, source_user_id</td><td>알림 수신자 + 발생 유저</td></tr>
+        <tr style="border-bottom:1px solid #21262d"><td style="padding:8px">users → bookmarks</td><td>1:N</td><td>user_id</td><td>데모 북마크</td></tr>
+        <tr style="border-bottom:1px solid #21262d"><td style="padding:8px">users → reports</td><td>1:N</td><td>reporter_id, admin_id</td><td>신고자 + 처리 관리자</td></tr>
+        <tr style="border-bottom:1px solid #21262d"><td style="padding:8px">users → user_bans</td><td>1:N</td><td>user_id, admin_id</td><td>제재 대상 + 관리자</td></tr>
+        <tr style="border-bottom:1px solid #21262d"><td style="padding:8px">users → settlements</td><td>1:N</td><td>user_id</td><td>게시자별 정산 내역</td></tr>
+        <tr style="border-bottom:1px solid #21262d"><td style="padding:8px">users → guestbooks</td><td>1:N</td><td>writer_id</td><td>방명록 작성자</td></tr>
+        <tr style="border-bottom:1px solid #21262d"><td style="padding:8px">users → feed_votes</td><td>1:N</td><td>user_id</td><td>피드 투표 참여</td></tr>
+        <tr style="border-bottom:1px solid #21262d"><td style="padding:8px">users → reposts</td><td>1:N</td><td>user_id</td><td>피드 리포스트</td></tr>
+        <tr style="border-bottom:1px solid #21262d"><td style="padding:8px">mini_homes → guestbooks</td><td>1:N</td><td>home_id</td><td>미니홈피별 방명록</td></tr>
+        <tr style="border-bottom:1px solid #21262d"><td style="padding:8px">mini_homes → demos</td><td>N:1</td><td>featured_demo_id</td><td>대표 데모 (nullable)</td></tr>
+        <tr style="border-bottom:1px solid #21262d"><td style="padding:8px">demos → demo_tags</td><td>1:N</td><td>demo_id</td><td>데모에 달린 태그 (N:N 중간테이블)</td></tr>
+        <tr style="border-bottom:1px solid #21262d"><td style="padding:8px">tags → demo_tags</td><td>1:N</td><td>tag_id</td><td>태그 ↔ 데모 다대다</td></tr>
+        <tr style="border-bottom:1px solid #21262d"><td style="padding:8px">demos → posts</td><td>1:N</td><td>demo_id (NULL)</td><td>블로그 글에 데모 연결 (선택)</td></tr>
+        <tr style="border-bottom:1px solid #21262d"><td style="padding:8px">demos → bookmarks</td><td>1:N</td><td>demo_id</td><td>데모별 북마크</td></tr>
+        <tr style="border-bottom:1px solid #21262d"><td style="padding:8px">feeds → feed_votes</td><td>1:N</td><td>feed_id</td><td>피드별 투표</td></tr>
+        <tr style="border-bottom:1px solid #21262d"><td style="padding:8px">feeds → reposts</td><td>1:N</td><td>feed_id</td><td>피드별 리포스트</td></tr>
+        <tr><td style="padding:8px">comments → comments</td><td>1:N (self)</td><td>parent_id</td><td>대댓글 (자기참조)</td></tr>
+      </tbody>
+    </table>
+
+    <h3 style="color:#f0f6fc;font-size:15px;margin:24px 0 12px">정규화 체크</h3>
+    <table style="width:100%;border-collapse:collapse;font-size:13px">
+      <thead>
+        <tr style="border-bottom:1px solid #30363d">
+          <th style="text-align:left;padding:8px;color:#8b949e">항목</th>
+          <th style="text-align:left;padding:8px;color:#8b949e">상태</th>
+          <th style="text-align:left;padding:8px;color:#8b949e">설명</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr style="border-bottom:1px solid #21262d"><td style="padding:8px">users.coin_balance</td><td style="color:#d29922">의도적 비정규화</td><td>coin_transactions에서 계산 가능하나 매 조회마다 SUM 비용 큼. 트랜잭션 시 동기화</td></tr>
+        <tr style="border-bottom:1px solid #21262d"><td style="padding:8px">demos.like_count</td><td style="color:#d29922">의도적 비정규화</td><td>likes 테이블에서 COUNT 가능하나 목록 조회 성능 위해 캐싱. 좋아요 토글 시 ±1 업데이트</td></tr>
+        <tr style="border-bottom:1px solid #21262d"><td style="padding:8px">posts.like_count</td><td style="color:#d29922">의도적 비정규화</td><td>위와 동일</td></tr>
+        <tr style="border-bottom:1px solid #21262d"><td style="padding:8px">feeds.like_count / repost_count</td><td style="color:#d29922">의도적 비정규화</td><td>위와 동일</td></tr>
+        <tr style="border-bottom:1px solid #21262d"><td style="padding:8px">mini_homes.today_count / total_count</td><td style="color:#d29922">의도적 비정규화</td><td>방문 로그 테이블 없이 카운터로 관리. today_count는 매일 자정 리셋</td></tr>
+        <tr style="border-bottom:1px solid #21262d"><td style="padding:8px">users.tech_stacks (JSONB)</td><td style="color:#3fb950">적절</td><td>단순 문자열 배열 ["Spring","React"]. 별도 테이블 불필요</td></tr>
+        <tr style="border-bottom:1px solid #21262d"><td style="padding:8px">feeds.poll_options (JSONB)</td><td style="color:#3fb950">적절</td><td>투표 선택지 ["보안","성능","설계"]. 옵션 자체는 독립 엔티티 아님</td></tr>
+        <tr style="border-bottom:1px solid #21262d"><td style="padding:8px">comments (다형성 FK)</td><td style="color:#d29922">트레이드오프</td><td>target_type + target_id로 demo/post/feed 댓글 통합. DB 레벨 FK 제약 불가 → 앱 레벨 검증 필요</td></tr>
+        <tr style="border-bottom:1px solid #21262d"><td style="padding:8px">likes (다형성 FK)</td><td style="color:#d29922">트레이드오프</td><td>위와 동일. 테이블 분리(demo_likes, post_likes...) 시 FK 보장 가능하나 관리 복잡도 증가</td></tr>
+        <tr><td style="padding:8px">subscriptions.monthly_price</td><td style="color:#3fb950">적절</td><td>구독 시점 가격 스냅샷. mini_homes.subscription_price가 변경되어도 기존 구독 가격 유지</td></tr>
+      </tbody>
+    </table>
+
+    <h3 style="color:#f0f6fc;font-size:15px;margin:24px 0 12px">UNIQUE / CHECK 제약조건</h3>
+    <table style="width:100%;border-collapse:collapse;font-size:13px">
+      <thead>
+        <tr style="border-bottom:1px solid #30363d">
+          <th style="text-align:left;padding:8px;color:#8b949e">테이블</th>
+          <th style="text-align:left;padding:8px;color:#8b949e">제약조건</th>
+          <th style="text-align:left;padding:8px;color:#8b949e">목적</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr style="border-bottom:1px solid #21262d"><td style="padding:8px">users</td><td>UQ(email), UQ(nickname)</td><td>이메일/닉네임 중복 방지</td></tr>
+        <tr style="border-bottom:1px solid #21262d"><td style="padding:8px">social_accounts</td><td>UQ(provider, provider_id)</td><td>같은 소셜 계정 중복 연동 방지</td></tr>
+        <tr style="border-bottom:1px solid #21262d"><td style="padding:8px">mini_homes</td><td>UQ(user_id)</td><td>1인 1홈피</td></tr>
+        <tr style="border-bottom:1px solid #21262d"><td style="padding:8px">tags</td><td>UQ(name)</td><td>태그명 중복 방지</td></tr>
+        <tr style="border-bottom:1px solid #21262d"><td style="padding:8px">demo_tags</td><td>UQ(demo_id, tag_id)</td><td>같은 태그 중복 부착 방지</td></tr>
+        <tr style="border-bottom:1px solid #21262d"><td style="padding:8px">follows</td><td>UQ(follower_id, following_id)<br>CHECK(follower_id ≠ following_id)</td><td>중복 팔로우 방지, 자기 자신 팔로우 불가</td></tr>
+        <tr style="border-bottom:1px solid #21262d"><td style="padding:8px">likes</td><td>UQ(user_id, target_type, target_id)</td><td>중복 좋아요 방지</td></tr>
+        <tr style="border-bottom:1px solid #21262d"><td style="padding:8px">bookmarks</td><td>UQ(user_id, demo_id)</td><td>중복 북마크 방지</td></tr>
+        <tr style="border-bottom:1px solid #21262d"><td style="padding:8px">feed_votes</td><td>UQ(feed_id, user_id)</td><td>1인 1표</td></tr>
+        <tr><td style="padding:8px">reposts</td><td>UQ(user_id, feed_id)</td><td>중복 리포스트 방지</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+</body>
+</html>

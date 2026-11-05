@@ -15,23 +15,36 @@ public record CommentResponse(
         int likeCount,
         int replyCount,
         boolean edited,
-        LocalDateTime createdAt
+        LocalDateTime createdAt,
+        List<CommentResponse> replies
 ) {
-    public static CommentResponse from(FeedComment comment, User author, int replyCount) {
+    /** 최상위 댓글 — 대댓글 목록 포함 */
+    public static CommentResponse from(FeedComment comment, User author, List<CommentResponse> replies) {
+        return new CommentResponse(
+                comment.getId(),
+                UserSummaryResponse.from(author),
+                comment.getDeletedAt() != null ? null : comment.getContent(),
+                comment.getParent() == null ? null : comment.getParent().getId(),
+                comment.getLikeCount(),
+                replies.size(),
+                comment.getUpdatedAt() != null && comment.getDeletedAt() == null,
+                comment.getCreatedAt(),
+                replies
+        );
+    }
+
+    /** 대댓글용 (replies 없음) */
+    public static CommentResponse from(FeedComment comment, User author) {
         return new CommentResponse(
                 comment.getId(),
                 UserSummaryResponse.from(author),
                 comment.getContent(),
                 comment.getParent() == null ? null : comment.getParent().getId(),
                 comment.getLikeCount(),
-                replyCount,
+                0,
                 comment.getUpdatedAt() != null,
-                comment.getCreatedAt()
+                comment.getCreatedAt(),
+                null
         );
-    }
-
-    /** 대댓글용 (replyCount 불필요) */
-    public static CommentResponse from(FeedComment comment, User author) {
-        return from(comment, author, 0);
     }
 }
