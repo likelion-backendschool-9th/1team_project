@@ -128,4 +128,30 @@ SELECT pg_temp.bench('3단계 교정 후보 sprng (5글자, 거리 2)', pg_temp.
 SELECT pg_temp.bench('3단계 교정 후보 kafak (5글자, 거리 2)', pg_temp.stage3('kafak', 2));
 SELECT pg_temp.bench('3단계 교정 후보 캐쉬 (2글자라 실제로는 교정 안 함)', pg_temp.stage3('캐쉬', 1));
 
+-- 4단계: 자동완성 단어 후보 (PostSearchRepository#findTitleTermsByPrefix와 같은 SQL)
+-- 키를 누를 때마다(debounce 후) 태그 이름·태그 단어·글 제목·데모 제목에서 한 번씩 실행된다. 여기서는 글 제목만 잰다
+CREATE FUNCTION pg_temp.stage4(pattern text, composing boolean, stem_pattern text, stem_length int,
+                               next_from text, next_to text) RETURNS text AS $$
+    SELECT format($q$
+        SELECT s.term AS term, count(*) AS frequency
+        FROM bench_posts p
+        CROSS JOIN LATERAL regexp_split_to_table(lower(p.title), '[^a-z0-9가-힣_.#+-]+') AS s(term)
+        WHERE length(s.term) BETWEEN 1 AND 50
+          AND p.status = 'ACTIVE'
+          AND p.deleted_at IS NULL
+          AND (s.term LIKE %1$L
+               OR (%2$L
+                   AND s.term LIKE %3$L
+                   AND substr(s.term, %4$s + 1, 1) COLLATE "C" BETWEEN %5$L AND %6$L))
+        GROUP BY s.term
+        ORDER BY frequency DESC, length(s.term), s.term
+        LIMIT 8
+    $q$, pattern, composing, stem_pattern, stem_length, next_from, next_to);
+$$ LANGUAGE sql;
+
+SELECT pg_temp.bench('4단계 자동완성 spr', pg_temp.stage4('spr%', false, 'spr%', 0, '', ''));
+SELECT pg_temp.bench('4단계 자동완성 s (한 글자)', pg_temp.stage4('s%', false, 's%', 0, '', ''));
+SELECT pg_temp.bench('4단계 자동완성 스플 (조합 중, 스프 + ㄹ)', pg_temp.stage4('스플%', true, '스프%', 2, '라', '맇'));
+SELECT pg_temp.bench('4단계 자동완성 zz (맞는 단어 없음)', pg_temp.stage4('zz%', false, 'zz%', 0, '', ''));
+
 SELECT name AS "쿼리", median_ms AS "중앙값(ms)", rows AS "결과 건수" FROM bench_result;
