@@ -8,6 +8,7 @@ import com.dipsource.global.common.PageResponse;
 import com.dipsource.repository.feed.FeedSearchRepository;
 import com.dipsource.service.feed.FeedSearchService;
 import com.dipsource.service.user.UserService;
+import io.micrometer.core.annotation.Timed;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -17,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 /** {@link FeedSearchService} 구현체. */
 @Service
+@Timed(value = "search.query", description = "검색 쿼리 메서드별 실행 시간 (통합 검색 5단계 측정)")
 @RequiredArgsConstructor
 public class FeedSearchServiceImpl implements FeedSearchService {
 

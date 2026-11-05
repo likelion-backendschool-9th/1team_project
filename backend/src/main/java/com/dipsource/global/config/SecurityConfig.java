@@ -62,6 +62,9 @@ public class SecurityConfig {
                                 "/users/me/bookmarks", "/users/*").permitAll()
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/error").permitAll()
+                        // 측정값 조회. metrics는 기본으로 닫혀 있고(application.yml), nginx도 /actuator를 넘기지 않는다
+                        .requestMatchers(HttpMethod.GET, "/actuator/health", "/actuator/metrics", "/actuator/metrics/**")
+                        .permitAll()
                         // 그 외 API는 인증 필요 (이후 공개 API는 여기서 풀면 된다)
                         .anyRequest().authenticated()
                 )

@@ -11,6 +11,7 @@ import com.dipsource.global.common.PageResponse;
 import com.dipsource.repository.demo.DemoSearchRepository;
 import com.dipsource.service.demo.DemoSearchService;
 import com.dipsource.service.user.UserService;
+import io.micrometer.core.annotation.Timed;
 import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
@@ -21,6 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 /** {@link DemoSearchService} 구현체. */
 @Service
+@Timed(value = "search.query", description = "검색 쿼리 메서드별 실행 시간 (통합 검색 5단계 측정)")
 @RequiredArgsConstructor
 public class DemoSearchServiceImpl implements DemoSearchService {
 

@@ -71,6 +71,20 @@ r2:
   bucket: ${R2_BUCKET:placeholder}
   public-url: ${R2_PUBLIC_URL:https://placeholder.example.com}
 
+management:
+  endpoints:
+    web:
+      exposure:
+        # 기본은 health만 연다. 로컬 부하 측정 때만 MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE=health,metrics로 metrics를 연다
+        include: health
+  endpoint:
+    health:
+      show-details: never
+  observations:
+    annotations:
+      # @Timed가 붙은 메서드의 실행 시간을 잰다 (검색 기능 서비스, search.query)
+      enabled: true
+
 server:
   port: 8080
   forward-headers-strategy: framework
