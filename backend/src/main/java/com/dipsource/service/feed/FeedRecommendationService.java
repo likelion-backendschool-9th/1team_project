@@ -4,14 +4,18 @@ import com.dipsource.dto.feed.FeedCursorResponse;
 import com.dipsource.dto.feed.FeedResponse;
 import com.dipsource.entity.feed.Feed;
 import com.dipsource.entity.user.User;
+import com.dipsource.repository.feed.FeedBookmarkRepository;
+import com.dipsource.repository.feed.FeedLikeRepository;
 import com.dipsource.repository.feed.FeedRepository;
 import com.dipsource.repository.follow.FollowRepository;
 import com.dipsource.repository.user.UserInterestTagRepository;
 import com.dipsource.repository.user.UserRepository;
 import com.dipsource.repository.user.UserTagProfileRepository;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -25,6 +29,8 @@ import org.springframework.transaction.annotation.Transactional;
 public class FeedRecommendationService {
 
     private final FeedRepository feedRepository;
+    private final FeedLikeRepository feedLikeRepository;
+    private final FeedBookmarkRepository feedBookmarkRepository;
     private final FollowRepository followRepository;
     private final UserInterestTagRepository userInterestTagRepository;
     private final UserTagProfileRepository userTagProfileRepository;
@@ -33,6 +39,7 @@ public class FeedRecommendationService {
     /**
      * 로그인 사용자용 추천 피드.
      * 활동 데이터가 있으면 점수 기반, 없으면 지식 기반(관심 태그)으로 추천.
+     * liked/bookmarked/following 상태도 함께 조회해서 응답에 포함함
      */
     public FeedCursorResponse getRecommendedFeeds(Long userId, Long cursorId, int size) {
         boolean hasActivity = userTagProfileRepository.existsByIdUserId(userId);
@@ -59,7 +66,7 @@ public class FeedRecommendationService {
 
         List<Feed> merged = mergeAndDeduplicate(scoredFeeds, trendingFeeds);
 
-        return toResponse(merged, size);
+        return toResponse(merged, userId, size);
     }
 
     /**
@@ -73,7 +80,6 @@ public class FeedRecommendationService {
         List<Feed> tagFeeds;
 
         if (interestTagIds.isEmpty()) {
-            // 관심 태그도 없으면 최신 피드로 대체
             tagFeeds = feedRepository.findLatestFeeds(PageRequest.of(0, half));
         } else {
             Long[] tagArray = interestTagIds.toArray(Long[]::new);
@@ -84,7 +90,7 @@ public class FeedRecommendationService {
 
         List<Feed> merged = mergeAndDeduplicate(tagFeeds, trendingFeeds);
 
-        return toResponse(merged, size);
+        return toResponse(merged, userId, size);
     }
 
     /**
@@ -97,7 +103,7 @@ public class FeedRecommendationService {
 
         List<Feed> feeds = feedRepository.findFollowingFeeds(followingArray, cursorId, size);
 
-        return toResponse(feeds, size);
+        return toResponse(feeds, userId, size);
     }
 
     /**
@@ -112,17 +118,45 @@ public class FeedRecommendationService {
 
         List<Feed> merged = mergeAndDeduplicate(trendingFeeds, latestFeeds);
 
-        return toResponse(merged, size);
+        return toResponse(merged, null, size);
     }
 
-    private FeedCursorResponse toResponse(List<Feed> feeds, int size) {
+    /** Feed 목록을 FeedCursorResponse로 변환. userId가 있으면 좋아요/북마크/팔로우 상태도 조회 */
+    private FeedCursorResponse toResponse(List<Feed> feeds, Long userId, int size) {
+        if (feeds.isEmpty()) {
+            return FeedCursorResponse.of(List.of(), size);
+        }
+
+        List<Long> feedIds = feeds.stream().map(Feed::getId).toList();
+        List<Long> authorIds = feeds.stream().map(Feed::getUserId).distinct().toList();
+
         // 유저 정보를 한 번에 조회 (N+1 방지)
-        List<Long> userIds = feeds.stream().map(Feed::getUserId).distinct().toList();
-        Map<Long, User> userMap = userRepository.findAllById(userIds).stream()
+        Map<Long, User> userMap = userRepository.findAllById(authorIds).stream()
                 .collect(Collectors.toMap(User::getId, Function.identity()));
 
+        // 로그인 유저의 좋아요/북마크/팔로우 상태 배치 조회
+        Set<Long> likedIds = Set.of();
+        Set<Long> bookmarkedIds = Set.of();
+        Set<Long> followingAuthorIds = Set.of();
+
+        if (userId != null) {
+            likedIds = new HashSet<>(feedLikeRepository.findLikedFeedIds(userId, feedIds));
+            bookmarkedIds = new HashSet<>(feedBookmarkRepository.findBookmarkedFeedIds(userId, feedIds));
+            followingAuthorIds = new HashSet<>(followRepository.findFollowingIdsIn(userId, authorIds));
+        }
+
+        Set<Long> finalLikedIds = likedIds;
+        Set<Long> finalBookmarkedIds = bookmarkedIds;
+        Set<Long> finalFollowingIds = followingAuthorIds;
+
         List<FeedResponse> responses = feeds.stream()
-                .map(feed -> FeedResponse.from(feed, userMap.get(feed.getUserId())))
+                .map(feed -> FeedResponse.from(
+                        feed,
+                        userMap.get(feed.getUserId()),
+                        finalLikedIds.contains(feed.getId()),
+                        finalBookmarkedIds.contains(feed.getId()),
+                        finalFollowingIds.contains(feed.getUserId())
+                ))
                 .toList();
         return FeedCursorResponse.of(responses, size);
     }

@@ -23,8 +23,13 @@ public record FeedResponse(
         List<String> pollOptions,
         LocalDateTime createdAt
 ) {
-    /** 작성자 정보 포함 변환 */
+    /** 비로그인용 — 상호작용 상태 전부 false */
     public static FeedResponse from(Feed feed, User author) {
+        return from(feed, author, false, false, false);
+    }
+
+    /** 로그인용 — 좋아요/북마크/팔로우 상태 반영 */
+    public static FeedResponse from(Feed feed, User author, boolean liked, boolean bookmarked, boolean following) {
         return new FeedResponse(
                 feed.getId(),
                 UserSummaryResponse.from(author),
@@ -35,10 +40,10 @@ public record FeedResponse(
                 feed.getLikeCount(),
                 feed.getCommentCount(),
                 feed.getRepostCount(),
+                liked,
                 false,
-                false,
-                false,
-                false,
+                bookmarked,
+                following,
                 feed.getPollOptions(),
                 feed.getCreatedAt()
         );

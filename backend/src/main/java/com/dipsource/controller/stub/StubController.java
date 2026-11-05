@@ -101,6 +101,7 @@ public class StubController {
     }
 
     // ── 미니홈피 ──
+    // visitors, random은 MiniHomeController에서 실제 구현됨 — 스텁 제거
 
     @GetMapping("/mini-homes/{userId}/comments")
     public ResponseEntity<ApiResponse<List<Object>>> miniHomeComments(@PathVariable Long userId) {

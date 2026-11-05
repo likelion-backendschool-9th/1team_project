@@ -50,7 +50,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET,
                                 "/api/v1/tags",
                                 "/api/v1/demos", "/api/v1/demos/*",
-                                "/api/v1/feeds", "/api/v1/feeds/*", "/api/v1/feeds/*/comments",
+                                "/api/v1/feeds", "/api/v1/feeds/*", "/api/v1/feeds/*/comments", "/api/v1/feeds/comments/*/replies",
                                 "/api/v1/posts", "/api/v1/posts/list", "/api/v1/posts/*", "/api/v1/posts/*/comments",
                                 "/api/v1/users/*/posts",
                                 "/api/v1/search", "/api/v1/search/**",

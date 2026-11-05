@@ -2,6 +2,7 @@ package com.dipsource.repository.feed;
 
 import com.dipsource.entity.feed.FeedBookmark;
 import com.dipsource.entity.feed.FeedUserId;
+import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -9,6 +10,15 @@ import org.springframework.data.repository.query.Param;
 
 /** feed_bookmarks 테이블 접근. */
 public interface FeedBookmarkRepository extends JpaRepository<FeedBookmark, FeedUserId> {
+
+    /** 해당 유저가 북마크한 피드 ID 목록 (배치 조회용) */
+    @Query(value = """
+            SELECT feed_id FROM feed_bookmarks
+            WHERE user_id = :userId AND feed_id IN (:feedIds)
+            """, nativeQuery = true)
+    List<Long> findBookmarkedFeedIds(@Param("userId") Long userId, @Param("feedIds") List<Long> feedIds);
+
+    boolean existsByIdUserIdAndIdFeedId(Long userId, Long feedId);
 
     /**
      * 북마크 삽입. 이미 (user_id, feed_id)가 있으면 무시.

@@ -10,8 +10,11 @@ import com.dipsource.entity.feed.FeedTag;
 import com.dipsource.global.exception.BusinessException;
 import com.dipsource.global.exception.ErrorCode;
 import com.dipsource.entity.user.User;
+import com.dipsource.repository.feed.FeedBookmarkRepository;
+import com.dipsource.repository.feed.FeedLikeRepository;
 import com.dipsource.repository.feed.FeedRepository;
 import com.dipsource.repository.feed.FeedTagRepository;
+import com.dipsource.repository.follow.FollowRepository;
 import com.dipsource.repository.tag.TagRepository;
 import com.dipsource.repository.user.UserRepository;
 import java.util.List;
@@ -29,6 +32,9 @@ public class FeedService {
 
     private final FeedRepository feedRepository;
     private final FeedTagRepository feedTagRepository;
+    private final FeedLikeRepository feedLikeRepository;
+    private final FeedBookmarkRepository feedBookmarkRepository;
+    private final FollowRepository followRepository;
     private final TagRepository tagRepository;
     private final UserRepository userRepository;
 
@@ -72,19 +78,24 @@ public class FeedService {
     /**
      * 피드 단건 조회
      * ACTIVE 상태인 피드만 조회 가능. 삭제/숨김 피드는 404
-     *
-     * @param feedId 조회할 피드 ID
-     * @return 피드 응답
-     * @throws BusinessException NOT_FOUND — 피드가 없거나 삭제됨
+     * userId가 null이면 비로그인 (liked/bookmarked/following 전부 false)
      */
     @Transactional(readOnly = true)
-    public FeedResponse getById(Long feedId) {
+    public FeedResponse getById(Long feedId, Long userId) {
         Feed feed = feedRepository.findById(feedId)
                 .filter(f -> f.getStatus() == FeedStatus.ACTIVE)
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "피드를 찾을 수 없습니다"));
         User author = userRepository.findById(feed.getUserId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "사용자를 찾을 수 없습니다"));
-        return FeedResponse.from(feed, author);
+
+        if (userId == null) {
+            return FeedResponse.from(feed, author);
+        }
+
+        boolean liked = feedLikeRepository.existsByIdUserIdAndIdFeedId(userId, feedId);
+        boolean bookmarked = feedBookmarkRepository.existsByIdUserIdAndIdFeedId(userId, feedId);
+        boolean following = followRepository.existsByIdFollowerIdAndIdFollowingId(userId, feed.getUserId());
+        return FeedResponse.from(feed, author, liked, bookmarked, following);
     }
 
     /**
