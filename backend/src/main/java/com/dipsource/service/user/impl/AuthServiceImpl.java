@@ -1,7 +1,7 @@
 package com.dipsource.service.user.impl;
 
 import com.dipsource.entity.user.SocialAccount;
-import com.dipsource.entity.user.SocialProvider;
+import com.dipsource.service.user.SocialProfile;
 import com.dipsource.entity.user.User;
 import com.dipsource.entity.user.UserStatus;
 import com.dipsource.global.auth.JwtProvider;
@@ -26,20 +26,15 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     @Transactional
-    public AuthResult findOrCreateFromGithub(
-            String providerId,
-            String email,
-            String githubLogin,
-            String avatarUrl
-    ) {
+    public AuthResult findOrCreate(SocialProfile profile) {
         return socialAccountRepository
-                .findByProviderAndProviderId(SocialProvider.GITHUB, providerId)
+                .findByProviderAndProviderId(profile.provider(), profile.providerId())
                 .map(account -> {
                     User user = account.getUser();
-                    user.syncGithubUsername(githubLogin); // GitHub 아이디가 바뀌었으면 따라간다
+                    user.syncGithubUsername(profile.githubUsername()); // GitHub 아이디가 바뀌었으면 따라간다
                     return new AuthResult(user, false);
                 })
-                .orElseGet(() -> createGithubUser(providerId, email, githubLogin, avatarUrl));
+                .orElseGet(() -> createUser(profile));
     }
 
     @Override 
@@ -58,15 +53,11 @@ public class AuthServiceImpl implements AuthService {
         return user;
     }
 
-    private AuthResult createGithubUser(
-            String providerId,
-            String email,
-            String githubLogin,
-            String avatarUrl
-    ) {
-        // 이메일이 비공개면 GitHub noreply 형식으로 채운다.
+    private AuthResult createUser(SocialProfile profile) {
+         // 이메일이 비공개면 GitHub noreply 형식으로 채운다. (구글은 항상 이메일이 온다)
+        String email = profile.email();
         String resolvedEmail = (email == null || email.isBlank())
-                ? githubLogin + "@users.noreply.github.com"
+                ? profile.nickname() + "@users.noreply.github.com"
                 : email;
 
         // 이메일이 이미 있으면 뒤에 숫자를 붙여 UNIQUE를 지킨다.
@@ -74,17 +65,17 @@ public class AuthServiceImpl implements AuthService {
 
         User user = User.builder()
                 .email(resolvedEmail)
-                .nickname(uniqueNickname(githubLogin))
-                .profileImage(avatarUrl)
-                .githubUsername(githubLogin)
+                .nickname(uniqueNickname(profile.nickname()))
+                .profileImage(profile.profileImage())
+                .githubUsername(profile.githubUsername())
                 .build();
         userRepository.save(user);
 
         // users와 social_accounts를 연결한다.
         SocialAccount.builder()
                 .user(user)
-                .provider(SocialProvider.GITHUB)
-                .providerId(providerId)
+                .provider(profile.provider())
+                .providerId(profile.providerId())
                 .build();
 
                 // 지금 바로 DB에 반영해서, 중복 가입이면 여기서 DataIntegrityViolationException이 나게 한다.

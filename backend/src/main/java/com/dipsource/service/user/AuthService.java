@@ -7,11 +7,6 @@ public interface AuthService {
 
     User findUserByRefreshToken(String refreshToken);
 
-    /** GitHub 프로필로 기존 회원을 찾거나 신규 가입시킨다. */
-    AuthResult findOrCreateFromGithub(
-            String providerId,
-            String email,
-            String githubLogin,
-            String avatarUrl
-    );
+    /** 프로필로 기존 회원을 찾거나 신규 가입시킨다. */
+    AuthResult findOrCreate(SocialProfile profile);
 }
