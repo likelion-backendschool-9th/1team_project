@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Avatar } from "@/app/_components/ui/Avatar";
+import { ChipIcon } from "@/app/_components/ui/ChipIcon";
 import { ChevronRightIcon, UserIcon } from "@/app/_components/ui/Icons";
 import { formatCount } from "@/app/_lib/format";
 import type { AppNotification } from "@/app/_lib/types/notification";
@@ -36,7 +37,9 @@ export function BlogProfileCard({ me, unreadCount, notifications, now }: Props) 
         </div>
         <div className={styles.chip}>
           <dt>보유 칩</dt>
-          <dd>{formatCount(me.chipBalance)}</dd>
+          <dd>
+            <ChipIcon size={16} /> {formatCount(me.chipBalance)}
+          </dd>
         </div>
       </dl>
       <Link href="/blog/write" className={styles.write}>

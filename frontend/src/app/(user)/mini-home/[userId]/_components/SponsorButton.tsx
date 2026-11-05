@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useId, useRef } from "react";
+import { ChipIcon } from "@/app/_components/ui/ChipIcon";
 import { FormMessage } from "@/app/_components/ui/FormMessage";
 import kit from "@/app/_components/ui/kit.module.css";
 import { formatCount, formatWon } from "@/app/_lib/format";
@@ -29,7 +30,7 @@ export function SponsorButton({ userId, nickname, chipBalance }: Props) {
   return (
     <>
       <button ref={triggerRef} type="button" className={styles.button} onClick={() => dialogRef.current?.showModal()}>
-        🪙 칩 후원
+        <ChipIcon size={18} /> 칩 후원
       </button>
       <dialog
         ref={dialogRef}
