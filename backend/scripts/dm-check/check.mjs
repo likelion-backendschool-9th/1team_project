@@ -53,11 +53,11 @@ async function prepareUsers() {
   return ids;
 }
 
-// 백엔드 JwtProvider와 같은 형식(HS256, sub = 회원 ID)의 Access Token
+// 백엔드 JwtProvider와 같은 형식(HS256, sub = 회원 ID, type = ACCESS)의 Access Token
 function accessToken(userId) {
   const encode = (value) => Buffer.from(JSON.stringify(value)).toString("base64url");
   const now = Math.floor(Date.now() / 1000);
-  const body = `${encode({ alg: "HS256" })}.${encode({ sub: String(userId), iat: now, exp: now + 600, role: "USER" })}`;
+  const body = `${encode({ alg: "HS256" })}.${encode({ sub: String(userId), iat: now, exp: now + 600, role: "USER", type: "ACCESS" })}`;
   const signature = crypto.createHmac("sha256", JWT_SECRET).update(body).digest("base64url");
   return `${body}.${signature}`;
 }
