@@ -47,7 +47,7 @@ export async function getServerTime(): Promise<number> {
 }
 
 // 레이아웃과 페이지가 같은 요청 안에서 함께 쓰므로 cache로 한 번만 조회한다.
-async function loadOrNull<T>(path: string): Promise<T | null> {
+async function loadOrNull<T>(path: `/api/v1/${string}`): Promise<T | null> {
   try {
     const { data } = await apiFetch<ApiResponse<T>>(path);
     return data;

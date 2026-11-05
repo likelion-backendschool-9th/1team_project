@@ -128,8 +128,7 @@ export async function saveMiniHome(previous: FormState, formData: FormData): Pro
   if (!values.headline) errors.headline = "한 줄 소개를 입력해 주세요.";
   else if (values.headline.length > 30) errors.headline = "30자 이하로 입력해 주세요.";
   if (values.quote.length > 80) errors.quote = "80자 이하로 입력해 주세요.";
-  if (showcase.length === 0) errors.showcase = "공개할 데모를 1개 이상 골라 주세요.";
-  else if (showcase.length > showcaseLimit(me.plus))
+  if (showcase.length > showcaseLimit(me.plus))
     errors.showcase = `공개할 데모는 ${showcaseLimit(me.plus)}개까지 고를 수 있어요.`;
   if (isId(featuredDemoId) && !showcase.includes(featuredDemoId))
     errors.showcase = "대표 데모는 공개할 데모 중에서 골라 주세요.";

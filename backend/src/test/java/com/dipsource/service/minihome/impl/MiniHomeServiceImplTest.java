@@ -87,6 +87,18 @@ class MiniHomeServiceImplTest {
     }
 
     @Test
+    void savesWithoutAnyDemo() {
+        MiniHome home = home();
+        when(repository.findByUserId(1L)).thenReturn(Optional.of(home));
+
+        var response = service.update(1L, request(List.of(), ""));
+
+        assertThat(response.showcaseDemoIds()).isEmpty();
+        assertThat(response.featuredDemoId()).isNull();
+        assertThat(response.headline()).isEqualTo("한 줄");
+    }
+
+    @Test
     void rejectsMoreThanThreeDemos() {
         when(repository.findByUserId(1L)).thenReturn(Optional.of(home()));
 

@@ -170,11 +170,12 @@ public class MiniHomeServiceImpl implements MiniHomeService {
 
     /** featured가 있으면 1번으로 옮기고 나머지 순서는 유지한다. */
     private static List<Long> arrange(List<Long> showcase, Long featured) {
-        if (showcase == null || showcase.isEmpty() || showcase.size() > 3) {
-            throw new BusinessException(ErrorCode.BAD_REQUEST, "공개할 데모는 1~3개만 고를 수 있어요.");
+        List<Long> source = showcase == null ? List.of() : showcase;
+        if (source.size() > 3) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "공개할 데모는 3개까지 고를 수 있어요.");
         }
         List<Long> ids = new ArrayList<>();
-        for (Long id : showcase) {
+        for (Long id : source) {
             if (id == null || id <= 0) {
                 throw new BusinessException(ErrorCode.BAD_REQUEST, "공개할 데모를 다시 골라 주세요.");
             }
@@ -198,7 +199,7 @@ public class MiniHomeServiceImpl implements MiniHomeService {
 
     private static void applyShowcase(MiniHome home, List<Long> ordered) {
         home.changeShowcase(
-                ordered.get(0),
+                ordered.isEmpty() ? null : ordered.get(0),
                 ordered.size() > 1 ? ordered.get(1) : null,
                 ordered.size() > 2 ? ordered.get(2) : null
         );
