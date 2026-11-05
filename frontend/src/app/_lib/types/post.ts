@@ -1,6 +1,6 @@
 import type { UserSummary } from "./user";
 
-export type PostCategory = "frontend" | "backend" | "ai" | "mobile" | "career";
+export type PostCategory = "frontend" | "backend" | "ai" | "mobile" | "career" | "game" | "uxui";
 
 export type PostSort = "latest" | "popular" | "recommended";
 
