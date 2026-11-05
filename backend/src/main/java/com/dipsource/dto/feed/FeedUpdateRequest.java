@@ -2,6 +2,7 @@ package com.dipsource.dto.feed;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.Pattern;
 
 /**
  * 피드 수정 요청 DTO
@@ -10,6 +11,6 @@ import jakarta.validation.constraints.Size;
  */
 public record FeedUpdateRequest(
 
-        /** 수정할 피드 본문. 필수, 최대 500자 */
-        @NotBlank @Size(max = 500) String content
-) {}
+                /** 수정할 피드 본문. 필수, 최대 500자 */
+                @NotBlank @Size(max = 500) @Pattern(regexp = "^(?!.*<[^>]+>).*$", message = "HTML 태그는 사용할 수 없습니다") String content) {
+}
