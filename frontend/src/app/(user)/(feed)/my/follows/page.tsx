@@ -5,6 +5,7 @@ import { Suspense } from "react";
 import { Avatar } from "@/app/_components/ui/Avatar";
 import kit from "@/app/_components/ui/kit.module.css";
 import { LinkTabs } from "@/app/_components/ui/LinkTabs";
+import { Pagination } from "@/app/_components/ui/Pagination";
 import { DmOpenButton } from "@/app/(user)/_components/DmOpenButton";
 import { FollowButton } from "../../_components/FollowButton";
 import { getFollowers, getFollowings } from "../_lib/api";
@@ -12,11 +13,26 @@ import styles from "../_components/My.module.css";
 
 export const metadata: Metadata = { title: "팔로우", robots: { index: false } };
 
-async function FollowsContent({ searchParams }: { searchParams: Promise<{ tab?: string | string[] }> }) {
+type SearchParams = Promise<{ tab?: string | string[]; page?: string | string[] }>;
+
+function parsePage(value: string | string[] | undefined) {
+  const page = Number(value);
+  return Number.isSafeInteger(page) && page > 0 ? page : 1;
+}
+
+async function FollowsContent({ searchParams }: { searchParams: SearchParams }) {
   await connection();
-  const tab = (await searchParams).tab === "followers" ? "followers" : "followings";
-  const [followings, followers] = await Promise.all([getFollowings(), getFollowers()]);
-  const users = tab === "followers" ? followers : followings;
+  const params = await searchParams;
+  const tab = params.tab === "followers" ? "followers" : "followings";
+  const page = parsePage(params.page);
+  // 보고 있는 탭은 해당 페이지를, 다른 탭은 숫자만 필요해서 1명만 받는다.
+  const [followings, followers] = await Promise.all([
+    tab === "followings" ? getFollowings(page) : getFollowings(1, 1),
+    tab === "followers" ? getFollowers(page) : getFollowers(1, 1),
+  ]);
+  const current = tab === "followers" ? followers : followings;
+  const users = current.users;
+  const tabHref = tab === "followers" ? "/my/follows?tab=followers" : "/my/follows";
 
   return (
     <>
@@ -24,8 +40,8 @@ async function FollowsContent({ searchParams }: { searchParams: Promise<{ tab?: 
         label="팔로우 목록"
         variant="line"
         items={[
-          { href: "/my/follows", label: "팔로잉", active: tab === "followings", count: followings.length },
-          { href: "/my/follows?tab=followers", label: "팔로워", active: tab === "followers", count: followers.length },
+          { href: "/my/follows", label: "팔로잉", active: tab === "followings", count: followings.total },
+          { href: "/my/follows?tab=followers", label: "팔로워", active: tab === "followers", count: followers.total },
         ]}
       />
       <section className={kit.card} aria-label={tab === "followers" ? "팔로워" : "팔로잉"}>
@@ -54,6 +70,11 @@ async function FollowsContent({ searchParams }: { searchParams: Promise<{ tab?: 
           </ul>
         )}
       </section>
+      <Pagination
+        page={current.page}
+        totalPages={current.totalPages}
+        hrefFor={(value) => (value === 1 ? tabHref : `${tabHref}${tab === "followers" ? "&" : "?"}page=${value}`)}
+      />
     </>
   );
 }

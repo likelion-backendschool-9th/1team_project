@@ -29,18 +29,36 @@ async function get<T>(path: `/api/v1/${string}`, mock: T): Promise<T> {
   return data;
 }
 
-async function getPage<T>(path: `/api/v1/${string}`, mock: T[], useMock = isMockMode): Promise<T[]> {
-  if (useMock) return mock;
+async function getPage<T>(path: `/api/v1/${string}`, mock: T[]): Promise<T[]> {
+  if (isMockMode) return mock;
   const { data } = await apiFetch<ApiResponse<PageResponse<T>>>(path);
   return data.content;
 }
 
 export const getAccount = () => get<MyAccount>("/api/v1/users/me", mockAccount);
+export const FOLLOW_PAGE_SIZE = 20;
+
+export type FollowPage = { users: FollowUser[]; page: number; totalPages: number; total: number };
+
 // 팔로우 API는 백엔드에 있어서, 백엔드가 연결돼 있으면 MOCK_EXCEPT_DM이어도 실서버를 쓴다.
-export const getFollowings = () =>
-  getPage<FollowUser>("/api/v1/follows/followings", mockFollowings, !hasBackend);
-export const getFollowers = () =>
-  getPage<FollowUser>("/api/v1/follows/followers", mockFollowers, !hasBackend);
+// page는 화면 기준 1부터, 백엔드는 0부터 센다.
+async function getFollowPage(
+  path: `/api/v1/${string}`,
+  mock: FollowUser[],
+  page: number,
+  size: number,
+): Promise<FollowPage> {
+  if (!hasBackend) return { users: mock, page: 1, totalPages: 1, total: mock.length };
+  const { data } = await apiFetch<ApiResponse<PageResponse<FollowUser>>>(
+    `${path}?page=${page - 1}&size=${size}`,
+  );
+  return { users: data.content, page, totalPages: data.totalPages, total: data.totalElements };
+}
+
+export const getFollowings = (page = 1, size = FOLLOW_PAGE_SIZE) =>
+  getFollowPage("/api/v1/follows/followings", mockFollowings, page, size);
+export const getFollowers = (page = 1, size = FOLLOW_PAGE_SIZE) =>
+  getFollowPage("/api/v1/follows/followers", mockFollowers, page, size);
 export const getSettings = () => get<Settings>("/api/v1/users/me/settings", mockSettings);
 export const getBlocked = async (): Promise<BlockedUser[]> => mockBlocked;
 export const getPackages = async (): Promise<ChipPackage[]> => mockPackages;
