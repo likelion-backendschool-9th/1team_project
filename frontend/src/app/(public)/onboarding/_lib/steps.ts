@@ -39,14 +39,14 @@ export function isTagStep(value: string): value is TagStepKey {
   return value in tagSteps;
 }
 
-// 단계 사이에 임시로 보관하는 입력값. 태그는 id로 담는다.
-export type OnboardingDraft = {
-  nickname?: string;
-  bio?: string;
-  termsAgreed?: boolean;
-  stack?: string[];
-  fields?: string[];
-  topics?: string[];
+// 온보딩 4단계 입력값 전체. 화면 상태로 들고 있다가 마지막에 한 번에 보낸다.
+export type OnboardingValues = {
+  nickname: string;
+  bio: string;
+  termsAgreed: boolean;
+  stack: string[];
+  fields: string[];
+  topics: string[];
 };
 
 // 고른 태그가 목록에 있고, 중복이 없고, 개수 제한 안인지 확인한다.
@@ -60,31 +60,4 @@ export function validateTags(step: TagStepKey, ids: string[]): string | null {
   return null;
 }
 
-export function isStepDone(draft: OnboardingDraft, step: StepKey): boolean {
-  if (step === "profile") return Boolean(draft.nickname && draft.termsAgreed);
-  return validateTags(step, draft[step] ?? []) === null;
-}
 
-// 아직 끝나지 않은 첫 단계. before를 주면 그 단계 앞쪽만 본다.
-export function firstIncompleteStep(draft: OnboardingDraft, before?: StepKey): StepKey | null {
-  for (const { key } of onboardingSteps) {
-    if (key === before) return null;
-    if (!isStepDone(draft, key)) return key;
-  }
-  return null;
-}
-
-export function nextStep(step: StepKey): StepKey | null {
-  const index = onboardingSteps.findIndex((item) => item.key === step);
-  return onboardingSteps[index + 1]?.key ?? null;
-}
-
-export function previousStep(step: StepKey): StepKey | null {
-  const index = onboardingSteps.findIndex((item) => item.key === step);
-  return onboardingSteps[index - 1]?.key ?? null;
-}
-
-export function stepUrl(step: StepKey, redirectTo: string): string {
-  const base = `/onboarding/${step}`;
-  return redirectTo === "/main" ? base : `${base}?redirect=${encodeURIComponent(redirectTo)}`;
-}
