@@ -102,11 +102,6 @@ public class StubController {
 
     // ── 미니홈피 ──
 
-    @GetMapping("/mini-homes/{userId}/visitors")
-    public ResponseEntity<ApiResponse<Map<String, Object>>> visitors(@PathVariable Long userId) {
-        return ok(Map.of("today", 0, "total", 0));
-    }
-
     @GetMapping("/mini-homes/{userId}/comments")
     public ResponseEntity<ApiResponse<List<Object>>> miniHomeComments(@PathVariable Long userId) {
         return ok(List.of());
@@ -115,11 +110,6 @@ public class StubController {
     @GetMapping("/mini-homes/{userId}/guestbook")
     public ResponseEntity<ApiResponse<Map<String, Object>>> guestbook(@PathVariable Long userId) {
         return ok(EMPTY_PAGE);
-    }
-
-    @GetMapping("/mini-homes/random")
-    public ResponseEntity<ApiResponse<Object>> randomMiniHome() {
-        return notFound();
     }
 
     // ── 코인 ──
