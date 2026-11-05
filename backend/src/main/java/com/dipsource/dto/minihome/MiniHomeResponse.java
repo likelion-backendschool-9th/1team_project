@@ -10,6 +10,8 @@ public record MiniHomeResponse(
         String domain,
         String bgm,
         List<Long> showcaseDemoIds,
-        Long featuredDemoId
+        Long featuredDemoId,
+        List<String> stackTags,
+        Long featuredPostId
 ) {
 }

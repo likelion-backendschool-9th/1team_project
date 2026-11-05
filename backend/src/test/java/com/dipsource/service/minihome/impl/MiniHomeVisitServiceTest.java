@@ -1,4 +1,4 @@
-package com.dipsource.service.minihome;
+package com.dipsource.service.minihome.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -10,7 +10,6 @@ import com.dipsource.entity.minihome.MiniHome;
 import com.dipsource.global.exception.BusinessException;
 import com.dipsource.global.exception.ErrorCode;
 import com.dipsource.repository.minihome.MiniHomeRepository;
-import com.dipsource.service.minihome.impl.MiniHomeServiceImpl;
 import com.dipsource.service.user.UserService;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
@@ -32,7 +31,7 @@ class MiniHomeVisitServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new MiniHomeServiceImpl(repository, userService);
+        service = new MiniHomeServiceImpl(new MiniHomeLoader(repository, userService), repository);
     }
 
     @Test
