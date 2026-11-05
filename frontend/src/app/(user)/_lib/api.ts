@@ -32,7 +32,8 @@ export async function getMe(): Promise<MyProfile | null> {
 }
 
 export async function getFollowings(): Promise<Following[]> {
-  if (isMockMode) return mockFollowings;
+  // 팔로우 API는 백엔드에 있어서, 백엔드가 연결돼 있으면 MOCK_EXCEPT_DM이어도 실서버를 쓴다.
+  if (!hasBackend) return mockFollowings;
   const [{ data }, presence] = await Promise.all([
     apiFetch<ApiResponse<PageResponse<Following>>>("/api/v1/follows/followings"),
     apiFetch<ApiResponse<{ userId: number; online: boolean }[]>>(

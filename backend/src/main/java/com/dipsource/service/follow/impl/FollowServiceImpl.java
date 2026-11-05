@@ -1,8 +1,24 @@
 package com.dipsource.service.follow.impl;
 
+import com.dipsource.dto.follow.FollowPresenceResponse;
+import com.dipsource.dto.follow.FollowUserResponse;
+import com.dipsource.dto.user.UserSummaryResponse;
+import com.dipsource.entity.user.UserStatus;
+import com.dipsource.global.common.PageResponse;
+import com.dipsource.global.exception.BusinessException;
+import com.dipsource.global.exception.ErrorCode;
 import com.dipsource.repository.follow.FollowRepository;
 import com.dipsource.service.follow.FollowService;
+import com.dipsource.service.user.UserService;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.Predicate;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -11,7 +27,63 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class FollowServiceImpl implements FollowService {
 
+    /** 목록 한 번에 최대 몇 명까지 주는지 */
+    private static final int MAX_PAGE_SIZE = 100;
+
     private final FollowRepository followRepository;
+    private final UserService userService;
+
+    @Override
+    @Transactional
+    public void follow(Long followerId, Long targetId) {
+        requireOther(followerId, targetId);
+        if (!userService.isActiveUser(targetId)) {
+            throw new BusinessException(ErrorCode.NOT_FOUND, "팔로우할 수 없는 회원이에요.");
+        }
+        // 동시에 두 번 눌러도 한 줄만 남도록 DB의 중복 무시(ON CONFLICT)에 맡긴다.
+        followRepository.insertIgnore(followerId, targetId);
+    }
+
+    @Override
+    @Transactional
+    public void unfollow(Long followerId, Long targetId) {
+        requireOther(followerId, targetId);
+        // 탈퇴·정지한 회원도 목록에서 정리할 수 있도록 상대 상태는 보지 않는다.
+        followRepository.deleteByFollowerIdAndFollowingId(followerId, targetId);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public PageResponse<FollowUserResponse> getFollowings(Long userId, Pageable pageable) {
+        Page<Long> page = followRepository.findFollowingIds(userId, UserStatus.ACTIVE, limit(pageable));
+        List<Long> ids = page.getContent();
+        // 팔로잉 목록이니 내가 팔로우 중인 건 확실하고, 상대가 나를 팔로우하는지만 확인한다.
+        Set<Long> followsMe = ids.isEmpty() ? Set.of() : new HashSet<>(followRepository.findFollowerIdsIn(userId, ids));
+        return toPage(page, id -> true, followsMe::contains);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public PageResponse<FollowUserResponse> getFollowers(Long userId, Pageable pageable) {
+        Page<Long> page = followRepository.findFollowerIds(userId, UserStatus.ACTIVE, limit(pageable));
+        List<Long> ids = page.getContent();
+        // 팔로워 목록이니 상대가 나를 팔로우하는 건 확실하고, 내가 맞팔 중인지만 확인한다.
+        Set<Long> following = ids.isEmpty() ? Set.of() : new HashSet<>(followRepository.findFollowingIdsIn(userId, ids));
+        return toPage(page, following::contains, id -> true);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<FollowPresenceResponse> getFollowingPresence(Long userId) {
+        List<Long> ids = followRepository.findFollowingIdsByUserId(userId);
+        if (ids.isEmpty()) {
+            return List.of();
+        }
+        Set<Long> online = userService.getOnlineUserIds(ids);
+        return ids.stream()
+                .map(id -> new FollowPresenceResponse(id, online.contains(id)))
+                .toList();
+    }
 
     @Override
     @Transactional(readOnly = true)
@@ -22,5 +94,29 @@ public class FollowServiceImpl implements FollowService {
         // 내가 상대를, 상대가 나를 팔로우한 기록이 둘 다 있어야 맞팔이다.
         return followRepository.existsByIdFollowerIdAndIdFollowingId(userId, targetId)
                 && followRepository.existsByIdFollowerIdAndIdFollowingId(targetId, userId);
+    }
+
+    private PageResponse<FollowUserResponse> toPage(
+            Page<Long> page,
+            Predicate<Long> following,
+            Predicate<Long> followsMe
+    ) {
+        Map<Long, UserSummaryResponse> users = userService.getSummaries(page.getContent());
+        // 쿼리가 정한 순서(최근 팔로우 순)를 그대로 지킨다.
+        List<FollowUserResponse> content = page.getContent().stream()
+                .filter(users::containsKey)
+                .map(id -> FollowUserResponse.of(users.get(id), following.test(id), followsMe.test(id)))
+                .toList();
+        return PageResponse.of(page, content);
+    }
+
+    private static Pageable limit(Pageable pageable) {
+        return PageRequest.of(pageable.getPageNumber(), Math.min(pageable.getPageSize(), MAX_PAGE_SIZE));
+    }
+
+    private static void requireOther(Long followerId, Long targetId) {
+        if (targetId == null || targetId.equals(followerId)) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "나 자신은 팔로우할 수 없어요.");
+        }
     }
 }

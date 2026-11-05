@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import {
   apiFetch,
   ApiRequestError,
+  hasBackend,
   isMockMode,
   type ApiResponse,
 } from "@/app/_lib/api/client";
@@ -25,7 +26,8 @@ function isId(value: number) {
 
 export async function toggleIlchon(userId: number, follow: boolean): Promise<ActionResult> {
   if (!isId(userId)) return { ok: false, message: "잘못된 요청이에요." };
-  if (isMockMode) return { ok: true };
+  // 일촌 맺기 = 팔로우. 팔로우 API는 백엔드에 있어서 MOCK_EXCEPT_DM이어도 실서버를 쓴다.
+  if (!hasBackend) return { ok: true };
 
   try {
     await apiFetch(`/api/v1/follows/${userId}`, { method: follow ? "POST" : "DELETE" });

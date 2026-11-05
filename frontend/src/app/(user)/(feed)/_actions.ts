@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { apiFetch, ApiRequestError, isMockMode } from "@/app/_lib/api/client";
+import { apiFetch, ApiRequestError, hasBackend, isMockMode } from "@/app/_lib/api/client";
 
 export type ActionResult = { ok: boolean; message?: string };
 
@@ -14,8 +14,9 @@ function isId(value: number) {
 async function request(
   path: `/api/v1/${string}`,
   method: "POST" | "DELETE",
+  useMock = isMockMode,
 ): Promise<ActionResult> {
-  if (isMockMode) return { ok: true };
+  if (useMock) return { ok: true };
 
   try {
     await apiFetch(path, { method });
@@ -39,7 +40,8 @@ export async function toggleRepost(feedId: number, repost: boolean) {
 
 export async function toggleFollow(userId: number, follow: boolean) {
   if (!isId(userId)) return INVALID_REQUEST;
-  return request(`/api/v1/follows/${userId}`, follow ? "POST" : "DELETE");
+  // 팔로우 API는 백엔드에 있어서, 백엔드가 연결돼 있으면 MOCK_EXCEPT_DM이어도 실서버를 쓴다.
+  return request(`/api/v1/follows/${userId}`, follow ? "POST" : "DELETE", !hasBackend);
 }
 
 export async function toggleBookmark(feedId: number, bookmark: boolean) {

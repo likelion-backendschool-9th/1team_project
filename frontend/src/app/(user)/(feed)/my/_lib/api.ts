@@ -1,5 +1,5 @@
 import "server-only";
-import { apiFetch, isMockMode, type ApiResponse, type PageResponse } from "@/app/_lib/api/client";
+import { apiFetch, hasBackend, isMockMode, type ApiResponse, type PageResponse } from "@/app/_lib/api/client";
 import {
   mockAccount,
   mockBlocked,
@@ -29,15 +29,18 @@ async function get<T>(path: `/api/v1/${string}`, mock: T): Promise<T> {
   return data;
 }
 
-async function getPage<T>(path: `/api/v1/${string}`, mock: T[]): Promise<T[]> {
-  if (isMockMode) return mock;
+async function getPage<T>(path: `/api/v1/${string}`, mock: T[], useMock = isMockMode): Promise<T[]> {
+  if (useMock) return mock;
   const { data } = await apiFetch<ApiResponse<PageResponse<T>>>(path);
   return data.content;
 }
 
 export const getAccount = () => get<MyAccount>("/api/v1/users/me", mockAccount);
-export const getFollowings = () => getPage<FollowUser>("/api/v1/follows/followings", mockFollowings);
-export const getFollowers = () => getPage<FollowUser>("/api/v1/follows/followers", mockFollowers);
+// 팔로우 API는 백엔드에 있어서, 백엔드가 연결돼 있으면 MOCK_EXCEPT_DM이어도 실서버를 쓴다.
+export const getFollowings = () =>
+  getPage<FollowUser>("/api/v1/follows/followings", mockFollowings, !hasBackend);
+export const getFollowers = () =>
+  getPage<FollowUser>("/api/v1/follows/followers", mockFollowers, !hasBackend);
 export const getSettings = () => get<Settings>("/api/v1/users/me/settings", mockSettings);
 export const getBlocked = async (): Promise<BlockedUser[]> => mockBlocked;
 export const getPackages = async (): Promise<ChipPackage[]> => mockPackages;
