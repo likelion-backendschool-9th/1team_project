@@ -9,6 +9,7 @@ import com.dipsource.global.exception.BusinessException;
 import com.dipsource.global.exception.ErrorCode;
 import com.dipsource.repository.minihome.MiniHomeRepository;
 import com.dipsource.service.minihome.MiniHomeService;
+import com.dipsource.service.post.PostService;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -24,11 +25,18 @@ public class MiniHomeServiceImpl implements MiniHomeService {
 
     private final MiniHomeLoader miniHomeLoader;
     private final MiniHomeRepository miniHomeRepository;
+    private final PostService postService;
 
     @Override
     @Transactional
     public MiniHomeResponse getOrCreate(Long userId) {
-        return toResponse(miniHomeLoader.loadOrCreate(userId));
+        MiniHome home = miniHomeLoader.loadOrCreate(userId);
+        // 대표 글이 삭제·숨김됐으면 연결을 끊어서 깨진 링크를 내려주지 않는다.
+        Long postId = home.getFeaturedPostId();
+        if (postId != null && !postService.isActivePostOf(postId, userId)) {
+            home.changeFeaturedPost(null);
+        }
+        return toResponse(home);
     }
 
     @Override
@@ -67,6 +75,9 @@ public class MiniHomeServiceImpl implements MiniHomeService {
     public MiniHomeResponse updateFeaturedPost(Long userId, Long postId) {
         if (postId != null && postId <= 0) {
             throw new BusinessException(ErrorCode.BAD_REQUEST, "대표 글을 다시 골라 주세요.");
+        }
+        if (postId != null && !postService.isActivePostOf(postId, userId)) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "내 블로그 글만 대표 글로 고를 수 있어요.");
         }
         MiniHome home = miniHomeLoader.loadOrCreate(userId);
         home.changeFeaturedPost(postId);

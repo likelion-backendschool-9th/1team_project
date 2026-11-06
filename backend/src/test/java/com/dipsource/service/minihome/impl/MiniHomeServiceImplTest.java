@@ -12,6 +12,7 @@ import com.dipsource.entity.minihome.MiniHome;
 import com.dipsource.global.exception.BusinessException;
 import com.dipsource.global.exception.ErrorCode;
 import com.dipsource.repository.minihome.MiniHomeRepository;
+import com.dipsource.service.post.PostService;
 import com.dipsource.service.user.UserService;
 import java.util.List;
 import java.util.Map;
@@ -23,13 +24,15 @@ class MiniHomeServiceImplTest {
 
     private MiniHomeRepository repository;
     private UserService userService;
+    private PostService postService;
     private MiniHomeServiceImpl service;
 
     @BeforeEach
     void setUp() {
         repository = mock(MiniHomeRepository.class);
         userService = mock(UserService.class);
-        service = new MiniHomeServiceImpl(new MiniHomeLoader(repository, userService), repository);
+        postService = mock(PostService.class);
+        service = new MiniHomeServiceImpl(new MiniHomeLoader(repository, userService), repository, postService);
         when(repository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
         when(userService.isActiveUser(1L)).thenReturn(true);
         when(userService.getSummaries(List.of(1L))).thenReturn(Map.of(
@@ -102,9 +105,30 @@ class MiniHomeServiceImplTest {
     void setsAndClearsFeaturedPost() {
         MiniHome home = home();
         when(repository.findByUserId(1L)).thenReturn(Optional.of(home));
+        when(postService.isActivePostOf(302L, 1L)).thenReturn(true);
 
         assertThat(service.updateFeaturedPost(1L, 302L).featuredPostId()).isEqualTo(302L);
         assertThat(service.updateFeaturedPost(1L, null).featuredPostId()).isNull();
+    }
+
+    @Test
+    void rejectsSomeoneElsesPostAsFeatured() {
+        when(postService.isActivePostOf(999L, 1L)).thenReturn(false);
+
+        assertThatThrownBy(() -> service.updateFeaturedPost(1L, 999L))
+                .isInstanceOf(BusinessException.class)
+                .extracting(ex -> ((BusinessException) ex).getErrorCode())
+                .isEqualTo(ErrorCode.BAD_REQUEST);
+    }
+
+    @Test
+    void clearsFeaturedPostWhenPostIsGone() {
+        MiniHome home = home();
+        home.changeFeaturedPost(302L);
+        when(repository.findByUserId(1L)).thenReturn(Optional.of(home));
+        when(postService.isActivePostOf(302L, 1L)).thenReturn(false);
+
+        assertThat(service.getOrCreate(1L).featuredPostId()).isNull();
     }
 
     @Test
