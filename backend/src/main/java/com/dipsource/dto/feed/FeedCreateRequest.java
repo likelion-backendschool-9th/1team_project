@@ -7,7 +7,7 @@ import java.util.List;
 
 /**
  * 피드 생성 요청 DTO
- * POST /api/v1/feeds 에서 사용
+ * POST /feeds 에서 사용
  */
 
 public record FeedCreateRequest(

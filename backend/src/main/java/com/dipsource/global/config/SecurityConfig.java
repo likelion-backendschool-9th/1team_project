@@ -41,35 +41,38 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         // 로그인·OAuth 콜백은 비로그인 허용
                         .requestMatchers(
-                                "/api/v1/auth/**",
+                                "/auth/**",
                                 "/oauth2/**",
                                 "/login/oauth2/**"
                         ).permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/v1/users/me").authenticated()
+                        .requestMatchers(HttpMethod.GET, "/users/me").authenticated()
                         // 조회성 API는 비로그인도 가능
                         .requestMatchers(HttpMethod.GET,
-                                "/api/v1/tags",
-                                "/api/v1/demos", "/api/v1/demos/*",
-                                "/api/v1/feeds", "/api/v1/feeds/*", "/api/v1/feeds/*/comments", "/api/v1/feeds/comments/*/replies",
-                                "/api/v1/posts", "/api/v1/posts/list", "/api/v1/posts/*", "/api/v1/posts/*/comments",
-                                "/api/v1/users/*/posts",
-                                "/api/v1/search", "/api/v1/search/**",
-                                "/api/v1/events", "/api/v1/events/*",
-                                "/api/v1/rankings",
-                                "/api/v1/notifications", "/api/v1/notifications/**",
-                                "/api/v1/follows/**",
-                                "/api/v1/coins/**",
-                                "/api/v1/users/me/bookmarks", "/api/v1/users/*").permitAll()
+                                "/tags",
+                                "/demos", "/demos/*",
+                                "/feeds", "/feeds/*", "/feeds/*/comments", "/feeds/comments/*/replies",
+                                "/posts", "/posts/list", "/posts/*", "/posts/*/comments",
+                                "/users/*/posts",
+                                "/search", "/search/**",
+                                "/events", "/events/*",
+                                "/rankings",
+                                "/notifications", "/notifications/**",
+                                "/follows/**",
+                                "/coins/**",
+                                "/users/me/bookmarks", "/users/*").permitAll()
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/error").permitAll()
                         // 그 외 API는 인증 필요 (이후 공개 API는 여기서 풀면 된다)
                         .anyRequest().authenticated()
                 )
-                // /api/** 요청이 인증 실패하면 OAuth 리다이렉트 대신 401 JSON 반환
+                // context-path 는 servletPath 에 빠진다. OAuth 주소만 기본 진입점을 쓰고 나머지는 401 JSON
                 .exceptionHandling(ex -> ex
                         .defaultAuthenticationEntryPointFor(
                                 apiAuthenticationEntryPoint(),
-                                request -> request.getServletPath().startsWith("/api/")
+                                request -> {
+                                    String path = request.getServletPath();
+                                    return !path.startsWith("/oauth2/") && !path.startsWith("/login/");
+                                }
                         )
                 )
                 .oauth2Login(oauth -> oauth

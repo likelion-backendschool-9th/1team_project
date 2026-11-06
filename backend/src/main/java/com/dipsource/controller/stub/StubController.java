@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
  * 실제 구현이 완료되면 해당 엔드포인트를 여기서 제거하고 전용 컨트롤러로 이관
  */
 @RestController
-@RequestMapping("/api/v1")
+@RequestMapping("")
 public class StubController {
 
     private static final Map<String, Object> EMPTY_PAGE = Map.of(

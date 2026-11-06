@@ -22,7 +22,7 @@ import org.springframework.web.bind.annotation.RestController;
  * app.dev-login-enabled=true 일 때만 빈으로 등록된다. 배포에서는 끄고, 이 클래스·프론트 /login/dev 를 삭제한다.
  */
 @RestController
-@RequestMapping("/api/v1/auth")
+@RequestMapping("/auth")
 @RequiredArgsConstructor
 @ConditionalOnProperty(name = "app.dev-login-enabled", havingValue = "true")
 public class DevLoginController {

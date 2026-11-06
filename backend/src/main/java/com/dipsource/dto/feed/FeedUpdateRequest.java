@@ -5,7 +5,7 @@ import jakarta.validation.constraints.Size;
 
 /**
  * 피드 수정 요청 DTO
- * PUT /api/v1/feeds/{feedId} 에서 사용
+ * PUT /feeds/{feedId} 에서 사용
  * 수정 가능한 필드는 본문(content)만 허용함
  */
 public record FeedUpdateRequest(
