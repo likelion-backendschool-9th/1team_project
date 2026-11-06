@@ -8,7 +8,7 @@ import {
   HeartIcon,
   RepostIcon,
 } from "@/app/_components/ui/Icons";
-import { togglePostBookmark } from "../_actions";
+import { togglePostBookmark, togglePostLike } from "../_actions";
 import styles from "./PostActions.module.css";
 
 type Props = {
@@ -20,7 +20,7 @@ type Props = {
   readMinutes: number;
 };
 
-// 글 좋아요 API는 아직 없어 화면 상태만 바꾼다. 북마크는 posts/{postId}/bookmark로 보낸다.
+// 좋아요는 posts/{postId}/like, 북마크는 posts/{postId}/bookmark로 보낸다. 실패하면 되돌린다.
 export function PostActions({
   postId,
   likeCount,
@@ -32,6 +32,15 @@ export function PostActions({
   const [like, setLike] = useState(liked);
   const [bookmarked, setBookmarked] = useState(false);
   const [, startTransition] = useTransition();
+
+  function handleLike() {
+    const next = !like;
+    setLike(next);
+    startTransition(async () => {
+      const result = await togglePostLike(postId, next);
+      if (!result.ok) setLike(!next);
+    });
+  }
 
   function handleBookmark() {
     const next = !bookmarked;
@@ -48,7 +57,7 @@ export function PostActions({
         type="button"
         className={`${styles.action} ${like ? styles.liked : ""}`}
         aria-pressed={like}
-        onClick={() => setLike((value) => !value)}
+        onClick={handleLike}
       >
         <HeartIcon filled={like} />
         <span className="sr-only">좋아요</span>

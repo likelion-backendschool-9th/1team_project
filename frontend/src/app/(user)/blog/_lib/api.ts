@@ -3,7 +3,6 @@ import {
   ApiRequestError,
   apiFetch,
   hasBackend,
-  isMockMode,
   type ApiResponse,
   type PageResponse,
 } from "@/app/_lib/api/client";
@@ -86,7 +85,7 @@ export async function getPost(postId: number): Promise<PostDetail | null> {
 }
 
 export async function getPostComments(postId: number): Promise<PostComment[]> {
-  if (isMockMode) return createMockPostComments(postId, Date.now());
+  if (!hasBackend) return createMockPostComments(postId, Date.now());
   const { data } = await apiFetch<ApiResponse<PageResponse<PostComment>>>(
     `/api/v1/posts/${postId}/comments`,
   );

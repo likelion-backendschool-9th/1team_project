@@ -67,6 +67,8 @@ export type PostComment = {
   likeCount: number;
   liked: boolean;
   replies?: PostComment[];
+  /** 지운 댓글인데 답글이 남아 자리만 보여 주는 경우 */
+  deleted?: boolean;
 };
 
 export type BlogOwner = {

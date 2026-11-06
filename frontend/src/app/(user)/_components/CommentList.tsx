@@ -19,6 +19,8 @@ type Comment = {
   liked?: boolean;
   replies?: Comment[];
   label?: ReactNode;
+  /** 지운 댓글인데 답글이 남아 자리만 보여 주는 경우. 수정·답글·좋아요를 숨긴다 */
+  deleted?: boolean;
 };
 
 type Result = { ok: boolean; message: string };
@@ -135,6 +137,8 @@ function CommentRow({ comment, now, me, actions, onReply }: RowProps) {
   const mine = comment.author.id === me?.id;
   // 방금 단 답글은 아직 서버 id가 없어 수정·삭제·좋아요를 막는다.
   const saved = comment.id > 0;
+  // 지운 댓글 자리는 안내 문구만 보여 준다.
+  const active = saved && !comment.deleted;
 
   return (
     <div className={styles.row}>
@@ -149,7 +153,7 @@ function CommentRow({ comment, now, me, actions, onReply }: RowProps) {
           {comment.label}
           <time dateTime={comment.createdAt}>{formatRelativeTime(comment.createdAt, now)}</time>
         </p>
-        {mine && saved && actions.updateComment && actions.deleteComment ? (
+        {mine && active && actions.updateComment && actions.deleteComment ? (
           <CommentEditor
             commentId={comment.id}
             content={comment.content}
@@ -159,8 +163,8 @@ function CommentRow({ comment, now, me, actions, onReply }: RowProps) {
           />
         ) : (
           <>
-            <p className={styles.content}>{comment.content}</p>
-            {onReply && (
+            <p className={`${styles.content} ${comment.deleted ? styles.deletedContent : ""}`}>{comment.content}</p>
+            {onReply && !comment.deleted && (
               <div className={styles.mine}>
                 <button type="button" className={styles.mineButton} onClick={onReply}>
                   답글
@@ -174,7 +178,7 @@ function CommentRow({ comment, now, me, actions, onReply }: RowProps) {
         commentId={comment.id}
         liked={comment.liked ?? false}
         likeCount={comment.likeCount}
-        likeComment={saved ? actions.likeComment : undefined}
+        likeComment={active ? actions.likeComment : undefined}
       />
     </div>
   );

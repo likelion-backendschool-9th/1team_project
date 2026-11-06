@@ -109,7 +109,7 @@ export async function createPostComment(
   if (!values.content) errors.content = "댓글을 입력해 주세요.";
   else if (values.content.length > 300) errors.content = "300자 이하로 입력해 주세요.";
   const state = await runForm(previous, values, errors, () =>
-    mutate(`/api/v1/posts/${postId}/comments`, "POST", values, "댓글을 남겼어요."),
+    mutate(`/api/v1/posts/${postId}/comments`, "POST", values, "댓글을 남겼어요.", !hasBackend),
   );
   if (state.ok) revalidatePath(`/blog/posts/${postId}`);
   return state.ok ? { ...state, values: {} } : state;
@@ -123,21 +123,27 @@ export async function togglePostBookmark(postId: number, bookmark: boolean) {
 export async function updatePostComment(commentId: number, content: string) {
   const text = content.trim();
   if (!text || text.length > 300) return { ok: false, message: "1~300자로 입력해 주세요." };
-  return mutate(`/api/v1/posts/comments/${commentId}`, "PUT", { content: text }, "댓글을 수정했어요.");
+  return mutate(`/api/v1/posts/comments/${commentId}`, "PUT", { content: text }, "댓글을 수정했어요.", !hasBackend);
 }
 
 export async function deletePostComment(commentId: number) {
-  return mutate(`/api/v1/posts/comments/${commentId}`, "DELETE", undefined, "댓글을 삭제했어요.");
+  if (!isId(commentId)) return { ok: false, message: "잘못된 요청이에요." };
+  return mutate(`/api/v1/posts/comments/${commentId}`, "DELETE", undefined, "댓글을 삭제했어요.", !hasBackend);
 }
 
 export async function replyPostComment(postId: number, parentId: number, content: string) {
   if (!isId(postId) || !isId(parentId)) return { ok: false, message: "잘못된 요청이에요." };
   const text = content.trim();
   if (!text || text.length > 300) return { ok: false, message: "1~300자로 입력해 주세요." };
-  return mutate(`/api/v1/posts/${postId}/comments`, "POST", { content: text, parentId }, "답글을 남겼어요.");
+  return mutate(`/api/v1/posts/${postId}/comments`, "POST", { content: text, parentId }, "답글을 남겼어요.", !hasBackend);
 }
 
 export async function togglePostCommentLike(commentId: number, like: boolean) {
   if (!isId(commentId)) return { ok: false, message: "잘못된 요청이에요." };
-  return mutate(`/api/v1/posts/comments/${commentId}/like`, like ? "POST" : "DELETE", undefined, "좋아요를 반영했어요.");
+  return mutate(`/api/v1/posts/comments/${commentId}/like`, like ? "POST" : "DELETE", undefined, "좋아요를 반영했어요.", !hasBackend);
+}
+
+export async function togglePostLike(postId: number, like: boolean) {
+  if (!isId(postId)) return { ok: false, message: "잘못된 요청이에요." };
+  return mutate(`/api/v1/posts/${postId}/like`, like ? "POST" : "DELETE", undefined, like ? "좋아요했어요." : "좋아요를 취소했어요.", !hasBackend);
 }

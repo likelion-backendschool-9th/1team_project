@@ -150,3 +150,8 @@
 .note:empty {
   display: none;
 }
+
+.deletedContent {
+  color: var(--ink-faint);
+  font-style: italic;
+}
