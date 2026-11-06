@@ -1,8 +1,8 @@
 ---
 name: 기능 작업
 about: 새 기능이나 기능 개선 작업을 등록한다
-title: "[Feature] "
-labels: ""
+title: "feature: "
+labels: "feature"
 assignees: ""
 ---
 
