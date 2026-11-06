@@ -18,12 +18,15 @@ import com.dipsource.repository.feed.FeedTagRepository;
 import com.dipsource.repository.follow.FollowRepository;
 import com.dipsource.repository.tag.TagRepository;
 import com.dipsource.repository.user.UserRepository;
+import com.dipsource.service.image.ImageService;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -43,6 +46,11 @@ public class FeedService {
     private final FollowRepository followRepository;
     private final TagRepository tagRepository;
     private final UserRepository userRepository;
+
+    /** R2가 비활성화된 환경에서는 null — 피드 삭제 시 이미지 정리에만 사용 */
+    @Nullable
+    @Autowired(required = false)
+    private ImageService imageService;
 
     /**
      * 피드 생성
@@ -137,6 +145,10 @@ public class FeedService {
     @Transactional
     public void delete(Long userId, Long feedId) {
         Feed feed = findOwnActiveFeed(userId, feedId);
+        // R2 이미지 삭제 (r2.enabled=false 환경에서는 imageService가 null이므로 건너뜀)
+        if (imageService != null && feed.getImageUrls() != null) {
+            feed.getImageUrls().forEach(imageService::delete);
+        }
         feed.delete();
     }
 

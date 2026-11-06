@@ -16,6 +16,7 @@
 .form {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 12px;
   padding: 18px 20px;
 }
@@ -58,6 +59,10 @@
   opacity: 0.5;
 }
 
+.toolActive {
+  color: var(--accent-ink);
+}
+
 .submit {
   padding: 12px 24px;
   border-radius: 14px;
@@ -71,6 +76,89 @@
 
 .submit:disabled {
   opacity: 0.6;
+}
+
+/* 링크 입력 + 이미지 미리보기 영역 */
+.extras {
+  flex: 0 0 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 4px;
+  padding-bottom: 4px;
+}
+
+.linkRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--ink-soft);
+  font-size: 20px;
+}
+
+.linkInput {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  background: none;
+  font-size: 14px;
+  padding: 4px 2px;
+}
+
+.linkInput:focus {
+  outline: none;
+  border-bottom-color: var(--accent-ink);
+}
+
+.linkInput::placeholder {
+  color: var(--ink-faint);
+}
+
+/* 이미지 미리보기 그리드 */
+.thumbGrid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.thumb {
+  position: relative;
+  width: 80px;
+  height: 80px;
+  border-radius: 8px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.thumbImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.thumbRemove {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  display: flex;
+  padding: 2px;
+  border-radius: 50%;
+  background: rgb(0 0 0 / 50%);
+  color: #fff;
+  font-size: 14px;
+  line-height: 1;
+}
+
+/* linkRow의 제거 버튼은 absolute가 아님 */
+.linkRow .thumbRemove {
+  position: static;
+  background: none;
+  color: var(--ink-soft);
+  font-size: 18px;
 }
 
 .error,

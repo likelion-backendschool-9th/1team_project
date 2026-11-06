@@ -9,8 +9,8 @@ import styles from "./MyNav.module.css";
 
 const items = [
   { href: "/my", label: "내 정보" },
-  { href: "/my/feeds", label: "내 피드" },
-  { href: "/my/reposts", label: "리포스트", requireAuth: true },
+  { href: "/my/feeds", label: "내 피드", requireAuth: true },
+  { href: "/my/reposts", label: "리포스트" },
   { href: "/my/follows", label: "팔로우" },
   { href: "/my/bookmarks", label: "북마크" },
   { href: "/my/settings", label: "설정" },
