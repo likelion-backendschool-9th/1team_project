@@ -11,6 +11,7 @@ import com.dipsource.entity.demo.Demo;
 import com.dipsource.entity.demo.DemoType;
 import com.dipsource.entity.feed.Feed;
 import com.dipsource.entity.post.Post;
+import com.dipsource.entity.post.PostCategory;
 import com.dipsource.entity.tag.Tag;
 import com.dipsource.entity.user.User;
 import jakarta.persistence.EntityManager;
@@ -318,8 +319,8 @@ class SearchControllerTest {
             jdbc.update("UPDATE users SET status = 'SUSPENDED' WHERE id = ?", suspended.getId());
             User withdrawn = user("탈퇴회원", null, List.of());
             jdbc.update("UPDATE users SET status = 'DELETED' WHERE id = ?", withdrawn.getId());
-            persist(Post.builder().userId(suspended.getId()).title("Spring 정지").content("본문").build());
-            persist(Post.builder().userId(withdrawn.getId()).title("Spring 탈퇴").content("본문").build());
+            persist(Post.builder().userId(suspended.getId()).title("Spring 정지").category(PostCategory.BACKEND).content("본문").build());
+            persist(Post.builder().userId(withdrawn.getId()).title("Spring 탈퇴").category(PostCategory.BACKEND).content("본문").build());
 
             search("spring")
                     .andExpect(jsonPath("$.data.totalElements").value(2))
@@ -1150,6 +1151,7 @@ class SearchControllerTest {
         return Post.builder()
                 .userId(author.getId())
                 .title(title)
+                .category(PostCategory.BACKEND)
                 .content(content)
                 .paid(paid)
                 .priceChips(paid ? 30 : 0)

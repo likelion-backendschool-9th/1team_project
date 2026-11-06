@@ -73,54 +73,54 @@ begin
   where dm.user_id = any(writers);
 
   ---------------------------------------------------------------- 블로그 글
-  insert into posts(user_id, title, content, is_paid, price_chips, status, view_count, like_count, comment_count, created_at, updated_at, deleted_at) values
+  insert into posts(user_id, title, content, is_paid, price_chips, status, view_count, like_count, comment_count, created_at, updated_at, deleted_at, category) values
    -- 스프링장인
    (s, 'Spring Boot 3에서 JPA N+1 문제 해결하기',
        E'## 문제\n연관관계를 지연 로딩으로 두고 목록을 조회하면 쿼리가 N+1번 나간다.\n\n```java\n@Query("select p from Post p join fetch p.user")\nList<Post> findAllWithUser();\n```\n\n## 해결\nfetch join, @EntityGraph, default_batch_fetch_size 세 가지를 비교했다.',
-       false, 0, 'ACTIVE', 3400, 120, 18, now() - interval '30 day', now(), null),
-   (s, 'Spring Security + JWT 로그인 구현기', 'SecurityFilterChain에 JWT 필터를 끼우고 Access/Refresh 토큰을 쿠키로 내려주는 구조를 정리했다.', false, 0, 'ACTIVE', 2100, 85, 9, now() - interval '25 day', now(), null),
-   (s, '스프링 트랜잭션 전파 속성 정리', '@Transactional의 REQUIRED, REQUIRES_NEW, NESTED 차이를 예제로 정리했다. 내부 호출에서는 프록시를 타지 않는다는 점에 주의.', false, 0, 'ACTIVE', 900, 40, 3, now() - interval '20 day', now(), null),
-   (s, '[유료] 대용량 트래픽을 견디는 Spring 아키텍처', '[유료 본문] Redis 분산 락과 Kafka 이벤트 소싱으로 초당 1만 건 주문을 처리한 실전 노하우.', true, 50, 'ACTIVE', 1500, 200, 22, now() - interval '15 day', now(), null),
+       false, 0, 'ACTIVE', 3400, 120, 18, now() - interval '30 day', now(), null, 'BACKEND'),
+   (s, 'Spring Security + JWT 로그인 구현기', 'SecurityFilterChain에 JWT 필터를 끼우고 Access/Refresh 토큰을 쿠키로 내려주는 구조를 정리했다.', false, 0, 'ACTIVE', 2100, 85, 9, now() - interval '25 day', now(), null, 'BACKEND'),
+   (s, '스프링 트랜잭션 전파 속성 정리', '@Transactional의 REQUIRED, REQUIRES_NEW, NESTED 차이를 예제로 정리했다. 내부 호출에서는 프록시를 타지 않는다는 점에 주의.', false, 0, 'ACTIVE', 900, 40, 3, now() - interval '20 day', now(), null, 'BACKEND'),
+   (s, '[유료] 대용량 트래픽을 견디는 Spring 아키텍처', '[유료 본문] Redis 분산 락과 Kafka 이벤트 소싱으로 초당 1만 건 주문을 처리한 실전 노하우.', true, 50, 'ACTIVE', 1500, 200, 22, now() - interval '15 day', now(), null, 'BACKEND'),
    (s, 'JPA 영속성 컨텍스트 완벽 이해',
        E'영속성 컨텍스트는 엔티티를 영구 저장하는 환경이다. 1차 캐시, 동일성 보장, 쓰기 지연, 변경 감지, 지연 로딩이라는 다섯 가지 이점이 있다.\n\n'
        || repeat('플러시는 영속성 컨텍스트의 변경 내용을 데이터베이스에 반영하는 것이다. 트랜잭션 커밋 시점에 자동으로 일어난다. ', 6),
-       false, 0, 'ACTIVE', 1200, 66, 5, now() - interval '12 day', now(), null),
-   (s, 'Redis 캐시 전략 총정리', 'Cache-Aside, Write-Through, Write-Behind 패턴과 TTL, 캐시 무효화 전략을 비교했다.', false, 0, 'ACTIVE', 4100, 150, 20, now() - interval '9 day', now(), null),
-   (s, 'spring boot 시작하기', '스프링 부트로 첫 프로젝트를 만들 때 알아두면 좋은 것들.', false, 0, 'ACTIVE', 80, 5, 0, now() - interval '3 day', now(), null),
-   (s, '테스트 커버리지 100% 달성기', '커버리지 숫자보다 중요한 것은 무엇을 테스트하느냐다.', false, 0, 'ACTIVE', 300, 12, 1, now() - interval '8 day', now(), null),
-   (s, '하루 1000건 배포 자동화', 'CI 파이프라인 캐시와 병렬화로 배포 시간을 줄였다.', false, 0, 'ACTIVE', 250, 9, 0, now() - interval '7 day', now(), null),
-   (s, 'user_id 컬럼 인덱스 설계', '복합 인덱스 컬럼 순서는 카디널리티와 쿼리 패턴으로 정한다.', false, 0, 'ACTIVE', 180, 7, 0, now() - interval '6 day', now(), null),
-   (s, '실시간 채팅앱 제작기: STOMP + WebSocket', '데모로 올린 채팅앱을 만들면서 겪은 재연결, 메시지 순서 보장 문제를 정리했다.', false, 0, 'ACTIVE', 700, 33, 4, now() - interval '27 day', now(), null),
+       false, 0, 'ACTIVE', 1200, 66, 5, now() - interval '12 day', now(), null, 'BACKEND'),
+   (s, 'Redis 캐시 전략 총정리', 'Cache-Aside, Write-Through, Write-Behind 패턴과 TTL, 캐시 무효화 전략을 비교했다.', false, 0, 'ACTIVE', 4100, 150, 20, now() - interval '9 day', now(), null, 'BACKEND'),
+   (s, 'spring boot 시작하기', '스프링 부트로 첫 프로젝트를 만들 때 알아두면 좋은 것들.', false, 0, 'ACTIVE', 80, 5, 0, now() - interval '3 day', now(), null, 'BACKEND'),
+   (s, '테스트 커버리지 100% 달성기', '커버리지 숫자보다 중요한 것은 무엇을 테스트하느냐다.', false, 0, 'ACTIVE', 300, 12, 1, now() - interval '8 day', now(), null, 'BACKEND'),
+   (s, '하루 1000건 배포 자동화', 'CI 파이프라인 캐시와 병렬화로 배포 시간을 줄였다.', false, 0, 'ACTIVE', 250, 9, 0, now() - interval '7 day', now(), null, 'BACKEND'),
+   (s, 'user_id 컬럼 인덱스 설계', '복합 인덱스 컬럼 순서는 카디널리티와 쿼리 패턴으로 정한다.', false, 0, 'ACTIVE', 180, 7, 0, now() - interval '6 day', now(), null, 'BACKEND'),
+   (s, '실시간 채팅앱 제작기: STOMP + WebSocket', '데모로 올린 채팅앱을 만들면서 겪은 재연결, 메시지 순서 보장 문제를 정리했다.', false, 0, 'ACTIVE', 700, 33, 4, now() - interval '27 day', now(), null, 'BACKEND'),
    -- reactqueen
-   (r, 'React 19 use()로 로딩 분기 줄이기', 'Suspense와 서버 컴포넌트로 데이터 패칭 코드를 단순화했다.', false, 0, 'ACTIVE', 1900, 95, 11, now() - interval '24 day', now(), null),
-   (r, 'Next.js App Router 캐싱 전략', 'fetch 캐시, revalidate, 동적 렌더링이 언제 일어나는지 정리.', false, 0, 'ACTIVE', 1300, 70, 6, now() - interval '19 day', now(), null),
-   (r, 'TypeScript 제네릭 실전 패턴', '제네릭 제약, 조건부 타입, infer를 실무 예제로.', false, 0, 'ACTIVE', 800, 44, 2, now() - interval '13 day', now(), null),
-   (r, '리액트 상태 관리 라이브러리 비교', 'Zustand, Redux Toolkit, Jotai를 번들 크기와 사용성으로 비교했다.', false, 0, 'ACTIVE', 1000, 52, 7, now() - interval '5 day', now(), null),
-   (r, '숨긴 글: React 비밀 팁', '관리자가 숨긴 글', false, 0, 'HIDDEN', 10, 0, 0, now() - interval '4 day', now(), null),
+   (r, 'React 19 use()로 로딩 분기 줄이기', 'Suspense와 서버 컴포넌트로 데이터 패칭 코드를 단순화했다.', false, 0, 'ACTIVE', 1900, 95, 11, now() - interval '24 day', now(), null, 'FRONTEND'),
+   (r, 'Next.js App Router 캐싱 전략', 'fetch 캐시, revalidate, 동적 렌더링이 언제 일어나는지 정리.', false, 0, 'ACTIVE', 1300, 70, 6, now() - interval '19 day', now(), null, 'FRONTEND'),
+   (r, 'TypeScript 제네릭 실전 패턴', '제네릭 제약, 조건부 타입, infer를 실무 예제로.', false, 0, 'ACTIVE', 800, 44, 2, now() - interval '13 day', now(), null, 'FRONTEND'),
+   (r, '리액트 상태 관리 라이브러리 비교', 'Zustand, Redux Toolkit, Jotai를 번들 크기와 사용성으로 비교했다.', false, 0, 'ACTIVE', 1000, 52, 7, now() - interval '5 day', now(), null, 'FRONTEND'),
+   (r, '숨긴 글: React 비밀 팁', '관리자가 숨긴 글', false, 0, 'HIDDEN', 10, 0, 0, now() - interval '4 day', now(), null, 'FRONTEND'),
    -- 데이터곰
-   (d, 'Kafka 컨슈머 랙 줄이기', '파티션 수, max.poll.records, 컨슈머 그룹 리밸런싱을 조정했다.', false, 0, 'ACTIVE', 1100, 60, 5, now() - interval '23 day', now(), null),
-   (d, 'Python으로 Elasticsearch 검색 엔진 만들기', 'BM25 점수, nori 형태소 분석기, 동의어 사전을 설정했다.', false, 0, 'ACTIVE', 1600, 78, 8, now() - interval '17 day', now(), null),
-   (d, 'PostgreSQL 전문 검색(Full-Text Search) 입문', 'tsvector, tsquery, ts_rank와 GIN 인덱스로 LIKE 검색을 대체해 봤다.', false, 0, 'ACTIVE', 950, 49, 3, now() - interval '11 day', now(), null),
-   (d, '검색 엔진의 오타 교정 원리', '레벤슈타인 거리와 n-gram으로 Sprng를 Spring으로 고치는 방법.', false, 0, 'ACTIVE', 600, 31, 2, now() - interval '2 day', now(), null),
-   (d, '삭제한 글: Kafka 옛날 정리', '작성자가 삭제한 글', false, 0, 'DELETED', 40, 1, 0, now() - interval '38 day', now(), now() - interval '20 day'),
+   (d, 'Kafka 컨슈머 랙 줄이기', '파티션 수, max.poll.records, 컨슈머 그룹 리밸런싱을 조정했다.', false, 0, 'ACTIVE', 1100, 60, 5, now() - interval '23 day', now(), null, 'BACKEND'),
+   (d, 'Python으로 Elasticsearch 검색 엔진 만들기', 'BM25 점수, nori 형태소 분석기, 동의어 사전을 설정했다.', false, 0, 'ACTIVE', 1600, 78, 8, now() - interval '17 day', now(), null, 'AI'),
+   (d, 'PostgreSQL 전문 검색(Full-Text Search) 입문', 'tsvector, tsquery, ts_rank와 GIN 인덱스로 LIKE 검색을 대체해 봤다.', false, 0, 'ACTIVE', 950, 49, 3, now() - interval '11 day', now(), null, 'AI'),
+   (d, '검색 엔진의 오타 교정 원리', '레벤슈타인 거리와 n-gram으로 Sprng를 Spring으로 고치는 방법.', false, 0, 'ACTIVE', 600, 31, 2, now() - interval '2 day', now(), null, 'AI'),
+   (d, '삭제한 글: Kafka 옛날 정리', '작성자가 삭제한 글', false, 0, 'DELETED', 40, 1, 0, now() - interval '38 day', now(), now() - interval '20 day', 'BACKEND'),
    -- unity_maker
-   (u, 'Unity WebGL 빌드 용량 38MB → 9MB', 'Brotli 압축, ASTC 텍스처, 패키지 정리 체크리스트.', false, 0, 'ACTIVE', 720, 38, 4, now() - interval '21 day', now(), null),
-   (u, 'C# 비동기 프로그래밍과 Unity 코루틴', 'async/await와 코루틴을 언제 써야 하는지 비교했다.', false, 0, 'ACTIVE', 400, 21, 1, now() - interval '16 day', now(), null),
-   (u, 'Spirng 설정 파일 정리', '제목에 오타가 있는 글. application.yml 프로필 분리 방법.', false, 0, 'ACTIVE', 50, 2, 0, now() - interval '14 day', now(), null),
+   (u, 'Unity WebGL 빌드 용량 38MB → 9MB', 'Brotli 압축, ASTC 텍스처, 패키지 정리 체크리스트.', false, 0, 'ACTIVE', 720, 38, 4, now() - interval '21 day', now(), null, 'GAME'),
+   (u, 'C# 비동기 프로그래밍과 Unity 코루틴', 'async/await와 코루틴을 언제 써야 하는지 비교했다.', false, 0, 'ACTIVE', 400, 21, 1, now() - interval '16 day', now(), null, 'GAME'),
+   (u, 'Spirng 설정 파일 정리', '제목에 오타가 있는 글. application.yml 프로필 분리 방법.', false, 0, 'ACTIVE', 50, 2, 0, now() - interval '14 day', now(), null, 'BACKEND'),
    -- devops_lee
-   (o, 'Docker Compose로 로컬 개발 환경 구축', 'PostgreSQL, Redis, 백엔드를 한 번에 띄우는 compose 파일.', false, 0, 'ACTIVE', 1400, 64, 6, now() - interval '26 day', now(), null),
-   (o, '쿠버네티스 입문: Pod와 Deployment', '파드, 레플리카셋, 디플로이먼트의 관계를 그림으로 설명.', false, 0, 'ACTIVE', 1700, 80, 9, now() - interval '18 day', now(), null),
-   (o, 'Kubernetes HPA 오토스케일링 설정', 'CPU 사용률 기준 HPA 설정과 metrics-server 설치.', false, 0, 'ACTIVE', 650, 29, 2, now() - interval '10 day', now(), null),
-   (o, '[유료] AWS 비용 30% 절감 노하우', '[유료 본문] Spot 인스턴스와 Savings Plans 조합, Redis 노드 다운사이징 사례.', true, 30, 'ACTIVE', 500, 45, 3, now() - interval '8 day', now(), null),
-   (o, '오늘의 회고', '점심 먹고 redis 잠깐 봤다. Spring 스터디도 했다.', false, 0, 'ACTIVE', 30, 2, 0, now() - interval '1 day', now(), null),
+   (o, 'Docker Compose로 로컬 개발 환경 구축', 'PostgreSQL, Redis, 백엔드를 한 번에 띄우는 compose 파일.', false, 0, 'ACTIVE', 1400, 64, 6, now() - interval '26 day', now(), null, 'BACKEND'),
+   (o, '쿠버네티스 입문: Pod와 Deployment', '파드, 레플리카셋, 디플로이먼트의 관계를 그림으로 설명.', false, 0, 'ACTIVE', 1700, 80, 9, now() - interval '18 day', now(), null, 'BACKEND'),
+   (o, 'Kubernetes HPA 오토스케일링 설정', 'CPU 사용률 기준 HPA 설정과 metrics-server 설치.', false, 0, 'ACTIVE', 650, 29, 2, now() - interval '10 day', now(), null, 'BACKEND'),
+   (o, '[유료] AWS 비용 30% 절감 노하우', '[유료 본문] Spot 인스턴스와 Savings Plans 조합, Redis 노드 다운사이징 사례.', true, 30, 'ACTIVE', 500, 45, 3, now() - interval '8 day', now(), null, 'BACKEND'),
+   (o, '오늘의 회고', '점심 먹고 redis 잠깐 봤다. Spring 스터디도 했다.', false, 0, 'ACTIVE', 30, 2, 0, now() - interval '1 day', now(), null, 'CAREER'),
    -- JavaScripter
-   (j, 'JavaScript 클로저와 스코프 완벽 정리', '렉시컬 스코프와 클로저로 private 변수를 흉내 내는 방법.', false, 0, 'ACTIVE', 2300, 110, 15, now() - interval '29 day', now(), null),
-   (j, 'Node.js 이벤트 루프 동작 원리', 'libuv, 태스크 큐, 마이크로태스크 큐의 실행 순서.', false, 0, 'ACTIVE', 1250, 58, 4, now() - interval '15 day', now(), null),
-   (j, 'Java와 JavaScript는 뭐가 다를까?', '이름만 비슷하고 전혀 다른 언어다. 타입 시스템과 런타임 비교.', false, 0, 'ACTIVE', 3000, 99, 25, now() - interval '9 day', now(), null),
-   (j, 'C++ vs Rust 메모리 관리', '소유권과 RAII 비교.', false, 0, 'ACTIVE', 420, 19, 1, now() - interval '4 day', now(), null),
+   (j, 'JavaScript 클로저와 스코프 완벽 정리', '렉시컬 스코프와 클로저로 private 변수를 흉내 내는 방법.', false, 0, 'ACTIVE', 2300, 110, 15, now() - interval '29 day', now(), null, 'FRONTEND'),
+   (j, 'Node.js 이벤트 루프 동작 원리', 'libuv, 태스크 큐, 마이크로태스크 큐의 실행 순서.', false, 0, 'ACTIVE', 1250, 58, 4, now() - interval '15 day', now(), null, 'BACKEND'),
+   (j, 'Java와 JavaScript는 뭐가 다를까?', '이름만 비슷하고 전혀 다른 언어다. 타입 시스템과 런타임 비교.', false, 0, 'ACTIVE', 3000, 99, 25, now() - interval '9 day', now(), null, 'FRONTEND'),
+   (j, 'C++ vs Rust 메모리 관리', '소유권과 RAII 비교.', false, 0, 'ACTIVE', 420, 19, 1, now() - interval '4 day', now(), null, 'BACKEND'),
    -- 정지·탈퇴 회원의 공개 글
-   (x, 'Spring Batch 대용량 처리', '정지된 회원이 쓴 공개 글. chunk 지향 처리와 재시작.', false, 0, 'ACTIVE', 100, 3, 0, now() - interval '13 day', now(), null),
-   (w, 'Spring Cloud Gateway 사용기', '탈퇴한 회원이 쓴 공개 글. 라우팅과 필터 설정.', false, 0, 'ACTIVE', 200, 8, 1, now() - interval '40 day', now(), null);
+   (x, 'Spring Batch 대용량 처리', '정지된 회원이 쓴 공개 글. chunk 지향 처리와 재시작.', false, 0, 'ACTIVE', 100, 3, 0, now() - interval '13 day', now(), null, 'BACKEND'),
+   (w, 'Spring Cloud Gateway 사용기', '탈퇴한 회원이 쓴 공개 글. 라우팅과 필터 설정.', false, 0, 'ACTIVE', 200, 8, 1, now() - interval '40 day', now(), null, 'BACKEND');
 
   update posts set demo_id = (select id from demos where user_id = s and title = '실시간 채팅앱')
   where user_id = s and title = '실시간 채팅앱 제작기: STOMP + WebSocket';

@@ -6,6 +6,8 @@ export const categories: { value: PostCategory; label: string }[] = [
   { value: "ai", label: "AI & 데이터" },
   { value: "mobile", label: "모바일" },
   { value: "career", label: "커리어" },
+  { value: "game", label: "게임" },
+  { value: "uxui", label: "UX/UI" },
 ];
 
 export const sorts: { value: PostSort; label: string }[] = [

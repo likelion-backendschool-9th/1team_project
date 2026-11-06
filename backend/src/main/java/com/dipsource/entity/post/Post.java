@@ -15,6 +15,7 @@ import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.ColumnDefault;
 
 /**
  * 블로그 글. 테이블: posts
@@ -45,6 +46,16 @@ public class Post extends BaseEntity {
     /** 제목 */
     @Column(nullable = false, length = 200)
     private String title;
+
+    /**
+     * 분류 (프론트엔드·백엔드·AI·모바일·커리어·게임·UX/UI).
+     * DB 기본값 BACKEND: 분류 칸이 생기기 전에 들어간 글(시드 등)이 있어도 칸 추가가 실패하지 않게 한다.
+     * 앱에서 저장할 때는 항상 분류를 넣는다.
+     */
+    @Enumerated(EnumType.STRING)
+    @ColumnDefault("'BACKEND'")
+    @Column(nullable = false, length = 20)
+    private PostCategory category;
 
     /** 본문(마크다운) */
     @Column(nullable = false, length = 20000)
@@ -84,20 +95,22 @@ public class Post extends BaseEntity {
     private LocalDateTime deletedAt;
 
     @Builder
-    private Post(Long userId, Long demoId, String title, String content, String thumbnailUrl,
-                 boolean paid, int priceChips) {
+    private Post(Long userId, Long demoId, String title, PostCategory category, String content,
+                 String thumbnailUrl, boolean paid, int priceChips) {
         this.userId = userId;
         this.demoId = demoId;
         this.title = title;
+        this.category = category;
         this.content = content;
         this.thumbnailUrl = thumbnailUrl;
         this.paid = paid;
         this.priceChips = paid ? priceChips : 0;
     }
 
-    public void update(String title, String content, String thumbnailUrl, Long demoId,
-                       boolean paid, int priceChips) {
+    public void update(String title, PostCategory category, String content, String thumbnailUrl,
+                       Long demoId, boolean paid, int priceChips) {
         this.title = title;
+        this.category = category;
         this.content = content;
         this.thumbnailUrl = thumbnailUrl;
         this.demoId = demoId;

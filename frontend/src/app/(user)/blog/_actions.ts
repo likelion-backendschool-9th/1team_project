@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { apiFetch, ApiRequestError, isMockMode, type ApiResponse } from "@/app/_lib/api/client";
+import { apiFetch, ApiRequestError, hasBackend, isMockMode, type ApiResponse } from "@/app/_lib/api/client";
 import { runForm } from "@/app/_lib/api/formAction";
 import { mutate } from "@/app/_lib/api/mutate";
 import { readValues, type FormState } from "@/app/_lib/formState";
@@ -43,7 +43,8 @@ export async function createPost(previous: FormState, formData: FormData): Promi
   if (Object.keys(errors).length > 0)
     return { ok: false, message: "입력값을 확인해 주세요.", errors, values, attempt };
 
-  if (isMockMode)
+  // 글 CRUD는 백엔드에 있어서 MOCK_EXCEPT_DM이어도 실서버를 쓴다.
+  if (!hasBackend)
     return { ok: true, message: "글을 발행했어요. (백엔드 연결 전이라 실제로 저장되지는 않아요)", errors: {}, values, attempt };
 
   let postId: number;
@@ -65,16 +66,20 @@ export async function createPost(previous: FormState, formData: FormData): Promi
 export async function updatePost(postId: number, previous: FormState, formData: FormData): Promise<FormState> {
   const { values, errors, body } = validatePost(formData);
   const state = await runForm(previous, values, errors, () =>
-    mutate(`/api/v1/posts/${postId}`, "PUT", body, "글을 수정했어요."),
+    mutate(`/api/v1/posts/${postId}`, "PUT", body, "글을 수정했어요.", !hasBackend),
   );
-  if (!state.ok || isMockMode) return state;
+  if (!state.ok || !hasBackend) return state;
   revalidatePath(`/blog/posts/${postId}`);
   redirect(`/blog/posts/${postId}?updated=1`);
 }
 
 export async function deletePost(postId: number) {
   if (!isId(postId)) return { ok: false, message: "잘못된 요청이에요." };
-  return mutate(`/api/v1/posts/${postId}`, "DELETE", undefined, "글을 삭제했어요.");
+  const result = await mutate(`/api/v1/posts/${postId}`, "DELETE", undefined, "글을 삭제했어요.", !hasBackend);
+  if (!result.ok || !hasBackend) return result;
+  // 삭제한 글 화면에 남지 않도록 블로그 목록으로 보낸다.
+  revalidatePath("/blog");
+  redirect("/blog?deleted=1");
 }
 
 export async function reportPost(postId: number) {

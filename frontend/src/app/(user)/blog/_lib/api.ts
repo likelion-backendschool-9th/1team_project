@@ -2,6 +2,7 @@ import "server-only";
 import {
   ApiRequestError,
   apiFetch,
+  hasBackend,
   isMockMode,
   type ApiResponse,
   type PageResponse,
@@ -17,6 +18,7 @@ import type {
   PostSummary,
   SubscribedAuthor,
 } from "@/app/_lib/types/post";
+import type { UserSummary } from "@/app/_lib/types/user";
 import {
   createMockPostComments,
   createMockPostDetail,
@@ -39,8 +41,9 @@ export async function getServerTime(): Promise<number> {
   return Date.now();
 }
 
+// 글 CRUD는 백엔드에 있어서, 백엔드가 연결돼 있으면 MOCK_EXCEPT_DM이어도 실서버를 쓴다.
 export async function getPosts({ category, sort, q }: PostQuery): Promise<PostSummary[]> {
-  if (isMockMode) {
+  if (!hasBackend) {
     const posts = createMockPosts(Date.now()).filter(
       (post) =>
         (!category || post.category === category) &&
@@ -72,7 +75,7 @@ export async function getSubscribedAuthors(): Promise<SubscribedAuthor[]> {
 }
 
 export async function getPost(postId: number): Promise<PostDetail | null> {
-  if (isMockMode) return createMockPostDetail(postId, Date.now());
+  if (!hasBackend) return createMockPostDetail(postId, Date.now());
   try {
     const { data } = await apiFetch<ApiResponse<PostDetail>>(`/api/v1/posts/${postId}`);
     return data;
@@ -91,16 +94,35 @@ export async function getPostComments(postId: number): Promise<PostComment[]> {
 }
 
 export async function getUserPosts(userId: number): Promise<PostSummary[]> {
-  if (isMockMode) return createMockUserPosts(userId, Date.now());
+  if (!hasBackend) return createMockUserPosts(userId, Date.now());
   const { data } = await apiFetch<ApiResponse<PageResponse<PostSummary>>>(
     `/api/v1/users/${userId}/posts`,
   );
   return data.content;
 }
 
-// 블로그 주인 정보는 사용자 프로필(GET users/{userId})에 구독 정보가 함께 오는지 확인이 필요하다.
+// 블로그 주인: 회원 정보는 프로필(GET users/{userId})로 받는다.
+// 소개·구독자 수·총 조회수·구독료·구독 여부는 구독 기능 전이라 비워 둔다 (블로그 구독 단계에서 채운다).
 export async function getBlogOwner(userId: number): Promise<BlogOwner | null> {
-  return findMockBlogOwner(userId);
+  if (!hasBackend) return findMockBlogOwner(userId);
+  try {
+    const [{ data: user }, { data: posts }] = await Promise.all([
+      apiFetch<ApiResponse<UserSummary>>(`/api/v1/users/${userId}`),
+      apiFetch<ApiResponse<PageResponse<PostSummary>>>(`/api/v1/users/${userId}/posts?size=1`),
+    ]);
+    return {
+      user: { id: user.id, nickname: user.nickname, profileImage: user.profileImage, techStacks: user.techStacks },
+      bio: "",
+      subscriberCount: 0,
+      postCount: posts.totalElements,
+      totalViews: 0,
+      subscriptionPrice: 0,
+      subscribed: false,
+    };
+  } catch (error) {
+    if (error instanceof ApiRequestError && error.status === 404) return null;
+    throw error;
+  }
 }
 
 export async function getDemoOptions(): Promise<{ id: number; title: string }[]> {
