@@ -8,7 +8,7 @@ import com.dipsource.dto.user.UserSummaryResponse;
 import com.dipsource.entity.tag.Tag;
 import com.dipsource.entity.user.User;
 import com.dipsource.entity.user.UserInterestTag;
-import com.dipsource.entity.user.UserStatus;
+import com.dipsource.entity.user.enums.UserStatus;
 import com.dipsource.global.exception.BusinessException;
 import com.dipsource.global.exception.ErrorCode;
 import com.dipsource.repository.follow.FollowRepository;

@@ -3,7 +3,7 @@ package com.dipsource.controller.auth;
 import com.dipsource.dto.auth.DevLoginRequest;
 import com.dipsource.dto.auth.DevLoginResponse;
 import com.dipsource.entity.user.User;
-import com.dipsource.entity.user.UserStatus;
+import com.dipsource.entity.user.enums.UserStatus;
 import com.dipsource.global.auth.JwtProvider;
 import com.dipsource.global.common.ApiResponse;
 import com.dipsource.global.exception.BusinessException;

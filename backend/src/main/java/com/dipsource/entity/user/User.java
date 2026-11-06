@@ -1,5 +1,7 @@
 package com.dipsource.entity.user;
 
+import com.dipsource.entity.user.enums.UserRole;
+import com.dipsource.entity.user.enums.UserStatus;
 import com.dipsource.global.common.BaseEntity;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -68,7 +70,7 @@ public class User extends BaseEntity {
     /** 권한. 관리자도 회원 테이블에서 role=ADMIN으로 구분한다 */
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 10)
-    private Role role = Role.USER;
+    private UserRole role = UserRole.USER;
 
     /** 회원 상태 */
     @Enumerated(EnumType.STRING)

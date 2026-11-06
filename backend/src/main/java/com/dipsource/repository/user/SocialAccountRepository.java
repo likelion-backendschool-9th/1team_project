@@ -1,7 +1,7 @@
 package com.dipsource.repository.user;
 
 import com.dipsource.entity.user.SocialAccount;
-import com.dipsource.entity.user.SocialProvider;
+import com.dipsource.entity.user.enums.SocialProvider;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
