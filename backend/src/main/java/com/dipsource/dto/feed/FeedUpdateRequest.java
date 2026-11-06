@@ -10,6 +10,6 @@ import jakarta.validation.constraints.Size;
  */
 public record FeedUpdateRequest(
 
-        /** 수정할 피드 본문. 필수, 최대 500자 */
-        @NotBlank @Size(max = 500) String content
-) {}
+                /** 수정할 피드 본문. 필수, 최대 500자 */
+                @NotBlank @Size(max = 500) String content) {
+}
