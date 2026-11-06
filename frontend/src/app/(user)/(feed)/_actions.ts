@@ -66,7 +66,7 @@ export async function reportFeed(feedId: number) {
 
 export async function blockUser(userId: number) {
   if (!isId(userId)) return { ok: false, message: "잘못된 요청이에요." };
-  const result = await request(`/api/v1/blocks/${userId}`, "POST");
+  const result = await request(`/api/v1/blocks/${userId}`, "POST", !hasBackend);
   return { ok: result.ok, message: result.message ?? "차단했어요. 이제 이 사용자의 글이 보이지 않아요." };
 }
 

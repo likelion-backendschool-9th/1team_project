@@ -2,6 +2,7 @@ package com.dipsource.service.user.impl;
 
 import com.dipsource.dto.user.CompleteProfileRequest;
 import com.dipsource.dto.user.NicknameAvailableResponse;
+import com.dipsource.dto.user.UpdateProfileRequest;
 import com.dipsource.dto.user.UserMeResponse;
 import com.dipsource.dto.user.UserProfileResponse;
 import com.dipsource.dto.user.UserSummaryResponse;
@@ -49,7 +50,7 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional(readOnly = true)
     public UserMeResponse getMe(Long userId) {
-        return UserMeResponse.from(getUser(userId));
+        return toMeResponse(getUser(userId));
     }
 
     @Override
@@ -102,7 +103,44 @@ public class UserServiceImpl implements UserService {
             userInterestTagRepository.save(new UserInterestTag(user, tag.getId()));
         }
 
-        return UserMeResponse.from(user);
+        return toMeResponse(user);
+    }
+
+    @Override
+    @Transactional
+    public UserMeResponse updateMe(Long userId, UpdateProfileRequest request) {
+        User user = getUser(userId);
+        String nickname = request.nickname().trim();
+        validateNickname(nickname);
+        if (!nickname.equals(user.getNickname()) && userRepository.existsByNickname(nickname)) {
+            throw new BusinessException(ErrorCode.NICKNAME_TAKEN);
+        }
+
+        String bio = request.bio() == null ? null : request.bio().trim();
+        if (bio != null && bio.isEmpty()) {
+            bio = null;
+        }
+
+        List<String> techStacks = parseTechStacks(request.techStacks());
+        if (techStacks.size() < 2) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "기술 스택을 2개 이상 골라 주세요.");
+        }
+
+        user.updateProfile(
+            nickname, 
+            user.getProfileImage(), 
+            bio, 
+            techStacks, 
+            parseGithubUsername(request.githubUrl()));
+        
+        return toMeResponse(user);
+    }
+
+    @Override 
+    @Transactional 
+    public void withdraw(Long userId) {
+        User user = getUser(userId);
+        user.withdraw();
     }
 
     @Override 
@@ -145,6 +183,45 @@ public class UserServiceImpl implements UserService {
             unique.add(slug);
         }
         return List.copyOf(unique);
+    }
+
+    private List<String> parseTechStacks(String raw) {
+        if (raw == null || raw.isBlank()) {
+            return List.of();
+        }
+        LinkedHashSet<String> unique = new LinkedHashSet<>();
+        for (String item : raw.split(",")) {
+            String stack = item.trim();
+            if (!stack.isEmpty()) {
+                unique.add(stack);
+            }
+        }
+        return List.copyOf(unique);
+    }
+
+    private String parseGithubUsername(String githubUrl) {
+        if (githubUrl == null || githubUrl.isBlank()) {
+            return null;
+        }
+        String trimmed = githubUrl.trim();
+        if (trimmed.endsWith("/")) {
+            trimmed = trimmed.substring(0, trimmed.length() - 1);
+        }
+        String prefix = "https://github.com/";
+        if (!trimmed.startsWith(prefix) || trimmed.substring(prefix.length()).contains("/")) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "https://github.com/아이디 형식으로 입력해 주세요.");
+        }
+        String username = trimmed.substring(prefix.length());
+        if (username.isBlank()) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "https://github.com/아이디 형식으로 입력해 주세요.");
+        }
+        return username;
+    }
+
+    private UserMeResponse toMeResponse(User user) {
+        int followerCount = (int) followRepository.countFollowers(user.getId(), UserStatus.ACTIVE);
+        int followingCount = (int) followRepository.countFollowings(user.getId(), UserStatus.ACTIVE);
+        return UserMeResponse.from(user, followerCount, followingCount);
     }
 
     @Override

@@ -2,7 +2,12 @@ package com.dipsource.repository.follow;
 
 import com.dipsource.entity.follow.Follow;
 import com.dipsource.entity.follow.FollowId;
+<<<<<<< HEAD
 import com.dipsource.entity.user.enums.UserStatus;
+=======
+import com.dipsource.entity.user.UserStatus;
+
+>>>>>>> a330f7e (feature: 내 정보 수정·탈퇴·차단 API 추가)
 import java.util.Collection;
 import java.util.List;
 import org.springframework.data.domain.Page;
@@ -19,6 +24,24 @@ public interface FollowRepository extends JpaRepository<Follow, FollowId> {
     List<Long> findFollowingIdsByUserId(@Param("userId") Long userId);
 
     boolean existsByIdFollowerIdAndIdFollowingId(Long followerId, Long followingId);
+
+    /** 나를 팔로우하는 활동 회원 수 */
+    @Query("""
+        SELECT COUNT(f) FROM Follow f JOIN User u ON u.id = f.id.followerId
+        WHERE f.id.followingId = :userId AND u.status = :status
+        """)
+    long countFollowers(
+        @Param("userId") Long userId,
+        @Param("status") UserStatus status);
+
+    /** 내가 팔로우하는 활동 회원 수 */    
+    @Query("""
+        SELECT COUNT(f) FROM Follow f JOIN User u ON u.id = f.id.followingId
+        WHERE f.id.followerId = :userId AND u.status = :status
+        """)
+    long countFollowings(
+        @Param("userId") Long userId,
+        @Param("status") UserStatus status);
 
     /**
      * 내가 팔로우하는 회원 ID. 최근에 팔로우한 순, 해당 상태의 회원만.

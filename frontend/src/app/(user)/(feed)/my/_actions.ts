@@ -1,5 +1,6 @@
 "use server";
 
+import { hasBackend } from "@/app/_lib/api/client";
 import { runForm } from "@/app/_lib/api/formAction";
 import { mutate } from "@/app/_lib/api/mutate";
 import { readValues, type FormState } from "@/app/_lib/formState";
@@ -19,7 +20,7 @@ export async function saveAccount(previous: FormState, formData: FormData): Prom
     errors.githubUrl = "https://github.com/아이디 형식으로 입력해 주세요.";
 
   return runForm(previous, values, errors, () =>
-    mutate("/api/v1/users/me", "PUT", values, "내 정보를 저장했어요."),
+    mutate("/api/v1/users/me", "PUT", values, "내 정보를 저장했어요.", !hasBackend),
   );
 }
 
@@ -35,7 +36,7 @@ export async function saveSettings(previous: FormState, formData: FormData): Pro
 
 export async function unblockUser(userId: number) {
   if (!isId(userId)) return { ok: false, message: "잘못된 요청이에요." };
-  return mutate(`/api/v1/blocks/${userId}`, "DELETE", undefined, "차단을 해제했어요.");
+  return mutate(`/api/v1/blocks/${userId}`, "DELETE", undefined, "차단을 해제했어요.", !hasBackend);
 }
 
 export async function purchaseChips(packageId: number) {
@@ -73,5 +74,7 @@ export async function logout() {
 }
 
 export async function withdraw() {
-  return mutate("/api/v1/users/me", "DELETE", undefined, "탈퇴 요청을 접수했어요.");
+  const result = await mutate("/api/v1/users/me", "DELETE", undefined, "탈퇴 요청을 접수했어요.", !hasBackend);
+  if (result.ok) await endSession();
+  return result;
 }
