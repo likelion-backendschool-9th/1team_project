@@ -241,8 +241,9 @@ public class MiniHomeServiceImpl implements MiniHomeService {
         return new VisitorStatsResponse(home.getTodayCount(), home.getTotalCount());
     }
 
+    /** 예전에 저장된 "default"나 목록에 없는 값은 cream으로 보여 준다. */
     private static String displaySkin(String skin) {
-        if (skin == null || skin.isBlank() || "default".equals(skin)) {
+        if (skin == null || !SKINS.contains(skin)) {
             return DEFAULT_SKIN;
         }
         return skin;
