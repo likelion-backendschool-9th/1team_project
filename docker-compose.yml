@@ -29,6 +29,8 @@ services:
       FRONTEND_BASE_URL: ${FRONTEND_BASE_URL}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-not-configured}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-not-configured}
+      KAKAO_CLIENT_ID: ${KAKAO_CLIENT_ID:-not-configured}
+      KAKAO_CLIENT_SECRET: ${KAKAO_CLIENT_SECRET:-not-configured}
     depends_on:
       db:
         condition: service_healthy

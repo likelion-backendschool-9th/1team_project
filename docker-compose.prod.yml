@@ -31,6 +31,8 @@ services:
       COOKIE_SECURE: "true"
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:?GOOGLE_CLIENT_ID를 서버 .env에 설정해야 합니다}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:?GOOGLE_CLIENT_SECRET을 서버 .env에 설정해야 합니다}
+      KAKAO_CLIENT_ID: ${KAKAO_CLIENT_ID:?KAKAO_CLIENT_ID를 서버 .env에 설정해야 합니다}
+      KAKAO_CLIENT_SECRET: ${KAKAO_CLIENT_SECRET:?KAKAO_CLIENT_SECRET을 서버 .env에 설정해야 합니다}
     depends_on:
       db:
         condition: service_healthy
