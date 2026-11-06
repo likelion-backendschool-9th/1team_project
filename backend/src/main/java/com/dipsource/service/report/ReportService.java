@@ -1,6 +1,5 @@
 package com.dipsource.service.report;
 
-import com.dipsource.dto.report.ReportCreateRequest;
 import com.dipsource.dto.report.ReportResponse;
 import com.dipsource.entity.feed.Feed;
 import com.dipsource.entity.feed.FeedStatus;
@@ -37,15 +36,15 @@ public class ReportService {
     private static final List<String> ALLOWED_TARGET_TYPES = List.of("FEED", "POST", "DEMO", "FEED_COMMENT", "GUESTBOOK", "USER");
 
     @Transactional
-    public ReportResponse create(Long userId, ReportCreateRequest request) {
+    public ReportResponse create(Long userId, String targetType, Long targetId, String reason) {
         // targetType 검증
-        if (!ALLOWED_TARGET_TYPES.contains(request.targetType())) {
+        if (!ALLOWED_TARGET_TYPES.contains(targetType)) {
             throw new BusinessException(ErrorCode.BAD_REQUEST, "지원하지 않는 신고 대상 종류입니다");
         }
 
         // 중복 신고 확인
         if (reportRepository.existsByReporterIdAndTargetTypeAndTargetId(
-                userId, request.targetType(), request.targetId())) {
+                userId, targetType, targetId)) {
             throw new BusinessException(ErrorCode.CONFLICT, "이미 신고한 대상입니다");
         }
 
@@ -53,8 +52,8 @@ public class ReportService {
         String contentSnapshot = null;
         List<String> imageSnapshotUrls = null;
 
-        if ("FEED".equals(request.targetType())) {
-            Feed feed = feedRepository.findById(request.targetId())
+        if ("FEED".equals(targetType)) {
+            Feed feed = feedRepository.findById(targetId)
                     .filter(f -> f.getStatus() == FeedStatus.ACTIVE)
                     .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "신고 대상 피드를 찾을 수 없습니다"));
             if (feed.getUserId().equals(userId)) {
@@ -67,9 +66,9 @@ public class ReportService {
 
         Report report = Report.builder()
                 .reporterId(userId)
-                .targetType(request.targetType())
-                .targetId(request.targetId())
-                .reason(request.reason())
+                .targetType(targetType)
+                .targetId(targetId)
+                .reason(reason)
                 .contentSnapshot(contentSnapshot)
                 .imageSnapshotUrls(imageSnapshotUrls)
                 .build();
