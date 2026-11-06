@@ -11,6 +11,7 @@ import com.dipsource.repository.minihome.MiniHomeRepository;
 import com.dipsource.service.minihome.MiniHomeService;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,6 +22,9 @@ import org.springframework.transaction.annotation.Transactional;
 public class MiniHomeServiceImpl implements MiniHomeService {
 
     private static final String DEFAULT_SKIN = "cream";
+    /** 프론트 MiniHomeSkin과 같은 9종. 스킨을 추가하면 양쪽을 같이 바꾼다. */
+    private static final Set<String> SKINS = Set.of(
+            "cream", "midnight", "mint", "cherry", "sky", "lavender", "peach", "forest", "sunset");
 
     private final MiniHomeLoader miniHomeLoader;
     private final MiniHomeRepository miniHomeRepository;
@@ -147,8 +151,8 @@ public class MiniHomeServiceImpl implements MiniHomeService {
             return DEFAULT_SKIN;
         }
         String value = skin.trim();
-        if (value.length() > 50) {
-            throw new BusinessException(ErrorCode.BAD_REQUEST, "스킨 이름이 너무 길어요.");
+        if (!SKINS.contains(value)) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "목록에 있는 스킨만 고를 수 있어요.");
         }
         return value;
     }

@@ -99,6 +99,27 @@ class MiniHomeServiceImplTest {
     }
 
     @Test
+    void savesKnownSkin() {
+        MiniHome home = home();
+        when(repository.findByUserId(1L)).thenReturn(Optional.of(home));
+
+        assertThat(service.update(1L, request(List.of(), "")).skin()).isEqualTo("mint");
+    }
+
+    @Test
+    void rejectsUnknownSkin() {
+        MiniHome home = home();
+        when(repository.findByUserId(1L)).thenReturn(Optional.of(home));
+        var bad = new UpdateMiniHomeRequest(
+                "한 줄", "한마디", "abc", "example.dev", "track", "React", List.of(), "");
+
+        assertThatThrownBy(() -> service.update(1L, bad))
+                .isInstanceOf(BusinessException.class)
+                .extracting(ex -> ((BusinessException) ex).getErrorCode())
+                .isEqualTo(ErrorCode.BAD_REQUEST);
+    }
+
+    @Test
     void rejectsMoreThanThreeDemos() {
         when(repository.findByUserId(1L)).thenReturn(Optional.of(home()));
 
