@@ -28,16 +28,16 @@ import org.springframework.web.bind.annotation.RestController;
 /**
  * 피드 댓글 컨트롤러
  *
- * GET /api/v1/feeds/{feedId}/comments — 댓글 목록
- * POST /api/v1/feeds/{feedId}/comments — 댓글 작성 (인증 필요)
- * GET /api/v1/feeds/comments/{commentId}/replies — 대댓글 목록
- * PUT /api/v1/feeds/comments/{commentId} — 댓글 수정 (인증 필요, 본인만)
- * DELETE /api/v1/feeds/comments/{commentId} — 댓글 삭제 (인증 필요, 본인만)
- * POST /api/v1/feeds/comments/{commentId}/like — 댓글 좋아요 (인증 필요)
- * DELETE /api/v1/feeds/comments/{commentId}/like — 댓글 좋아요 취소 (인증 필요)
+ * GET /feeds/{feedId}/comments — 댓글 목록
+ * POST /feeds/{feedId}/comments — 댓글 작성 (인증 필요)
+ * GET /feeds/comments/{commentId}/replies — 대댓글 목록
+ * PUT /feeds/comments/{commentId} — 댓글 수정 (인증 필요, 본인만)
+ * DELETE /feeds/comments/{commentId} — 댓글 삭제 (인증 필요, 본인만)
+ * POST /feeds/comments/{commentId}/like — 댓글 좋아요 (인증 필요)
+ * DELETE /feeds/comments/{commentId}/like — 댓글 좋아요 취소 (인증 필요)
  */
 @RestController
-@RequestMapping("/api/v1/feeds")
+@RequestMapping("/feeds")
 @RequiredArgsConstructor
 public class FeedCommentController {
 

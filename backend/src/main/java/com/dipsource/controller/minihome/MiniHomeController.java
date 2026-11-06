@@ -33,7 +33,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 /** 미니홈피 조회·수정, 일촌평, 방명록. */
 @RestController
-@RequestMapping("/api/v1/mini-homes")
+@RequestMapping("/mini-homes")
 @RequiredArgsConstructor
 public class MiniHomeController {
 

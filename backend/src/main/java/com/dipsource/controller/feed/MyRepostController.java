@@ -14,9 +14,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-/** 내가 리포스트한 피드 목록 조회 — GET /api/v1/users/me/reposts */
+/** 내가 리포스트한 피드 목록 조회 — GET /users/me/reposts */
 @RestController
-@RequestMapping("/api/v1/users/me/reposts")
+@RequestMapping("/users/me/reposts")
 @RequiredArgsConstructor
 public class MyRepostController {
 

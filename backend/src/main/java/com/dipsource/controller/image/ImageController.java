@@ -23,10 +23,10 @@ import org.springframework.web.multipart.MultipartFile;
 /**
  * 이미지 업로드 컨트롤러
  *
- * POST /api/v1/images — 이미지 업로드 (인증 필요, 여러 장 가능)
+ * POST /images — 이미지 업로드 (인증 필요, 여러 장 가능)
  */
 @RestController
-@RequestMapping("/api/v1/images")
+@RequestMapping("/images")
 @ConditionalOnProperty(name = "r2.enabled", havingValue = "true")
 @RequiredArgsConstructor
 public class ImageController {

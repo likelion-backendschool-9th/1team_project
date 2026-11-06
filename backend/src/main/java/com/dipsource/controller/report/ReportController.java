@@ -18,10 +18,10 @@ import org.springframework.web.bind.annotation.RestController;
 /**
  * 신고 컨트롤러
  *
- * POST /api/v1/reports — 신고 생성 (인증 필요)
+ * POST /reports — 신고 생성 (인증 필요)
  */
 @RestController
-@RequestMapping("/api/v1/reports")
+@RequestMapping("/reports")
 @RequiredArgsConstructor
 public class ReportController {
 

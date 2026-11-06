@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 /** GeekNews 개발 뉴스 목록. */
 @RestController
-@RequestMapping("/api/v1/search/news")
+@RequestMapping("/search/news")
 @RequiredArgsConstructor
 public class NewsController {
 

@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 /** 태그 조회 API */
 @RestController
-@RequestMapping("/api/v1/tags")
+@RequestMapping("/tags")
 @RequiredArgsConstructor
 public class TagController {
 

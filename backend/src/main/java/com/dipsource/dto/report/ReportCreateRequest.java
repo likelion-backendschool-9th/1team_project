@@ -6,7 +6,7 @@ import jakarta.validation.constraints.Size;
 
 /**
  * 신고 생성 요청 DTO
- * POST /api/v1/reports 에서 사용
+ * POST /reports 에서 사용
  */
 public record ReportCreateRequest(
 

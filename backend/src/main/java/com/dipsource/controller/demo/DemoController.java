@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 /** 데모 API — 아직 미구현이라 빈 응답만 반환 (프론트 에러 방지용) */
 @RestController
-@RequestMapping("/api/v1/demos")
+@RequestMapping("/demos")
 @RequiredArgsConstructor
 public class DemoController {
 
