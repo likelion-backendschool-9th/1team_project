@@ -2,6 +2,7 @@ package com.dipsource.service.user;
 
 import com.dipsource.dto.user.CompleteProfileRequest;
 import com.dipsource.dto.user.NicknameAvailableResponse;
+import com.dipsource.dto.user.UpdateProfileRequest;
 import com.dipsource.dto.user.UserMeResponse;
 import com.dipsource.dto.user.UserProfileResponse;
 import com.dipsource.dto.user.UserSummaryResponse;
@@ -34,4 +35,10 @@ public interface UserService {
 
     /** 마지막 활동 시각을 지금으로 갱신한다. */
     void markActive(Long userId);
+
+    /** 내 정보 수정. 신원은 JWT의 userId만 사용한다. */
+    UserMeResponse updateMe(Long userId, UpdateProfileRequest request);
+
+    /** 회원 탈퇴. 행은 남기고 개인정보를 비운다. */
+    void withdraw(Long userId);
 }

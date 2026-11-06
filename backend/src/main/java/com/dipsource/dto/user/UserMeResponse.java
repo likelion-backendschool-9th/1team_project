@@ -39,7 +39,7 @@ public record UserMeResponse(
                 null,        // company
                 Math.toIntExact(followerCount),
                 Math.toIntExact(followingCount),
-                0            // chipBalance
+                user.getChipBalance()
         );
     }
 }

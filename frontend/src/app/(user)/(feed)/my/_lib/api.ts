@@ -35,7 +35,22 @@ async function getPage<T>(path: `/api/v1/${string}`, mock: T[]): Promise<T[]> {
   return data.content;
 }
 
-export const getAccount = () => get<MyAccount>("/api/v1/users/me", mockAccount);
+export async function getAccount(): Promise<MyAccount> {
+  if (!hasBackend) return mockAccount;
+  const { data } = await apiFetch<ApiResponse<{
+    bio: string | null;
+    email: string;
+    githubUsername: string | null;
+  }>>("/api/v1/users/me");
+  return {
+    bio: data.bio ?? "",
+    githubUrl: data.githubUsername ? `https://github.com/${data.githubUsername}` : "",
+    email: data.email,
+    provider: mockAccount.provider,
+    joinedAt: mockAccount.joinedAt,
+  };
+}
+
 export const FOLLOW_PAGE_SIZE = 20;
 
 export type FollowPage = { users: FollowUser[]; page: number; totalPages: number; total: number };
