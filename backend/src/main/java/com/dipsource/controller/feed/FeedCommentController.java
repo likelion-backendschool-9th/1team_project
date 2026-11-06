@@ -3,6 +3,7 @@ package com.dipsource.controller.feed;
 import com.dipsource.dto.feed.CommentCreateRequest;
 import com.dipsource.dto.feed.CommentCursorResponse;
 import com.dipsource.dto.feed.CommentResponse;
+import com.dipsource.dto.feed.CommentUpdateRequest;
 import com.dipsource.global.auth.UserPrincipal;
 import com.dipsource.global.common.ApiResponse;
 import com.dipsource.global.exception.BusinessException;
@@ -27,13 +28,13 @@ import org.springframework.web.bind.annotation.RestController;
 /**
  * 피드 댓글 컨트롤러
  *
- * GET    /api/v1/feeds/{feedId}/comments              — 댓글 목록
- * POST   /api/v1/feeds/{feedId}/comments              — 댓글 작성 (인증 필요)
- * GET    /api/v1/feeds/comments/{commentId}/replies    — 대댓글 목록
- * PUT    /api/v1/feeds/comments/{commentId}            — 댓글 수정 (인증 필요, 본인만)
- * DELETE /api/v1/feeds/comments/{commentId}            — 댓글 삭제 (인증 필요, 본인만)
- * POST   /api/v1/feeds/comments/{commentId}/like       — 댓글 좋아요 (인증 필요)
- * DELETE /api/v1/feeds/comments/{commentId}/like       — 댓글 좋아요 취소 (인증 필요)
+ * GET /api/v1/feeds/{feedId}/comments — 댓글 목록
+ * POST /api/v1/feeds/{feedId}/comments — 댓글 작성 (인증 필요)
+ * GET /api/v1/feeds/comments/{commentId}/replies — 대댓글 목록
+ * PUT /api/v1/feeds/comments/{commentId} — 댓글 수정 (인증 필요, 본인만)
+ * DELETE /api/v1/feeds/comments/{commentId} — 댓글 삭제 (인증 필요, 본인만)
+ * POST /api/v1/feeds/comments/{commentId}/like — 댓글 좋아요 (인증 필요)
+ * DELETE /api/v1/feeds/comments/{commentId}/like — 댓글 좋아요 취소 (인증 필요)
  */
 @RestController
 @RequestMapping("/api/v1/feeds")
@@ -50,8 +51,7 @@ public class FeedCommentController {
             @AuthenticationPrincipal UserPrincipal principal,
             @PathVariable Long feedId,
             @RequestParam(required = false) Long cursor,
-            @RequestParam(defaultValue = "20") int size
-    ) {
+            @RequestParam(defaultValue = "20") int size) {
         Long userId = principal == null ? null : principal.getUserId();
         int safeSize = Math.min(Math.max(size, 1), MAX_SIZE);
         CommentCursorResponse response = feedCommentService.getComments(feedId, userId, cursor, safeSize);
@@ -63,8 +63,7 @@ public class FeedCommentController {
     public ResponseEntity<ApiResponse<CommentResponse>> create(
             @AuthenticationPrincipal UserPrincipal principal,
             @PathVariable Long feedId,
-            @Valid @RequestBody CommentCreateRequest request
-    ) {
+            @Valid @RequestBody CommentCreateRequest request) {
         CommentResponse response = feedCommentService.create(requireUserId(principal), feedId, request);
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.of(response));
     }
@@ -73,8 +72,7 @@ public class FeedCommentController {
     @GetMapping("/comments/{commentId}/replies")
     public ResponseEntity<ApiResponse<List<CommentResponse>>> getReplies(
             @AuthenticationPrincipal UserPrincipal principal,
-            @PathVariable Long commentId
-    ) {
+            @PathVariable Long commentId) {
         Long userId = principal == null ? null : principal.getUserId();
         List<CommentResponse> responses = feedCommentService.getReplies(commentId, userId);
         return ResponseEntity.ok(ApiResponse.of(responses));
@@ -85,8 +83,7 @@ public class FeedCommentController {
     public ResponseEntity<ApiResponse<CommentResponse>> update(
             @AuthenticationPrincipal UserPrincipal principal,
             @PathVariable Long commentId,
-            @Valid @RequestBody CommentCreateRequest request
-    ) {
+            @Valid @RequestBody CommentUpdateRequest request) {
         CommentResponse response = feedCommentService.update(requireUserId(principal), commentId, request.content());
         return ResponseEntity.ok(ApiResponse.of(response));
     }
@@ -95,8 +92,7 @@ public class FeedCommentController {
     @DeleteMapping("/comments/{commentId}")
     public ResponseEntity<Void> delete(
             @AuthenticationPrincipal UserPrincipal principal,
-            @PathVariable Long commentId
-    ) {
+            @PathVariable Long commentId) {
         feedCommentService.delete(requireUserId(principal), commentId);
         return ResponseEntity.noContent().build();
     }
@@ -105,8 +101,7 @@ public class FeedCommentController {
     @PostMapping("/comments/{commentId}/like")
     public ResponseEntity<Void> likeComment(
             @AuthenticationPrincipal UserPrincipal principal,
-            @PathVariable Long commentId
-    ) {
+            @PathVariable Long commentId) {
         feedCommentService.likeComment(requireUserId(principal), commentId);
         return ResponseEntity.noContent().build();
     }
@@ -115,8 +110,7 @@ public class FeedCommentController {
     @DeleteMapping("/comments/{commentId}/like")
     public ResponseEntity<Void> unlikeComment(
             @AuthenticationPrincipal UserPrincipal principal,
-            @PathVariable Long commentId
-    ) {
+            @PathVariable Long commentId) {
         feedCommentService.unlikeComment(requireUserId(principal), commentId);
         return ResponseEntity.noContent().build();
     }

@@ -138,6 +138,26 @@ public interface FeedRepository extends JpaRepository<Feed, Long> {
     );
 
     /**
+     * 내가 리포스트한 피드 조회 (커서 지원).
+     * feed_reposts 테이블을 조인해서 리포스트 시간 역순으로 정렬
+     */
+    @Query(nativeQuery = true, value = """
+        SELECT f.*
+        FROM feeds f
+        JOIN feed_reposts fr ON f.id = fr.feed_id
+        WHERE fr.user_id = :userId
+          AND f.status = 'ACTIVE'
+          AND (:cursorId IS NULL OR fr.feed_id < :cursorId)
+        ORDER BY fr.feed_id DESC
+        LIMIT :size
+        """)
+    List<Feed> findMyReposts(
+            @Param("userId") Long userId,
+            @Param("cursorId") Long cursorId,
+            @Param("size") int size
+    );
+
+    /**
      * 최신 피드 조회 (비로그인 사용자용).
      */
     @Query("SELECT f FROM Feed f WHERE f.status = 'ACTIVE' ORDER BY f.id DESC")

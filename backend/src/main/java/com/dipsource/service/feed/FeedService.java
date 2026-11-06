@@ -18,8 +18,15 @@ import com.dipsource.repository.feed.FeedTagRepository;
 import com.dipsource.repository.follow.FollowRepository;
 import com.dipsource.repository.tag.TagRepository;
 import com.dipsource.repository.user.UserRepository;
+import com.dipsource.service.image.ImageService;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -39,6 +46,11 @@ public class FeedService {
     private final FollowRepository followRepository;
     private final TagRepository tagRepository;
     private final UserRepository userRepository;
+
+    /** R2가 비활성화된 환경에서는 null — 피드 삭제 시 이미지 정리에만 사용 */
+    @Nullable
+    @Autowired(required = false)
+    private ImageService imageService;
 
     /**
      * 피드 생성
@@ -133,6 +145,10 @@ public class FeedService {
     @Transactional
     public void delete(Long userId, Long feedId) {
         Feed feed = findOwnActiveFeed(userId, feedId);
+        // R2 이미지 삭제 (r2.enabled=false 환경에서는 imageService가 null이므로 건너뜀)
+        if (imageService != null && feed.getImageUrls() != null) {
+            feed.getImageUrls().forEach(imageService::delete);
+        }
         feed.delete();
     }
 
@@ -144,8 +160,54 @@ public class FeedService {
         List<Feed> feeds = feedRepository.findMyFeeds(userId, cursor, size);
         User author = userRepository.findById(userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "사용자를 찾을 수 없습니다"));
+        if (feeds.isEmpty()) {
+            return FeedCursorResponse.of(List.of(), size);
+        }
+        List<Long> feedIds = feeds.stream().map(Feed::getId).toList();
+        Set<Long> likedIds = new HashSet<>(feedLikeRepository.findLikedFeedIds(userId, feedIds));
+        Set<Long> bookmarkedIds = new HashSet<>(feedBookmarkRepository.findBookmarkedFeedIds(userId, feedIds));
+        // 내 글이므로 reposted는 의미 없음(false), following도 본인이므로 false
         List<FeedResponse> responses = feeds.stream()
-                .map(feed -> FeedResponse.from(feed, author))
+                .map(feed -> FeedResponse.from(
+                        feed, author,
+                        likedIds.contains(feed.getId()),
+                        false,
+                        bookmarkedIds.contains(feed.getId()),
+                        false
+                ))
+                .toList();
+        return FeedCursorResponse.of(responses, size);
+    }
+
+    /**
+     * 내가 리포스트한 피드 목록 조회 (커서 페이지네이션)
+     */
+    @Transactional(readOnly = true)
+    public FeedCursorResponse getMyReposts(Long userId, Long cursor, int size) {
+        List<Feed> feeds = feedRepository.findMyReposts(userId, cursor, size);
+        if (feeds.isEmpty()) {
+            return FeedCursorResponse.of(List.of(), size);
+        }
+        List<Long> feedIds = feeds.stream().map(Feed::getId).toList();
+        List<Long> authorIds = feeds.stream().map(Feed::getUserId).distinct().toList();
+        Map<Long, User> userMap = userRepository.findAllById(authorIds).stream()
+                .collect(Collectors.toMap(User::getId, u -> u));
+        Set<Long> likedIds = new HashSet<>(feedLikeRepository.findLikedFeedIds(userId, feedIds));
+        Set<Long> bookmarkedIds = new HashSet<>(feedBookmarkRepository.findBookmarkedFeedIds(userId, feedIds));
+        Set<Long> followingAuthorIds = new HashSet<>(followRepository.findFollowingIdsIn(userId, authorIds));
+        List<FeedResponse> responses = feeds.stream()
+                .map(feed -> {
+                    User author = userMap.get(feed.getUserId());
+                    if (author == null) return null;
+                    return FeedResponse.from(
+                            feed, author,
+                            likedIds.contains(feed.getId()),
+                            true, // 이 목록의 피드는 모두 내가 리포스트한 것
+                            bookmarkedIds.contains(feed.getId()),
+                            followingAuthorIds.contains(feed.getUserId())
+                    );
+                })
+                .filter(r -> r != null)
                 .toList();
         return FeedCursorResponse.of(responses, size);
     }

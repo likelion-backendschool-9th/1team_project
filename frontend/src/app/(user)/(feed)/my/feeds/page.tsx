@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { connection } from "next/server";
 import { Suspense } from "react";
 import kit from "@/app/_components/ui/kit.module.css";
@@ -15,11 +16,7 @@ async function MyFeedsContent() {
   const [me, now] = await Promise.all([getMe(), getServerTime()]);
 
   if (!me) {
-    return (
-      <p className={kit.empty}>
-        내 피드를 보려면 <Link href="/login?redirect=/my/feeds">로그인</Link>이 필요해요.
-      </p>
-    );
+    redirect("/login?redirect=/my/feeds");
   }
 
   const feeds = await getMyFeeds();
