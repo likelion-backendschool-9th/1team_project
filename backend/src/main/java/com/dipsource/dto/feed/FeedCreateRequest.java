@@ -13,7 +13,7 @@ import java.util.List;
 public record FeedCreateRequest(
 
                 /** 피드 본문. 필수, 최대 500자 */
-                @NotBlank @Size(max = 500) @Pattern(regexp = "^(?!.*<[^>]+>).*$", message = "HTML 태그는 사용할 수 없습니다") String content,
+                @NotBlank @Size(max = 500) String content,
 
                 /** 첨부할 데모 ID(demos.id). 데모를 첨부하지 않으면 null. ERD의 feeds.demo_id에 대응 */
                 Long demoId,
@@ -22,7 +22,7 @@ public record FeedCreateRequest(
                 @Size(max = 10, message = "태그는 최대 10개까지 선택할 수 있습니다") List<Long> tagIds,
 
                 /** 첨부 이미지 URL 목록. 이미지가 없으면 null */
-                @Size(max = 5, message = "이미지는 최대 5개까지 점부할 수 있습니다") List<@Pattern(regexp = "^https?://.+$", message = "이미지 URL은 http:// 또는 https://로 시작해야 합니다") String> imageUrls,
+                @Size(max = 5, message = "이미지는 최대 5개까지 첨부할 수 있습니다") List<@Pattern(regexp = "^https?://.+$", message = "이미지 URL은 http:// 또는 https://로 시작해야 합니다") String> imageUrls,
 
                 /** 첨부 링크 URL. 링크가 없으면 null */
                 @Pattern(regexp = "^(https?://.+)?$", message = "URL은 http:// 또는 https://로 시작해야 합니다") String linkUrl,

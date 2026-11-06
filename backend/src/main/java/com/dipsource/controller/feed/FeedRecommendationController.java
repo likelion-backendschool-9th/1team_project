@@ -25,7 +25,6 @@ public class FeedRecommendationController {
      * 피드 조회.
      * - type=recommended: 점수 기반 + 트렌딩 (로그인 필요)
      * - type=following: 팔로잉한 사람 글만 (로그인 필요)
-     * - type=trending: 트렌딩만
      * - 비로그인: 트렌딩 + 최신
      * <p>
      * 대상 사용자는 쿼리 userId가 아니라 JWT(쿠키)의 {@link UserPrincipal}에서만 결정한다.
@@ -50,7 +49,7 @@ public class FeedRecommendationController {
         } else if ("recommended".equals(type)) {
             response = recommendationService.getRecommendedFeeds(userId, cursor, safeSize);
         } else {
-            throw new BusinessException(ErrorCode.BAD_REQUEST, "지원하지 않는 피드 타입입니다:" + type);
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "지원하지 않는 피드 타입입니다: " + type);
         }
 
         return ResponseEntity.ok(ApiResponse.of(response));
