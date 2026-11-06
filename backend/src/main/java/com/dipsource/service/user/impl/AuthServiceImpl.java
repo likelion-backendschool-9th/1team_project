@@ -57,7 +57,7 @@ public class AuthServiceImpl implements AuthService {
          // 이메일이 비공개면 GitHub noreply 형식으로 채운다. (구글은 항상 이메일이 온다)
         String email = profile.email();
         String resolvedEmail = (email == null || email.isBlank())
-                ? profile.nickname() + "@users.noreply.github.com"
+                ? fallbackEmail(profile)
                 : email;
 
         // 이메일이 이미 있으면 뒤에 숫자를 붙여 UNIQUE를 지킨다.
@@ -125,5 +125,13 @@ public class AuthServiceImpl implements AuthService {
             }
         }
         return local + "+" + System.currentTimeMillis() + domain;
+    }
+
+    private static String fallbackEmail(SocialProfile profile) {
+        return switch (profile.provider()) {
+            case GITHUB -> profile.nickname() + "@users.noreply.github.com";
+            case KAKAO -> "kakao_" + profile.providerId() + "@noreply.dipsource";
+            case GOOGLE -> profile.providerId() + "@noreply.dipsource";
+        };
     }
 }
