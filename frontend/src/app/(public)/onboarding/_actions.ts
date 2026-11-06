@@ -7,7 +7,7 @@ import { readValues, type FormState } from "@/app/_lib/formState";
 import { parseRedirect } from "@/app/_lib/redirect";
 import { completeOnboardingProfile, isNicknameTaken } from "./_lib/api";
 import { clearDraft, saveDraft } from "./_lib/draft";
-import { BIO_MAX, validateGithubUsername, validateNickname } from "./_lib/rules";
+import { BIO_MAX, validateNickname } from "./_lib/rules";
 import { firstIncompleteStep, isTagStep, nextStep, stepUrl, validateTags } from "./_lib/steps";
 
 export type NicknameCheck = { ok: boolean; message: string };
@@ -22,7 +22,7 @@ export async function checkNickname(nickname: string): Promise<NicknameCheck> {
 
 /** 1단계: 기본 정보. 통과하면 draft 쿠키에 보관하고 다음 단계로 간다. */
 export async function saveProfile(previous: FormState, formData: FormData): Promise<FormState> {
-  const values = readValues(formData, ["nickname", "bio", "githubUsername", "redirect"]);
+  const values = readValues(formData, ["nickname", "bio", "redirect"]);
   const attempt = previous.attempt + 1;
   const errors: Record<string, string> = {};
 
@@ -32,9 +32,6 @@ export async function saveProfile(previous: FormState, formData: FormData): Prom
 
   if (values.bio.length > BIO_MAX) errors.bio = `${BIO_MAX}자 이하로 입력해 주세요.`;
 
-  const githubError = validateGithubUsername(values.githubUsername);
-  if (githubError) errors.githubUsername = githubError;
-
   if (formData.get("terms") !== "on") errors.terms = "이용약관과 개인정보 처리방침에 동의해 주세요.";
 
   if (Object.keys(errors).length > 0)
@@ -43,7 +40,6 @@ export async function saveProfile(previous: FormState, formData: FormData): Prom
   await saveDraft({
     nickname: values.nickname,
     bio: values.bio,
-    githubUsername: values.githubUsername,
     termsAgreed: true,
   });
   redirect(stepUrl("stack", parseRedirect(values.redirect)));
@@ -79,7 +75,6 @@ export async function saveTagStep(step: string, previous: FormState, formData: F
     await completeOnboardingProfile({
       nickname: draft.nickname ?? "",
       bio: draft.bio ?? "",
-      githubUsername: draft.githubUsername ?? "",
       techStacks: draft.stack ?? [],
       interestTags: [...(draft.fields ?? []), ...(draft.topics ?? [])],
     });

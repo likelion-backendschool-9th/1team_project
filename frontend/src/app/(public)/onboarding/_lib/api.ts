@@ -4,7 +4,6 @@ import { mockUsers } from "@/app/(user)/_lib/mock";
 
 export type SocialProfile = {
   nickname: string;
-  githubUsername: string;
 };
 
 type UserMe = {
@@ -19,15 +18,14 @@ type UserMe = {
  * 실서버에서는 GET /users/me 응답을 쓴다.
  */
 export async function getSocialProfile(): Promise<SocialProfile> {
-  if (isMockMode) return { nickname: "새내기개발자", githubUsername: "new-dipper" };
+  if (isMockMode) return { nickname: "새내기개발자"};
   try {
     const { data } = await apiFetch<ApiResponse<UserMe>>("/api/v1/users/me");
     return {
       nickname: data.nickname ?? "",
-      githubUsername: data.githubUsername ?? "",
     };
   } catch {
-    return { nickname: "", githubUsername: "" };
+    return { nickname: ""};
   }
 }
 
@@ -51,7 +49,6 @@ export async function isNicknameTaken(nickname: string): Promise<boolean> {
 export async function completeOnboardingProfile(body: {
   nickname: string;
   bio: string;
-  githubUsername: string;
   techStacks: string[];
   interestTags: string[];
 }): Promise<void> {
@@ -60,7 +57,6 @@ export async function completeOnboardingProfile(body: {
     body: JSON.stringify({
       nickname: body.nickname,
       bio: body.bio || null,
-      githubUsername: body.githubUsername || null,
       techStacks: body.techStacks,
       interestTags: body.interestTags,
     }),

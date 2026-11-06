@@ -34,7 +34,6 @@ import org.springframework.transaction.annotation.Transactional;
 public class UserServiceImpl implements UserService {
 
     private static final Pattern NICKNAME_PATTERN = Pattern.compile("^[가-힣a-zA-Z0-9_]+$");
-    private static final Pattern GITHUB_PATTERN = Pattern.compile("^[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,38})$");
     private static final Pattern SLUG_PATTERN = Pattern.compile("^[a-z0-9]+(?:-[a-z0-9]+)*$");
 
     /** 마지막 활동이 이 시간 안이면 "접속 중"으로 본다. */
@@ -84,14 +83,6 @@ public class UserServiceImpl implements UserService {
             bio = null;
         }
 
-        String githubUsername = request.githubUsername() == null ? null : request.githubUsername().trim();
-        if (githubUsername != null && githubUsername.isEmpty()) {
-            githubUsername = null;
-        }
-        if (githubUsername != null && !GITHUB_PATTERN.matcher(githubUsername).matches()) {
-            throw new BusinessException(ErrorCode.BAD_REQUEST, "올바른 GitHub 사용자명이 아니에요.");
-        }
-
         List<String> techStacks = normalizeSlugs(request.techStacks(), "기술 스택");
         List<String> interestTags = normalizeSlugs(request.interestTags(), "관심 태그");
         if (techStacks.size() < 2) {
@@ -101,8 +92,7 @@ public class UserServiceImpl implements UserService {
             throw new BusinessException(ErrorCode.BAD_REQUEST, "관심 태그를 2개 이상 골라 주세요.");
         }
 
-        // 프로필 이미지·이메일은 유지하고 온보딩에서 받은 값만 갱신한다.
-        user.updateProfile(nickname, user.getProfileImage(), bio, techStacks, githubUsername);
+        user.updateProfile(nickname, user.getProfileImage(), bio, techStacks, user.getGithubUsername());
 
         // 관심 태그는 통째로 교체한다.
         userInterestTagRepository.deleteAllByUserId(user.getId());

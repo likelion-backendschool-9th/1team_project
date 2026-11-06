@@ -14,9 +14,6 @@ public record CompleteProfileRequest(
         @Size(max = 200, message = "자기소개는 200자 이하로 입력해 주세요.")
         String bio,
 
-        @Size(max = 50, message = "GitHub 사용자명이 너무 길어요.")
-        String githubUsername,
-
         @NotEmpty(message = "기술 스택을 2개 이상 골라 주세요.")
         @Size(min = 2, message = "기술 스택을 2개 이상 골라 주세요.")
         List<String> techStacks,

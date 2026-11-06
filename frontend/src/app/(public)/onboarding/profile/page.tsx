@@ -21,7 +21,6 @@ async function ProfileContent({ searchParams }: Pick<PageProps<"/onboarding/prof
     <ProfileForm
       defaultNickname={draft.nickname ?? social.nickname}
       defaultBio={draft.bio ?? ""}
-      defaultGithubUsername={draft.githubUsername ?? social.githubUsername}
       defaultTermsAgreed={draft.termsAgreed ?? false}
       redirectTo={parseRedirect(redirect)}
     />
