@@ -22,6 +22,7 @@ import com.dipsource.entity.tag.Tag;
 import com.dipsource.global.exception.BusinessException;
 import com.dipsource.global.exception.ErrorCode;
 import com.dipsource.repository.post.BlogSubscriptionRepository;
+import com.dipsource.repository.post.PostLikeRepository;
 import com.dipsource.repository.post.PostPurchaseRepository;
 import com.dipsource.repository.post.PostRepository;
 import com.dipsource.repository.post.PostTagRepository;
@@ -53,6 +54,7 @@ class PostServiceImplTest {
 
     @Mock private PostRepository postRepository;
     @Mock private PostTagRepository postTagRepository;
+    @Mock private PostLikeRepository postLikeRepository;
     @Mock private PostPurchaseRepository postPurchaseRepository;
     @Mock private BlogSubscriptionRepository blogSubscriptionRepository;
     @Mock private TagRepository tagRepository;
@@ -62,7 +64,7 @@ class PostServiceImplTest {
 
     @BeforeEach
     void setUp() {
-        service = new PostServiceImpl(postRepository, postTagRepository, postPurchaseRepository,
+        service = new PostServiceImpl(postRepository, postTagRepository, postLikeRepository, postPurchaseRepository,
                 blogSubscriptionRepository, tagRepository, userService);
     }
 
@@ -218,7 +220,7 @@ class PostServiceImplTest {
                     .thenReturn(new PageImpl<>(List.of(post(AUTHOR, 0)), PageRequest.of(0, 20), 1));
             when(userService.getSummaries(List.of(AUTHOR))).thenReturn(Map.of(AUTHOR, author()));
 
-            var page = service.getPosts("game", " Unity_3D ", "latest", PageRequest.of(0, 20));
+            var page = service.getPosts("game", " Unity_3D ", "latest", null, PageRequest.of(0, 20));
 
             // 분류·검색어가 위 조건(GAME, "%unity\\_3d%")으로 넘어가야 결과가 나온다.
             assertThat(page.content()).hasSize(1);
@@ -232,7 +234,55 @@ class PostServiceImplTest {
                     .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 20), 0));
             when(userService.getSummaries(List.of())).thenReturn(Map.of());
 
-            assertThat(service.getPosts(null, null, "popular", PageRequest.of(0, 20)).content()).isEmpty();
+            assertThat(service.getPosts(null, null, "popular", null, PageRequest.of(0, 20)).content()).isEmpty();
+        }
+    }
+
+    @Nested
+    class Like {
+
+        @Test
+        void firstLikeIncreasesCount() {
+            when(postRepository.findById(10L)).thenReturn(Optional.of(post(AUTHOR, 0)));
+            when(postLikeRepository.insertIgnore(OTHER, 10L)).thenReturn(1);
+
+            service.like(OTHER, 10L);
+
+            verify(postRepository).incrementLikeCount(10L);
+        }
+
+        @Test
+        void repeatedLikeDoesNotCountTwice() {
+            when(postRepository.findById(10L)).thenReturn(Optional.of(post(AUTHOR, 0)));
+            when(postLikeRepository.insertIgnore(OTHER, 10L)).thenReturn(0);
+
+            service.like(OTHER, 10L);
+
+            verify(postRepository, never()).incrementLikeCount(anyLong());
+        }
+
+        @Test
+        void unlikeDecreasesOnlyWhenLiked() {
+            when(postRepository.findById(10L)).thenReturn(Optional.of(post(AUTHOR, 0)));
+            when(postLikeRepository.deleteByUserIdAndPostId(OTHER, 10L)).thenReturn(1, 0);
+
+            service.unlike(OTHER, 10L);
+            service.unlike(OTHER, 10L);
+
+            verify(postRepository, times(1)).decrementLikeCount(10L);
+        }
+
+        @Test
+        void deletedPostCannotBeLiked() {
+            Post post = post(AUTHOR, 0);
+            post.delete();
+            when(postRepository.findById(10L)).thenReturn(Optional.of(post));
+
+            assertThatThrownBy(() -> service.like(OTHER, 10L))
+                    .isInstanceOf(BusinessException.class)
+                    .extracting(e -> ((BusinessException) e).getErrorCode())
+                    .isEqualTo(ErrorCode.NOT_FOUND);
+            verify(postLikeRepository, never()).insertIgnore(anyLong(), anyLong());
         }
     }
 

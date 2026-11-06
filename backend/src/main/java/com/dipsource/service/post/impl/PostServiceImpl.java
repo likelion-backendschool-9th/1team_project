@@ -17,6 +17,7 @@ import com.dipsource.global.common.PageResponse;
 import com.dipsource.global.exception.BusinessException;
 import com.dipsource.global.exception.ErrorCode;
 import com.dipsource.repository.post.BlogSubscriptionRepository;
+import com.dipsource.repository.post.PostLikeRepository;
 import com.dipsource.repository.post.PostPurchaseRepository;
 import com.dipsource.repository.post.PostRepository;
 import com.dipsource.repository.post.PostTagRepository;
@@ -25,6 +26,7 @@ import com.dipsource.service.post.PostService;
 import com.dipsource.service.user.UserService;
 import java.time.LocalDateTime;
 import java.util.EnumSet;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
@@ -55,6 +57,7 @@ public class PostServiceImpl implements PostService {
 
     private final PostRepository postRepository;
     private final PostTagRepository postTagRepository;
+    private final PostLikeRepository postLikeRepository;
     private final PostPurchaseRepository postPurchaseRepository;
     private final BlogSubscriptionRepository blogSubscriptionRepository;
     private final TagRepository tagRepository;
@@ -62,20 +65,23 @@ public class PostServiceImpl implements PostService {
 
     @Override
     @Transactional(readOnly = true)
-    public PageResponse<PostSummaryResponse> getPosts(String category, String q, String sort, Pageable pageable) {
+    public PageResponse<PostSummaryResponse> getPosts(
+            String category, String q, String sort, Long viewerId, Pageable pageable) {
         Set<PostCategory> categories = (category == null || category.isBlank())
                 ? EnumSet.allOf(PostCategory.class)
                 : EnumSet.of(parseCategory(category));
         Sort order = "popular".equals(sort) ? POPULAR : LATEST;
         Page<Post> page = postRepository.findList(
                 PostStatus.ACTIVE, categories, pattern(q), limit(pageable, order));
-        return toSummaries(page);
+        return toSummaries(page, viewerId);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public PageResponse<PostSummaryResponse> getUserPosts(Long userId, Pageable pageable) {
-        return toSummaries(postRepository.findByUserIdAndStatus(userId, PostStatus.ACTIVE, limit(pageable, LATEST)));
+    public PageResponse<PostSummaryResponse> getUserPosts(Long userId, Long viewerId, Pageable pageable) {
+        // 공개 글만 → 삭제한 글은 작성자 블로그 목록에서도 빠진다.
+        return toSummaries(
+                postRepository.findByUserIdAndStatus(userId, PostStatus.ACTIVE, limit(pageable, LATEST)), viewerId);
     }
 
     @Override
@@ -89,7 +95,8 @@ public class PostServiceImpl implements PostService {
         }
         UserSummaryResponse author = userService.getSummaries(List.of(post.getUserId())).get(post.getUserId());
         List<String> tags = postTagRepository.findTagNames(postId);
-        return PostDetailResponse.of(post, author, tags, canReadAll(post, viewerId));
+        boolean liked = viewerId != null && postLikeRepository.existsById(new PostUserId(viewerId, postId));
+        return PostDetailResponse.of(post, author, tags, canReadAll(post, viewerId), liked);
     }
 
     @Override
@@ -130,6 +137,24 @@ public class PostServiceImpl implements PostService {
         findOwn(userId, postId).delete();
     }
 
+    @Override
+    @Transactional
+    public void like(Long userId, Long postId) {
+        findActive(postId); // 삭제·숨김 글은 404
+        if (postLikeRepository.insertIgnore(userId, postId) > 0) {
+            postRepository.incrementLikeCount(postId);
+        }
+    }
+
+    @Override
+    @Transactional
+    public void unlike(Long userId, Long postId) {
+        findActive(postId);
+        if (postLikeRepository.deleteByUserIdAndPostId(userId, postId) > 0) {
+            postRepository.decrementLikeCount(postId);
+        }
+    }
+
     /** 유료 글 본문 전체를 볼 수 있는지: 무료 글, 작성자, 구매자, 구독자 */
     private boolean canReadAll(Post post, Long viewerId) {
         if (!post.isPaid()) {
@@ -162,10 +187,15 @@ public class PostServiceImpl implements PostService {
         }
     }
 
-    private PageResponse<PostSummaryResponse> toSummaries(Page<Post> page) {
+    private PageResponse<PostSummaryResponse> toSummaries(Page<Post> page, Long viewerId) {
         List<Long> authorIds = page.getContent().stream().map(Post::getUserId).distinct().toList();
         Map<Long, UserSummaryResponse> authors = userService.getSummaries(authorIds);
-        return PageResponse.of(page, post -> PostSummaryResponse.of(post, authors.get(post.getUserId())));
+        List<Long> postIds = page.getContent().stream().map(Post::getId).toList();
+        Set<Long> liked = viewerId == null || postIds.isEmpty()
+                ? Set.of()
+                : new HashSet<>(postLikeRepository.findLikedPostIds(viewerId, postIds));
+        return PageResponse.of(page, post ->
+                PostSummaryResponse.of(post, authors.get(post.getUserId()), liked.contains(post.getId())));
     }
 
     private Post findActive(Long postId) {

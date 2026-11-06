@@ -17,7 +17,7 @@ class PostSummaryResponseTest {
 
     @Test
     void paidPostExcerptStaysInsidePreview() {
-        String excerpt = PostSummaryResponse.of(post(true), AUTHOR).excerpt();
+        String excerpt = PostSummaryResponse.of(post(true), AUTHOR, false).excerpt();
 
         assertThat(excerpt).isEqualTo("안녕하세요. 오늘은 회고입니다. 시작할게요.");
         assertThat(excerpt).doesNotContain("핵심 비법");
@@ -25,7 +25,7 @@ class PostSummaryResponseTest {
 
     @Test
     void freePostExcerptUsesWholeContent() {
-        assertThat(PostSummaryResponse.of(post(false), AUTHOR).excerpt()).contains("핵심 비법");
+        assertThat(PostSummaryResponse.of(post(false), AUTHOR, false).excerpt()).contains("핵심 비법");
     }
 
     private static Post post(boolean paid) {

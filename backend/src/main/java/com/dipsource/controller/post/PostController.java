@@ -38,21 +38,23 @@ public class PostController {
     /** 전체 블로그 목록. ?category=&q=&sort=latest|popular (비로그인 가능) */
     @GetMapping("/posts")
     public ResponseEntity<ApiResponse<PageResponse<PostSummaryResponse>>> posts(
+            @AuthenticationPrincipal UserPrincipal principal,
             @RequestParam(required = false) String category,
             @RequestParam(required = false) String q,
             @RequestParam(defaultValue = "latest") String sort,
             @PageableDefault(size = 20) Pageable pageable
     ) {
-        return ResponseEntity.ok(ApiResponse.of(postService.getPosts(category, q, sort, pageable)));
+        return ResponseEntity.ok(ApiResponse.of(postService.getPosts(category, q, sort, viewerId(principal), pageable)));
     }
 
     /** 한 회원의 블로그 글 목록 (비로그인 가능) */
     @GetMapping("/users/{userId}/posts")
     public ResponseEntity<ApiResponse<PageResponse<PostSummaryResponse>>> userPosts(
+            @AuthenticationPrincipal UserPrincipal principal,
             @PathVariable Long userId,
             @PageableDefault(size = 20) Pageable pageable
     ) {
-        return ResponseEntity.ok(ApiResponse.of(postService.getUserPosts(userId, pageable)));
+        return ResponseEntity.ok(ApiResponse.of(postService.getUserPosts(userId, viewerId(principal), pageable)));
     }
 
     /** 글 상세 (비로그인 가능, 잠긴 유료 글은 앞부분만) */
@@ -61,8 +63,7 @@ public class PostController {
             @AuthenticationPrincipal UserPrincipal principal,
             @PathVariable Long postId
     ) {
-        Long viewerId = principal == null ? null : principal.getUserId();
-        return ResponseEntity.ok(ApiResponse.of(postService.getPost(postId, viewerId)));
+        return ResponseEntity.ok(ApiResponse.of(postService.getPost(postId, viewerId(principal))));
     }
 
     /** 글 작성 */
@@ -94,6 +95,30 @@ public class PostController {
     ) {
         postService.delete(requireUserId(principal), postId);
         return ResponseEntity.noContent().build();
+    }
+
+    /** 좋아요. 이미 눌렀어도 204 (멱등). 삭제된 글이면 404 */
+    @PostMapping("/posts/{postId}/like")
+    public ResponseEntity<Void> like(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @PathVariable Long postId
+    ) {
+        postService.like(requireUserId(principal), postId);
+        return ResponseEntity.noContent().build();
+    }
+
+    /** 좋아요 취소. 안 눌렀어도 204 (멱등). 삭제된 글이면 404 */
+    @DeleteMapping("/posts/{postId}/like")
+    public ResponseEntity<Void> unlike(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @PathVariable Long postId
+    ) {
+        postService.unlike(requireUserId(principal), postId);
+        return ResponseEntity.noContent().build();
+    }
+
+    private static Long viewerId(UserPrincipal principal) {
+        return principal == null ? null : principal.getUserId();
     }
 
     private static Long requireUserId(UserPrincipal principal) {

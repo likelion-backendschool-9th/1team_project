@@ -34,8 +34,9 @@ public record PostDetailResponse(
         int viewCount
 ) {
 
-    public static PostDetailResponse of(Post post, UserSummaryResponse author, List<String> tags, boolean unlocked) {
-        PostSummaryResponse summary = PostSummaryResponse.of(post, author);
+    public static PostDetailResponse of(
+            Post post, UserSummaryResponse author, List<String> tags, boolean unlocked, boolean liked) {
+        PostSummaryResponse summary = PostSummaryResponse.of(post, author, liked);
         return new PostDetailResponse(
                 summary.id(),
                 summary.author(),
