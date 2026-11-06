@@ -1,5 +1,6 @@
 package com.dipsource.controller.image;
 
+import com.dipsource.dto.image.ImageUploadResult;
 import com.dipsource.global.auth.UserPrincipal;
 import com.dipsource.global.common.ApiResponse;
 import com.dipsource.global.exception.BusinessException;
@@ -34,20 +35,27 @@ public class ImageController {
 
     private final ImageService imageService;
 
-    /** 이미지 업로드. 최대 5장. 업로드된 URL 목록 반환 */
+    /**
+     * 이미지 업로드. 최대 5장.
+     * JPEG·PNG는 리사이즈 + 썸네일 생성 후 업로드한다.
+     * 각 파일의 { url, thumbnailUrl } 목록을 반환한다.
+     */
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<ApiResponse<List<String>>> upload(
+    public ResponseEntity<ApiResponse<List<ImageUploadResult>>> upload(
             @AuthenticationPrincipal UserPrincipal principal,
             @RequestPart("files") List<MultipartFile> files
     ) {
+        if (principal == null) {
+            throw new BusinessException(ErrorCode.UNAUTHORIZED, "로그인이 필요합니다");
+        }
         if (files.size() > MAX_FILE_COUNT) {
             throw new BusinessException(ErrorCode.BAD_REQUEST, "이미지는 최대 " + MAX_FILE_COUNT + "장까지 업로드 가능합니다");
         }
 
-        List<String> urls = new ArrayList<>();
+        List<ImageUploadResult> results = new ArrayList<>();
         for (MultipartFile file : files) {
-            urls.add(imageService.upload(file, "feeds"));
+            results.add(imageService.upload(file, "feeds"));
         }
-        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.of(urls));
+        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.of(results));
     }
 }

@@ -4,7 +4,7 @@ import { useActionState, useEffect, useRef, useState } from "react";
 import { CloseIcon, ImageIcon, LinkIcon } from "@/app/_components/ui/Icons";
 import { Avatar } from "@/app/_components/ui/Avatar";
 import type { DemoSummary } from "@/app/_lib/types/demo";
-import { createFeed, uploadImages } from "../_actions";
+import { createFeed, uploadImages, type UploadedImage } from "../_actions";
 import {
   initialComposerState,
   MAX_FEED_LENGTH,
@@ -63,7 +63,7 @@ export function FeedComposer({ nickname, myDemos }: Props) {
   const [stuck, setStuck] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [imageUrls, setImageUrls] = useState<string[]>([]);
+  const [images, setImages] = useState<UploadedImage[]>([]);
   const [linkVisible, setLinkVisible] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -71,7 +71,7 @@ export function FeedComposer({ nickname, myDemos }: Props) {
   // 성공 시 이미지·링크 초기화
   useEffect(() => {
     if (state.message) {
-      setImageUrls([]);
+      setImages([]);
       setLinkVisible(false);
       setUploadError(null);
     }
@@ -101,7 +101,7 @@ export function FeedComposer({ nickname, myDemos }: Props) {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
-    const remaining = MAX_IMAGE_COUNT - imageUrls.length;
+    const remaining = MAX_IMAGE_COUNT - images.length;
     if (remaining <= 0) return;
 
     setUploading(true);
@@ -121,14 +121,14 @@ export function FeedComposer({ nickname, myDemos }: Props) {
       setUploadError(result.error);
       return;
     }
-    setImageUrls((prev) => [...prev, ...result.urls].slice(0, MAX_IMAGE_COUNT));
+    setImages((prev) => [...prev, ...result.images].slice(0, MAX_IMAGE_COUNT));
   }
 
   function removeImage(url: string) {
-    setImageUrls((prev) => prev.filter((u) => u !== url));
+    setImages((prev) => prev.filter((img) => img.url !== url));
   }
 
-  const hasExtras = imageUrls.length > 0 || linkVisible;
+  const hasExtras = images.length > 0 || linkVisible;
 
   return (
     <section
@@ -167,8 +167,8 @@ export function FeedComposer({ nickname, myDemos }: Props) {
           type="button"
           className={styles.tool}
           aria-label="이미지 첨부"
-          aria-pressed={imageUrls.length > 0}
-          disabled={uploading || imageUrls.length >= MAX_IMAGE_COUNT}
+          aria-pressed={images.length > 0}
+          disabled={uploading || images.length >= MAX_IMAGE_COUNT}
           onClick={() => fileInputRef.current?.click()}
         >
           <ImageIcon />
@@ -190,9 +190,9 @@ export function FeedComposer({ nickname, myDemos }: Props) {
           게시
         </button>
 
-        {/* 이미지 URL — 서버 액션으로 전달 */}
-        {imageUrls.map((url, i) => (
-          <input key={i} type="hidden" name="imageUrls" value={url} />
+        {/* 이미지 URL — 서버 액션으로 전달 (썸네일 아닌 원본 URL) */}
+        {images.map((img, i) => (
+          <input key={i} type="hidden" name="imageUrls" value={img.url} />
         ))}
 
         {/* 링크 입력 + 이미지 미리보기 */}
@@ -220,17 +220,18 @@ export function FeedComposer({ nickname, myDemos }: Props) {
                 </button>
               </div>
             )}
-            {imageUrls.length > 0 && (
+            {images.length > 0 && (
               <ul className={styles.thumbGrid} aria-label="첨부 이미지">
-                {imageUrls.map((url) => (
-                  <li key={url} className={styles.thumb}>
+                {images.map((img) => (
+                  <li key={img.url} className={styles.thumb}>
+                    {/* thumbnailUrl(400px)로 미리보기, 피드에는 원본 url이 저장됨 */}
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={url} alt="" className={styles.thumbImg} />
+                    <img src={img.thumbnailUrl} alt="" className={styles.thumbImg} />
                     <button
                       type="button"
                       className={styles.thumbRemove}
                       aria-label="이미지 제거"
-                      onClick={() => removeImage(url)}
+                      onClick={() => removeImage(img.url)}
                     >
                       <CloseIcon />
                     </button>

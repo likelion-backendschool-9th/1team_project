@@ -7,10 +7,12 @@ import { MAX_FEED_LENGTH, type ComposerState } from "./_lib/composerState";
 
 const API_ORIGIN = process.env.API_ORIGIN;
 
-/** 이미지를 R2에 업로드하고 URL 목록을 반환한다. */
+export type UploadedImage = { url: string; thumbnailUrl: string };
+
+/** 이미지를 R2에 업로드하고 { url, thumbnailUrl } 목록을 반환한다. */
 export async function uploadImages(
   formData: FormData,
-): Promise<{ urls: string[] } | { error: string }> {
+): Promise<{ images: UploadedImage[] } | { error: string }> {
   if (!API_ORIGIN) return { error: "백엔드 연결 전이에요." };
 
   const cookieStr = (await cookies()).toString();
@@ -30,8 +32,8 @@ export async function uploadImages(
           : "이미지 업로드에 실패했어요.";
       return { error: msg };
     }
-    const data = (await res.json()) as { data: string[] };
-    return { urls: data.data };
+    const data = (await res.json()) as { data: UploadedImage[] };
+    return { images: data.data };
   } catch {
     return { error: "이미지 업로드 중 오류가 발생했어요." };
   }
