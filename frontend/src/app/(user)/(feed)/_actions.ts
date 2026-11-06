@@ -51,8 +51,17 @@ export async function toggleBookmark(feedId: number, bookmark: boolean) {
 
 export async function reportFeed(feedId: number) {
   if (!isId(feedId)) return { ok: false, message: "잘못된 요청이에요." };
-  const result = await request(`/api/v1/feeds/${feedId}/report`, "POST");
-  return { ok: result.ok, message: result.message ?? "신고를 접수했어요. 운영진이 확인할게요." };
+  if (isMockMode) return { ok: true, message: "신고를 접수했어요. 운영진이 확인할게요." };
+  try {
+    await apiFetch(`/api/v1/feeds/${feedId}/report`, {
+      method: "POST",
+      body: JSON.stringify({ reason: "기타" }),
+    });
+  } catch (error) {
+    if (error instanceof ApiRequestError) return { ok: false, message: error.error.message };
+    throw error;
+  }
+  return { ok: true, message: "신고를 접수했어요. 운영진이 확인할게요." };
 }
 
 export async function blockUser(userId: number) {
