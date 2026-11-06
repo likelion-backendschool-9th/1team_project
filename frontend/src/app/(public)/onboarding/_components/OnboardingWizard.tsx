@@ -14,7 +14,7 @@ type Props = {
   redirectTo: string;
 };
 
-const PROFILE_HEADER = { title: "거의 다 왔어요!", desc: "찍먹에서 쓸 프로필을 완성해 주세요. 닉네임만 필수예요." };
+const PROFILE_HEADER = { title: "거의 다 왔어요!", desc: "찍먹에서 쓸 프로필을 완성해 주세요. " };
 
 // 온보딩 4단계를 한 화면에서 진행한다. 값은 여기서만 들고 있다가 마지막에 한 번에 저장한다.
 export function OnboardingWizard({ defaultNickname, redirectTo }: Props) {
