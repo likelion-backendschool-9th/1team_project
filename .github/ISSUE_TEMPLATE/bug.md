@@ -1,8 +1,8 @@
 ---
 name: "버그 수정"
 about: "동작하지 않거나 의도와 다르게 동작하는 문제를 등록한다"
-title: "[Bug] "
-labels: "bug"
+title: "fix: "
+labels: "fix"
 assignees: ""
 ---
 

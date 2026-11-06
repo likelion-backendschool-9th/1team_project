@@ -1,8 +1,8 @@
 ---
 name: "리팩토링"
 about: "기능 변경 없이 코드 구조, 성능, 가독성을 개선한다"
-title: "[Refactor] "
-labels: "refactor"
+title: "refactor: "
+labels: "refactoring"
 assignees: ""
 ---
 
