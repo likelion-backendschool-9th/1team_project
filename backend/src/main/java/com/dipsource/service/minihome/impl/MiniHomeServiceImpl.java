@@ -63,6 +63,17 @@ public class MiniHomeServiceImpl implements MiniHomeService {
     }
 
     @Override
+    @Transactional
+    public MiniHomeResponse updateFeaturedPost(Long userId, Long postId) {
+        if (postId != null && postId <= 0) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "대표 글을 다시 골라 주세요.");
+        }
+        MiniHome home = miniHomeLoader.loadOrCreate(userId);
+        home.changeFeaturedPost(postId);
+        return toResponse(miniHomeRepository.save(home));
+    }
+
+    @Override
     @Transactional(readOnly = true)
     public VisitorStatsResponse getVisitors(Long userId) {
         return miniHomeLoader.findByUserId(userId)

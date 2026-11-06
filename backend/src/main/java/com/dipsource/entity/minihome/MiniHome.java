@@ -102,6 +102,11 @@ public class MiniHome extends BaseEntity {
         this.bgm = bgm;
     }
 
+    /** 대표 글(제작기 글)을 바꾼다. null이면 연결을 끊는다. */
+    public void changeFeaturedPost(Long featuredPostId) {
+        this.featuredPostId = featuredPostId;
+    }
+
     public void changeStackTags(List<String> stackTags) {
         this.stackTags = new ArrayList<>(stackTags);
     }

@@ -99,6 +99,23 @@ class MiniHomeServiceImplTest {
     }
 
     @Test
+    void setsAndClearsFeaturedPost() {
+        MiniHome home = home();
+        when(repository.findByUserId(1L)).thenReturn(Optional.of(home));
+
+        assertThat(service.updateFeaturedPost(1L, 302L).featuredPostId()).isEqualTo(302L);
+        assertThat(service.updateFeaturedPost(1L, null).featuredPostId()).isNull();
+    }
+
+    @Test
+    void rejectsInvalidFeaturedPostId() {
+        assertThatThrownBy(() -> service.updateFeaturedPost(1L, 0L))
+                .isInstanceOf(BusinessException.class)
+                .extracting(ex -> ((BusinessException) ex).getErrorCode())
+                .isEqualTo(ErrorCode.BAD_REQUEST);
+    }
+
+    @Test
     void rejectsMoreThanThreeDemos() {
         when(repository.findByUserId(1L)).thenReturn(Optional.of(home()));
 
