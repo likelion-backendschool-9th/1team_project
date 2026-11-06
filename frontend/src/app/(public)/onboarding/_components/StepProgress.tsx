@@ -1,14 +1,10 @@
-"use client";
-
-import { usePathname } from "next/navigation";
 import { onboardingSteps } from "../_lib/steps";
 import styles from "./StepProgress.module.css";
 
-// 가입 단계 표시. 지금 단계는 주소로 판단한다.
-export function StepProgress() {
-  const pathname = usePathname();
-  const current = onboardingSteps.findIndex((step) => pathname.startsWith(`/onboarding/${step.key}`));
+type Props = { current: number };
 
+// 가입 단계 표시. 지금 단계 순번은 Wizard가 알려 준다.
+export function StepProgress({ current }: Props) {
   return (
     <nav aria-label="가입 단계">
       <ol className={styles.list}>

@@ -1,5 +1,5 @@
 import "server-only";
-import { apiFetch, ApiRequestError, isMockMode, type ApiResponse } from "@/app/_lib/api/client";
+import { apiFetch, ApiRequestError, hasBackend, type ApiResponse } from "@/app/_lib/api/client";
 import { mockUsers } from "@/app/(user)/_lib/mock";
 
 export type SocialProfile = {
@@ -18,7 +18,7 @@ type UserMe = {
  * 실서버에서는 GET /users/me 응답을 쓴다.
  */
 export async function getSocialProfile(): Promise<SocialProfile> {
-  if (isMockMode) return { nickname: "새내기개발자"};
+  if (!hasBackend) return { nickname: "새내기개발자"};
   try {
     const { data } = await apiFetch<ApiResponse<UserMe>>("/api/v1/users/me");
     return {
@@ -31,7 +31,7 @@ export async function getSocialProfile(): Promise<SocialProfile> {
 
 /** 이미 쓰는 닉네임인지 확인한다. */
 export async function isNicknameTaken(nickname: string): Promise<boolean> {
-  if (isMockMode)
+  if (!hasBackend)
     return Object.values(mockUsers).some((user) => user.nickname.toLowerCase() === nickname.toLowerCase());
 
   try {
