@@ -144,6 +144,15 @@ export async function getGuestbook(userId: number): Promise<MiniHomeComment[]> {
   return data.content;
 }
 
+// 미니홈피 수정 화면의 "제작기 글" 선택칸에 쓴다. 블로그 API는 유료 여부를 price로 준다.
+export async function getMyPosts(userId: number, size = 20): Promise<MiniHomePost[]> {
+  if (isMockMode) return mockPosts;
+  const { data } = await apiFetch<ApiResponse<PageResponse<{ id: number; title: string; price: number }>>>(
+    `/api/v1/users/${userId}/posts?size=${size}`,
+  );
+  return data.content.map((post) => ({ id: post.id, title: post.title, membership: post.price > 0 }));
+}
+
 export async function getDemoComments(demoId: number): Promise<MiniHomeComment[]> {
   if (isMockMode) return createMockDemoComments(demoId, Date.now());
   const { data } = await apiFetch<ApiResponse<PageResponse<MiniHomeComment>>>(
