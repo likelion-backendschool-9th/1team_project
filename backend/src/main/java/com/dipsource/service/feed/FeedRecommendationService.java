@@ -64,7 +64,7 @@ public class FeedRecommendationService {
         int half = size / 2;
 
         List<Feed> scoredFeeds = feedRepository.findRecommendedFeeds(userId, followingArray, cursorId, half);
-        List<Feed> trendingFeeds = feedRepository.findTrendingFeeds(cursorId, half);
+        List<Feed> trendingFeeds = feedRepository.findTrendingFeeds(userId, cursorId, half);
 
         List<Feed> merged = mergeAndDeduplicate(scoredFeeds, trendingFeeds);
 
@@ -82,13 +82,13 @@ public class FeedRecommendationService {
         List<Feed> tagFeeds;
 
         if (interestTagIds.isEmpty()) {
-            tagFeeds = feedRepository.findLatestFeeds(PageRequest.of(0, half));
+            tagFeeds = feedRepository.findLatestFeeds(userId, PageRequest.of(0, half));
         } else {
             Long[] tagArray = interestTagIds.toArray(Long[]::new);
             tagFeeds = feedRepository.findByInterestTags(userId, tagArray, cursorId, half);
         }
 
-        List<Feed> trendingFeeds = feedRepository.findTrendingFeeds(cursorId, half);
+        List<Feed> trendingFeeds = feedRepository.findTrendingFeeds(userId, cursorId, half);
 
         List<Feed> merged = mergeAndDeduplicate(tagFeeds, trendingFeeds);
 
@@ -103,7 +103,7 @@ public class FeedRecommendationService {
         List<Long> followingIds = followRepository.findFollowingIdsByUserId(userId);
         Long[] followingArray = followingIds.toArray(Long[]::new);
 
-        List<Feed> feeds = feedRepository.findFollowingFeeds(followingArray, cursorId, size);
+        List<Feed> feeds = feedRepository.findFollowingFeeds(userId, followingArray, cursorId, size);
 
         return toResponse(feeds, userId, size);
     }
@@ -115,8 +115,8 @@ public class FeedRecommendationService {
     public FeedCursorResponse getGuestFeeds(Long cursorId, int size) {
         int half = size / 2;
 
-        List<Feed> trendingFeeds = feedRepository.findTrendingFeeds(cursorId, half);
-        List<Feed> latestFeeds = feedRepository.findLatestFeeds(PageRequest.of(0, half));
+        List<Feed> trendingFeeds = feedRepository.findTrendingFeeds(null, cursorId, half);
+        List<Feed> latestFeeds = feedRepository.findLatestFeeds(null, PageRequest.of(0, half));
 
         List<Feed> merged = mergeAndDeduplicate(trendingFeeds, latestFeeds);
 

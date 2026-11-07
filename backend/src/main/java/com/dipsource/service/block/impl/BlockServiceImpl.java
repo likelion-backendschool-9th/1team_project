@@ -3,6 +3,7 @@ package com.dipsource.service.block.impl;
 import com.dipsource.global.exception.BusinessException;
 import com.dipsource.global.exception.ErrorCode;
 import com.dipsource.repository.block.BlockRepository;
+import com.dipsource.repository.follow.FollowRepository;
 import com.dipsource.service.block.BlockService;
 import com.dipsource.service.user.UserService;
 import lombok.RequiredArgsConstructor;
@@ -15,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class BlockServiceImpl implements BlockService {
 
     private final BlockRepository blockRepository;
+    private final FollowRepository followRepository;
     private final UserService userService;
 
     @Override
@@ -25,6 +27,8 @@ public class BlockServiceImpl implements BlockService {
             throw new BusinessException(ErrorCode.NOT_FOUND, "차단할 수 없는 회원이에요.");
         }
         blockRepository.insertIgnore(blockerId, blockedId);
+        followRepository.deleteByFollowerIdAndFollowingId(blockerId, blockedId);
+        followRepository.deleteByFollowerIdAndFollowingId(blockedId, blockerId);
     }
 
     @Override

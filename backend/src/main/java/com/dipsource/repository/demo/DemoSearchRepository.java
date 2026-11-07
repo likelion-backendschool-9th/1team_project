@@ -28,6 +28,7 @@ public interface DemoSearchRepository extends Repository<Demo, Long> {
                 LikePattern.contains(condition.phrase().toLowerCase(Locale.ROOT)),
                 condition.operator() == SearchOperator.AND,
                 condition.sort() == SearchSort.RELEVANCE,
+                condition.viewerId(),
                 pageable);
     }
 
@@ -46,6 +47,11 @@ public interface DemoSearchRepository extends Repository<Demo, Long> {
             ) m
             WHERE d.status = 'ACTIVE'
               AND d.deleted_at IS NULL
+              AND (:viewerId IS NULL OR d.user_id NOT IN (
+                  SELECT blocked_id FROM blocks WHERE blocker_id = :viewerId
+                  UNION
+                  SELECT blocker_id FROM blocks WHERE blocked_id = :viewerId
+              ))
               AND m.matched >= CASE WHEN :matchAll THEN cardinality(CAST(:patterns AS text[])) ELSE 1 END
             ORDER BY CASE WHEN :relevance THEN
                          CASE WHEN lower(d.title) = :phrase THEN 100 ELSE 0 END
@@ -63,6 +69,11 @@ public interface DemoSearchRepository extends Repository<Demo, Long> {
             ) m
             WHERE d.status = 'ACTIVE'
               AND d.deleted_at IS NULL
+              AND (:viewerId IS NULL OR d.user_id NOT IN (
+                  SELECT blocked_id FROM blocks WHERE blocker_id = :viewerId
+                  UNION
+                  SELECT blocker_id FROM blocks WHERE blocked_id = :viewerId
+              ))
               AND m.matched >= CASE WHEN :matchAll THEN cardinality(CAST(:patterns AS text[])) ELSE 1 END
             """)
     Page<Demo> searchByLikePatterns(
@@ -71,6 +82,7 @@ public interface DemoSearchRepository extends Repository<Demo, Long> {
             @Param("phrasePattern") String phrasePattern,
             @Param("matchAll") boolean matchAll,
             @Param("relevance") boolean relevance,
+            @Param("viewerId") Long viewerId,
             Pageable pageable);
 
     /**

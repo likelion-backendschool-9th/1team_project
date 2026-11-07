@@ -3,11 +3,13 @@ package com.dipsource.controller.search;
 import com.dipsource.dto.search.SearchOperator;
 import com.dipsource.dto.search.SearchSort;
 import com.dipsource.dto.search.SearchType;
+import com.dipsource.global.auth.UserPrincipal;
 import com.dipsource.global.common.ApiResponse;
 import com.dipsource.service.search.SearchService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -39,6 +41,7 @@ public class SearchController {
      */
     @GetMapping
     public ApiResponse<?> search(
+            @AuthenticationPrincipal UserPrincipal principal,
             @RequestParam(required = false) String q,
             @RequestParam(required = false) String type,
             @RequestParam(required = false) String sort,
@@ -48,9 +51,10 @@ public class SearchController {
         SearchType searchType = SearchType.from(type);
         SearchSort searchSort = SearchSort.from(sort);
         SearchOperator operator = SearchOperator.from(op);
+        Long viewerId = principal == null ? null : principal.getUserId();
         if (searchType == SearchType.ALL) {
-            return ApiResponse.of(searchService.searchAll(q, operator, searchSort));
+            return ApiResponse.of(searchService.searchAll(q, operator, searchSort, viewerId));
         }
-        return ApiResponse.of(searchService.search(q, searchType, operator, searchSort, pageable));
+        return ApiResponse.of(searchService.search(q, searchType, operator, searchSort, pageable, viewerId));
     }
 }

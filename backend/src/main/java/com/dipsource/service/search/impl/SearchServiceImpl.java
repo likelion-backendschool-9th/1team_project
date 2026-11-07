@@ -58,8 +58,8 @@ public class SearchServiceImpl implements SearchService {
     private final TagSearchService tagSearchService;
 
     @Override
-    public SearchAllResponse searchAll(String query, SearchOperator operator, SearchSort sort) {
-        SearchCondition condition = SearchCondition.of(normalize(query), operator, sort);
+    public SearchAllResponse searchAll(String query, SearchOperator operator, SearchSort sort, Long viewerId) {
+        SearchCondition condition = SearchCondition.of(normalize(query), operator, sort, viewerId);
         SearchAllResponse result = searchAll(condition, null);
         long total = total(result);
         if (total == 0) {
@@ -79,8 +79,8 @@ public class SearchServiceImpl implements SearchService {
 
     @Override
     public SearchPageResponse<?> search(String query, SearchType type, SearchOperator operator, SearchSort sort,
-                                        Pageable pageable) {
-        SearchCondition condition = SearchCondition.of(normalize(query), operator, sort);
+                                        Pageable pageable, Long viewerId) {
+        SearchCondition condition = SearchCondition.of(normalize(query), operator, sort, viewerId);
         // 정렬은 SearchSort로 받으므로 Pageable에 들어온 정렬은 쓰지 않는다
         Pageable page = PageRequest.of(pageable.getPageNumber(), Math.min(pageable.getPageSize(), MAX_PAGE_SIZE));
 
