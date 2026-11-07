@@ -2,12 +2,7 @@ package com.dipsource.repository.follow;
 
 import com.dipsource.entity.follow.Follow;
 import com.dipsource.entity.follow.FollowId;
-<<<<<<< HEAD
 import com.dipsource.entity.user.enums.UserStatus;
-=======
-import com.dipsource.entity.user.UserStatus;
-
->>>>>>> a330f7e (feature: 내 정보 수정·탈퇴·차단 API 추가)
 import java.util.Collection;
 import java.util.List;
 import org.springframework.data.domain.Page;
