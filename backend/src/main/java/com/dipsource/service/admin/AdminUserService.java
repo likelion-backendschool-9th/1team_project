@@ -16,7 +16,10 @@ public interface AdminUserService {
 
       /** 회원 제재. users.status를 SUSPENDED로 바꾸고 user_sanctions에 이력을 남긴다. */
     void banUser(Long adminId, Long userId, BanUserRequest request);
-    
+
     /** 제재 해제. 적용 중인 이력에 released_at을 넣고 status를 ACTIVE로 되돌린다. */
     void unbanUser(Long userId);
+
+    /** 기간이 지난 제재를 해제하고 회원 상태를 ACTIVE로 되돌린다. */
+    void expireOverdueSanctions();
 } 

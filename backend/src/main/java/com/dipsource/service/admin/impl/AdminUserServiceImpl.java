@@ -104,6 +104,17 @@ public class AdminUserServiceImpl implements AdminUserService {
         user.unsuspend();
     }
 
+    @Override
+    @Transactional
+    public void expireOverdueSanctions() {
+        List<UserSanction> expired = userSanctionRepository.findExpiredActive(
+                LocalDateTime.now(), UserStatus.SUSPENDED);
+        for (UserSanction sanction : expired) {
+            sanction.release();
+            sanction.getUser().unsuspend();
+        }
+    }
+
     private User requireUser(Long userId) {
         return userRepository.findById(userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "회원을 찾을 수 없습니다"));
