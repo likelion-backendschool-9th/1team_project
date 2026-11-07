@@ -122,16 +122,28 @@ export async function getReports(status?: string, type?: string): Promise<Report
   const query = new URLSearchParams();
   if (status) query.set("status", status);
   if (type) query.set("type", type);
-  const reports = await get(`/api/v1/admin/reports?${query}`, mockReports);
+  if (!isMockMode) {
+    const { data } = await apiFetch<ApiResponse<Report[]>>(`/api/v1/admin/reports?${query}`);
+    return data;
+  }
   const typeLabel = REPORT_TYPES.find((item) => item.value === type)?.label;
   const order = { pending: 0, resolved: 1, rejected: 2 };
-  return reports
+  return mockReports
     .filter((report) => (!status || report.status === status) && (!typeLabel || report.targetType === typeLabel))
     .sort((a, b) => order[a.status] - order[b.status] || b.createdAt.localeCompare(a.createdAt));
 }
 
 export async function getReport(reportId: number): Promise<Report | null> {
-  return (await getReports()).find((report) => report.id === reportId) ?? null;
+  if (!isMockMode) {
+    try {
+      const { data } = await apiFetch<ApiResponse<Report>>(`/api/v1/admin/reports/${reportId}`);
+      return data;
+    } catch (error) {
+      if (error instanceof ApiRequestError && error.status === 404) return null;
+      throw error;
+    }
+  }
+  return mockReports.find((report) => report.id === reportId) ?? null;
 }
 
 export const getSubscriptions = () => get("/api/v1/admin/subscriptions", mockAdminSubscriptions);

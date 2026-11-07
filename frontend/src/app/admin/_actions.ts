@@ -63,7 +63,10 @@ export async function processReport(reportId: number, previous: FormState, formD
   const state = await runForm(previous, values, errors, () =>
     mutate(`/api/v1/admin/reports/${reportId}`, "PUT", values, "신고를 처리했어요."),
   );
-  if (state.ok) revalidatePath("/admin/reports");
+  if (state.ok) {
+    revalidatePath("/admin/reports");
+    revalidatePath(`/admin/reports/${reportId}`);
+  }
   return state;
 }
 

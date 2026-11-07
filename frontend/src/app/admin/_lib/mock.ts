@@ -33,7 +33,7 @@ export type ReportStatus = "pending" | "resolved" | "rejected";
 
 export type Report = {
   id: number;
-  targetType: "데모" | "블로그" | "피드" | "댓글" | "방명록";
+  targetType: "데모" | "블로그" | "피드" | "댓글" | "방명록" | "회원";
   targetTitle: string;
   targetHref: string;
   reason: string;
