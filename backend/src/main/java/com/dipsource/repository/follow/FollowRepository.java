@@ -20,6 +20,24 @@ public interface FollowRepository extends JpaRepository<Follow, FollowId> {
 
     boolean existsByIdFollowerIdAndIdFollowingId(Long followerId, Long followingId);
 
+    /** 나를 팔로우하는 활동 회원 수 */
+    @Query("""
+        SELECT COUNT(f) FROM Follow f JOIN User u ON u.id = f.id.followerId
+        WHERE f.id.followingId = :userId AND u.status = :status
+        """)
+    long countFollowers(
+        @Param("userId") Long userId,
+        @Param("status") UserStatus status);
+
+    /** 내가 팔로우하는 활동 회원 수 */    
+    @Query("""
+        SELECT COUNT(f) FROM Follow f JOIN User u ON u.id = f.id.followingId
+        WHERE f.id.followerId = :userId AND u.status = :status
+        """)
+    long countFollowings(
+        @Param("userId") Long userId,
+        @Param("status") UserStatus status);
+
     /**
      * 내가 팔로우하는 회원 ID. 최근에 팔로우한 순, 해당 상태의 회원만.
      * nicknamePattern은 소문자 LIKE 패턴이다. 검색하지 않으면 "%".

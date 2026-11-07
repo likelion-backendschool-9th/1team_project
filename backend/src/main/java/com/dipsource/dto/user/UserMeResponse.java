@@ -20,7 +20,7 @@ public record UserMeResponse(
         int followingCount,
         int chipBalance
 ) {
-    public static UserMeResponse from(User user) {
+    public static UserMeResponse from(User user, int followerCount, int followingCount) {
         return new UserMeResponse(
                 user.getId(),
                 user.getNickname(),
@@ -33,9 +33,9 @@ public record UserMeResponse(
                 List.of(),   // badges — 아직 미구현
                 false,       // plus
                 null,        // company
-                0,           // followerCount — 추후 팔로우 테이블에서 조회
-                0,           // followingCount
-                0            // chipBalance
+                followerCount,           // followerCount — 추후 팔로우 테이블에서 조회
+                followingCount,           // followingCount
+                user.getChipBalance()            // chipBalance
         );
     }
 }
