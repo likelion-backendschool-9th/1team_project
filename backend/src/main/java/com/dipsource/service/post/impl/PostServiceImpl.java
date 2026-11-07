@@ -139,6 +139,15 @@ public class PostServiceImpl implements PostService {
         findOwn(userId, postId).delete();
     }
 
+    @Override
+    @Transactional
+    public void deleteByAdmin(Long postId) {
+        Post post = postRepository.findById(postId)
+                .filter(p -> p.getStatus() != PostStatus.DELETED)
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "블로그 글을 찾을 수 없습니다"));
+        post.delete();
+    }
+
     /** 유료 글 본문 전체를 볼 수 있는지: 무료 글, 작성자, 구매자, 구독자 */
     private boolean canReadAll(Post post, Long viewerId) {
         if (!post.isPaid()) {
