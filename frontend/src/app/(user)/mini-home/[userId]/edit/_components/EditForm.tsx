@@ -6,7 +6,7 @@ import { FormMessage } from "@/app/_components/ui/FormMessage";
 import kit from "@/app/_components/ui/kit.module.css";
 import { initialFormState } from "@/app/_lib/formState";
 import { showcaseLimit } from "@/app/_lib/policy";
-import type { MiniHomeDemo, MiniHomeProfile } from "@/app/_lib/types/miniHome";
+import type { MiniHomeDemo, MiniHomePost, MiniHomeProfile } from "@/app/_lib/types/miniHome";
 import { saveMiniHome } from "../../_actions";
 import { BGM_TRACKS } from "../../_lib/bgm";
 import styles from "./EditForm.module.css";
@@ -26,9 +26,10 @@ const skins = [
 type Props = {
   profile: MiniHomeProfile;
   demos: MiniHomeDemo[];
+  posts: MiniHomePost[];
 };
 
-export function EditForm({ profile, demos }: Props) {
+export function EditForm({ profile, demos, posts }: Props) {
   const [state, formAction, pending] = useActionState(saveMiniHome, initialFormState);
   const limit = showcaseLimit(profile.plus);
   const showcase = state.values.showcaseDemoIds?.split(",").map(Number) ?? profile.showcaseDemoIds;
@@ -113,6 +114,38 @@ export function EditForm({ profile, demos }: Props) {
           {state.errors.showcase}
         </p>
       </fieldset>
+
+      <div className={kit.field}>
+        <label htmlFor="edit-featured-post" className={kit.label}>
+          제작기 글
+        </label>
+        <p id="edit-featured-post-hint" className={kit.hint}>
+          대표 데모 아래 &quot;제작기 글&quot; 버튼에 연결할 내 블로그 글을 골라요.
+        </p>
+        <select
+          id="edit-featured-post"
+          name="featuredPostId"
+          defaultValue={value("featuredPostId", profile.featuredPostId ? String(profile.featuredPostId) : "")}
+          className={kit.select}
+          aria-describedby="edit-featured-post-hint"
+        >
+          <option value="">선택 안 함</option>
+          {posts.map((post) => (
+            <option key={post.id} value={post.id}>
+              {post.membership ? "🔒 " : ""}
+              {post.title}
+            </option>
+          ))}
+        </select>
+        {posts.length === 0 && (
+          <p className={kit.hint}>
+            아직 쓴 블로그 글이 없어요. <Link href="/blog/write">글 쓰러 가기</Link>
+          </p>
+        )}
+        <p id="edit-featured-post-error" className={kit.error}>
+          {state.errors.featuredPost}
+        </p>
+      </div>
 
       <div className={kit.grid2}>
         <div className={kit.field}>
