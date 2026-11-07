@@ -1,5 +1,6 @@
 "use server";
 
+import { hasBackend } from "@/app/_lib/api/client";
 import { revalidatePath } from "next/cache";
 import { runForm } from "@/app/_lib/api/formAction";
 import { mutate } from "@/app/_lib/api/mutate";
@@ -22,7 +23,7 @@ export async function sanctionUser(userId: number, previous: FormState, formData
   if (!PERIODS.includes(values.period)) errors.period = "제재 기간을 골라 주세요.";
   if (values.reason.length < 5) errors.reason = "사유를 5자 이상 입력해 주세요.";
   const state = await runForm(previous, values, errors, () =>
-    mutate(`/api/v1/admin/users/${userId}/ban`, "PUT", values, `${values.period} 제재를 적용했어요.`),
+    mutate(`/api/v1/admin/users/${userId}/ban`, "PUT", values, `${values.period} 제재를 적용했어요.`, !hasBackend),
   );
   if (state.ok) revalidatePath(`/admin/users/${userId}`);
   return state;
@@ -30,7 +31,15 @@ export async function sanctionUser(userId: number, previous: FormState, formData
 
 export async function releaseUser(userId: number) {
   if (!isId(userId)) return { ok: false, message: "잘못된 요청이에요." };
-  return mutate(`/api/v1/admin/users/${userId}/ban`, "DELETE", undefined, "제재를 해제했어요.");
+  const result = await mutate(
+    `/api/v1/admin/users/${userId}/ban`,
+    "DELETE",
+    undefined,
+    "제재를 해제했어요.",
+    !hasBackend,
+  );
+  if (result.ok) revalidatePath(`/admin/users/${userId}`);
+  return result;
 }
 
 export async function deleteContent(kind: ContentKind, id: number) {
@@ -68,9 +77,9 @@ export async function suspendForFraud(userId: number) {
     "PUT",
     { period: "영구", reason: "결제 부정 사용" },
     "계정을 정지했어요.",
+    !hasBackend,
   );
 }
-
 const EVENT_STATUSES = ["ongoing", "upcoming", "ended"];
 
 function validateEvent(formData: FormData) {

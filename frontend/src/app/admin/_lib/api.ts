@@ -1,6 +1,6 @@
 import "server-only";
 import { mockEvents } from "@/app/_lib/mockEvents";
-import { apiFetch, isMockMode, type ApiResponse, type PageResponse } from "@/app/_lib/api/client";
+import { apiFetch, ApiRequestError, hasBackend, isMockMode, type ApiResponse, type PageResponse } from "@/app/_lib/api/client";
 import {
   mockAdminSubscriptions,
   mockAdminUsers,
@@ -16,6 +16,7 @@ import {
   type ContentKind,
   type ContentRow,
   type Report,
+  type Sanction,
 } from "./mock";
 
 export const PAGE_SIZE = 10;
@@ -48,7 +49,7 @@ export function getDashboard(): Promise<Dashboard> {
 }
 
 export async function getUsers(query: { q?: string; status?: string; page: number }): Promise<PageResponse<AdminUser>> {
-  if (!isMockMode) {
+  if (hasBackend) {
     const search = new URLSearchParams({ page: String(query.page - 1), size: String(PAGE_SIZE) });
     if (query.q) search.set("q", query.q);
     if (query.status) search.set("status", query.status);
@@ -70,11 +71,21 @@ export async function getUsers(query: { q?: string; status?: string; page: numbe
 }
 
 export async function getUser(userId: number) {
-  const user = await get<AdminUser | null>(
-    `/api/v1/admin/users/${userId}`,
-    mockAdminUsers.find((item) => item.id === userId) ?? null,
-  );
-  return user ? { user, sanctions: user.status === "suspended" ? mockSanctions : mockSanctions.slice(0, 1) } : null;
+  if (!hasBackend) {
+    const user = mockAdminUsers.find((item) => item.id === userId) ?? null;
+    return user
+      ? { user, sanctions: user.status === "suspended" ? mockSanctions : mockSanctions.slice(0, 1) }
+      : null;
+  }
+  try {
+    const { data } = await apiFetch<ApiResponse<{ user: AdminUser; sanctions: Sanction[] }>>(
+      `/api/v1/admin/users/${userId}`,
+    );
+    return data;
+  } catch (error) {
+    if (error instanceof ApiRequestError && error.status === 404) return null;
+    throw error;
+  }
 }
 
 export async function getContent(kind: ContentKind, q?: string): Promise<ContentRow[]> {
