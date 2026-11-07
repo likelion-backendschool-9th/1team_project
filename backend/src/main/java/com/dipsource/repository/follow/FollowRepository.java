@@ -2,7 +2,7 @@ package com.dipsource.repository.follow;
 
 import com.dipsource.entity.follow.Follow;
 import com.dipsource.entity.follow.FollowId;
-import com.dipsource.entity.user.UserStatus;
+import com.dipsource.entity.user.enums.UserStatus;
 import java.util.Collection;
 import java.util.List;
 import org.springframework.data.domain.Page;

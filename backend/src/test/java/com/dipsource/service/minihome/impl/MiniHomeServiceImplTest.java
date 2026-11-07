@@ -140,6 +140,46 @@ class MiniHomeServiceImplTest {
     }
 
     @Test
+    void savesKnownSkin() {
+        MiniHome home = home();
+        when(repository.findByUserId(1L)).thenReturn(Optional.of(home));
+
+        assertThat(service.update(1L, requestWithSkin("forest")).skin()).isEqualTo("forest");
+        assertThat(home.getSkinTheme()).isEqualTo("forest");
+    }
+
+    @Test
+    void savesDefaultOrBlankSkinAsCream() {
+        MiniHome home = home();
+        when(repository.findByUserId(1L)).thenReturn(Optional.of(home));
+
+        service.update(1L, requestWithSkin("default"));
+        assertThat(home.getSkinTheme()).isEqualTo("cream");
+
+        service.update(1L, requestWithSkin(""));
+        assertThat(home.getSkinTheme()).isEqualTo("cream");
+    }
+
+    @Test
+    void readsStoredUnknownSkinAsCream() {
+        MiniHome home = home();
+        home.changeSkin("abc", null);
+        when(repository.findByUserId(1L)).thenReturn(Optional.of(home));
+
+        assertThat(service.getOrCreate(1L).skin()).isEqualTo("cream");
+    }
+
+    @Test
+    void rejectsUnknownSkin() {
+        MiniHome home = home();
+        when(repository.findByUserId(1L)).thenReturn(Optional.of(home));
+        assertThatThrownBy(() -> service.update(1L, requestWithSkin("abc")))
+                .isInstanceOf(BusinessException.class)
+                .extracting(ex -> ((BusinessException) ex).getErrorCode())
+                .isEqualTo(ErrorCode.BAD_REQUEST);
+    }
+
+    @Test
     void rejectsMoreThanThreeDemos() {
         when(repository.findByUserId(1L)).thenReturn(Optional.of(home()));
 
@@ -214,6 +254,11 @@ class MiniHomeServiceImplTest {
 
     private static MiniHome home() {
         return MiniHome.builder().userId(1L).title("옛 제목").intro("옛 소개").build();
+    }
+
+    private static UpdateMiniHomeRequest requestWithSkin(String skin) {
+        return new UpdateMiniHomeRequest(
+                "한 줄", "한마디", skin, "example.dev", "track", "React", List.of(), "");
     }
 
     private static UpdateMiniHomeRequest request(List<Long> showcase, String featured) {

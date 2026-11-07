@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/v1/feeds")
+@RequestMapping("/feeds")
 @RequiredArgsConstructor
 public class FeedRecommendationController {
     private static final int MAX_SIZE = 100;

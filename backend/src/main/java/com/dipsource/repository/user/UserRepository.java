@@ -1,7 +1,7 @@
 package com.dipsource.repository.user;
 
 import com.dipsource.entity.user.User;
-import com.dipsource.entity.user.UserStatus;
+import com.dipsource.entity.user.enums.UserStatus;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 

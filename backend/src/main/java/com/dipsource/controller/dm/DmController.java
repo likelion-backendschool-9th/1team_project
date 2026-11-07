@@ -22,7 +22,7 @@ import org.springframework.web.bind.annotation.RestController;
  * DM 대화방 목록·대화 내역 API. 메시지 보내기는 WebSocket(STOMP)으로 한다({@link DmSocketController}).
  */
 @RestController
-@RequestMapping("/api/v1/dm")
+@RequestMapping("/dm")
 @RequiredArgsConstructor
 public class DmController {
 

@@ -24,7 +24,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 /** 팔로우·언팔로우와 팔로잉·팔로워 목록. "나"는 JWT에서만 가져온다. */
 @RestController
-@RequestMapping("/api/v1/follows")
+@RequestMapping("/follows")
 @RequiredArgsConstructor
 public class FollowController {
 

@@ -15,14 +15,14 @@ import org.springframework.web.bind.annotation.RestController;
 
 /** 통합 검색 API. 비로그인도 쓸 수 있다. */
 @RestController
-@RequestMapping("/api/v1/search")
+@RequestMapping("/search")
 @RequiredArgsConstructor
 public class SearchController {
 
     private final SearchService searchService;
 
     /**
-     * 검색. 예: GET /api/v1/search?q=spring jpa&type=post&sort=relevance&op=and&page=0&size=20
+     * 검색. 예: GET /search?q=spring jpa&type=post&sort=relevance&op=and&page=0&size=20
      * - q: 검색어. 앞뒤 공백 제거 후 1~50자
      * - type: all(기본값), post, feed, demo, user
      *   - all: 대상별 상위 5건 + 총개수 (page, size 무시)

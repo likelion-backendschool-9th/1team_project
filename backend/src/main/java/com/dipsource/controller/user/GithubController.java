@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
  * WBS: users/{userId}/github/contributions|repos|languages
  */
 @RestController
-@RequestMapping("/api/v1/users/{userId}/github")
+@RequestMapping("/users/{userId}/github")
 @RequiredArgsConstructor
 public class GithubController {
 

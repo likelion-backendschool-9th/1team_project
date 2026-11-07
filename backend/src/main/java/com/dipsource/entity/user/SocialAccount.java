@@ -1,5 +1,6 @@
 package com.dipsource.entity.user;
 
+import com.dipsource.entity.user.enums.SocialProvider;
 import jakarta.persistence.Column;
 import jakarta.persistence.EntityListeners;
 import jakarta.persistence.Entity;

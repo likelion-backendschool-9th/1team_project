@@ -120,10 +120,11 @@ export async function getDemos(userId: number, size = 3): Promise<MiniHomeDemo[]
 
 export async function getRecentPosts(userId: number): Promise<MiniHomePost[]> {
   if (isMockMode) return mockPosts;
-  const { data } = await apiFetch<ApiResponse<PageResponse<MiniHomePost>>>(
+  // 블로그 API는 유료 여부를 price(칩 가격)로 준다. 0보다 크면 멤버십(유료) 글이다.
+  const { data } = await apiFetch<ApiResponse<PageResponse<{ id: number; title: string; price: number }>>>(
     `/api/v1/users/${userId}/posts?size=3`,
   );
-  return data.content;
+  return data.content.map((post) => ({ id: post.id, title: post.title, membership: post.price > 0 }));
 }
 
 export async function getComments(

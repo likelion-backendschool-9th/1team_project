@@ -1,4 +1,4 @@
-package com.dipsource.entity.user;
+package com.dipsource.entity.user.enums;
 
 public enum UserStatus {
     ACTIVE,
