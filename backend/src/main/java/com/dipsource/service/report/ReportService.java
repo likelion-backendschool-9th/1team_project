@@ -10,10 +10,16 @@ import com.dipsource.entity.post.PostStatus;
 import com.dipsource.entity.report.Report;
 import com.dipsource.global.exception.BusinessException;
 import com.dipsource.global.exception.ErrorCode;
+import com.dipsource.entity.feed.FeedComment;
+import com.dipsource.entity.minihome.Guestbook;
+import com.dipsource.entity.user.User;
 import com.dipsource.repository.demo.DemoRepository;
+import com.dipsource.repository.feed.FeedCommentRepository;
 import com.dipsource.repository.feed.FeedRepository;
+import com.dipsource.repository.minihome.GuestbookRepository;
 import com.dipsource.repository.post.PostRepository;
 import com.dipsource.repository.report.ReportRepository;
+import com.dipsource.repository.user.UserRepository;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -31,6 +37,9 @@ public class ReportService {
     private final FeedRepository feedRepository;
     private final PostRepository postRepository;
     private final DemoRepository demoRepository;
+    private final FeedCommentRepository feedCommentRepository;
+    private final GuestbookRepository guestbookRepository;
+    private final UserRepository userRepository;
 
     /**
      * 신고 생성
@@ -83,8 +92,29 @@ public class ReportService {
             if (demo.getUserId().equals(userId)) {
                 throw new BusinessException(ErrorCode.BAD_REQUEST, "본인의 데모는 신고할 수 없습니다");
             }
+        } else if ("FEED_COMMENT".equals(targetType)) {
+            FeedComment comment = feedCommentRepository.findById(targetId)
+                    .filter(c -> c.getDeletedAt() == null)
+                    .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "신고 대상 댓글을 찾을 수 없습니다"));
+            if (comment.getUserId().equals(userId)) {
+                throw new BusinessException(ErrorCode.BAD_REQUEST, "본인의 댓글은 신고할 수 없습니다");
+            }
+            contentSnapshot = comment.getContent();
+        } else if ("GUESTBOOK".equals(targetType)) {
+            Guestbook guestbook = guestbookRepository.findById(targetId)
+                    .filter(g -> g.getDeletedAt() == null)
+                    .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "신고 대상 방명록을 찾을 수 없습니다"));
+            if (guestbook.getWriterId().equals(userId)) {
+                throw new BusinessException(ErrorCode.BAD_REQUEST, "본인의 방명록은 신고할 수 없습니다");
+            }
+            contentSnapshot = guestbook.getContent();
+        } else if ("USER".equals(targetType)) {
+            User target = userRepository.findById(targetId)
+                    .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "신고 대상 유저를 찾을 수 없습니다"));
+            if (target.getId().equals(userId)) {
+                throw new BusinessException(ErrorCode.BAD_REQUEST, "본인을 신고할 수 없습니다");
+            }
         }
-        // TODO: FEED_COMMENT, GUESTBOOK, USER 타입은 추후 추가
 
         Report report = Report.builder()
                 .reporterId(userId)
