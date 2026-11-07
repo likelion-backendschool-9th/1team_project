@@ -1,12 +1,18 @@
 package com.dipsource.service.report;
 
 import com.dipsource.dto.report.ReportResponse;
+import com.dipsource.entity.demo.Demo;
+import com.dipsource.entity.demo.DemoStatus;
 import com.dipsource.entity.feed.Feed;
 import com.dipsource.entity.feed.FeedStatus;
+import com.dipsource.entity.post.Post;
+import com.dipsource.entity.post.PostStatus;
 import com.dipsource.entity.report.Report;
 import com.dipsource.global.exception.BusinessException;
 import com.dipsource.global.exception.ErrorCode;
+import com.dipsource.repository.demo.DemoRepository;
 import com.dipsource.repository.feed.FeedRepository;
+import com.dipsource.repository.post.PostRepository;
 import com.dipsource.repository.report.ReportRepository;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +29,8 @@ public class ReportService {
 
     private final ReportRepository reportRepository;
     private final FeedRepository feedRepository;
+    private final PostRepository postRepository;
+    private final DemoRepository demoRepository;
 
     /**
      * 신고 생성
@@ -61,8 +69,22 @@ public class ReportService {
             }
             contentSnapshot = feed.getContent();
             imageSnapshotUrls = feed.getImageUrls();
+        } else if ("POST".equals(targetType)) {
+            Post post = postRepository.findById(targetId)
+                    .filter(p -> p.getStatus() == PostStatus.ACTIVE)
+                    .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "신고 대상 블로그 글을 찾을 수 없습니다"));
+            if (post.getUserId().equals(userId)) {
+                throw new BusinessException(ErrorCode.BAD_REQUEST, "본인의 블로그 글은 신고할 수 없습니다");
+            }
+        } else if ("DEMO".equals(targetType)) {
+            Demo demo = demoRepository.findById(targetId)
+                    .filter(d -> d.getStatus() == DemoStatus.ACTIVE)
+                    .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "신고 대상 데모를 찾을 수 없습니다"));
+            if (demo.getUserId().equals(userId)) {
+                throw new BusinessException(ErrorCode.BAD_REQUEST, "본인의 데모는 신고할 수 없습니다");
+            }
         }
-        // TODO: POST, FEED_COMMENT 등 다른 타입은 추후 추가
+        // TODO: FEED_COMMENT, GUESTBOOK, USER 타입은 추후 추가
 
         Report report = Report.builder()
                 .reporterId(userId)
