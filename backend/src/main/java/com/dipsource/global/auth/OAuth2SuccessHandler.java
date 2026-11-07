@@ -1,6 +1,6 @@
 package com.dipsource.global.auth;
 
-import com.dipsource.entity.user.UserStatus;
+import com.dipsource.entity.user.enums.UserStatus;
 import com.dipsource.service.user.AuthResult;
 import com.dipsource.service.user.AuthService;
 import com.dipsource.service.user.SocialProfile;

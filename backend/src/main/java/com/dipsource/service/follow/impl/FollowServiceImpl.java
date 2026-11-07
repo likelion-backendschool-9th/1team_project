@@ -3,7 +3,7 @@ package com.dipsource.service.follow.impl;
 import com.dipsource.dto.follow.FollowPresenceResponse;
 import com.dipsource.dto.follow.FollowUserResponse;
 import com.dipsource.dto.user.UserSummaryResponse;
-import com.dipsource.entity.user.UserStatus;
+import com.dipsource.entity.user.enums.UserStatus;
 import com.dipsource.global.common.PageResponse;
 import com.dipsource.global.exception.BusinessException;
 import com.dipsource.global.exception.ErrorCode;
