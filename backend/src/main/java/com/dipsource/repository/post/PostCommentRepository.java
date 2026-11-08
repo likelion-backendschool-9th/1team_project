@@ -11,21 +11,32 @@ import org.springframework.data.repository.query.Param;
 public interface PostCommentRepository extends JpaRepository<PostComment, Long> {
 
     /**
-     * 글의 최상위 댓글 목록 (삭제된 것 포함, 최신순, 커서 페이지네이션)
-     * 삭제됐고 대댓글도 없는 댓글은 Service에서 필터링
+     * 글의 표시 가능한 최상위 댓글 목록 (최신순, 커서 페이지네이션)
+     * 삭제됐고 활성 대댓글도 없는 댓글은 DB에서 제외 — hasNext 계산 정확도 보장
+     * size+1개를 요청해 hasNext 여부를 판단하고, Service에서 첫 size개만 처리
      */
     @Query(value = """
-            SELECT * FROM post_comments
-            WHERE post_id = :postId
-              AND parent_id IS NULL
-              AND (:cursor IS NULL OR id < :cursor)
-            ORDER BY id DESC
+            SELECT * FROM post_comments pc
+            WHERE pc.post_id = :postId
+              AND pc.parent_id IS NULL
+              AND (:cursor IS NULL OR pc.id < :cursor)
+              AND (pc.deleted_at IS NULL
+                   OR EXISTS (
+                       SELECT 1 FROM post_comments r
+                       WHERE r.parent_id = pc.id AND r.deleted_at IS NULL
+                   ))
+            ORDER BY pc.id DESC
             LIMIT :size
             """, nativeQuery = true)
-    List<PostComment> findTopLevelCommentsIncludeDeleted(
+    List<PostComment> findTopLevelCommentsVisible(
             @Param("postId") Long postId,
             @Param("cursor") Long cursor,
             @Param("size") int size);
+
+    /** 댓글 소프트 삭제 (deleted_at IS NULL 조건으로 원자적 처리) — 실제 변경된 행 수 반환 */
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("UPDATE PostComment c SET c.deletedAt = CURRENT_TIMESTAMP WHERE c.id = :commentId AND c.deletedAt IS NULL")
+    int softDeleteIfActive(@Param("commentId") Long commentId);
 
     /** 여러 부모 댓글의 대댓글을 한 번에 조회 (N+1 방지) */
     @Query(value = """

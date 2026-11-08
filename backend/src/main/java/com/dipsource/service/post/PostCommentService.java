@@ -13,7 +13,6 @@ import com.dipsource.repository.post.PostCommentLikeRepository;
 import com.dipsource.repository.post.PostCommentRepository;
 import com.dipsource.repository.post.PostRepository;
 import com.dipsource.repository.user.UserRepository;
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -42,9 +41,13 @@ public class PostCommentService {
         findActivePost(postId);
         int safeSize = Math.min(Math.max(size, 1), MAX_SIZE);
 
-        List<PostComment> comments = postCommentRepository.findTopLevelCommentsIncludeDeleted(postId, cursor, safeSize);
+        // size+1개 조회 — 초과 여부로 hasNext 판단 (DB에서 이미 visible 필터 적용)
+        List<PostComment> fetched = postCommentRepository.findTopLevelCommentsVisible(postId, cursor, safeSize + 1);
+        boolean hasNext = fetched.size() > safeSize;
+        List<PostComment> comments = hasNext ? fetched.subList(0, safeSize) : fetched;
+
         if (comments.isEmpty()) {
-            return PostCommentCursorResponse.of(List.of(), safeSize);
+            return PostCommentCursorResponse.of(List.of(), false);
         }
 
         // 대댓글 배치 조회
@@ -73,20 +76,17 @@ public class PostCommentService {
         Map<Long, List<PostComment>> replyMap = allReplies.stream()
                 .collect(Collectors.groupingBy(r -> r.getParent().getId()));
 
-        // 삭제됐고 대댓글도 없는 댓글은 제외
-        List<PostCommentResponse> responses = new ArrayList<>();
-        for (PostComment c : comments) {
-            List<PostComment> replies = replyMap.getOrDefault(c.getId(), List.of());
-            if (c.getDeletedAt() != null && replies.isEmpty()) {
-                continue;
-            }
-            List<PostCommentResponse> replyResponses = replies.stream()
-                    .map(r -> PostCommentResponse.from(r, userMap.get(r.getUserId()), likedCommentIds.contains(r.getId())))
-                    .toList();
-            responses.add(PostCommentResponse.from(c, userMap.get(c.getUserId()), likedCommentIds.contains(c.getId()), replyResponses));
-        }
+        List<PostCommentResponse> responses = comments.stream()
+                .map(c -> {
+                    List<PostComment> replies = replyMap.getOrDefault(c.getId(), List.of());
+                    List<PostCommentResponse> replyResponses = replies.stream()
+                            .map(r -> PostCommentResponse.from(r, userMap.get(r.getUserId()), likedCommentIds.contains(r.getId())))
+                            .toList();
+                    return PostCommentResponse.from(c, userMap.get(c.getUserId()), likedCommentIds.contains(c.getId()), replyResponses);
+                })
+                .toList();
 
-        return PostCommentCursorResponse.of(responses, safeSize);
+        return PostCommentCursorResponse.of(responses, hasNext);
     }
 
     /** 댓글 작성 */
@@ -127,12 +127,18 @@ public class PostCommentService {
         return PostCommentResponse.from(comment, author, false);
     }
 
-    /** 댓글 삭제 (본인만, 소프트 삭제) */
+    /** 댓글 삭제 (본인만, 소프트 삭제)
+     * softDeleteIfActive로 원자적 처리 — 동시 삭제 요청이 와도 commentCount 중복 감소 방지 */
     @Transactional
     public void delete(Long userId, Long commentId) {
-        PostComment comment = findOwnComment(userId, commentId);
-        comment.delete();
-        postCommentRepository.decrementCommentCount(comment.getPost().getId());
+        PostComment comment = findCommentIncludeDeleted(commentId);
+        if (!comment.getUserId().equals(userId)) {
+            throw new BusinessException(ErrorCode.FORBIDDEN, "본인의 댓글만 삭제할 수 있습니다");
+        }
+        int updated = postCommentRepository.softDeleteIfActive(commentId);
+        if (updated > 0) {
+            postCommentRepository.decrementCommentCount(comment.getPost().getId());
+        }
     }
 
     /** 댓글 좋아요. 이미 눌렀으면 no-op (멱등) */

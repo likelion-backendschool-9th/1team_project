@@ -9,8 +9,8 @@ public record PostCommentCursorResponse(
         boolean hasNext,
         int size
 ) {
-    public static PostCommentCursorResponse of(List<PostCommentResponse> content, int requestedSize) {
-        boolean hasNext = content.size() >= requestedSize;
+    /** hasNext는 Service에서 size+1 조회 결과로 판단해 명시적으로 전달 */
+    public static PostCommentCursorResponse of(List<PostCommentResponse> content, boolean hasNext) {
         String nextCursor = null;
 
         if (hasNext && !content.isEmpty()) {
