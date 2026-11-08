@@ -80,7 +80,7 @@ export async function ContentTable({ kind, noun, searchParams }: Props) {
                   <ConfirmButton
                     label="삭제"
                     title={`이 ${noun}을(를) 삭제할까요?`}
-                    description={`「${row.title}」 · 작성자에게 삭제 알림이 가요.`}
+                    description={`「${row.title}」 · 목록에서 숨기고 관리자 기록에 남깁니다.`}
                     confirmLabel="삭제"
                     danger
                     className={`${kit.btnGhost} ${kit.sm}`}

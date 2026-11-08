@@ -4,8 +4,6 @@ import com.dipsource.dto.admin.AdminContentResponse;
 import com.dipsource.global.auth.UserPrincipal;
 import com.dipsource.global.common.ApiResponse;
 import com.dipsource.global.common.PageResponse;
-import com.dipsource.global.exception.BusinessException;
-import com.dipsource.global.exception.ErrorCode;
 import com.dipsource.service.admin.AdminContentService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
@@ -37,14 +35,7 @@ public class AdminCommentController {
     public ResponseEntity<Void> deleteComment(
             @AuthenticationPrincipal UserPrincipal principal,
             @PathVariable Long commentId) {
-        adminContentService.deleteComment(requireUserId(principal), commentId);
+        adminContentService.deleteComment(AdminAuth.requireUserId(principal), commentId);
         return ResponseEntity.noContent().build();
-    }
-
-    private static Long requireUserId(UserPrincipal principal) {
-        if (principal == null) {
-            throw new BusinessException(ErrorCode.UNAUTHORIZED, "로그인이 필요합니다");
-        }
-        return principal.getUserId();
     }
 }

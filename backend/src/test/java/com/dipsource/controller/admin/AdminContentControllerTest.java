@@ -1,6 +1,8 @@
 package com.dipsource.controller.admin;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -11,6 +13,7 @@ import com.dipsource.entity.feed.Feed;
 import com.dipsource.entity.feed.FeedComment;
 import com.dipsource.entity.post.Post;
 import com.dipsource.entity.post.PostCategory;
+import com.dipsource.entity.post.PostStatus;
 import com.dipsource.entity.report.Report;
 import com.dipsource.entity.user.User;
 import com.dipsource.global.auth.UserPrincipal;
@@ -146,6 +149,47 @@ class AdminContentControllerTest {
                 .andExpect(jsonPath("$.data.content[0].reported").value(2))
                 .andExpect(jsonPath("$.data.content[0].metric").value("체험 0"))
                 .andExpect(jsonPath("$.data.content[0].status").value("visible"));
+    }
+
+    @Test
+    @DisplayName("관리자 글 삭제 후 상태가 DELETED가 되고 작업 이력이 남는다")
+    void adminDeletesPost() throws Exception {
+        mockMvc.perform(delete("/admin/posts/{id}", percentPost.getId())
+                        .with(authentication(auth(admin, "ADMIN"))))
+                .andExpect(status().isNoContent());
+
+        em.clear();
+        assertThat(em.find(Post.class, percentPost.getId()).getStatus()).isEqualTo(PostStatus.DELETED);
+        Integer logs = jdbc.queryForObject(
+                "SELECT COUNT(*) FROM admin_action_logs WHERE target_type = 'POST' AND target_id = ?",
+                Integer.class,
+                percentPost.getId());
+        assertThat(logs).isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("관리자 댓글 삭제 후 소프트 삭제되고 피드 댓글 수가 줄어든다")
+    void adminDeletesComment() throws Exception {
+        Feed feed = persist(Feed.builder().userId(author.getId()).content("삭제 테스트 피드").build());
+        FeedComment comment = persist(FeedComment.builder()
+                .feed(feed)
+                .userId(author.getId())
+                .content("지울 댓글")
+                .build());
+        jdbc.update("UPDATE feeds SET comment_count = 1 WHERE id = ?", feed.getId());
+
+        mockMvc.perform(delete("/admin/comments/{id}", comment.getId())
+                        .with(authentication(auth(admin, "ADMIN"))))
+                .andExpect(status().isNoContent());
+
+        em.clear();
+        assertThat(em.find(FeedComment.class, comment.getId()).getDeletedAt()).isNotNull();
+        assertThat(em.find(Feed.class, feed.getId()).getCommentCount()).isEqualTo(0);
+        Integer logs = jdbc.queryForObject(
+                "SELECT COUNT(*) FROM admin_action_logs WHERE target_type = 'FEED_COMMENT' AND target_id = ?",
+                Integer.class,
+                comment.getId());
+        assertThat(logs).isEqualTo(1);
     }
 
     private Authentication auth(User user, String role) {

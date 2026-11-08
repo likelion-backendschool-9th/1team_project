@@ -92,7 +92,7 @@ export async function getContent(
   kind: ContentKind,
   query: { q?: string; page: number },
 ): Promise<PageResponse<ContentRow>> {
-  if (!isMockMode) {
+  if (hasBackend) {
     const search = new URLSearchParams({ page: String(query.page - 1), size: String(PAGE_SIZE) });
     if (query.q) search.set("q", query.q);
     const { data } = await apiFetch<ApiResponse<PageResponse<ContentRow>>>(`/api/v1/admin/${kind}?${search}`);

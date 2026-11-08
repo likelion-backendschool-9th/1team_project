@@ -1,12 +1,10 @@
 package com.dipsource.controller.admin;
 
 import com.dipsource.dto.admin.AdminContentResponse;
+import com.dipsource.global.auth.UserPrincipal;
 import com.dipsource.global.common.ApiResponse;
 import com.dipsource.global.common.PageResponse;
 import com.dipsource.service.admin.AdminContentService;
-import com.dipsource.global.auth.UserPrincipal;
-import com.dipsource.global.exception.BusinessException;
-import com.dipsource.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
@@ -37,14 +35,7 @@ public class AdminFeedController {
     public ResponseEntity<Void> deleteFeed(
             @AuthenticationPrincipal UserPrincipal principal,
             @PathVariable Long feedId) {
-        adminContentService.deleteFeed(requireUserId(principal), feedId);
+        adminContentService.deleteFeed(AdminAuth.requireUserId(principal), feedId);
         return ResponseEntity.noContent().build();
-    }
-
-    private static Long requireUserId(UserPrincipal principal) {
-        if (principal == null) {
-            throw new BusinessException(ErrorCode.UNAUTHORIZED, "로그인이 필요합니다");
-        }
-        return principal.getUserId();
     }
 }
