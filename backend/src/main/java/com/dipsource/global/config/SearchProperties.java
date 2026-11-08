@@ -73,24 +73,35 @@ public class SearchProperties {
         private float synonymBoost = 0.6f;
         private float maxSpamPenalty = 0.7f;
 
-        private Map<String, TypePolicy> types = defaultPolicies();
+        /** 재정렬로 올릴 수 있는 최소 관련도(1위 대비 비율). 이보다 낮은 문서는 인기도를 받지 못한다 */
+        private double minRelevanceForBoost = 0.25;
+
+        private TypePolicy post = TypePolicy.of(fields("title", 5f, "content", 1f, "tags_text", 1f),
+                "tags", 1.5f, "title_norm", "title", new Popularity(0.45, 0.25, 0.2, 0.1, 0.15));
+        private TypePolicy demo = TypePolicy.of(fields("title", 5f, "description", 1f, "tags_text", 1.5f),
+                "tags", 4f, "title_norm", "title", new Popularity(0.45, 0.25, 0.2, 0.1, 0.15));
+        private TypePolicy feed = TypePolicy.of(fields("content", 3f, "tags_text", 1f, "demo_text", 0.5f),
+                "tags", 2f, null, "content", new Popularity(0.5, 0, 0.3, 0.2, 0.15));
+        private TypePolicy user = TypePolicy.of(
+                fields("nickname", 8f, "nickname.ngram", 3f, "bio", 1f, "tech_text", 2f, "github_username", 2f),
+                "tech_stacks", 3f, "nickname_norm", "nickname", new Popularity(0, 0, 1, 0, 0.15));
 
         public TypePolicy policy(String type) {
-            return types.get(type);
+            return switch (type) {
+                case "post" -> post;
+                case "demo" -> demo;
+                case "feed" -> feed;
+                case "user" -> user;
+                default -> throw new IllegalArgumentException("알 수 없는 검색 대상: " + type);
+            };
         }
 
-        private static Map<String, TypePolicy> defaultPolicies() {
-            Map<String, TypePolicy> policies = new LinkedHashMap<>();
-            policies.put("post", TypePolicy.of(Map.of("title", 5f, "content", 1f, "tags_text", 1f),
-                    "tags", 1.5f, "title_norm", "title", new Popularity(0.45, 0.25, 0.2, 0.1, 0.15)));
-            policies.put("demo", TypePolicy.of(Map.of("title", 5f, "description", 1f, "tags_text", 1.5f),
-                    "tags", 4f, "title_norm", "title", new Popularity(0.45, 0.25, 0.2, 0.1, 0.15)));
-            policies.put("feed", TypePolicy.of(Map.of("content", 3f, "tags_text", 1f, "demo_text", 0.5f),
-                    "tags", 2f, null, "content", new Popularity(0.5, 0, 0.3, 0.2, 0.15)));
-            policies.put("user", TypePolicy.of(
-                    Map.of("nickname", 8f, "nickname.ngram", 3f, "bio", 1f, "tech_text", 2f, "github_username", 2f),
-                    "tech_stacks", 3f, "nickname_norm", "nickname", new Popularity(0, 0, 1, 0, 0.15)));
-            return policies;
+        private static Map<String, Float> fields(Object... pairs) {
+            Map<String, Float> fields = new LinkedHashMap<>();
+            for (int i = 0; i < pairs.length; i += 2) {
+                fields.put((String) pairs[i], (Float) pairs[i + 1]);
+            }
+            return fields;
         }
     }
 
@@ -135,6 +146,11 @@ public class SearchProperties {
         private double followerWeight;
         private double recencyWeight;
         private double maxBoost;
+        /** 좋아요가 이 값이면 신호가 0.5다. 아무리 커져도 1을 넘지 않는다 */
+        private double likeSaturation = 30;
+        private double viewSaturation = 1000;
+        private double followerSaturation = 100;
+        private double recencyHalfLifeDays = 30;
 
         public Popularity() {
         }

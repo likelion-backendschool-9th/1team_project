@@ -29,4 +29,48 @@ final class EsEvalProfilesTest {
             return "1-es-bm25";
         }
     }
+
+    /** 2단계: 필드 가중치 + 구문·정확 일치 + 인기도 재정렬 + 스팸 감점. 다국어·기술 용어는 아직 끔 */
+    @AutoConfigureMockMvc
+    @SpringBootTest(properties = {COMMON_JWT, GITHUB_ID, GITHUB_SECRET, ES_ON, ENGINE, NO_FALLBACK,
+            "search.analysis.language-fields=false",
+            "search.analysis.tech-terms=false",
+            "search.analysis.synonyms=false"})
+    static class Stage2RankedEval extends AbstractEsEval {
+        @Override
+        String profile() {
+            return "2-es-ranked";
+        }
+    }
+
+    /** 2단계 실험: 블로그 해시태그 가중치를 요구사항 초기값(4)으로 올렸을 때 */
+    @AutoConfigureMockMvc
+    @SpringBootTest(properties = {COMMON_JWT, GITHUB_ID, GITHUB_SECRET, ES_ON, ENGINE, NO_FALLBACK,
+            "search.analysis.language-fields=false",
+            "search.analysis.tech-terms=false",
+            "search.analysis.synonyms=false",
+            "search.ranking.post.keyword-boost=4"})
+    static class Stage2TagBoost4Eval extends AbstractEsEval {
+        @Override
+        String profile() {
+            return "2x-post-tag-boost-4";
+        }
+    }
+
+    /** 2단계 실험: 인기도를 끄면(최대 가산 0) 어떻게 되는지 */
+    @AutoConfigureMockMvc
+    @SpringBootTest(properties = {COMMON_JWT, GITHUB_ID, GITHUB_SECRET, ES_ON, ENGINE, NO_FALLBACK,
+            "search.analysis.language-fields=false",
+            "search.analysis.tech-terms=false",
+            "search.analysis.synonyms=false",
+            "search.ranking.post.popularity.max-boost=0",
+            "search.ranking.demo.popularity.max-boost=0",
+            "search.ranking.feed.popularity.max-boost=0",
+            "search.ranking.user.popularity.max-boost=0"})
+    static class Stage2NoPopularityEval extends AbstractEsEval {
+        @Override
+        String profile() {
+            return "2x-no-popularity";
+        }
+    }
 }

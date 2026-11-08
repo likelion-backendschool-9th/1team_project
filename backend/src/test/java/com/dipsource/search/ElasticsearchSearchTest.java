@@ -167,6 +167,72 @@ class ElasticsearchSearchTest {
                 .andExpect(jsonPath("$.data.feeds.totalElements").value(0));
     }
 
+    @Test
+    @DisplayName("A~F 문서: 제목 일치가 위, 단어 반복·무관한 인기 글은 아래")
+    void qualityOrdering() throws Exception {
+        long a = post("Spring 핵심 개념 정리", "프레임워크의 구조를 다룬다", "ACTIVE");
+        long b = post("백엔드 프레임워크 선택기", "우리 팀이 spring 을 고른 이유. spring 생태계 spring 커뮤니티 spring 문서 spring 안정성", "ACTIVE");
+        long c = post("검색 잘되는 글", "spring ".repeat(100), "ACTIVE");
+        long d = post("오늘의 개발 일기", "내용 없는 일기", "ACTIVE");
+        tag("post_tags", "post_id", d, "spring");
+        long e = post("맛집 탐방 후기 모음", "주말에 다녀온 맛집과 카페를 정리했다. 음식 사진과 웨이팅 정보가 들어 있다. 참고로 spring 시즌 메뉴가 좋았다.", "ACTIVE");
+        jdbc.update("UPDATE posts SET like_count = 1000, view_count = 50000 WHERE id = ?", e);
+        long f = post("Spring 완벽 가이드: Spring으로 시작하기", "Spring 의 IoC 와 DI. Spring MVC 와 Spring 설정.", "ACTIVE");
+        tag("post_tags", "post_id", f, "spring");
+        reindex();
+
+        List<Integer> ids = ids(search("spring"));
+
+        assertThat(ids.indexOf((int) f)).as("제목·본문 모두 관련 F").isLessThan(ids.indexOf((int) b));
+        assertThat(ids.indexOf((int) a)).as("제목 일치 A가 본문 5회 B보다 위").isLessThan(ids.indexOf((int) b));
+        assertThat(ids.indexOf((int) b)).as("정상 본문 B가 단어 반복 C보다 위").isLessThan(ids.indexOf((int) c));
+        assertThat(ids.indexOf((int) a)).as("제목 일치 A가 인기만 많은 E보다 위").isLessThan(ids.indexOf((int) e));
+        assertThat(ids.indexOf((int) d)).as("태그만 있는 D도 찾는다").isGreaterThanOrEqualTo(0);
+    }
+
+    @Test
+    @DisplayName("닉네임 정확 일치는 팔로워가 많은 비슷한 이름보다 먼저다")
+    void exactNicknameFirst() throws Exception {
+        long exact = user("springdev", "소개");
+        long famous = user("springdev_official", "공식");
+        for (int i = 0; i < 20; i++) {
+            long follower = user("follower" + i, null);
+            jdbc.update("INSERT INTO follows(follower_id, following_id, created_at) VALUES (?, ?, now())", follower, famous);
+        }
+        reindex();
+
+        ResultActions result = mockMvc.perform(get("/api/v1/search").param("q", "springdev").param("type", "user"));
+        assertThat(ids(result).get(0)).isEqualTo((int) exact);
+    }
+
+    @Test
+    @DisplayName("재정렬해도 페이지를 넘길 때 중복·누락이 없다")
+    void rerankingKeepsPagesConsistent() throws Exception {
+        for (int i = 0; i < 45; i++) {
+            long id = post("Spring 글 " + i, "본문 " + i, "ACTIVE");
+            jdbc.update("UPDATE posts SET like_count = ? WHERE id = ?", i * 7 % 40, id);
+        }
+        reindex();
+
+        List<Integer> seen = new ArrayList<>();
+        for (int page = 0; page < 5; page++) {
+            seen.addAll(ids(mockMvc.perform(get("/api/v1/search").param("q", "spring").param("type", "post")
+                    .param("page", String.valueOf(page)).param("size", "10"))));
+        }
+        assertThat(seen).hasSize(45).doesNotHaveDuplicates();
+    }
+
+    private static List<Integer> ids(ResultActions result) throws Exception {
+        return com.jayway.jsonpath.JsonPath.read(result.andReturn().getResponse().getContentAsString(), "$.data.content[*].id");
+    }
+
+    private void tag(String table, String column, long targetId, String name) {
+        long tagId = jdbc.queryForObject("""
+                INSERT INTO tags(name) VALUES (?) ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name RETURNING id
+                """, Long.class, name);
+        jdbc.update("INSERT INTO " + table + "(" + column + ", tag_id) VALUES (?, ?)", targetId, tagId);
+    }
+
     private ResultActions search(String q, String... extra) throws Exception {
         var request = get("/api/v1/search").param("q", q).param("type", "post");
         for (int i = 0; i + 1 < extra.length; i += 2) {
