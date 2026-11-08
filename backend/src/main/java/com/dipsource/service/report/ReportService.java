@@ -117,8 +117,8 @@ public class ReportService {
             throw new BusinessException(ErrorCode.BAD_REQUEST, "본인의 방명록은 신고할 수 없습니다");
         }
 
-        // 비밀 방명록은 운영진을 위해 DB에 저장하되, 신고자에게는 내용 미노출
-        String contentSnapshot = guestbook.isSecret() ? null : guestbook.getContent();
+        // 비밀글 포함 항상 DB에 저장 — 운영진 확인용. 신고자에게는 ReportResponse에 contentSnapshot 필드가 없어 미노출
+        String contentSnapshot = guestbook.getContent();
 
         return saveReport(reporterId, "GUESTBOOK", guestbookId, reason, contentSnapshot, null);
     }
