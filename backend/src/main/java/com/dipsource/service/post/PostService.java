@@ -26,4 +26,7 @@ public interface PostService {
 
     /** 작성자 본인만. soft delete */
     void delete(Long userId, Long postId);
+
+    /** 삭제·숨김되지 않은 이 회원의 글인지 확인한다. 미니홈피 대표 글 검증에 쓴다. */
+    boolean isActivePostOf(Long postId, Long userId);
 }

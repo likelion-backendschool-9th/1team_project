@@ -122,7 +122,9 @@ export async function saveMiniHome(previous: FormState, formData: FormData): Pro
   const values = readValues(formData, ["skin", "headline", "domain", "bgm", "quote", "stackTags"]);
   const showcase = formData.getAll("showcaseDemoIds").map(Number).filter(isId);
   const featuredDemoId = Number(formData.get("featuredDemoId"));
+  const featuredPostId = Number(formData.get("featuredPostId"));
   values.showcaseDemoIds = showcase.join(",");
+  values.featuredPostId = String(featuredPostId || "");
   values.featuredDemoId = String(featuredDemoId || "");
   const errors: Record<string, string> = {};
   if (!values.headline) errors.headline = "한 줄 소개를 입력해 주세요.";
@@ -143,7 +145,16 @@ export async function saveMiniHome(previous: FormState, formData: FormData): Pro
   return runForm(previous, values, errors, async () => {
     const body = { ...values, showcaseDemoIds: showcase };
     const saved = await mutate("/api/v1/mini-homes/me", "PUT", body, "미니홈피를 저장했어요.");
-    if (!saved.ok || !isId(featuredDemoId)) return saved;
+    if (!saved.ok) return saved;
+    // 제작기 글: 고르지 않았으면 null을 보내 연결을 끊는다.
+    const post = await mutate(
+      "/api/v1/mini-homes/me/featured-post",
+      "PUT",
+      { postId: isId(featuredPostId) ? featuredPostId : null },
+      "미니홈피를 저장했어요.",
+    );
+    if (!post.ok) return post;
+    if (!isId(featuredDemoId)) return saved;
     const featured = await mutate(
       "/api/v1/mini-homes/me/featured-demo",
       "PUT",

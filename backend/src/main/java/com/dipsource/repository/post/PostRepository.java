@@ -34,6 +34,8 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     /** 한 회원의 블로그 글 목록 */
     Page<Post> findByUserIdAndStatus(Long userId, PostStatus status, Pageable pageable);
 
+    boolean existsByIdAndUserIdAndStatus(Long id, Long userId, PostStatus status);
+
     /** 조회수 +1. 동시에 여러 명이 봐도 빠지지 않게 UPDATE 한 번으로 올린다. */
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("UPDATE Post p SET p.viewCount = p.viewCount + 1 WHERE p.id = :postId")
