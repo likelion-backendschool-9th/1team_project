@@ -7,15 +7,13 @@ import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Component;
 
 /**
- * 기술 용어 사전(search/tech-terms.json). 동의어, 특수문자 용어 보존, 한 글자 용어, 자판 보정 후보의 기준이다.
+ * 기술 용어 사전(search/tech-terms.json). 동의어, 특수문자 용어 보존, 자판 보정 후보의 기준이다. 한 글자 허용 목록도 함께 읽는다.
  * preserve를 바꾸면 분석기가 바뀌므로 재색인이 필요하다. aliases만 바꾸면 검색 시점에 반영된다.
  */
 @Component
@@ -25,28 +23,42 @@ public class TechTermDictionary {
     public record Term(String canonical, List<String> aliases, String preserve) {
     }
 
+    /**
+     * 한 글자 검색 허용 용어(search/single-char-terms.json). 일반 전문 검색 대신 아래 조건으로만 찾는다.
+     *
+     * @param term       허용하는 글자. 대소문자는 구분하지 않는다
+     * @param tags       일치시킬 태그·기술 스택 이름
+     * @param titleWords 제목·닉네임에서 독립된 단어로 있을 때 일치로 볼 표기. 영문 한 글자는 비워 둔다("C 레벨" 방지)
+     * @param phrases    제목·본문에서 이 구문으로 있을 때 일치로 볼 표현. 예: "c 언어"
+     */
+    public record SingleCharTerm(String term, List<String> tags, List<String> titleWords, List<String> phrases) {
+    }
+
     private final List<Term> terms;
     /** 정규화한 표기 → 그 표기가 속한 용어 */
     private final Map<String, Term> byForm = new HashMap<>();
-    private final Set<String> singleCharacterTerms;
+    private final Map<String, SingleCharTerm> singleCharacterTerms = new HashMap<>();
 
     public TechTermDictionary() {
-        this.terms = load();
-        Set<String> singles = new LinkedHashSet<>();
+        this.terms = load("search/tech-terms.json", new TypeReference<>() {
+        });
         for (Term term : terms) {
             for (String form : forms(term)) {
-                String normalized = TextNormalizer.normalize(form);
-                byForm.put(normalized, term);
-                if (TextNormalizer.codePointLength(normalized) == 1) {
-                    singles.add(normalized);
-                }
+                byForm.put(TextNormalizer.normalize(form), term);
             }
         }
-        this.singleCharacterTerms = Set.copyOf(singles);
+        List<SingleCharTerm> singles = load("search/single-char-terms.json", new TypeReference<>() {
+        });
+        singles.forEach(single -> singleCharacterTerms.put(TextNormalizer.normalize(single.term()), single));
     }
 
     public boolean isSingleCharacterTerm(String word) {
-        return singleCharacterTerms.contains(word);
+        return singleCharacterTerms.containsKey(word);
+    }
+
+    /** 한 글자 허용 용어. 허용 목록에 없으면 null */
+    public SingleCharTerm singleCharacterTerm(String word) {
+        return singleCharacterTerms.get(word);
     }
 
     public boolean contains(String normalizedForm) {
@@ -86,12 +98,11 @@ public class TechTermDictionary {
         return forms;
     }
 
-    private static List<Term> load() {
-        try (InputStream input = new ClassPathResource("search/tech-terms.json").getInputStream()) {
-            return new ObjectMapper().readValue(input, new TypeReference<>() {
-            });
+    private static <T> List<T> load(String resource, TypeReference<List<T>> type) {
+        try (InputStream input = new ClassPathResource(resource).getInputStream()) {
+            return new ObjectMapper().readValue(input, type);
         } catch (IOException e) {
-            throw new UncheckedIOException("기술 용어 사전을 읽지 못했습니다", e);
+            throw new UncheckedIOException("기술 용어 사전을 읽지 못했습니다: " + resource, e);
         }
     }
 }

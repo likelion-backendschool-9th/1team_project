@@ -1,0 +1,12 @@
+[
+  {"term": "c", "tags": ["c", "c언어", "clanguage"], "titleWords": [], "phrases": ["c 언어", "c language", "c 프로그래밍", "c programming"]},
+  {"term": "r", "tags": ["r", "r언어", "rlanguage"], "titleWords": [], "phrases": ["r 언어", "r language", "r 프로그래밍", "r programming"]},
+  {"term": "d", "tags": ["d", "d언어", "dlang"], "titleWords": [], "phrases": ["d 언어", "d language", "d 프로그래밍", "d programming"]},
+  {"term": "v", "tags": ["v", "v언어", "vlang"], "titleWords": [], "phrases": ["v 언어", "v language", "v 프로그래밍", "v programming"]},
+  {"term": "j", "tags": ["j", "j언어", "jlanguage"], "titleWords": [], "phrases": ["j 언어", "j language", "j 프로그래밍", "j programming"]},
+  {"term": "q", "tags": ["q", "q언어", "kdb", "kdb+"], "titleWords": [], "phrases": ["q 언어", "q language", "q 프로그래밍", "q programming"]},
+  {"term": "웹", "tags": ["웹", "web"], "titleWords": ["웹"], "phrases": []},
+  {"term": "앱", "tags": ["앱", "app"], "titleWords": ["앱"], "phrases": []},
+  {"term": "봇", "tags": ["봇", "bot"], "titleWords": ["봇"], "phrases": []},
+  {"term": "깃", "tags": ["깃", "git"], "titleWords": ["깃", "git"], "phrases": []}
+]

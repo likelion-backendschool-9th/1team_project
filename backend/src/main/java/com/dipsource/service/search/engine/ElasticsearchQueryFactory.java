@@ -47,7 +47,13 @@ public class ElasticsearchQueryFactory {
         applyHashtags(bool, policy, query, request.operator());
         applyExclusions(bool, request);
 
-        if (query.hasText()) {
+        TechTermDictionary.SingleCharTerm singleChar = singleCharTerm(query);
+        if (singleChar != null) {
+            bool.must(singleCharQuery(policy, singleChar, query.phrase()));
+            if (!flat) {
+                applyPhraseAndExact(bool, policy, query);
+            }
+        } else if (query.hasText()) {
             applyKeywords(bool, policy, query, request.operator(), flat);
             if (!flat) {
                 applyPhraseAndExact(bool, policy, query);
@@ -57,6 +63,34 @@ public class ElasticsearchQueryFactory {
         }
         Query scored = Query.of(q -> q.bool(bool.build()));
         return wrapQuality(scored, flat);
+    }
+
+    private TechTermDictionary.SingleCharTerm singleCharTerm(ParsedQuery query) {
+        return query.keywords().size() == 1 ? dictionary.singleCharacterTerm(query.keywords().get(0)) : null;
+    }
+
+    /**
+     * 한 글자 검색. 형태소 분석을 거친 전문 검색은 "C 레벨", "웹사이트"까지 잡으므로 쓰지 않고,
+     * 태그·기술 스택 정확 일치, 제목의 독립 단어, 정의된 구문, 제목·닉네임 전체 일치로만 찾는다.
+     */
+    private Query singleCharQuery(TypePolicy policy, TechTermDictionary.SingleCharTerm term, String exact) {
+        List<Query> clauses = new ArrayList<>();
+        for (String tag : term.tags()) {
+            clauses.add(keywordField(policy, tag, policy.getKeywordBoost()));
+        }
+        if (policy.getExactField() != null) {
+            clauses.add(Query.of(q -> q.term(t -> t.field(policy.getExactField()).value(exact))));
+            String titleField = policy.getPhraseField();
+            term.titleWords().forEach(word -> clauses.add(Query.of(q -> q.match(m -> m.field(titleField).query(word)))));
+        }
+        for (String phrase : term.phrases()) {
+            for (String field : policy.getFields().keySet()) {
+                if (!field.contains(".") && !field.endsWith("_text")) {
+                    clauses.add(Query.of(q -> q.matchPhrase(p -> p.field(field + ".ko").query(phrase))));
+                }
+            }
+        }
+        return Query.of(q -> q.disMax(d -> d.queries(clauses)));
     }
 
     private Query wrapQuality(Query scored, boolean flat) {
