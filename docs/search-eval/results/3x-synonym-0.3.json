@@ -3,12 +3,12 @@
     "profile" : "3x-synonym-0.3",
     "queries" : 43,
     "rankedQueries" : 41,
-    "meanP10" : 0.2317,
+    "meanP10" : 0.2341,
     "mrr" : 0.9878,
-    "meanNdcg10" : 0.9633,
+    "meanNdcg10" : 0.9682,
     "suggestionAccuracy" : 1.0,
-    "latencyMsP50" : 15,
-    "latencyMsMax" : 40
+    "latencyMsP50" : 11,
+    "latencyMsMax" : 31
   },
   "results" : [ {
     "id" : "spring",
@@ -111,12 +111,12 @@
     "type" : "post",
     "purpose" : "자연어 검색",
     "status" : 200,
-    "total" : 1,
-    "top" : [ "p_ko7" ],
+    "total" : 2,
+    "top" : [ "p_ko7", "p_sec" ],
     "suggestion" : "",
-    "p10" : 0.1,
+    "p10" : 0.2,
     "rr" : 1.0,
-    "ndcg10" : 0.7453
+    "ndcg10" : 0.9468
   }, {
     "id" : "mixed-natural-db",
     "q" : "Spring Boot에서 데이터베이스 연결하는 방법",

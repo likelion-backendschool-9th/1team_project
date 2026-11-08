@@ -7,8 +7,8 @@
     "mrr" : 1.0,
     "meanNdcg10" : 0.9767,
     "suggestionAccuracy" : 1.0,
-    "latencyMsP50" : 9,
-    "latencyMsMax" : 76
+    "latencyMsP50" : 10,
+    "latencyMsMax" : 55
   },
   "results" : [ {
     "id" : "spring",

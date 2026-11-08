@@ -6,9 +6,9 @@
     "meanP10" : 0.222,
     "mrr" : 0.9878,
     "meanNdcg10" : 0.9397,
-    "suggestionAccuracy" : 0.0,
-    "latencyMsP50" : 13,
-    "latencyMsMax" : 255
+    "suggestionAccuracy" : 1.0,
+    "latencyMsP50" : 14,
+    "latencyMsMax" : 81
   },
   "results" : [ {
     "id" : "spring",
@@ -54,8 +54,8 @@
     "status" : 200,
     "total" : 1,
     "top" : [ "p_typo" ],
-    "suggestion" : "",
-    "suggestHit" : false,
+    "suggestion" : "spring",
+    "suggestHit" : true,
     "p10" : 0.1,
     "rr" : 1.0,
     "ndcg10" : 1.0
@@ -67,8 +67,8 @@
     "status" : 200,
     "total" : 0,
     "top" : [ ],
-    "suggestion" : "",
-    "suggestHit" : false
+    "suggestion" : "spring",
+    "suggestHit" : true
   }, {
     "id" : "ko-spring",
     "q" : "스프링",
