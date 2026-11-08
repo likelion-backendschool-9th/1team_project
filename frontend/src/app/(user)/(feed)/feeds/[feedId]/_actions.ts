@@ -59,5 +59,5 @@ export async function toggleFeedCommentLike(commentId: number, like: boolean) {
 }
 
 export async function reportFeedComment(commentId: number, reason: string) {
-  return mutate(`/api/v1/reports`, "POST", { targetType: "FEED_COMMENT", targetId: commentId, reason }, "신고가 접수됐어요.");
+  return mutate(`/api/v1/feeds/comments/${commentId}/report`, "POST", { reason }, "신고가 접수됐어요.");
 }

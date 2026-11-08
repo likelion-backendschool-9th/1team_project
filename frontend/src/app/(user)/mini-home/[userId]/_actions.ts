@@ -240,5 +240,5 @@ export async function reportGuestbook(homeUserId: number, guestbookId: number, r
 
 export async function reportUser(targetId: number, reason: string) {
   if (!isId(targetId)) return { ok: false, message: "잘못된 요청이에요." };
-  return mutate(`/api/v1/reports`, "POST", { targetType: "USER", targetId, reason }, "신고가 접수됐어요.");
+  return mutate(`/api/v1/users/${targetId}/report`, "POST", { reason }, "신고가 접수됐어요.");
 }
