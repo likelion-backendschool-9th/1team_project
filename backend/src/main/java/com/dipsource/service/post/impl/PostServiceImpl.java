@@ -17,6 +17,7 @@ import com.dipsource.global.common.PageResponse;
 import com.dipsource.global.exception.BusinessException;
 import com.dipsource.global.exception.ErrorCode;
 import com.dipsource.repository.post.BlogSubscriptionRepository;
+import com.dipsource.repository.post.PostBookmarkRepository;
 import com.dipsource.repository.post.PostLikeRepository;
 import com.dipsource.repository.post.PostPurchaseRepository;
 import com.dipsource.repository.post.PostRepository;
@@ -58,6 +59,7 @@ public class PostServiceImpl implements PostService {
     private final PostRepository postRepository;
     private final PostTagRepository postTagRepository;
     private final PostLikeRepository postLikeRepository;
+    private final PostBookmarkRepository postBookmarkRepository;
     private final PostPurchaseRepository postPurchaseRepository;
     private final BlogSubscriptionRepository blogSubscriptionRepository;
     private final TagRepository tagRepository;
@@ -98,7 +100,8 @@ public class PostServiceImpl implements PostService {
         UserSummaryResponse author = userService.getSummaries(List.of(post.getUserId())).get(post.getUserId());
         List<String> tags = postTagRepository.findTagNames(postId);
         boolean liked = viewerId != null && postLikeRepository.existsById(new PostUserId(viewerId, postId));
-        return PostDetailResponse.of(post, author, tags, canReadAll(post, viewerId), liked);
+        boolean bookmarked = viewerId != null && postBookmarkRepository.existsById(new PostUserId(viewerId, postId));
+        return PostDetailResponse.of(post, author, tags, canReadAll(post, viewerId), liked, bookmarked);
     }
 
     @Override
@@ -155,6 +158,20 @@ public class PostServiceImpl implements PostService {
         if (postLikeRepository.deleteByUserIdAndPostId(userId, postId) > 0) {
             postRepository.decrementLikeCount(postId);
         }
+    }
+
+    @Override
+    @Transactional
+    public void bookmark(Long userId, Long postId) {
+        findActive(postId); // 삭제·숨김 글은 404
+        postBookmarkRepository.insertIgnore(userId, postId);
+    }
+
+    @Override
+    @Transactional
+    public void unbookmark(Long userId, Long postId) {
+        findActive(postId);
+        postBookmarkRepository.deleteByUserIdAndPostId(userId, postId);
     }
 
     /** 유료 글 본문 전체를 볼 수 있는지: 무료 글, 작성자, 구매자, 구독자 */

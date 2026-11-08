@@ -117,6 +117,26 @@ public class PostController {
         return ResponseEntity.noContent().build();
     }
 
+    /** 북마크. 이미 했어도 204 (멱등). 삭제된 글이면 404 */
+    @PostMapping("/posts/{postId}/bookmark")
+    public ResponseEntity<Void> bookmark(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @PathVariable Long postId
+    ) {
+        postService.bookmark(requireUserId(principal), postId);
+        return ResponseEntity.noContent().build();
+    }
+
+    /** 북마크 취소. 안 했어도 204 (멱등). 삭제된 글이면 404 */
+    @DeleteMapping("/posts/{postId}/bookmark")
+    public ResponseEntity<Void> unbookmark(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @PathVariable Long postId
+    ) {
+        postService.unbookmark(requireUserId(principal), postId);
+        return ResponseEntity.noContent().build();
+    }
+
     private static Long viewerId(UserPrincipal principal) {
         return principal == null ? null : principal.getUserId();
     }

@@ -17,6 +17,8 @@ type Props = {
   commentCount: number;
   repostCount: number;
   liked: boolean;
+  /** 목록 카드에서는 알 수 없어 생략한다 (기본 false) */
+  bookmarked?: boolean;
   readMinutes: number;
 };
 
@@ -27,10 +29,11 @@ export function PostActions({
   commentCount,
   repostCount,
   liked,
+  bookmarked: initialBookmarked = false,
   readMinutes,
 }: Props) {
   const [like, setLike] = useState(liked);
-  const [bookmarked, setBookmarked] = useState(false);
+  const [bookmarked, setBookmarked] = useState(initialBookmarked);
   const [, startTransition] = useTransition();
 
   function handleLike() {

@@ -57,6 +57,8 @@ export type PostDetail = PostSummary & {
   purchased: boolean;
   seriesTitle: string | null;
   viewCount: number;
+  /** 내가 북마크했는지 */
+  bookmarked: boolean;
 };
 
 export type PostComment = {

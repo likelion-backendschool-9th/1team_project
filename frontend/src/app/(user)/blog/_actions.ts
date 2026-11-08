@@ -117,7 +117,7 @@ export async function createPostComment(
 
 export async function togglePostBookmark(postId: number, bookmark: boolean) {
   if (!isId(postId)) return { ok: false, message: "잘못된 요청이에요." };
-  return mutate(`/api/v1/posts/${postId}/bookmark`, bookmark ? "POST" : "DELETE", undefined, bookmark ? "북마크했어요." : "북마크를 해제했어요.");
+  return mutate(`/api/v1/posts/${postId}/bookmark`, bookmark ? "POST" : "DELETE", undefined, bookmark ? "북마크했어요." : "북마크를 해제했어요.", !hasBackend);
 }
 
 export async function updatePostComment(commentId: number, content: string) {

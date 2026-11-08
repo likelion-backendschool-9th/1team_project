@@ -186,6 +186,7 @@ export function createMockPostDetail(postId: number, now: number): PostDetail | 
     purchased: false,
     seriesTitle: postId === 101 ? mockSeries[0].title : postId === 201 ? mockSeries[1].title : null,
     viewCount: 300 + postId * 7,
+    bookmarked: false,
   };
 }
 

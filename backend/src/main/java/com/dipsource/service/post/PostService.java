@@ -38,4 +38,10 @@ public interface PostService {
 
     /** 좋아요 취소. 누르지 않았어도 오류 없이 넘어간다 (멱등). 공개 글만 */
     void unlike(Long userId, Long postId);
+
+    /** 북마크. 이미 했어도 오류 없이 넘어간다 (멱등). 공개 글만 */
+    void bookmark(Long userId, Long postId);
+
+    /** 북마크 취소. 안 했어도 오류 없이 넘어간다 (멱등). 공개 글만 */
+    void unbookmark(Long userId, Long postId);
 }

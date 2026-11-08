@@ -12,6 +12,7 @@ import java.util.List;
  * @param tags        태그 이름
  * @param purchased   본문 전체를 볼 수 있는지 (작성자·구매자·구독자)
  * @param seriesTitle 시리즈는 아직 없어서 null
+ * @param bookmarked  내가 북마크했는지 (비로그인이면 false)
  */
 public record PostDetailResponse(
         Long id,
@@ -31,11 +32,12 @@ public record PostDetailResponse(
         List<String> tags,
         boolean purchased,
         String seriesTitle,
-        int viewCount
+        int viewCount,
+        boolean bookmarked
 ) {
 
     public static PostDetailResponse of(
-            Post post, UserSummaryResponse author, List<String> tags, boolean unlocked, boolean liked) {
+            Post post, UserSummaryResponse author, List<String> tags, boolean unlocked, boolean liked, boolean bookmarked) {
         PostSummaryResponse summary = PostSummaryResponse.of(post, author, liked);
         return new PostDetailResponse(
                 summary.id(),
@@ -55,7 +57,8 @@ public record PostDetailResponse(
                 tags,
                 unlocked,
                 null,
-                post.getViewCount()
+                post.getViewCount(),
+                bookmarked
         );
     }
 }
