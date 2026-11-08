@@ -174,7 +174,7 @@ export async function PostView({ params }: Props) {
           me={me ?? undefined}
           maxCommentLength={1000}
           updateComment={updatePostComment}
-          deleteComment={deletePostComment}
+          deleteComment={deletePostComment.bind(null, post.id)}
           likeComment={togglePostCommentLike}
           replyComment={replyPostComment.bind(null, post.id)}
         />
@@ -187,7 +187,7 @@ export async function PostView({ params }: Props) {
             maxCommentLength={1000}
             loadMore={loadMorePostComments}
             updateComment={updatePostComment}
-            deleteComment={deletePostComment}
+            deleteComment={deletePostComment.bind(null, post.id)}
             likeComment={togglePostCommentLike}
             replyComment={replyPostComment.bind(null, post.id)}
           />

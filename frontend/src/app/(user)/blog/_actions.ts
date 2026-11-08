@@ -127,8 +127,11 @@ export async function updatePostComment(commentId: number, content: string) {
   return mutate(`/api/v1/posts/comments/${commentId}`, "PUT", { content: text }, "댓글을 수정했어요.");
 }
 
-export async function deletePostComment(commentId: number) {
-  return mutate(`/api/v1/posts/comments/${commentId}`, "DELETE", undefined, "댓글을 삭제했어요.");
+export async function deletePostComment(postId: number, commentId: number) {
+  if (!isId(postId) || !isId(commentId)) return { ok: false, message: "잘못된 요청이에요." };
+  const result = await mutate(`/api/v1/posts/comments/${commentId}`, "DELETE", undefined, "댓글을 삭제했어요.");
+  if (result.ok) revalidatePath(`/blog/posts/${postId}`);
+  return result;
 }
 
 export async function replyPostComment(postId: number, parentId: number, content: string) {
