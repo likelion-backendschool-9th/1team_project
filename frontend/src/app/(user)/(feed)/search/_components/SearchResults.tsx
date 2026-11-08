@@ -18,7 +18,7 @@ type HeadingProps = {
   id: string;
   label: string;
   relaxed?: boolean;
-  /** 전체 탭에서만 준다 */
+  /** 전체 탭에서 더 볼 결과가 있을 때만 준다 */
   moreHref?: string;
 };
 
@@ -42,13 +42,15 @@ function SectionHeading({ id, label, relaxed, moreHref }: HeadingProps) {
 export function SearchResults({ result, type, query, canHide, tabHref }: Props) {
   const show = (target: SearchType) => (type === "all" || type === target);
   const row = { query, canHide };
-  const more = (target: SearchType) => (type === "all" ? tabHref(target) : undefined);
+  // 전체 탭에서 다 보여 주지 못한 대상만 링크를 단다
+  const more = (target: SearchType, section: { items: unknown[]; total: number }) =>
+    type === "all" && section.total > section.items.length ? tabHref(target) : undefined;
 
   return (
     <>
       {show("post") && result.posts.items.length > 0 && (
         <section className={kit.card} aria-labelledby="result-posts">
-          <SectionHeading id="result-posts" label="블로그" relaxed={result.posts.relaxed} moreHref={more("post")} />
+          <SectionHeading id="result-posts" label="블로그" relaxed={result.posts.relaxed} moreHref={more("post", result.posts)} />
           <ul className={kit.list}>
             {result.posts.items.map((post) => (
               <SearchResultRow key={post.id} href={`/blog/posts/${post.id}`} type="post" id={post.id} {...row}>
@@ -70,7 +72,7 @@ export function SearchResults({ result, type, query, canHide, tabHref }: Props) 
       )}
       {show("demo") && result.demos.items.length > 0 && (
         <section className={kit.card} aria-labelledby="result-demos">
-          <SectionHeading id="result-demos" label="데모" relaxed={result.demos.relaxed} moreHref={more("demo")} />
+          <SectionHeading id="result-demos" label="데모" relaxed={result.demos.relaxed} moreHref={more("demo", result.demos)} />
           <ul className={kit.list}>
             {result.demos.items.map((demo) => (
               <SearchResultRow key={demo.id} href={`/demos/${demo.id}`} type="demo" id={demo.id} {...row}>
@@ -90,7 +92,7 @@ export function SearchResults({ result, type, query, canHide, tabHref }: Props) 
       )}
       {show("user") && result.users.items.length > 0 && (
         <section className={kit.card} aria-labelledby="result-users">
-          <SectionHeading id="result-users" label="사용자" relaxed={result.users.relaxed} moreHref={more("user")} />
+          <SectionHeading id="result-users" label="사용자" relaxed={result.users.relaxed} moreHref={more("user", result.users)} />
           <ul className={kit.list}>
             {result.users.items.map((user) => (
               <SearchResultRow key={user.id} href={`/mini-home/${user.id}`} type="user" id={user.id} {...row}>
@@ -107,7 +109,7 @@ export function SearchResults({ result, type, query, canHide, tabHref }: Props) 
       )}
       {show("feed") && result.feeds.items.length > 0 && (
         <section className={kit.card} aria-labelledby="result-feeds">
-          <SectionHeading id="result-feeds" label="피드" relaxed={result.feeds.relaxed} moreHref={more("feed")} />
+          <SectionHeading id="result-feeds" label="피드" relaxed={result.feeds.relaxed} moreHref={more("feed", result.feeds)} />
           <ul className={kit.list}>
             {result.feeds.items.map((feed) => (
               <SearchResultRow key={feed.id} href={`/feeds/${feed.id}`} type="feed" id={feed.id} {...row}>
