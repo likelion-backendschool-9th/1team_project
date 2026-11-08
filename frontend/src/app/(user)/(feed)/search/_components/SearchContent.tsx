@@ -149,7 +149,7 @@ export async function SearchContent({ searchParams }: Props) {
           ))}
         </p>
       )}
-      <SearchResults result={result} type={type} query={q} canHide={Boolean(me)} />
+      <SearchResults result={result} type={type} query={q} canHide={Boolean(me)} tabHref={(target) => href(q, target, sort)} />
       {type !== "all" && result.totalPages > 1 && (
         <nav aria-label="검색 결과 페이지" className={styles.pages}>
           {page > 1 && (
