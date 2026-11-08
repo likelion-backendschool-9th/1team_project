@@ -19,7 +19,10 @@ export function SearchResults({ result, type, query, canHide }: Props) {
     <>
       {show("post") && result.posts.items.length > 0 && (
         <section className={kit.card} aria-labelledby="result-posts">
-          <h2 id="result-posts" className={kit.cardTitle}>블로그</h2>
+          <h2 id="result-posts" className={kit.cardTitle}>
+            블로그
+            {result.posts.relaxed && <span className={kit.pill} style={{ marginLeft: 8 }}>일부 일치</span>}
+          </h2>
           <ul className={kit.list}>
             {result.posts.items.map((post) => (
               <SearchResultRow key={post.id} href={`/blog/posts/${post.id}`} type="post" id={post.id} {...row}>
@@ -41,7 +44,10 @@ export function SearchResults({ result, type, query, canHide }: Props) {
       )}
       {show("demo") && result.demos.items.length > 0 && (
         <section className={kit.card} aria-labelledby="result-demos">
-          <h2 id="result-demos" className={kit.cardTitle}>데모</h2>
+          <h2 id="result-demos" className={kit.cardTitle}>
+            데모
+            {result.demos.relaxed && <span className={kit.pill} style={{ marginLeft: 8 }}>일부 일치</span>}
+          </h2>
           <ul className={kit.list}>
             {result.demos.items.map((demo) => (
               <SearchResultRow key={demo.id} href={`/demos/${demo.id}`} type="demo" id={demo.id} {...row}>
@@ -61,7 +67,10 @@ export function SearchResults({ result, type, query, canHide }: Props) {
       )}
       {show("user") && result.users.items.length > 0 && (
         <section className={kit.card} aria-labelledby="result-users">
-          <h2 id="result-users" className={kit.cardTitle}>사용자</h2>
+          <h2 id="result-users" className={kit.cardTitle}>
+            사용자
+            {result.users.relaxed && <span className={kit.pill} style={{ marginLeft: 8 }}>일부 일치</span>}
+          </h2>
           <ul className={kit.list}>
             {result.users.items.map((user) => (
               <SearchResultRow key={user.id} href={`/mini-home/${user.id}`} type="user" id={user.id} {...row}>
@@ -78,7 +87,10 @@ export function SearchResults({ result, type, query, canHide }: Props) {
       )}
       {show("feed") && result.feeds.items.length > 0 && (
         <section className={kit.card} aria-labelledby="result-feeds">
-          <h2 id="result-feeds" className={kit.cardTitle}>피드</h2>
+          <h2 id="result-feeds" className={kit.cardTitle}>
+            피드
+            {result.feeds.relaxed && <span className={kit.pill} style={{ marginLeft: 8 }}>일부 일치</span>}
+          </h2>
           <ul className={kit.list}>
             {result.feeds.items.map((feed) => (
               <SearchResultRow key={feed.id} href={`/feeds/${feed.id}`} type="feed" id={feed.id} {...row}>

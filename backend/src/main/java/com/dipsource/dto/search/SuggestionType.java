@@ -5,5 +5,7 @@ public enum SuggestionType {
     /** 한/영 자판을 잘못 두고 입력한 경우 */
     KEYBOARD,
     /** 일반 오타 */
-    TYPO
+    TYPO,
+    /** 입력한 글자로 시작하는 단어 */
+    COMPLETION
 }

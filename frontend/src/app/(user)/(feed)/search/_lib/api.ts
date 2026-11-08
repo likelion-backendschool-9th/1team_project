@@ -13,7 +13,7 @@ export type SearchPost = { id: number; title: string; excerpt?: string; author?:
 export type SearchFeed = { id: number; content: string; author?: string; likeCount: number };
 
 /** 대상 하나의 결과. total은 이 대상의 전체 결과 수다 */
-type Section<T> = { items: T[]; total: number };
+type Section<T> = { items: T[]; total: number; relaxed?: boolean };
 
 export type SearchResult = {
   users: Section<SearchUser>;
@@ -22,8 +22,8 @@ export type SearchResult = {
   feeds: Section<SearchFeed>;
   /** 원래 검색어 결과는 그대로 두고 제안하는 검색어 */
   suggestedQuery?: string;
-  /** KEYBOARD: 한/영 자판 보정, TYPO: 오타 교정 */
-  suggestionType?: "KEYBOARD" | "TYPO";
+  /** KEYBOARD: 한/영 자판 보정, TYPO: 오타 교정, COMPLETION: 입력으로 시작하는 단어 */
+  suggestionType?: "KEYBOARD" | "TYPO" | "COMPLETION";
   /** 검색 엔진 장애로 PostgreSQL 검색을 쓸 때만 온다. 고친 검색어로 찾은 결과다 */
   correctedQuery?: string;
   /** 모든 단어가 일치하는 결과가 없어서 일부 단어만 일치하는 결과를 보여 주는지 */
@@ -36,11 +36,13 @@ export type SearchResult = {
 
 export type SearchOutcome = { result: SearchResult } | { error: string };
 
+type AllSection<T> = { content: T[]; totalElements: number; relaxedMatch?: boolean };
+
 type SearchAllResponse = {
-  posts: { content: SearchPost[]; totalElements: number };
-  feeds: { content: SearchFeed[]; totalElements: number };
-  demos: { content: SearchDemo[]; totalElements: number };
-  users: { content: SearchUser[]; totalElements: number };
+  posts: AllSection<SearchPost>;
+  feeds: AllSection<SearchFeed>;
+  demos: AllSection<SearchDemo>;
+  users: AllSection<SearchUser>;
   correctedQuery?: string;
   suggestedQuery?: string;
   suggestionType?: SearchResult["suggestionType"];
@@ -95,12 +97,16 @@ function mockSearch(q: string, sort: SearchSort): SearchResult {
   };
 }
 
+function fromSection<T>(section: AllSection<T>): Section<T> {
+  return { items: section.content, total: section.totalElements, relaxed: section.relaxedMatch === true };
+}
+
 function fromAll(data: SearchAllResponse): SearchResult {
   return {
-    users: { items: data.users.content, total: data.users.totalElements },
-    demos: { items: data.demos.content, total: data.demos.totalElements },
-    posts: { items: data.posts.content, total: data.posts.totalElements },
-    feeds: { items: data.feeds.content, total: data.feeds.totalElements },
+    users: fromSection(data.users),
+    demos: fromSection(data.demos),
+    posts: fromSection(data.posts),
+    feeds: fromSection(data.feeds),
     suggestedQuery: data.suggestedQuery,
     suggestionType: data.suggestionType,
     correctedQuery: data.correctedQuery,

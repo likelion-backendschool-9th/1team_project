@@ -109,7 +109,7 @@ export async function SearchContent({ searchParams }: Props) {
           검색 결과가 없어서 <strong>“{result.correctedQuery}”</strong>(으)로 찾은 결과를 보여 드려요.
         </p>
       )}
-      {result.relaxedMatch && <p className={kit.muted}>모든 단어가 들어간 결과가 없어서 일부 단어만 일치하는 결과를 보여 드려요.</p>}
+      {result.relaxedMatch && <p className={kit.muted}>정확히 일치하는 결과가 없어서 일부만 일치하는 결과를 보여 드려요.</p>}
       <LinkTabs
         label="검색 대상"
         variant="line"

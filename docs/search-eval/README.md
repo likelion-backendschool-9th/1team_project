@@ -171,6 +171,7 @@ SearchController → SearchRouter ─ 설정·장애에 따라 ─ PostgresSearc
 | 0건일 때 자동 교정(`correctedQuery`)을 ES 경로에서 하지 않음 | 요구사항의 "자동 변경 금지". 대신 `suggestedQuery`로 제안. PostgreSQL 경로는 그대로 |
 | 일반 검색 최소 2글자 (ES 경로) | 요구사항. `C`, `R` 등 사전 용어는 예외 |
 | 본문 부분 문자열 검색 없음 (`ecur` → `Security`) | 형태소·단어 단위 검색으로 전환. 닉네임은 N-gram으로 부분 일치 유지 |
+| 한 단어 검색의 결과가 없는 대상은 접두어로 다시 찾음 (`스프` → `스프링` 글, 일부 일치 표시) | 단어 단위 검색의 불편 보완. op=and, 해시태그, 한 글자 용어는 제외 |
 | `op` 생략 시 auto | 기본은 and와 같고 긴 문장만 75% 일치. 명시적 and/or는 그대로 |
 | 응답 필드 추가 | `suggestionType`, `relaxedMatch`. 기존 필드는 유지 |
 | 프론트 검색 페이지 | 기존 코드가 백엔드 응답 형태와 맞지 않아(`posts.content`) 함께 수정 |

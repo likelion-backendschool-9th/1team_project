@@ -7,6 +7,7 @@ import com.dipsource.service.search.query.TechTermDictionary;
 import com.dipsource.service.search.query.TextNormalizer;
 import com.dipsource.service.search.suggest.SuggestIndexService.SuggestTerm;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -42,6 +43,19 @@ public class SearchSuggester {
         }
         return rewrite(query, this::correctKeyboard, SuggestionType.KEYBOARD)
                 .or(() -> rewrite(query, this::correctTypo, SuggestionType.TYPO));
+    }
+
+    /** 입력으로 시작하는 단어 중 가장 알맞은 것을 제안한다. 사전 용어 → 많이 쓰인 순 → 짧은 순 */
+    public Optional<SearchSuggestion> suggestCompletion(ParsedQuery query) {
+        String word = query.keywords().get(0);
+        return suggestIndex.findByPrefix(word, FUZZY_CANDIDATES * 2).stream()
+                .filter(term -> term.doc_count() > 0 && term.norm().startsWith(word) && !term.norm().equals(word))
+                .min(Comparator
+                        .comparing((SuggestTerm term) -> !SuggestIndexService.Source.DICT.name().equals(term.source()))
+                        .thenComparing(SuggestTerm::doc_count, Comparator.reverseOrder())
+                        .thenComparing(term -> term.norm().length())
+                        .thenComparing(SuggestTerm::norm))
+                .map(term -> new SearchSuggestion(term.norm(), SuggestionType.COMPLETION));
     }
 
     private static Optional<SearchSuggestion> rewrite(ParsedQuery query, Function<String, String> correct, SuggestionType type) {

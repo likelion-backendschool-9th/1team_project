@@ -43,6 +43,7 @@ public class SearchController {
      * - Elasticsearch 경로: 검색어를 자동으로 바꾸지 않는다. 결과는 원래 검색어 기준이고 suggestedQuery와 suggestionType(KEYBOARD, TYPO)으로 제안만 한다
      *   예: q=네갸ㅜㅎ → suggestedQuery "spring", suggestionType KEYBOARD
      * - op를 보내지 않았고 모든 단어가 일치하는 결과가 없으면 일부 단어만 일치하는 결과와 relaxedMatch=true를 준다. op=and는 넓히지 않는다
+     * - 한 단어 검색의 결과가 없는 대상은 그 글자로 시작하는 단어의 결과와 relaxedMatch=true를 준다. 전체 검색은 대상별로 판단한다
      * - PostgreSQL 경로(전환 전·장애 시): 0건이면 오타를 고쳐서 다시 검색해 correctedQuery가 붙고, 1~4건이면 suggestedQuery가 붙는다
      */
     @GetMapping

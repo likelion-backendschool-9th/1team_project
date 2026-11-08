@@ -52,7 +52,9 @@ public class ElasticsearchQueryFactory {
         }
 
         TechTermDictionary.SingleCharTerm singleChar = singleCharTerm(query);
-        if (singleChar != null) {
+        if (query.prefix()) {
+            bool.must(prefixQuery(policy, query.keywords().get(0), flat));
+        } else if (singleChar != null) {
             bool.must(singleCharQuery(policy, singleChar, query.phrase()));
             if (!flat) {
                 applyPhraseAndExact(bool, policy, query);
@@ -67,6 +69,21 @@ public class ElasticsearchQueryFactory {
         }
         Query scored = Query.of(q -> q.bool(bool.build()));
         return wrapQuality(scored, flat);
+    }
+
+    /** 검색어로 시작하는 단어를 필드별로 찾는다. 점수는 일치 횟수와 무관한 필드 가중치만 쓴다 */
+    private Query prefixQuery(TypePolicy policy, String word, boolean flat) {
+        List<Query> clauses = new ArrayList<>();
+        for (Map.Entry<String, Float> field : policy.getFields().entrySet()) {
+            if (!field.getKey().contains(".")) {
+                float boost = flat ? 1f : field.getValue();
+                clauses.add(Query.of(q -> q.prefix(p -> p.field(field.getKey()).value(word).boost(boost))));
+            }
+        }
+        String tagPrefix = TextNormalizer.tagKey(word);
+        float tagBoost = flat ? 1f : policy.getKeywordBoost();
+        clauses.add(Query.of(q -> q.prefix(p -> p.field(policy.getKeywordField()).value(tagPrefix).boost(tagBoost))));
+        return Query.of(q -> q.disMax(d -> d.queries(clauses)));
     }
 
     private TechTermDictionary.SingleCharTerm singleCharTerm(ParsedQuery query) {

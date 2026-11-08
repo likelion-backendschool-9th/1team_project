@@ -428,6 +428,57 @@ class ElasticsearchSearchTest {
         }
 
         @Test
+        @DisplayName("한 단어의 결과가 없으면 그 글자로 시작하는 단어의 결과를 일부 일치로 보여 주고 제안한다")
+        void prefixFallback() throws Exception {
+            search("스프")
+                    .andExpect(jsonPath("$.data.totalElements").value(1))
+                    .andExpect(jsonPath("$.data.content[0].title").value("스프링 기초"))
+                    .andExpect(jsonPath("$.data.relaxedMatch").value(true))
+                    .andExpect(jsonPath("$.data.suggestedQuery").value("스프링"))
+                    .andExpect(jsonPath("$.data.suggestionType").value("COMPLETION"));
+            search("spr").andExpect(jsonPath("$.data.totalElements").value(2))
+                    .andExpect(jsonPath("$.data.relaxedMatch").value(true));
+        }
+
+        @Test
+        @DisplayName("전체 검색은 결과가 없는 대상만 넓히고 결과가 있는 대상은 그대로 둔다")
+        void prefixFallbackPerSection() throws Exception {
+            post("스프 끓이는 법", "요리", "ACTIVE");
+            jdbc.update("""
+                    INSERT INTO feeds(user_id, content, status, like_count, comment_count, repost_count, created_at, updated_at)
+                    VALUES (?, '스프링 공부 시작', 'ACTIVE', 0, 0, 0, now(), now())
+                    """, author);
+            reindex();
+
+            mockMvc.perform(get("/search").param("q", "스프"))
+                    .andExpect(jsonPath("$.data.posts.totalElements").value(1))
+                    .andExpect(jsonPath("$.data.posts.content[0].title").value("스프 끓이는 법"))
+                    .andExpect(jsonPath("$.data.posts.relaxedMatch").doesNotExist())
+                    .andExpect(jsonPath("$.data.feeds.totalElements").value(1))
+                    .andExpect(jsonPath("$.data.feeds.relaxedMatch").value(true))
+                    .andExpect(jsonPath("$.data.suggestedQuery").value("스프링"));
+        }
+
+        @Test
+        @DisplayName("명시적 and는 접두어로 넓히지 않는다")
+        void prefixFallbackRespectsExplicitOperator() throws Exception {
+            search("스프", "op", "and").andExpect(jsonPath("$.data.totalElements").value(0));
+        }
+
+        @Test
+        @DisplayName("접두어 검색으로도 유료 본문은 찾히지 않는다")
+        void prefixFallbackDoesNotLeakPaidBody() throws Exception {
+            jdbc.update("""
+                    INSERT INTO posts(user_id, title, content, is_paid, price_chips, status, view_count, like_count,
+                                      comment_count, created_at, updated_at)
+                    VALUES (?, '다른 제목', '비밀단어 본문', true, 100, 'ACTIVE', 0, 0, 0, now(), now())
+                    """, author);
+            reindex();
+
+            search("비밀").andExpect(jsonPath("$.data.totalElements").value(0));
+        }
+
+        @Test
         @DisplayName("글자가 하나 더 붙은 오타는 짧은 단어를 제안한다")
         void repeatedLetterTypo() throws Exception {
             post("React 입문", "내용", "ACTIVE");

@@ -51,7 +51,8 @@ public class SearchQueryParser {
         return new ParsedQuery(
                 String.join(" ", textWords),
                 keywords.stream().limit(MAX_KEYWORDS).toList(),
-                hashtags.stream().limit(MAX_HASHTAGS).toList());
+                hashtags.stream().limit(MAX_HASHTAGS).toList(),
+                false);
     }
 
     /** "#spring"이면 태그 키, 해시태그가 아니면 null. "C#"처럼 뒤에 붙은 #은 해시태그가 아니다 */

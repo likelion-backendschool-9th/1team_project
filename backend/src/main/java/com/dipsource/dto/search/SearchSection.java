@@ -8,8 +8,13 @@ import java.util.List;
  *
  * @param content       상위 몇 건
  * @param totalElements 이 대상의 전체 검색 결과 수. 탭 옆 숫자로 쓴다
+ * @param relaxedMatch  정확히 일치하는 결과가 없어서 검색어로 시작하는 단어의 결과를 보여 줄 때 true. 아니면 null
  */
-public record SearchSection<T>(List<T> content, long totalElements) {
+public record SearchSection<T>(List<T> content, long totalElements, Boolean relaxedMatch) {
+
+    public SearchSection(List<T> content, long totalElements) {
+        this(content, totalElements, null);
+    }
 
     public static <T> SearchSection<T> from(PageResponse<T> page) {
         return new SearchSection<>(page.content(), page.totalElements());
