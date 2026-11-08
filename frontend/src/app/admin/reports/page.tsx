@@ -4,6 +4,7 @@ import { connection } from "next/server";
 import { Suspense } from "react";
 import kit from "@/app/_components/ui/kit.module.css";
 import { LinkTabs } from "@/app/_components/ui/LinkTabs";
+import { Pagination } from "@/app/_components/ui/Pagination";
 import { formatDate } from "@/app/_lib/format";
 import { StatusPill } from "../_components/StatusPill";
 import { getReports, REPORT_TYPES } from "../_lib/api";
@@ -20,13 +21,16 @@ const filters = [
 async function ReportsContent({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   await connection();
   const params = await searchParams;
-  const status = filters.find((item) => item.value && item.value === params.status)?.value;
-  const type = REPORT_TYPES.find((item) => item.value === params.type)?.value;
-  const reports = await getReports(status, type);
-  const href = (nextStatus: string | undefined, nextType: string | undefined) => {
+  const first = (value: string | string[] | undefined) => (Array.isArray(value) ? value[0] : value);
+  const status = filters.find((item) => item.value && item.value === first(params.status))?.value;
+  const type = REPORT_TYPES.find((item) => item.value === first(params.type))?.value;
+  const page = Math.max(1, Number(first(params.page)) || 1);
+  const result = await getReports({ status, type, page });
+  const href = (nextStatus: string | undefined, nextType: string | undefined, nextPage = 1) => {
     const query = new URLSearchParams();
     if (nextStatus) query.set("status", nextStatus);
     if (nextType) query.set("type", nextType);
+    if (nextPage > 1) query.set("page", String(nextPage));
     const search = query.toString();
     return search ? `/admin/reports?${search}` : "/admin/reports";
   };
@@ -58,7 +62,7 @@ async function ReportsContent({ searchParams }: { searchParams: Promise<Record<s
               </tr>
             </thead>
             <tbody>
-              {reports.map((report) => (
+              {result.content.map((report) => (
                 <tr key={report.id}>
                   <td>{formatDate(report.createdAt)}</td>
                   <td>
@@ -78,7 +82,8 @@ async function ReportsContent({ searchParams }: { searchParams: Promise<Record<s
             </tbody>
           </table>
         </div>
-        {reports.length === 0 && <p className={kit.empty}>조건에 맞는 신고가 없어요.</p>}
+        {result.content.length === 0 && <p className={kit.empty}>조건에 맞는 신고가 없어요.</p>}
+        <Pagination page={page} totalPages={result.totalPages} hrefFor={(target) => href(status, type, target)} />
       </section>
     </>
   );

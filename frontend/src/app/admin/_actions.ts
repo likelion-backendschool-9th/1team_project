@@ -61,7 +61,7 @@ export async function processReport(reportId: number, previous: FormState, formD
   if (!DECISIONS.includes(values.decision)) errors.decision = "처리 방식을 골라 주세요.";
   if (values.memo.length < 5) errors.memo = "처리 사유를 5자 이상 입력해 주세요.";
   const state = await runForm(previous, values, errors, () =>
-    mutate(`/api/v1/admin/reports/${reportId}`, "PUT", values, "신고를 처리했어요."),
+    mutate(`/api/v1/admin/reports/${reportId}`, "PUT", values, "신고를 처리했어요.", !hasBackend),
   );
   if (state.ok) {
     revalidatePath("/admin/reports");

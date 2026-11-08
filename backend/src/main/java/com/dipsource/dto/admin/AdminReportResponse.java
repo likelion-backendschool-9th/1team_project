@@ -13,7 +13,10 @@ public record AdminReportResponse(
         String reporter,
         String reported,
         String createdAt,
-        String status) {
+        String status,
+        String handledBy,
+        String adminNote,
+        String handledAt) {
 
     public static AdminReportResponse of(
             Long id,
@@ -25,7 +28,10 @@ public record AdminReportResponse(
             String reporter,
             String reported,
             LocalDateTime createdAt,
-            String status) {
+            String status,
+            String handledBy,
+            String adminNote,
+            LocalDateTime handledAt) {
         return new AdminReportResponse(
                 id,
                 targetType,
@@ -36,7 +42,10 @@ public record AdminReportResponse(
                 reporter,
                 reported,
                 createdAt == null ? null : createdAt.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
-                status);
+                status,
+                handledBy,
+                adminNote,
+                handledAt == null ? null : handledAt.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
     }
 
     private static String clip(String text) {

@@ -93,14 +93,16 @@ class AdminReportControllerTest {
     void adminListPendingFirst() throws Exception {
         mockMvc.perform(get("/admin/reports").with(authentication(auth(admin, "ADMIN"))))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.length()").value(2))
-                .andExpect(jsonPath("$.data[0].id").value(pending.getId().intValue()))
-                .andExpect(jsonPath("$.data[0].targetType").value("피드"))
-                .andExpect(jsonPath("$.data[0].targetTitle").value("스팸 링크 피드"))
-                .andExpect(jsonPath("$.data[0].reporter").value("신고자"))
-                .andExpect(jsonPath("$.data[0].reported").value("작성자"))
-                .andExpect(jsonPath("$.data[0].status").value("pending"))
-                .andExpect(jsonPath("$.data[1].status").value("resolved"));
+                .andExpect(jsonPath("$.data.totalElements").value(2))
+                .andExpect(jsonPath("$.data.content[0].id").value(pending.getId().intValue()))
+                .andExpect(jsonPath("$.data.content[0].targetType").value("피드"))
+                .andExpect(jsonPath("$.data.content[0].targetTitle").value("스팸 링크 피드"))
+                .andExpect(jsonPath("$.data.content[0].reporter").value("신고자"))
+                .andExpect(jsonPath("$.data.content[0].reported").value("작성자"))
+                .andExpect(jsonPath("$.data.content[0].status").value("pending"))
+                .andExpect(jsonPath("$.data.content[1].status").value("resolved"))
+                .andExpect(jsonPath("$.data.content[1].handledBy").value("관리자"))
+                .andExpect(jsonPath("$.data.content[1].adminNote").value("숨김 처리"));
     }
 
     @Test
@@ -111,8 +113,27 @@ class AdminReportControllerTest {
                         .param("status", "pending")
                         .with(authentication(auth(admin, "ADMIN"))))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.length()").value(1))
-                .andExpect(jsonPath("$.data[0].id").value(pending.getId().intValue()));
+                .andExpect(jsonPath("$.data.totalElements").value(1))
+                .andExpect(jsonPath("$.data.content[0].id").value(pending.getId().intValue()));
+    }
+
+    @Test
+    @DisplayName("회원 신고 유형으로 필터한다")
+    void adminListUserType() throws Exception {
+        persist(Report.builder()
+                .reporterId(reporter.getId())
+                .targetType("USER")
+                .targetId(author.getId())
+                .reason("스팸 계정")
+                .build());
+
+        mockMvc.perform(get("/admin/reports")
+                        .param("type", "users")
+                        .with(authentication(auth(admin, "ADMIN"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.totalElements").value(1))
+                .andExpect(jsonPath("$.data.content[0].targetType").value("회원"))
+                .andExpect(jsonPath("$.data.content[0].reported").value("작성자"));
     }
 
     @Test
@@ -127,7 +148,9 @@ class AdminReportControllerTest {
         mockMvc.perform(get("/admin/reports/{id}", pending.getId())
                         .with(authentication(auth(admin, "ADMIN"))))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.status").value("rejected"));
+                .andExpect(jsonPath("$.data.status").value("rejected"))
+                .andExpect(jsonPath("$.data.handledBy").value("관리자"))
+                .andExpect(jsonPath("$.data.adminNote").value("해당 없음입니다"));
 
         mockMvc.perform(put("/admin/reports/{id}", pending.getId())
                         .contentType(MediaType.APPLICATION_JSON)

@@ -42,6 +42,9 @@ export type Report = {
   reported: string;
   createdAt: string;
   status: ReportStatus;
+  handledBy?: string | null;
+  adminNote?: string | null;
+  handledAt?: string | null;
 };
 
 const day = (offset: number) => new Date(Date.UTC(2026, 10, 2) - offset * 86_400_000).toISOString();

@@ -4,12 +4,12 @@ import com.dipsource.dto.admin.AdminReportResponse;
 import com.dipsource.dto.admin.HandleReportRequest;
 import com.dipsource.global.auth.UserPrincipal;
 import com.dipsource.global.common.ApiResponse;
-import com.dipsource.global.exception.BusinessException;
-import com.dipsource.global.exception.ErrorCode;
+import com.dipsource.global.common.PageResponse;
 import com.dipsource.service.admin.AdminReportService;
 import jakarta.validation.Valid;
-import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -28,10 +28,11 @@ public class AdminReportController {
     private final AdminReportService adminReportService;
 
     @GetMapping
-    public ApiResponse<List<AdminReportResponse>> list(
+    public ApiResponse<PageResponse<AdminReportResponse>> list(
             @RequestParam(required = false) String type,
-            @RequestParam(required = false) String status) {
-        return ApiResponse.of(adminReportService.list(type, status));
+            @RequestParam(required = false) String status,
+            @PageableDefault(size = 10) Pageable pageable) {
+        return ApiResponse.of(adminReportService.list(type, status, pageable));
     }
 
     @GetMapping("/{reportId}")
@@ -44,14 +45,7 @@ public class AdminReportController {
             @AuthenticationPrincipal UserPrincipal principal,
             @PathVariable Long reportId,
             @Valid @RequestBody HandleReportRequest request) {
-        adminReportService.handle(requireUserId(principal), reportId, request.decision(), request.memo());
+        adminReportService.handle(AdminAuth.requireUserId(principal), reportId, request.decision(), request.memo());
         return ResponseEntity.noContent().build();
-    }
-
-    private static Long requireUserId(UserPrincipal principal) {
-        if (principal == null) {
-            throw new BusinessException(ErrorCode.UNAUTHORIZED, "로그인이 필요합니다");
-        }
-        return principal.getUserId();
     }
 }

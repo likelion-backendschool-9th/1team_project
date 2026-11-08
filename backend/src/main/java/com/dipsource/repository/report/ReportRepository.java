@@ -2,9 +2,14 @@ package com.dipsource.repository.report;
 
 import com.dipsource.entity.report.Report;
 import com.dipsource.entity.report.ReportStatus;
+import jakarta.persistence.LockModeType;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -41,6 +46,11 @@ public interface ReportRepository extends JpaRepository<Report, Long> {
         long getCnt();
     }
 
+    /** 처리 중 같은 신고를 동시에 바꾸지 못하게 잠근다 */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT r FROM Report r WHERE r.id = :id")
+    Optional<Report> findByIdForUpdate(@Param("id") Long id);
+
     /** 관리자 신고 목록. 대기(PENDING)를 앞에 두고 최신순. */
     @Query("""
             SELECT r FROM Report r
@@ -51,7 +61,8 @@ public interface ReportRepository extends JpaRepository<Report, Long> {
                           ELSE 2 END,
                      r.createdAt DESC, r.id DESC
             """)
-    List<Report> searchForAdmin(
+    Page<Report> searchForAdmin(
             @Param("status") ReportStatus status,
-            @Param("targetType") String targetType);
+            @Param("targetType") String targetType,
+            Pageable pageable);
 }

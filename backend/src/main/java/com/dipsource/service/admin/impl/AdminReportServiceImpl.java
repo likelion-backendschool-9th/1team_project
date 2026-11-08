@@ -19,14 +19,20 @@ import com.dipsource.repository.post.PostRepository;
 import com.dipsource.repository.report.ReportRepository;
 import com.dipsource.repository.user.UserRepository;
 import com.dipsource.service.admin.AdminReportService;
+import com.dipsource.global.common.PageResponse;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -34,12 +40,15 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class AdminReportServiceImpl implements AdminReportService {
 
+    private static final int MAX_PAGE_SIZE = 100;
+
     private static final Map<String, String> TYPE_QUERY = Map.of(
             "feeds", "FEED",
             "posts", "POST",
             "demos", "DEMO",
             "comments", "FEED_COMMENT",
-            "guestbooks", "GUESTBOOK");
+            "guestbooks", "GUESTBOOK",
+            "users", "USER");
 
     private static final Map<String, String> TYPE_LABEL = Map.of(
             "FEED", "피드",
@@ -66,8 +75,11 @@ public class AdminReportServiceImpl implements AdminReportService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<AdminReportResponse> list(String type, String status) {
-        return mapAll(reportRepository.searchForAdmin(parseStatus(status), parseType(type)));
+    public PageResponse<AdminReportResponse> list(String type, String status, Pageable pageable) {
+        int size = pageable.getPageSize() <= 0 ? 10 : Math.min(pageable.getPageSize(), MAX_PAGE_SIZE);
+        Pageable limited = PageRequest.of(pageable.getPageNumber(), size);
+        Page<Report> page = reportRepository.searchForAdmin(parseStatus(status), parseType(type), limited);
+        return PageResponse.of(page, mapAll(page.getContent()));
     }
 
     @Override
@@ -81,7 +93,7 @@ public class AdminReportServiceImpl implements AdminReportService {
     @Override
     @Transactional
     public void handle(Long adminId, Long reportId, String decision, String memo) {
-        Report report = reportRepository.findById(reportId)
+        Report report = reportRepository.findByIdForUpdate(reportId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "신고를 찾을 수 없습니다"));
         if (report.getStatus() != ReportStatus.PENDING) {
             throw new BusinessException(ErrorCode.CONFLICT, "이미 처리된 신고입니다");
@@ -128,12 +140,13 @@ public class AdminReportServiceImpl implements AdminReportService {
         Map<Long, Post> posts = load(reports, "POST", postRepository::findAllById, Post::getId);
         Map<Long, Demo> demos = load(reports, "DEMO", demoRepository::findAllById, Demo::getId);
         Map<Long, FeedComment> comments = load(
-                reports, "FEED_COMMENT", feedCommentRepository::findAllById, FeedComment::getId);
+                reports, "FEED_COMMENT", feedCommentRepository::findAllWithFeedByIdIn, FeedComment::getId);
         Map<Long, Guestbook> guestbooks = load(
-                reports, "GUESTBOOK", guestbookRepository::findAllById, Guestbook::getId);
+                reports, "GUESTBOOK", guestbookRepository::findAllWithHomeByIdIn, Guestbook::getId);
 
         Set<Long> userIds = new HashSet<>();
         reports.forEach(report -> userIds.add(report.getReporterId()));
+        reports.stream().map(Report::getHandledBy).filter(Objects::nonNull).forEach(userIds::add);
         feeds.values().forEach(feed -> userIds.add(feed.getUserId()));
         posts.values().forEach(post -> userIds.add(post.getUserId()));
         demos.values().forEach(demo -> userIds.add(demo.getUserId()));
@@ -228,7 +241,10 @@ public class AdminReportServiceImpl implements AdminReportService {
                 reporter,
                 reported,
                 report.getCreatedAt(),
-                report.getStatus().name().toLowerCase(Locale.ROOT));
+                report.getStatus().name().toLowerCase(Locale.ROOT),
+                report.getHandledBy() == null ? null : nickname(users, report.getHandledBy()),
+                report.getAdminNote(),
+                report.getHandledAt());
     }
 
     private static String nickname(Map<Long, User> users, Long userId) {
@@ -239,7 +255,7 @@ public class AdminReportServiceImpl implements AdminReportService {
     private static <T> Map<Long, T> load(
             List<Report> reports,
             String type,
-            Function<Iterable<Long>, List<T>> loader,
+            Function<Collection<Long>, List<T>> loader,
             Function<T, Long> idOf) {
         List<Long> ids = reports.stream()
                 .filter(report -> type.equals(report.getTargetType()))

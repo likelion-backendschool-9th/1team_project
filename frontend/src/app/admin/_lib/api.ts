@@ -116,25 +116,37 @@ export const REPORT_TYPES = [
   { value: "feeds", label: "피드" },
   { value: "comments", label: "댓글" },
   { value: "guestbooks", label: "방명록" },
+  { value: "users", label: "회원" },
 ] as const;
 
-export async function getReports(status?: string, type?: string): Promise<Report[]> {
-  const query = new URLSearchParams();
-  if (status) query.set("status", status);
-  if (type) query.set("type", type);
-  if (!isMockMode) {
-    const { data } = await apiFetch<ApiResponse<Report[]>>(`/api/v1/admin/reports?${query}`);
+export async function getReports(query: {
+  status?: string;
+  type?: string;
+  page: number;
+}): Promise<PageResponse<Report>> {
+  if (hasBackend) {
+    const search = new URLSearchParams({ page: String(query.page - 1), size: String(PAGE_SIZE) });
+    if (query.status) search.set("status", query.status);
+    if (query.type) search.set("type", query.type);
+    const { data } = await apiFetch<ApiResponse<PageResponse<Report>>>(`/api/v1/admin/reports?${search}`);
     return data;
   }
-  const typeLabel = REPORT_TYPES.find((item) => item.value === type)?.label;
+  const typeLabel = REPORT_TYPES.find((item) => item.value === query.type)?.label;
   const order = { pending: 0, resolved: 1, rejected: 2 };
-  return mockReports
-    .filter((report) => (!status || report.status === status) && (!typeLabel || report.targetType === typeLabel))
+  const filtered = mockReports
+    .filter((report) => (!query.status || report.status === query.status) && (!typeLabel || report.targetType === typeLabel))
     .sort((a, b) => order[a.status] - order[b.status] || b.createdAt.localeCompare(a.createdAt));
+  return {
+    content: filtered.slice((query.page - 1) * PAGE_SIZE, query.page * PAGE_SIZE),
+    page: query.page - 1,
+    size: PAGE_SIZE,
+    totalElements: filtered.length,
+    totalPages: Math.max(1, Math.ceil(filtered.length / PAGE_SIZE)),
+  };
 }
 
 export async function getReport(reportId: number): Promise<Report | null> {
-  if (!isMockMode) {
+  if (hasBackend) {
     try {
       const { data } = await apiFetch<ApiResponse<Report>>(`/api/v1/admin/reports/${reportId}`);
       return data;
