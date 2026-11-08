@@ -85,12 +85,18 @@ export async function getPost(postId: number): Promise<PostDetail | null> {
   }
 }
 
-export async function getPostComments(postId: number): Promise<PostComment[]> {
-  if (isMockMode) return createMockPostComments(postId, Date.now());
-  const { data } = await apiFetch<ApiResponse<{ content: PostComment[] }>>(
+export type PostCommentPage = {
+  comments: PostComment[];
+  hasNext: boolean;
+  nextCursor: string | null;
+};
+
+export async function getPostComments(postId: number): Promise<PostCommentPage> {
+  if (isMockMode) return { comments: createMockPostComments(postId, Date.now()), hasNext: false, nextCursor: null };
+  const { data } = await apiFetch<ApiResponse<{ content: PostComment[]; hasNext: boolean; nextCursor: string | null }>>(
     `/api/v1/posts/${postId}/comments`,
   );
-  return data.content;
+  return { comments: data.content, hasNext: data.hasNext, nextCursor: data.nextCursor };
 }
 
 export async function getUserPosts(userId: number): Promise<PostSummary[]> {

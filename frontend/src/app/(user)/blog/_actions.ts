@@ -6,6 +6,7 @@ import { apiFetch, ApiRequestError, hasBackend, isMockMode, type ApiResponse } f
 import { runForm } from "@/app/_lib/api/formAction";
 import { mutate } from "@/app/_lib/api/mutate";
 import { readValues, type FormState } from "@/app/_lib/formState";
+import type { PostComment } from "@/app/_lib/types/post";
 import { categories } from "./_lib/query";
 
 const POST_FIELDS = ["title", "category", "tags", "content", "demoId", "price"];
@@ -131,12 +132,35 @@ export async function deletePostComment(commentId: number) {
 }
 
 export async function replyPostComment(postId: number, parentId: number, content: string) {
-  if (!isId(postId) || !isId(parentId)) return { ok: false, message: "잘못된 요청이에요." };
+  if (!isId(postId) || !isId(parentId)) return { ok: false, message: "잘못된 요청이에요.", data: null };
   const text = content.trim();
-  if (!text || text.length > 1000) return { ok: false, message: "1~1000자로 입력해 주세요." };
-  const result = await mutate(`/api/v1/posts/${postId}/comments`, "POST", { content: text, parentId }, "답글을 남겼어요.");
-  if (result.ok) revalidatePath(`/blog/posts/${postId}`);
-  return result;
+  if (!text || text.length > 1000) return { ok: false, message: "1~1000자로 입력해 주세요.", data: null };
+  // 목 모드: 실제 저장 없음 — 클라이언트 낙관적 업데이트로만 처리
+  if (isMockMode) return { ok: true, message: "답글을 남겼어요.", data: null };
+  try {
+    const { data } = await apiFetch<ApiResponse<PostComment>>(
+      `/api/v1/posts/${postId}/comments`,
+      { method: "POST", body: JSON.stringify({ content: text, parentId }) },
+    );
+    revalidatePath(`/blog/posts/${postId}`);
+    return { ok: true, message: "답글을 남겼어요.", data };
+  } catch (error) {
+    if (error instanceof ApiRequestError) return { ok: false, message: error.error.message, data: null };
+    throw error;
+  }
+}
+
+export async function loadMorePostComments(postId: number, cursor: string) {
+  if (!isId(postId)) return { ok: false, message: "잘못된 요청이에요.", comments: [] as PostComment[], hasNext: false, nextCursor: null as string | null };
+  try {
+    const { data } = await apiFetch<ApiResponse<{ content: PostComment[]; hasNext: boolean; nextCursor: string | null }>>(
+      `/api/v1/posts/${postId}/comments?cursor=${cursor}`,
+    );
+    return { ok: true, message: "", comments: data.content, hasNext: data.hasNext, nextCursor: data.nextCursor };
+  } catch (error) {
+    if (error instanceof ApiRequestError) return { ok: false, message: error.error.message, comments: [] as PostComment[], hasNext: false, nextCursor: null as string | null };
+    throw error;
+  }
 }
 
 export async function togglePostCommentLike(commentId: number, like: boolean) {

@@ -14,6 +14,7 @@ import {
   createPostComment,
   deletePost,
   deletePostComment,
+  loadMorePostComments,
   replyPostComment,
   reportPost,
   togglePostCommentLike,
@@ -24,6 +25,7 @@ import { getPost, getPostComments, getServerTime } from "../../../_lib/api";
 import { categories } from "../../../_lib/query";
 import { Markdown } from "../../../_components/Markdown";
 import { PostActions } from "../../../_components/PostActions";
+import { PostCommentLoadMore } from "./PostCommentLoadMore";
 import styles from "./Post.module.css";
 
 type Props = {
@@ -36,7 +38,7 @@ export async function PostView({ params }: Props) {
   const post = Number.isSafeInteger(postId) && postId > 0 ? await getPost(postId) : null;
   if (!post) notFound();
 
-  const [me, comments, now] = await Promise.all([getMe(), getPostComments(postId), getServerTime()]);
+  const [me, { comments, hasNext, nextCursor }, now] = await Promise.all([getMe(), getPostComments(postId), getServerTime()]);
   const mine = me?.id === post.author.id;
   const locked = post.price > 0 && !post.purchased && !mine;
   const category = categories.find((item) => item.value === post.category)?.label;
@@ -154,7 +156,7 @@ export async function PostView({ params }: Props) {
         <PostActions
           postId={post.id}
           likeCount={post.likeCount}
-          commentCount={comments.length}
+          commentCount={post.commentCount}
           repostCount={post.repostCount}
           liked={post.liked}
           readMinutes={post.readMinutes}
@@ -163,7 +165,7 @@ export async function PostView({ params }: Props) {
 
       <section id="comments" className={`${kit.card} ${kit.stack}`} aria-labelledby="post-comments-title">
         <h2 id="post-comments-title" className={kit.cardTitle}>
-          댓글 {comments.length}
+          댓글 {post.commentCount}
         </h2>
         <CommentForm action={createPostComment.bind(null, post.id)} maxLength={1000} />
         <CommentList
@@ -176,6 +178,20 @@ export async function PostView({ params }: Props) {
           likeComment={togglePostCommentLike}
           replyComment={replyPostComment.bind(null, post.id)}
         />
+        {hasNext && nextCursor && (
+          <PostCommentLoadMore
+            postId={post.id}
+            initialCursor={nextCursor}
+            now={now}
+            me={me ?? undefined}
+            maxCommentLength={1000}
+            loadMore={loadMorePostComments}
+            updateComment={updatePostComment}
+            deleteComment={deletePostComment}
+            likeComment={togglePostCommentLike}
+            replyComment={replyPostComment.bind(null, post.id)}
+          />
+        )}
       </section>
     </div>
   );
