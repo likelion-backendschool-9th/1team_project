@@ -1,11 +1,19 @@
 package com.dipsource.service.block.impl;
 
+import com.dipsource.dto.block.BlockedUserResponse;
+import com.dipsource.entity.block.Block;
+import com.dipsource.entity.user.User;
 import com.dipsource.global.exception.BusinessException;
 import com.dipsource.global.exception.ErrorCode;
 import com.dipsource.repository.block.BlockRepository;
 import com.dipsource.repository.follow.FollowRepository;
+import com.dipsource.repository.user.UserRepository;
 import com.dipsource.service.block.BlockService;
 import com.dipsource.service.user.UserService;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,6 +25,7 @@ public class BlockServiceImpl implements BlockService {
 
     private final BlockRepository blockRepository;
     private final FollowRepository followRepository;
+    private final UserRepository userRepository;
     private final UserService userService;
 
     @Override
@@ -36,6 +45,22 @@ public class BlockServiceImpl implements BlockService {
     public void unblock(Long blockerId, Long blockedId) {
         requireOther(blockerId, blockedId);
         blockRepository.deleteByBlockerIdAndBlockedId(blockerId, blockedId);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<BlockedUserResponse> listBlocked(Long blockerId) {
+        List<Block> blocks = blockRepository.findByIdBlockerIdOrderByCreatedAtDesc(blockerId);
+        if (blocks.isEmpty()) {
+            return List.of();
+        }
+        List<Long> ids = blocks.stream().map(block -> block.getId().getBlockedId()).toList();
+        Map<Long, User> users = userRepository.findAllById(ids).stream()
+                .collect(Collectors.toMap(User::getId, Function.identity()));
+        return blocks.stream()
+                .filter(block -> users.containsKey(block.getId().getBlockedId()))
+                .map(block -> BlockedUserResponse.of(users.get(block.getId().getBlockedId()), block.getCreatedAt()))
+                .toList();
     }
 
     private static void requireOther(Long blockerId, Long blockedId) {

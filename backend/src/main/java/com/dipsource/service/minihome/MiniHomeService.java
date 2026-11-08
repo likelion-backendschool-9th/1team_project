@@ -8,8 +8,8 @@ import com.dipsource.dto.minihome.VisitorStatsResponse;
 /** 미니홈피 조회·수정. */
 public interface MiniHomeService {
 
-    /** 없으면 기본값으로 만든다. 없는 회원이면 예외. */
-    MiniHomeResponse getOrCreate(Long userId);
+    /** 없으면 기본값으로 만든다. 없는 회원이면 예외. viewerId는 비로그인이면 null. 차단 관계면 예외. */
+    MiniHomeResponse getOrCreate(Long userId, Long viewerId);
 
     /** 내 미니홈피 수정. stackTags를 저장한다. featuredPostId는 바꾸지 않는다. */
     MiniHomeResponse update(Long userId, UpdateMiniHomeRequest request);

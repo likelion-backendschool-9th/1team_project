@@ -1,5 +1,6 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { hasBackend } from "@/app/_lib/api/client";
 import { runForm } from "@/app/_lib/api/formAction";
 import { mutate } from "@/app/_lib/api/mutate";
@@ -36,7 +37,9 @@ export async function saveSettings(previous: FormState, formData: FormData): Pro
 
 export async function unblockUser(userId: number) {
   if (!isId(userId)) return { ok: false, message: "잘못된 요청이에요." };
-  return mutate(`/api/v1/blocks/${userId}`, "DELETE", undefined, "차단을 해제했어요.", !hasBackend);
+  const result = await mutate(`/api/v1/blocks/${userId}`, "DELETE", undefined, "차단을 해제했어요.", !hasBackend);
+  if (result.ok) revalidatePath("/my/settings");
+  return result;
 }
 
 export async function purchaseChips(packageId: number) {

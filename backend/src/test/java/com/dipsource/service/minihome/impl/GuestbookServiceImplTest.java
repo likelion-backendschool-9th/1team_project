@@ -12,6 +12,7 @@ import com.dipsource.entity.minihome.Guestbook;
 import com.dipsource.entity.minihome.MiniHome;
 import com.dipsource.global.exception.BusinessException;
 import com.dipsource.global.exception.ErrorCode;
+import com.dipsource.repository.block.BlockRepository;
 import com.dipsource.repository.minihome.GuestbookRepository;
 import com.dipsource.service.user.UserService;
 import java.util.List;
@@ -38,11 +39,14 @@ class GuestbookServiceImplTest {
     @Mock
     private UserService userService;
 
+    @Mock
+    private BlockRepository blockRepository;
+
     private GuestbookServiceImpl service;
 
     @BeforeEach
     void setUp() {
-        service = new GuestbookServiceImpl(miniHomeLoader, guestbookRepository, userService);
+        service = new GuestbookServiceImpl(miniHomeLoader, guestbookRepository, userService, blockRepository);
     }
 
     @Test

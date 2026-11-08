@@ -24,11 +24,15 @@ public interface PostRepository extends JpaRepository<Post, Long> {
               AND p.category IN :categories
               AND (LOWER(p.title) LIKE :pattern ESCAPE '\\'
                    OR (p.paid = false AND LOWER(p.content) LIKE :pattern ESCAPE '\\'))
+              AND (:viewerId IS NULL OR (
+                    p.userId NOT IN (SELECT b.id.blockedId FROM Block b WHERE b.id.blockerId = :viewerId)
+                AND p.userId NOT IN (SELECT b.id.blockerId FROM Block b WHERE b.id.blockedId = :viewerId)))
             """)
     Page<Post> findList(
             @Param("status") PostStatus status,
             @Param("categories") Collection<PostCategory> categories,
             @Param("pattern") String pattern,
+            @Param("viewerId") Long viewerId,
             Pageable pageable);
 
     /** 한 회원의 블로그 글 목록 */

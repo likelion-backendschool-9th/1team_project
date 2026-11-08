@@ -11,6 +11,7 @@ import com.dipsource.dto.user.UserSummaryResponse;
 import com.dipsource.entity.minihome.MiniHome;
 import com.dipsource.global.exception.BusinessException;
 import com.dipsource.global.exception.ErrorCode;
+import com.dipsource.repository.block.BlockRepository;
 import com.dipsource.repository.minihome.MiniHomeRepository;
 import com.dipsource.service.post.PostService;
 import com.dipsource.service.user.UserService;
@@ -32,7 +33,8 @@ class MiniHomeServiceImplTest {
         repository = mock(MiniHomeRepository.class);
         userService = mock(UserService.class);
         postService = mock(PostService.class);
-        service = new MiniHomeServiceImpl(new MiniHomeLoader(repository, userService), repository, postService);
+        service = new MiniHomeServiceImpl(
+                new MiniHomeLoader(repository, userService), repository, postService, mock(BlockRepository.class));
         when(repository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
         when(userService.isActiveUser(1L)).thenReturn(true);
         when(userService.getSummaries(List.of(1L))).thenReturn(Map.of(
@@ -44,7 +46,7 @@ class MiniHomeServiceImplTest {
     void createsHomeWithNicknameAndCreamSkin() {
         when(repository.findByUserId(1L)).thenReturn(Optional.empty());
 
-        var response = service.getOrCreate(1L);
+        var response = service.getOrCreate(1L, null);
 
         assertThat(response.headline()).isEqualTo("닉네임");
         assertThat(response.skin()).isEqualTo("cream");
@@ -60,7 +62,7 @@ class MiniHomeServiceImplTest {
         home.changeSkin("default", null);
         when(repository.findByUserId(1L)).thenReturn(Optional.of(home));
 
-        assertThat(service.getOrCreate(1L).skin()).isEqualTo("cream");
+        assertThat(service.getOrCreate(1L, null).skin()).isEqualTo("cream");
     }
 
     @Test
@@ -128,7 +130,7 @@ class MiniHomeServiceImplTest {
         when(repository.findByUserId(1L)).thenReturn(Optional.of(home));
         when(postService.isActivePostOf(302L, 1L)).thenReturn(false);
 
-        assertThat(service.getOrCreate(1L).featuredPostId()).isNull();
+        assertThat(service.getOrCreate(1L, null).featuredPostId()).isNull();
     }
 
     @Test
@@ -166,7 +168,7 @@ class MiniHomeServiceImplTest {
         home.changeSkin("abc", null);
         when(repository.findByUserId(1L)).thenReturn(Optional.of(home));
 
-        assertThat(service.getOrCreate(1L).skin()).isEqualTo("cream");
+        assertThat(service.getOrCreate(1L, null).skin()).isEqualTo("cream");
     }
 
     @Test
@@ -246,7 +248,7 @@ class MiniHomeServiceImplTest {
     void missingUserIsNotFound() {
         when(userService.isActiveUser(9L)).thenReturn(false);
 
-        assertThatThrownBy(() -> service.getOrCreate(9L))
+        assertThatThrownBy(() -> service.getOrCreate(9L, null))
                 .isInstanceOf(BusinessException.class)
                 .extracting(ex -> ((BusinessException) ex).getErrorCode())
                 .isEqualTo(ErrorCode.NOT_FOUND);

@@ -81,7 +81,11 @@ export const getFollowings = (page = 1, size = FOLLOW_PAGE_SIZE, q = "") =>
 export const getFollowers = (page = 1, size = FOLLOW_PAGE_SIZE, q = "") =>
   getFollowPage("/api/v1/follows/followers", mockFollowers, page, size, q);
 export const getSettings = () => get<Settings>("/api/v1/users/me/settings", mockSettings);
-export const getBlocked = async (): Promise<BlockedUser[]> => mockBlocked;
+export async function getBlocked(): Promise<BlockedUser[]> {
+  if (!hasBackend) return mockBlocked;
+  const { data } = await apiFetch<ApiResponse<BlockedUser[]>>("/api/v1/blocks");
+  return data;
+}
 export const getPackages = async (): Promise<ChipPackage[]> => mockPackages;
 export const getChipHistory = () => getPage<ChipHistory>("/api/v1/coins/history", mockHistory);
 // 구독 목록 조회 API는 아직 정해지지 않았다 (프론트엔드-청사진 11장).

@@ -8,6 +8,8 @@ import org.springframework.data.repository.query.Param;
 import com.dipsource.entity.block.Block;
 import com.dipsource.entity.block.BlockId;
 
+import java.util.List;
+
 public interface BlockRepository extends JpaRepository<Block, BlockId>{
 
     /**
@@ -34,4 +36,23 @@ public interface BlockRepository extends JpaRepository<Block, BlockId>{
     int deleteByBlockerIdAndBlockedId(
         @Param("blockerId") Long blockerId,
         @Param("blockedId") Long blockedId);
+
+    /** 내가 차단한 목록. 최근 차단 순. */
+    List<Block> findByIdBlockerIdOrderByCreatedAtDesc(Long blockerId);
+
+    /** 나와 상대가 어느 쪽이든 차단했으면 true. */
+    @Query("""
+            SELECT COUNT(b) > 0 FROM Block b
+            WHERE (b.id.blockerId = :leftId AND b.id.blockedId = :rightId)
+               OR (b.id.blockerId = :rightId AND b.id.blockedId = :leftId)
+            """)
+    boolean existsBetween(@Param("leftId") Long leftId, @Param("rightId") Long rightId);
+
+    /** 내가 차단했거나 나를 차단한 회원 ID. */
+    @Query("""
+            SELECT CASE WHEN b.id.blockerId = :userId THEN b.id.blockedId ELSE b.id.blockerId END
+            FROM Block b
+            WHERE b.id.blockerId = :userId OR b.id.blockedId = :userId
+            """)
+    List<Long> findHiddenUserIds(@Param("userId") Long userId);
 } 

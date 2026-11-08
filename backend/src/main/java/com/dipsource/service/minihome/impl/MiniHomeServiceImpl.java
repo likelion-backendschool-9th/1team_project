@@ -7,6 +7,7 @@ import com.dipsource.dto.minihome.VisitorStatsResponse;
 import com.dipsource.entity.minihome.MiniHome;
 import com.dipsource.global.exception.BusinessException;
 import com.dipsource.global.exception.ErrorCode;
+import com.dipsource.repository.block.BlockRepository;
 import com.dipsource.repository.minihome.MiniHomeRepository;
 import com.dipsource.service.minihome.MiniHomeService;
 import com.dipsource.service.post.PostService;
@@ -30,10 +31,14 @@ public class MiniHomeServiceImpl implements MiniHomeService {
     private final MiniHomeLoader miniHomeLoader;
     private final MiniHomeRepository miniHomeRepository;
     private final PostService postService;
+    private final BlockRepository blockRepository;
 
     @Override
     @Transactional
-    public MiniHomeResponse getOrCreate(Long userId) {
+    public MiniHomeResponse getOrCreate(Long userId, Long viewerId) {
+        if (viewerId != null && !viewerId.equals(userId) && blockRepository.existsBetween(viewerId, userId)) {
+            throw new BusinessException(ErrorCode.NOT_FOUND, "미니홈피를 찾을 수 없습니다");
+        }
         MiniHome home = miniHomeLoader.loadOrCreate(userId);
         // 대표 글이 삭제·숨김됐으면 연결을 끊어서 깨진 링크를 내려주지 않는다.
         Long postId = home.getFeaturedPostId();

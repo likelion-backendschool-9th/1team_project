@@ -7,9 +7,12 @@ import com.dipsource.entity.minihome.MiniHome;
 import com.dipsource.global.common.PageResponse;
 import com.dipsource.global.exception.BusinessException;
 import com.dipsource.global.exception.ErrorCode;
+import com.dipsource.repository.block.BlockRepository;
 import com.dipsource.repository.minihome.GuestbookRepository;
 import com.dipsource.service.minihome.GuestbookService;
 import com.dipsource.service.user.UserService;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -29,10 +32,14 @@ public class GuestbookServiceImpl implements GuestbookService {
     private final MiniHomeLoader miniHomeLoader;
     private final GuestbookRepository guestbookRepository;
     private final UserService userService;
+    private final BlockRepository blockRepository;
 
     @Override
     @Transactional(readOnly = true)
     public PageResponse<MiniHomeCommentResponse> list(Long viewerId, Long ownerId, Pageable pageable) {
+        if (viewerId != null && !viewerId.equals(ownerId) && blockRepository.existsBetween(viewerId, ownerId)) {
+            return empty(pageable);
+        }
         Optional<MiniHome> found = miniHomeLoader.findByUserId(ownerId);
         if (found.isEmpty()) {
             return empty(pageable);
@@ -40,11 +47,14 @@ public class GuestbookServiceImpl implements GuestbookService {
         MiniHome home = found.get();
         Page<Guestbook> page = guestbookRepository.findByHome_IdAndDeletedAtIsNull(
                 home.getId(), newest(pageable));
+        Set<Long> hidden = viewerId == null ? Set.of() : new HashSet<>(blockRepository.findHiddenUserIds(viewerId));
         Map<Long, UserSummaryResponse> authors = authors(page.getContent().stream()
                 .map(Guestbook::getWriterId)
+                .filter(writerId -> !hidden.contains(writerId))
                 .distinct()
                 .toList());
         List<MiniHomeCommentResponse> content = page.getContent().stream()
+                .filter(entry -> !hidden.contains(entry.getWriterId()))
                 .map(entry -> toResponse(entry, visible(viewerId, home, entry), authors))
                 .toList();
         return PageResponse.of(page, content);
@@ -53,6 +63,9 @@ public class GuestbookServiceImpl implements GuestbookService {
     @Override
     @Transactional
     public MiniHomeCommentResponse write(Long writerId, Long ownerId, String content, Boolean secret) {
+        if (!writerId.equals(ownerId) && blockRepository.existsBetween(writerId, ownerId)) {
+            throw new BusinessException(ErrorCode.NOT_FOUND, "미니홈피를 찾을 수 없습니다");
+        }
         String text = requireText(content);
         MiniHome home = miniHomeLoader.loadOrCreate(ownerId);
         boolean isSecret = Boolean.TRUE.equals(secret);
