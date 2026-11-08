@@ -232,3 +232,13 @@ export async function toggleDemoCommentLike(commentId: number, like: boolean) {
   if (!isId(commentId)) return { ok: false, message: "잘못된 요청이에요." };
   return mutate(`/api/v1/demos/comments/${commentId}/like`, like ? "POST" : "DELETE", undefined, "좋아요를 반영했어요.");
 }
+
+export async function reportGuestbook(homeUserId: number, guestbookId: number, reason: string) {
+  if (!isId(homeUserId) || !isId(guestbookId)) return { ok: false, message: "잘못된 요청이에요." };
+  return mutate(`/api/v1/mini-homes/${homeUserId}/guestbook/${guestbookId}/report`, "POST", { reason }, "신고가 접수됐어요.");
+}
+
+export async function reportUser(targetId: number, reason: string) {
+  if (!isId(targetId)) return { ok: false, message: "잘못된 요청이에요." };
+  return mutate(`/api/v1/reports`, "POST", { targetType: "USER", targetId, reason }, "신고가 접수됐어요.");
+}

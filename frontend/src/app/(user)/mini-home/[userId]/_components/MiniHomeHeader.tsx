@@ -1,8 +1,9 @@
 import Link from "next/link";
+import { ReportModal } from "@/app/_components/ui/ReportModal";
 import { formatCount } from "@/app/_lib/format";
 import type { MiniHomeProfile, VisitorStats } from "@/app/_lib/types/miniHome";
 import { DmOpenButton } from "@/app/(user)/_components/DmOpenButton";
-import { surf } from "../_actions";
+import { reportUser, surf } from "../_actions";
 import { IlchonButton } from "./IlchonButton";
 import { SponsorButton } from "./SponsorButton";
 import styles from "./MiniHomeHeader.module.css";
@@ -65,6 +66,12 @@ export function MiniHomeHeader({ profile, visitors, isOwner, chipBalance }: Prop
               <span aria-hidden="true">💬</span> 메시지
             </DmOpenButton>
             <SponsorButton userId={profile.id} nickname={profile.nickname} chipBalance={chipBalance} />
+            <ReportModal
+              label="신고"
+              title="유저 신고"
+              className={styles.button}
+              onConfirm={reportUser.bind(null, profile.id)}
+            />
           </>
         )}
         <form action={surf.bind(null, profile.id)}>

@@ -57,3 +57,7 @@ export async function replyFeedComment(feedId: number, parentId: number, content
 export async function toggleFeedCommentLike(commentId: number, like: boolean) {
   return mutate(`/api/v1/feeds/comments/${commentId}/like`, like ? "POST" : "DELETE", undefined, "좋아요를 반영했어요.");
 }
+
+export async function reportFeedComment(commentId: number, reason: string) {
+  return mutate(`/api/v1/reports`, "POST", { targetType: "FEED_COMMENT", targetId: commentId, reason }, "신고가 접수됐어요.");
+}

@@ -5,6 +5,7 @@ import { Avatar } from "@/app/_components/ui/Avatar";
 import { ArrowRightIcon } from "@/app/_components/ui/Icons";
 import { CommentForm } from "@/app/_components/ui/CommentForm";
 import { ConfirmButton } from "@/app/_components/ui/ConfirmButton";
+import { ReportModal } from "@/app/_components/ui/ReportModal";
 import kit from "@/app/_components/ui/kit.module.css";
 import { formatCount, formatDate, formatWon } from "@/app/_lib/format";
 import { chipsToWon } from "@/app/_lib/policy";
@@ -89,13 +90,11 @@ export async function PostView({ params }: Props) {
                 />
               </div>
             ) : (
-              <ConfirmButton
+              <ReportModal
                 label="신고"
                 title="이 글을 신고할까요?"
-                confirmLabel="신고"
-                danger
                 className={styles.report}
-                onConfirm={reportPost.bind(null, post.id)}
+                onConfirm={(reason) => reportPost(post.id, reason)}
               />
             )}
           </div>

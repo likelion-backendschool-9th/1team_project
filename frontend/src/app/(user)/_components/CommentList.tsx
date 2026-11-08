@@ -7,6 +7,7 @@ import { HeartIcon } from "@/app/_components/ui/Icons";
 import kit from "@/app/_components/ui/kit.module.css";
 import { formatRelativeTime } from "@/app/_lib/format";
 import type { UserSummary } from "@/app/_lib/types/user";
+import { ReportModal } from "@/app/_components/ui/ReportModal";
 import { CommentEditor } from "./CommentEditor";
 import styles from "./CommentList.module.css";
 
@@ -29,6 +30,7 @@ type Actions = {
   deleteComment?: (commentId: number) => Promise<Result>;
   likeComment?: (commentId: number, like: boolean) => Promise<Result>;
   replyComment?: (parentId: number, content: string) => Promise<ReplyResult>;
+  reportComment?: (commentId: number, reason: string) => Promise<Result>;
 };
 
 type Props = Actions & {
@@ -172,13 +174,21 @@ function CommentRow({ comment, now, me, actions, onReply, maxCommentLength }: Ro
         ) : (
           <>
             <p className={styles.content}>{comment.content}</p>
-            {onReply && (
-              <div className={styles.mine}>
+            <div className={styles.mine}>
+              {onReply && (
                 <button type="button" className={styles.mineButton} onClick={onReply}>
                   답글
                 </button>
-              </div>
-            )}
+              )}
+              {saved && actions.reportComment && (
+                <ReportModal
+                  label="신고"
+                  title="댓글 신고"
+                  className={styles.mineButton}
+                  onConfirm={(reason) => actions.reportComment!(comment.id, reason)}
+                />
+              )}
+            </div>
           </>
         )}
       </div>

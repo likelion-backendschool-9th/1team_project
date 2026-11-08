@@ -4,6 +4,7 @@ import { connection } from "next/server";
 import { Avatar } from "@/app/_components/ui/Avatar";
 import { CommentForm } from "@/app/_components/ui/CommentForm";
 import { ConfirmButton } from "@/app/_components/ui/ConfirmButton";
+import { ReportModal } from "@/app/_components/ui/ReportModal";
 import kit from "@/app/_components/ui/kit.module.css";
 import { formatCount, formatDate } from "@/app/_lib/format";
 import type { DemoFeedbackType } from "@/app/_lib/types/demo";
@@ -117,14 +118,11 @@ export async function DemoDetailView({ params }: Props) {
               onConfirm={deleteDemo.bind(null, demo.id)}
             />
           ) : (
-            <ConfirmButton
+            <ReportModal
               label="신고하기"
               title="이 데모를 신고할까요?"
-              description="운영진이 확인 후 조치해요. 허위 신고는 제재될 수 있어요."
-              confirmLabel="신고"
-              danger
               className={styles.report}
-              onConfirm={reportDemo.bind(null, demo.id)}
+              onConfirm={(reason) => reportDemo(demo.id, reason)}
             />
           )}
         </div>
