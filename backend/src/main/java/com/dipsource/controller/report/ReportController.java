@@ -38,7 +38,7 @@ public class ReportController {
             @AuthenticationPrincipal UserPrincipal principal,
             @Valid @RequestBody ReportReasonRequest body
     ) {
-        ReportResponse response = reportService.create(principal.getUserId(), "FEED", feedId, body.reason());
+        ReportResponse response = reportService.create(principal.getUserId(), "FEED", feedId, body.reason(), null);
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.of(response));
     }
 
@@ -49,7 +49,7 @@ public class ReportController {
             @AuthenticationPrincipal UserPrincipal principal,
             @Valid @RequestBody ReportReasonRequest body
     ) {
-        ReportResponse response = reportService.create(principal.getUserId(), "POST", postId, body.reason());
+        ReportResponse response = reportService.create(principal.getUserId(), "POST", postId, body.reason(), null);
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.of(response));
     }
 
@@ -60,7 +60,7 @@ public class ReportController {
             @AuthenticationPrincipal UserPrincipal principal,
             @Valid @RequestBody ReportReasonRequest body
     ) {
-        ReportResponse response = reportService.create(principal.getUserId(), "DEMO", demoId, body.reason());
+        ReportResponse response = reportService.create(principal.getUserId(), "DEMO", demoId, body.reason(), null);
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.of(response));
     }
 
@@ -71,7 +71,7 @@ public class ReportController {
             @AuthenticationPrincipal UserPrincipal principal,
             @Valid @RequestBody ReportReasonRequest body
     ) {
-        ReportResponse response = reportService.create(principal.getUserId(), "FEED_COMMENT", commentId, body.reason());
+        ReportResponse response = reportService.create(principal.getUserId(), "FEED_COMMENT", commentId, body.reason(), null);
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.of(response));
     }
 
@@ -83,7 +83,7 @@ public class ReportController {
             @AuthenticationPrincipal UserPrincipal principal,
             @Valid @RequestBody ReportReasonRequest body
     ) {
-        ReportResponse response = reportService.create(principal.getUserId(), "GUESTBOOK", guestbookId, body.reason());
+        ReportResponse response = reportService.create(principal.getUserId(), "GUESTBOOK", guestbookId, body.reason(), homeUserId);
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.of(response));
     }
 
@@ -94,7 +94,7 @@ public class ReportController {
             @AuthenticationPrincipal UserPrincipal principal,
             @Valid @RequestBody ReportReasonRequest body
     ) {
-        ReportResponse response = reportService.create(principal.getUserId(), "USER", targetUserId, body.reason());
+        ReportResponse response = reportService.create(principal.getUserId(), "USER", targetUserId, body.reason(), null);
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.of(response));
     }
 }

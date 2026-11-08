@@ -53,7 +53,7 @@ public class ReportService {
     private static final List<String> ALLOWED_TARGET_TYPES = List.of("FEED", "POST", "DEMO", "FEED_COMMENT", "GUESTBOOK", "USER");
 
     @Transactional
-    public ReportResponse create(Long userId, String targetType, Long targetId, String reason) {
+    public ReportResponse create(Long userId, String targetType, Long targetId, String reason, Long homeUserId) {
         // targetType 검증
         if (!ALLOWED_TARGET_TYPES.contains(targetType)) {
             throw new BusinessException(ErrorCode.BAD_REQUEST, "지원하지 않는 신고 대상 종류입니다");
@@ -104,10 +104,13 @@ public class ReportService {
             Guestbook guestbook = guestbookRepository.findById(targetId)
                     .filter(g -> g.getDeletedAt() == null)
                     .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "신고 대상 방명록을 찾을 수 없습니다"));
+            if (!guestbook.getHome().getUserId().equals(homeUserId)) {
+                throw new BusinessException(ErrorCode.BAD_REQUEST, "방명록이 해당 미니홈피에 속하지 않습니다");
+            }
             if (guestbook.getWriterId().equals(userId)) {
                 throw new BusinessException(ErrorCode.BAD_REQUEST, "본인의 방명록은 신고할 수 없습니다");
             }
-            contentSnapshot = guestbook.getContent();
+            contentSnapshot = guestbook.isSecret() ? null : guestbook.getContent();
         } else if ("USER".equals(targetType)) {
             User target = userRepository.findById(targetId)
                     .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "신고 대상 유저를 찾을 수 없습니다"));
