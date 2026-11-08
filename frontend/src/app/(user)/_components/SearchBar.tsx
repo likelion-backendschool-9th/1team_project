@@ -107,6 +107,7 @@ export function SearchBar() {
           >
             <span className={styles.optionText}>{suggestion.text}</span>
             {suggestion.type === "TAG" && <span className={styles.tagBadge}>태그</span>}
+            {suggestion.type === "CORRECTION" && <span className={styles.tagBadge}>한/영 보정</span>}
           </li>
         ))}
       </ul>

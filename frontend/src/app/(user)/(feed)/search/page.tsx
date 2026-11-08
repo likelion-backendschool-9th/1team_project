@@ -5,7 +5,7 @@ import { SearchContent } from "./_components/SearchContent";
 
 export const metadata: Metadata = {
   title: "검색",
-  description: "사람, 데모, 블로그 글을 한 번에 찾아보세요.",
+  description: "블로그, 데모, 사용자, 피드를 한 번에 찾아보세요.",
   alternates: { canonical: "/search" },
 };
 

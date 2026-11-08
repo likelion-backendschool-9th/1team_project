@@ -11,7 +11,7 @@ const mockWords = ["spring", "stomp", "redis", "react", "refactoring", "websocke
 function isSuggestion(value: unknown): value is AutocompleteSuggestion {
   if (!value || typeof value !== "object") return false;
   const { text, type } = value as Record<string, unknown>;
-  return typeof text === "string" && (type === "TAG" || type === "WORD");
+  return typeof text === "string" && (type === "TAG" || type === "WORD" || type === "TERM" || type === "CORRECTION");
 }
 
 /** 입력 중인 검색어의 자동완성 후보. 목 데이터는 한글 조합 중 처리 없이 접두어만 비교한다 */

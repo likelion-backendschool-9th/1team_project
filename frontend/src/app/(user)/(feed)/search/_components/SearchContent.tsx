@@ -1,9 +1,10 @@
 import Link from "next/link";
 import { connection } from "next/server";
-import { Avatar } from "@/app/_components/ui/Avatar";
 import kit from "@/app/_components/ui/kit.module.css";
 import { LinkTabs } from "@/app/_components/ui/LinkTabs";
-import { getPopularKeywords, search, type SearchSort, type SearchType } from "../_lib/api";
+import { getMe } from "@/app/(user)/_lib/api";
+import { getPopularKeywords, search, type SearchResult, type SearchSort, type SearchType } from "../_lib/api";
+import { SearchResults } from "./SearchResults";
 import styles from "./SearchContent.module.css";
 
 type Props = {
@@ -12,9 +13,10 @@ type Props = {
 
 const types: { value: SearchType; label: string }[] = [
   { value: "all", label: "전체" },
-  { value: "user", label: "사람" },
+  { value: "post", label: "블로그" },
   { value: "demo", label: "데모" },
-  { value: "post", label: "글" },
+  { value: "user", label: "사용자" },
+  { value: "feed", label: "피드" },
 ];
 
 const sorts: { value: SearchSort; label: string }[] = [
@@ -26,11 +28,26 @@ function first(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value;
 }
 
-function href(q: string, type: SearchType, sort: SearchSort = "relevance") {
+function parsePage(value: string | undefined) {
+  const page = Number(value);
+  return Number.isSafeInteger(page) && page > 0 ? page : 1;
+}
+
+function href(q: string, type: SearchType, sort: SearchSort = "relevance", page = 1) {
   const query = new URLSearchParams({ q });
   if (type !== "all") query.set("type", type);
   if (sort !== "relevance") query.set("sort", sort);
+  if (page > 1) query.set("page", String(page));
   return `/search?${query}`;
+}
+
+function totalOf(result: SearchResult) {
+  return result.posts.total + result.demos.total + result.users.total + result.feeds.total;
+}
+
+function countOf(result: SearchResult, type: SearchType) {
+  const sections = { post: result.posts, demo: result.demos, user: result.users, feed: result.feeds };
+  return type === "all" ? totalOf(result) : sections[type].total;
 }
 
 export async function SearchContent({ searchParams }: Props) {
@@ -39,6 +56,7 @@ export async function SearchContent({ searchParams }: Props) {
   const q = first(params.q)?.trim().slice(0, 50) ?? "";
   const type = types.find((item) => item.value === first(params.type))?.value ?? "all";
   const sort = sorts.find((item) => item.value === first(params.sort))?.value ?? "relevance";
+  const page = parsePage(first(params.page));
   const popular = await getPopularKeywords();
 
   if (!q)
@@ -59,15 +77,37 @@ export async function SearchContent({ searchParams }: Props) {
       </section>
     );
 
-  const result = await search(q, sort);
-  const total = result.users.length + result.demos.length + result.posts.length;
-  const show = (target: SearchType) => type === "all" || type === target;
+  const [outcome, me] = await Promise.all([search(q, type, sort, page), getMe()]);
+  if ("error" in outcome)
+    return (
+      <p role="alert" className={kit.empty}>
+        {outcome.error}
+      </p>
+    );
+
+  const { result } = outcome;
+  const total = totalOf(result);
+  const suggestion = result.suggestedQuery;
 
   return (
     <div className={kit.stack}>
       <p role="status" className={kit.muted}>
         <strong>“{q}”</strong> 검색 결과 {total}건
       </p>
+      {suggestion && (
+        <p className={kit.muted}>
+          {result.suggestionType === "KEYBOARD" ? "한/영 전환을 잊으셨나요? " : "이것을 찾으셨나요? "}
+          <Link href={href(suggestion, type, sort)} className={kit.more}>
+            {suggestion}
+          </Link>
+        </p>
+      )}
+      {result.correctedQuery && (
+        <p className={kit.muted}>
+          검색 결과가 없어서 <strong>“{result.correctedQuery}”</strong>(으)로 찾은 결과를 보여 드려요.
+        </p>
+      )}
+      {result.relaxedMatch && <p className={kit.muted}>모든 단어가 들어간 결과가 없어서 일부 단어만 일치하는 결과를 보여 드려요.</p>}
       <LinkTabs
         label="검색 대상"
         variant="line"
@@ -75,14 +115,8 @@ export async function SearchContent({ searchParams }: Props) {
           href: href(q, item.value, sort),
           label: item.label,
           active: item.value === type,
-          count:
-            item.value === "user"
-              ? result.users.length
-              : item.value === "demo"
-                ? result.demos.length
-                : item.value === "post"
-                  ? result.posts.length
-                  : total,
+          // 개별 탭에서는 다른 대상의 건수를 모르므로 지금 탭의 건수만 보여 준다
+          count: type === "all" || item.value === type ? countOf(result, item.value) : undefined,
         }))}
       />
       <form action="/search" method="get" className={styles.sortForm}>
@@ -113,69 +147,23 @@ export async function SearchContent({ searchParams }: Props) {
           ))}
         </p>
       )}
-      {show("user") && result.users.length > 0 && (
-        <section className={kit.card} aria-labelledby="result-users">
-          <h2 id="result-users" className={kit.cardTitle}>사람</h2>
-          <ul className={kit.list}>
-            {result.users.map((user) => (
-              <li key={user.id}>
-                <Link href={`/mini-home/${user.id}`} className={kit.listItem}>
-                  <Avatar name={user.nickname} size={40} />
-                  <span className={kit.grow}>
-                    <strong>{user.nickname}</strong>
-                    <span className={kit.faint}> · {user.techStacks.join(", ")}</span>
-                  </span>
-                  <span className={kit.more}>미니홈피 →</span>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
-      {show("demo") && result.demos.length > 0 && (
-        <section className={kit.card} aria-labelledby="result-demos">
-          <h2 id="result-demos" className={kit.cardTitle}>데모</h2>
-          <ul className={kit.list}>
-            {result.demos.map((demo) => (
-              <li key={demo.id}>
-                <Link href={`/demos/${demo.id}`} className={kit.listItem}>
-                  <span aria-hidden="true">🧪</span>
-                  <span className={kit.grow}>
-                    <strong>{demo.title}</strong>
-                    <span className={kit.faint}> · {demo.author}</span>
-                    <span className={`${kit.muted} ${kit.ellipsis}`} style={{ display: "block", fontSize: 14 }}>
-                      {demo.description}
-                    </span>
-                  </span>
-                  <span className={kit.pill}>♥ {demo.likeCount}</span>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
-      {show("post") && result.posts.length > 0 && (
-        <section className={kit.card} aria-labelledby="result-posts">
-          <h2 id="result-posts" className={kit.cardTitle}>글</h2>
-          <ul className={kit.list}>
-            {result.posts.map((post) => (
-              <li key={post.id}>
-                <Link href={`/blog/posts/${post.id}`} className={kit.listItem}>
-                  <span aria-hidden="true">📝</span>
-                  <span className={kit.grow}>
-                    <strong>{post.title}</strong>
-                    <span className={`${kit.muted} ${kit.ellipsis}`} style={{ display: "block", fontSize: 14 }}>
-                      {post.author} · {post.excerpt}
-                    </span>
-                  </span>
-                  <span className={post.price > 0 ? kit.pillAccent : kit.pill}>
-                    {post.price > 0 ? `🔒 ${post.price}칩` : "무료"}
-                  </span>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </section>
+      <SearchResults result={result} type={type} query={q} canHide={Boolean(me)} />
+      {type !== "all" && result.totalPages > 1 && (
+        <nav aria-label="검색 결과 페이지" className={styles.pages}>
+          {page > 1 && (
+            <Link href={href(q, type, sort, page - 1)} className={kit.btn}>
+              이전
+            </Link>
+          )}
+          <span className={kit.faint}>
+            {page} / {result.totalPages}
+          </span>
+          {page < result.totalPages && (
+            <Link href={href(q, type, sort, page + 1)} className={kit.btn}>
+              다음
+            </Link>
+          )}
+        </nav>
       )}
     </div>
   );
