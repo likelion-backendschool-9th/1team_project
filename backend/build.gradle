@@ -60,16 +60,24 @@ dependencies {
     testImplementation 'org.testcontainers:elasticsearch'
 }
 
+// 테스트 결과가 개발자의 루트 .env에 따라 달라지지 않게 한다. ES 테스트는 @SpringBootTest 속성으로 직접 켠다
+def isolateSearchEnv = { Test task ->
+    task.environment 'SEARCH_ENGINE', 'postgres'
+    task.environment 'SEARCH_ES_ENABLED', 'false'
+}
+
 tasks.named('test') {
     useJUnitPlatform {
         excludeTags 'search-eval'
     }
+    isolateSearchEnv(it)
 }
 
 // 검색 품질 평가. 결과는 docs/search-eval/results/에 남는다: ./gradlew searchEval
 tasks.register('searchEval', Test) {
     description = '고정 평가셋으로 검색 품질(MRR, NDCG@10)을 측정한다'
     group = 'verification'
+    isolateSearchEnv(it)
     testClassesDirs = sourceSets.test.output.classesDirs
     classpath = sourceSets.test.runtimeClasspath
     useJUnitPlatform {
