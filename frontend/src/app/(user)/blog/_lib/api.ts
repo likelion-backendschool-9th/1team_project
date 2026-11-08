@@ -87,7 +87,7 @@ export async function getPost(postId: number): Promise<PostDetail | null> {
 
 export async function getPostComments(postId: number): Promise<PostComment[]> {
   if (isMockMode) return createMockPostComments(postId, Date.now());
-  const { data } = await apiFetch<ApiResponse<PageResponse<PostComment>>>(
+  const { data } = await apiFetch<ApiResponse<{ content: PostComment[] }>>(
     `/api/v1/posts/${postId}/comments`,
   );
   return data.content;

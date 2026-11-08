@@ -10,6 +10,7 @@ type Props = {
   action: (previous: FormState, formData: FormData) => Promise<FormState>;
   label?: string;
   placeholder?: string;
+  maxLength?: number;
   children?: ReactNode;
 };
 
@@ -17,6 +18,7 @@ export function CommentForm({
   action,
   label = "댓글 쓰기",
   placeholder = "따뜻한 피드백을 남겨 주세요",
+  maxLength = 300,
   children,
 }: Props) {
   const [state, formAction, pending] = useActionState(action, initialFormState);
@@ -35,7 +37,7 @@ export function CommentForm({
           id={id}
           name="content"
           rows={2}
-          maxLength={300}
+          maxLength={maxLength}
           defaultValue={state.values.content}
           placeholder={placeholder}
           className={styles.input}

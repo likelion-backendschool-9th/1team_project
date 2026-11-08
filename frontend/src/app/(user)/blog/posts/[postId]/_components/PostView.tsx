@@ -165,11 +165,12 @@ export async function PostView({ params }: Props) {
         <h2 id="post-comments-title" className={kit.cardTitle}>
           댓글 {comments.length}
         </h2>
-        <CommentForm action={createPostComment.bind(null, post.id)} />
+        <CommentForm action={createPostComment.bind(null, post.id)} maxLength={1000} />
         <CommentList
           comments={comments}
           now={now}
           me={me ?? undefined}
+          maxCommentLength={1000}
           updateComment={updatePostComment}
           deleteComment={deletePostComment}
           likeComment={togglePostCommentLike}

@@ -34,16 +34,17 @@ type Props = Actions & {
   comments: Comment[];
   now: number;
   me?: UserSummary;
+  maxCommentLength?: number;
 };
 
-export function CommentList({ comments, now, me, ...actions }: Props) {
+export function CommentList({ comments, now, me, maxCommentLength = 300, ...actions }: Props) {
   if (comments.length === 0)
     return <p className={styles.empty}>아직 댓글이 없어요. 첫 댓글을 남겨 보세요.</p>;
 
   return (
     <ul className={styles.list}>
       {comments.map((comment) => (
-        <CommentThread key={comment.id} comment={comment} now={now} me={me} actions={actions} />
+        <CommentThread key={comment.id} comment={comment} now={now} me={me} actions={actions} maxCommentLength={maxCommentLength} />
       ))}
     </ul>
   );
@@ -54,10 +55,11 @@ type ThreadProps = {
   now: number;
   me?: UserSummary;
   actions: Actions;
+  maxCommentLength: number;
 };
 
 // 댓글 하나와 그 아래 답글
-function CommentThread({ comment, now, me, actions }: ThreadProps) {
+function CommentThread({ comment, now, me, actions, maxCommentLength }: ThreadProps) {
   const [replies, setReplies] = useState(comment.replies ?? []);
   const [replyTo, setReplyTo] = useState<string | null>(null);
   const canReply = Boolean(me && actions.replyComment);
@@ -94,6 +96,7 @@ function CommentThread({ comment, now, me, actions }: ThreadProps) {
               <ReplyForm
                 key={replyTo}
                 initial={replyTo}
+                maxLength={maxCommentLength}
                 onCancel={() => setReplyTo(null)}
                 onSubmit={async (content) => {
                   const result = await actions.replyComment!(comment.id, content);
@@ -239,11 +242,12 @@ function LikeButton({ commentId, liked, likeCount, likeComment }: LikeProps) {
 
 type ReplyFormProps = {
   initial: string;
+  maxLength: number;
   onSubmit: (content: string) => Promise<Result>;
   onCancel: () => void;
 };
 
-function ReplyForm({ initial, onSubmit, onCancel }: ReplyFormProps) {
+function ReplyForm({ initial, maxLength, onSubmit, onCancel }: ReplyFormProps) {
   const id = useId();
   const [draft, setDraft] = useState(initial);
   const [error, setError] = useState<string | null>(null);
@@ -252,7 +256,7 @@ function ReplyForm({ initial, onSubmit, onCancel }: ReplyFormProps) {
   function submit() {
     const text = draft.trim();
     if (!text) return setError("답글을 입력해 주세요.");
-    if (text.length > 300) return setError("300자 이하로 입력해 주세요.");
+    if (text.length > maxLength) return setError(`${maxLength}자 이하로 입력해 주세요.`);
     setError(null);
     startTransition(async () => {
       const result = await onSubmit(text);
@@ -268,7 +272,7 @@ function ReplyForm({ initial, onSubmit, onCancel }: ReplyFormProps) {
       <textarea
         id={id}
         value={draft}
-        maxLength={300}
+        maxLength={maxLength}
         rows={2}
         autoFocus
         placeholder="답글을 남겨 주세요"
