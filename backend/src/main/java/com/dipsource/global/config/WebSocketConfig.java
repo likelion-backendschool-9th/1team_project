@@ -24,11 +24,11 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
-        // 기본 연결 주소. 브라우저 WebSocket으로 바로 붙는다. 예: ws://localhost:8080/ws
+        // 기본 연결 주소. 브라우저 WebSocket으로 바로 붙는다. context-path(/api/v1)가 앞에 붙는다. 예: ws://localhost:8080/api/v1/ws
         registry.addEndpoint("/ws")
                 .setAllowedOrigins(frontendBaseUrl);
 
-        // WebSocket이 막힌 환경을 위한 SockJS 대체 연결 주소. 예: http://localhost:8080/ws-sockjs
+        // WebSocket이 막힌 환경을 위한 SockJS 대체 연결 주소. 예: http://localhost:8080/api/v1/ws-sockjs
         registry.addEndpoint("/ws-sockjs")
                 .setAllowedOrigins(frontendBaseUrl)
                 .withSockJS();
