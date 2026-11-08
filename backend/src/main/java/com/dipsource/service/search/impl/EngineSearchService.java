@@ -129,7 +129,8 @@ public class EngineSearchService implements SearchService {
         SearchSection<DemoSearchItemResponse> demos = (SearchSection<DemoSearchItemResponse>) section(SearchType.DEMO, parsed, operator, sort, viewerId, blocked);
         SearchSection<UserSearchItemResponse> users = (SearchSection<UserSearchItemResponse>) section(SearchType.USER, parsed, operator, sort, viewerId, blocked);
         boolean anyRelaxed = Stream.of(posts, feeds, demos, users).anyMatch(section -> section.relaxedMatch() != null);
-        SearchSuggestion suggestion = suggestion(parsed, anyRelaxed, SearchType.POST, SearchType.DEMO, SearchType.FEED, SearchType.USER);
+        boolean noResults = Stream.of(posts, feeds, demos, users).allMatch(section -> section.totalElements() == 0);
+        SearchSuggestion suggestion = suggestion(parsed, anyRelaxed || (noResults && canExpandToPrefix(parsed, operator)), SearchType.POST, SearchType.DEMO, SearchType.FEED, SearchType.USER);
         return new SearchAllResponse(posts, feeds, demos, users, null,
                 suggestion == null ? null : suggestion.query(),
                 suggestion == null ? null : suggestion.type());
@@ -180,7 +181,7 @@ public class EngineSearchService implements SearchService {
             }
         }
         int totalPages = page.getPageSize() == 0 ? 0 : (int) Math.ceil((double) ranked.total() / page.getPageSize());
-        SearchSuggestion suggestion = suggestion(parsed, expanded, type);
+        SearchSuggestion suggestion = suggestion(parsed, expanded || (ranked.total() == 0 && canExpandToPrefix(parsed, operator)), type);
         return new SearchPageResponse<>(items(type, ranked.ids()), page.getPageNumber(), page.getPageSize(),
                 ranked.total(), totalPages, null,
                 suggestion == null ? null : suggestion.query(),
@@ -190,10 +191,10 @@ public class EngineSearchService implements SearchService {
     }
 
     /** 제안 검색어. 제안어로 실제 결과가 있을 때만 준다 */
-    private SearchSuggestion suggestion(ParsedQuery parsed, boolean expanded, SearchType... types) {
+    private SearchSuggestion suggestion(ParsedQuery parsed, boolean completable, SearchType... types) {
         try {
             Optional<SearchSuggestion> candidate = suggester.suggest(parsed);
-            if (candidate.isEmpty() && expanded) {
+            if (candidate.isEmpty() && completable) {
                 candidate = suggester.suggestCompletion(parsed);
             }
             if (candidate.isEmpty()) {

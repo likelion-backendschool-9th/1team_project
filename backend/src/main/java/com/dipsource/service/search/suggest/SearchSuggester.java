@@ -45,17 +45,25 @@ public class SearchSuggester {
                 .or(() -> rewrite(query, this::correctTypo, SuggestionType.TYPO));
     }
 
-    /** 입력으로 시작하는 단어 중 가장 알맞은 것을 제안한다. 사전 용어 → 많이 쓰인 순 → 짧은 순 */
+    /**
+     * 입력으로 시작하는 단어를 제안한다. 자모 단위로 비교하므로 입력 중인 글자도 찾는다(슾 → 스프링, 잡 → 자바).
+     * 사전 용어를 먼저 고르고, 그중에서는 짧은 표기를 고른다(스프링부트보다 스프링). 사전에 없는 단어는 많이 쓰인 순이다.
+     */
     public Optional<SearchSuggestion> suggestCompletion(ParsedQuery query) {
         String word = query.keywords().get(0);
         return suggestIndex.findByPrefix(word, FUZZY_CANDIDATES * 2).stream()
-                .filter(term -> term.doc_count() > 0 && term.norm().startsWith(word) && !term.norm().equals(word))
+                .filter(term -> !term.norm().equals(word) && (isDictionaryTerm(term) || term.doc_count() > 0))
                 .min(Comparator
-                        .comparing((SuggestTerm term) -> !SuggestIndexService.Source.DICT.name().equals(term.source()))
+                        .comparing((SuggestTerm term) -> !isDictionaryTerm(term))
+                        .thenComparing(term -> isDictionaryTerm(term) ? term.norm().length() : 0)
                         .thenComparing(SuggestTerm::doc_count, Comparator.reverseOrder())
                         .thenComparing(term -> term.norm().length())
                         .thenComparing(SuggestTerm::norm))
                 .map(term -> new SearchSuggestion(term.norm(), SuggestionType.COMPLETION));
+    }
+
+    private static boolean isDictionaryTerm(SuggestTerm term) {
+        return SuggestIndexService.Source.DICT.name().equals(term.source());
     }
 
     private static Optional<SearchSuggestion> rewrite(ParsedQuery query, Function<String, String> correct, SuggestionType type) {

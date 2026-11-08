@@ -461,6 +461,30 @@ class ElasticsearchSearchTest {
         }
 
         @Test
+        @DisplayName("입력 중인 글자로 결과가 0건이면 자모가 이어지는 단어를 제안한다")
+        void composingSuggestion() throws Exception {
+            post("자바 스트림 활용", "내용", "ACTIVE");
+            reindex();
+
+            search("슾").andExpect(jsonPath("$.data.totalElements").value(0))
+                    .andExpect(jsonPath("$.data.suggestedQuery").value("스프링"))
+                    .andExpect(jsonPath("$.data.suggestionType").value("COMPLETION"));
+            search("잡").andExpect(jsonPath("$.data.suggestedQuery").value("자바"));
+            mockMvc.perform(get("/search").param("q", "슾"))
+                    .andExpect(jsonPath("$.data.suggestedQuery").value("스프링"));
+        }
+
+        @Test
+        @DisplayName("결과가 있으면 이어지는 단어를 제안하지 않는다")
+        void noCompletionWhenResultsExist() throws Exception {
+            post("잡 스케줄러", "내용", "ACTIVE");
+            reindex();
+
+            search("잡").andExpect(jsonPath("$.data.totalElements").value(1))
+                    .andExpect(jsonPath("$.data.suggestedQuery").doesNotExist());
+        }
+
+        @Test
         @DisplayName("명시적 and는 접두어로 넓히지 않는다")
         void prefixFallbackRespectsExplicitOperator() throws Exception {
             search("스프", "op", "and").andExpect(jsonPath("$.data.totalElements").value(0));
