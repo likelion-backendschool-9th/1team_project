@@ -62,7 +62,7 @@ export type PostDetail = PostSummary & {
 export type PostComment = {
   id: number;
   author: UserSummary;
-  content: string;
+  content: string | null; // 삭제된 댓글은 null
   createdAt: string;
   likeCount: number;
   liked: boolean;

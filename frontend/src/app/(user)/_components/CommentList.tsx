@@ -13,7 +13,7 @@ import styles from "./CommentList.module.css";
 type Comment = {
   id: number;
   author: UserSummary;
-  content: string;
+  content: string | null; // 삭제된 댓글은 null
   createdAt: string;
   likeCount: number;
   liked?: boolean;
@@ -155,7 +155,9 @@ function CommentRow({ comment, now, me, actions, onReply, maxCommentLength }: Ro
           {comment.label}
           <time dateTime={comment.createdAt}>{formatRelativeTime(comment.createdAt, now)}</time>
         </p>
-        {mine && saved && actions.updateComment && actions.deleteComment ? (
+        {comment.content === null ? (
+          <p className={styles.deleted}>삭제한 댓글이에요.</p>
+        ) : mine && saved && actions.updateComment && actions.deleteComment ? (
           <CommentEditor
             commentId={comment.id}
             content={comment.content}
