@@ -65,4 +65,6 @@ public interface ReportRepository extends JpaRepository<Report, Long> {
             @Param("status") ReportStatus status,
             @Param("targetType") String targetType,
             Pageable pageable);
+
+    long countByStatus(ReportStatus status);
 }

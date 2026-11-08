@@ -1,6 +1,7 @@
 package com.dipsource.repository.demo;
 
 import com.dipsource.entity.demo.Demo;
+import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
 import org.springframework.data.domain.Page;
@@ -31,4 +32,7 @@ public interface DemoRepository extends JpaRepository<Demo, Long> {
             ORDER BY d.createdAt DESC, d.id DESC
             """)
     Page<Demo> searchForAdmin(@Param("q") String q, Pageable pageable);
+
+    long countByDeletedAtIsNullAndCreatedAtGreaterThanEqualAndCreatedAtLessThan(
+            LocalDateTime from, LocalDateTime to);
 }

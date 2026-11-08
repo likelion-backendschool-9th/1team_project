@@ -3,6 +3,8 @@ package com.dipsource.repository.user;
 import com.dipsource.entity.user.User;
 import com.dipsource.entity.user.enums.UserStatus;
 import jakarta.persistence.LockModeType;
+import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -45,4 +47,17 @@ public interface UserRepository extends JpaRepository<User, Long> {
         @Param("status") UserStatus status,
         @Param("q") String q,
         Pageable pageable);
+
+    long countByCreatedAtGreaterThanEqual(LocalDateTime from);
+
+    /** 요일별 가입 수. PostgreSQL date()로 날짜만 묶는다. */
+    @Query(value = """
+            SELECT CAST(created_at AS date) AS day, COUNT(*)
+            FROM users
+            WHERE created_at >= :from AND created_at < :to
+            GROUP BY CAST(created_at AS date)
+            """, nativeQuery = true)
+    List<Object[]> countSignupsByDay(
+            @Param("from") LocalDateTime from,
+            @Param("to") LocalDateTime to);
 }
