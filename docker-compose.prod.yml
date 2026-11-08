@@ -15,11 +15,32 @@ services:
       timeout: 5s
       retries: 5
 
+  # 켜는 법: 서버 .env에 COMPOSE_PROFILES=search, IMAGE_ELASTICSEARCH, ELASTIC_PASSWORD, SEARCH_ES_ENABLED=true를 넣고 올린다.
+  # 초기 색인이 끝나면 SEARCH_ENGINE=elasticsearch로 읽기를 전환한다. 포트를 열지 않아 내부 네트워크에서만 접근한다
+  elasticsearch:
+    image: ${IMAGE_ELASTICSEARCH:-dipsource-elasticsearch:8.15.5}
+    profiles: ["search"]
+    container_name: dipsource-elasticsearch
+    restart: always
+    environment:
+      discovery.type: single-node
+      xpack.security.enabled: "true"
+      xpack.security.http.ssl.enabled: "false"
+      ELASTIC_PASSWORD: ${ELASTIC_PASSWORD:-}
+      ES_JAVA_OPTS: -Xms1g -Xmx1g
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+
   backend:
     image: ${IMAGE_BACKEND}
     container_name: dipsource-backend
     restart: always
     environment:
+      SPRING_ELASTICSEARCH_URIS: http://elasticsearch:9200
+      SPRING_ELASTICSEARCH_USERNAME: ${ELASTIC_USERNAME:-elastic}
+      SPRING_ELASTICSEARCH_PASSWORD: ${ELASTIC_PASSWORD:-}
+      SEARCH_ES_ENABLED: ${SEARCH_ES_ENABLED:-false}
+      SEARCH_ENGINE: ${SEARCH_ENGINE:-postgres}
       SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/${POSTGRES_DB}
       SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
@@ -61,3 +82,4 @@ services:
 
 volumes:
   postgres_data:
+  elasticsearch_data:
