@@ -129,8 +129,10 @@ public class EngineSearchService implements SearchService {
         SearchSection<DemoSearchItemResponse> demos = (SearchSection<DemoSearchItemResponse>) section(SearchType.DEMO, parsed, operator, sort, viewerId, blocked);
         SearchSection<UserSearchItemResponse> users = (SearchSection<UserSearchItemResponse>) section(SearchType.USER, parsed, operator, sort, viewerId, blocked);
         boolean anyRelaxed = Stream.of(posts, feeds, demos, users).anyMatch(section -> section.relaxedMatch() != null);
-        boolean noResults = Stream.of(posts, feeds, demos, users).allMatch(section -> section.totalElements() == 0);
-        SearchSuggestion suggestion = suggestion(parsed, anyRelaxed || (noResults && canExpandToPrefix(parsed, operator)), SearchType.POST, SearchType.DEMO, SearchType.FEED, SearchType.USER);
+        boolean anyEmpty = Stream.of(posts, feeds, demos, users).anyMatch(section -> section.totalElements() == 0);
+        // 일부 대상에 결과가 있어도 쓰다 만 단어(자바스)면 제안한다. 글에 실제로 쓰이는 단어(채팅)는 제안하지 않는다
+        boolean completable = anyRelaxed || (anyEmpty && canExpandToPrefix(parsed, operator) && !suggester.isKnownWord(parsed));
+        SearchSuggestion suggestion = suggestion(parsed, completable, SearchType.POST, SearchType.DEMO, SearchType.FEED, SearchType.USER);
         return new SearchAllResponse(posts, feeds, demos, users, null,
                 suggestion == null ? null : suggestion.query(),
                 suggestion == null ? null : suggestion.type());

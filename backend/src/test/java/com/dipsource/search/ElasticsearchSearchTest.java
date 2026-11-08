@@ -475,6 +475,38 @@ class ElasticsearchSearchTest {
         }
 
         @Test
+        @DisplayName("전체 검색은 일부 대상에 결과가 있어도 쓰다 만 단어면 제안한다")
+        void completionWhenSomeSectionsEmpty() throws Exception {
+            post("JavaScript 클로저", "내용", "ACTIVE");
+            jdbc.update("""
+                    INSERT INTO feeds(user_id, content, status, like_count, comment_count, repost_count, created_at, updated_at)
+                    VALUES (?, '자바보다 직관적이다', 'ACTIVE', 0, 0, 0, now(), now())
+                    """, author);
+            reindex();
+
+            mockMvc.perform(get("/search").param("q", "자바스"))
+                    .andExpect(jsonPath("$.data.feeds.totalElements").value(1))
+                    .andExpect(jsonPath("$.data.demos.totalElements").value(0))
+                    .andExpect(jsonPath("$.data.suggestedQuery").value("자바스크립트"));
+        }
+
+        @Test
+        @DisplayName("이미 완성된 용어와 글에 쓰이는 단어는 일부 대상이 0건이어도 제안하지 않는다")
+        void noCompletionForKnownWords() throws Exception {
+            post("채팅 서버 회고", "내용", "ACTIVE");
+            post("채팅앱 만들기", "내용", "ACTIVE");
+            reindex();
+
+            mockMvc.perform(get("/search").param("q", "spring"))
+                    .andExpect(jsonPath("$.data.demos.totalElements").value(0))
+                    .andExpect(jsonPath("$.data.suggestedQuery").doesNotExist());
+            mockMvc.perform(get("/search").param("q", "채팅"))
+                    .andExpect(jsonPath("$.data.posts.totalElements").value(2))
+                    .andExpect(jsonPath("$.data.demos.totalElements").value(0))
+                    .andExpect(jsonPath("$.data.suggestedQuery").doesNotExist());
+        }
+
+        @Test
         @DisplayName("결과가 있으면 이어지는 단어를 제안하지 않는다")
         void noCompletionWhenResultsExist() throws Exception {
             post("잡 스케줄러", "내용", "ACTIVE");

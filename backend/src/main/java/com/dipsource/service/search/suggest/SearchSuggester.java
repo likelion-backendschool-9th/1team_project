@@ -51,6 +51,10 @@ public class SearchSuggester {
      */
     public Optional<SearchSuggestion> suggestCompletion(ParsedQuery query) {
         String word = query.keywords().get(0);
+        if (dictionary.contains(word)) {
+            // spring은 이미 완성된 용어다. spring boot를 제안하지 않는다
+            return Optional.empty();
+        }
         return suggestIndex.findByPrefix(word, FUZZY_CANDIDATES * 2).stream()
                 .filter(term -> !term.norm().equals(word) && (isDictionaryTerm(term) || term.doc_count() > 0))
                 .min(Comparator
@@ -60,6 +64,16 @@ public class SearchSuggester {
                         .thenComparing(term -> term.norm().length())
                         .thenComparing(SuggestTerm::norm))
                 .map(term -> new SearchSuggestion(term.norm(), SuggestionType.COMPLETION));
+    }
+
+    /** 사전에 있거나 공개 글에 실제로 쓰이는 단어인지 */
+    public boolean isKnownWord(ParsedQuery query) {
+        String word = query.keywords().get(0);
+        if (dictionary.contains(word)) {
+            return true;
+        }
+        SuggestTerm term = suggestIndex.lookup(word);
+        return term != null && term.doc_count() > 0;
     }
 
     private static boolean isDictionaryTerm(SuggestTerm term) {
