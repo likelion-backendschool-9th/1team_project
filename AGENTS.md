@@ -119,6 +119,7 @@ gh pr create --base dev --title "<커밋 메시지 형식>" --body "<PR 템플�
 
 - PR 제목은 커밋 메시지 형식과 동일하게 쓴다 (Squash 머지 시 이 제목이 커밋이 됨).
 - PR 본문은 `.github/pull_request_template.md` 형식을 채운다.
+- PR 작성자를 Assignee로 반드시 지정한다.
 - PR 하나에는 목적 하나만 담는다. 너무 크면 나눈다 (권장: 변경 400줄 이하).
 
 ### 4-5. 절대 하지 말 것

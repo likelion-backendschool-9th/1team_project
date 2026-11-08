@@ -27,19 +27,19 @@ import org.springframework.web.bind.annotation.RestController;
  * 피드 CRUD·상호작용 컨트롤러
  * 추천/트렌딩/팔로잉 피드 목록 조회는 FeedRecommendationController가 담당함
  *
- * POST   /api/v1/feeds                — 피드 생성 (인증 필요)
- * GET    /api/v1/feeds/{feedId}       — 피드 단건 조회 (비로그인 가능)
- * PUT    /api/v1/feeds/{feedId}       — 피드 수정 (인증 필요, 본인만)
- * DELETE /api/v1/feeds/{feedId}       — 피드 삭제 (인증 필요, 본인만)
- * POST   /api/v1/feeds/{feedId}/like      — 좋아요 (인증 필요)
- * DELETE /api/v1/feeds/{feedId}/like      — 좋아요 취소 (인증 필요)
- * POST   /api/v1/feeds/{feedId}/bookmark  — 북마크 (인증 필요)
- * DELETE /api/v1/feeds/{feedId}/bookmark  — 북마크 취소 (인증 필요)
- * POST   /api/v1/feeds/{feedId}/repost    — 리포스트 (인증 필요)
- * DELETE /api/v1/feeds/{feedId}/repost    — 리포스트 취소 (인증 필요)
+ * POST   /feeds                — 피드 생성 (인증 필요)
+ * GET    /feeds/{feedId}       — 피드 단건 조회 (비로그인 가능)
+ * PUT    /feeds/{feedId}       — 피드 수정 (인증 필요, 본인만)
+ * DELETE /feeds/{feedId}       — 피드 삭제 (인증 필요, 본인만)
+ * POST   /feeds/{feedId}/like      — 좋아요 (인증 필요)
+ * DELETE /feeds/{feedId}/like      — 좋아요 취소 (인증 필요)
+ * POST   /feeds/{feedId}/bookmark  — 북마크 (인증 필요)
+ * DELETE /feeds/{feedId}/bookmark  — 북마크 취소 (인증 필요)
+ * POST   /feeds/{feedId}/repost    — 리포스트 (인증 필요)
+ * DELETE /feeds/{feedId}/repost    — 리포스트 취소 (인증 필요)
  */
 @RestController
-@RequestMapping("/api/v1/feeds")
+@RequestMapping("/feeds")
 @RequiredArgsConstructor
 public class FeedController {
 
@@ -56,7 +56,7 @@ public class FeedController {
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.of(response));
     }
 
-    /** 피드 단건 조회. 비로그인도 가능 (SecurityConfig에서 GET /api/v1/feeds/* permitAll) */
+    /** 피드 단건 조회. 비로그인도 가능 (SecurityConfig에서 GET /feeds/* permitAll) */
     @GetMapping("/{feedId}")
     public ResponseEntity<ApiResponse<FeedResponse>> getById(
             @AuthenticationPrincipal UserPrincipal principal,

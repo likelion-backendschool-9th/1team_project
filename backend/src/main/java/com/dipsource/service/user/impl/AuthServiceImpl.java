@@ -3,7 +3,7 @@ package com.dipsource.service.user.impl;
 import com.dipsource.entity.user.SocialAccount;
 import com.dipsource.service.user.SocialProfile;
 import com.dipsource.entity.user.User;
-import com.dipsource.entity.user.UserStatus;
+import com.dipsource.entity.user.enums.UserStatus;
 import com.dipsource.global.auth.JwtProvider;
 import com.dipsource.global.exception.BusinessException;
 import com.dipsource.global.exception.ErrorCode;

@@ -22,7 +22,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 /** 소셜 로그인 시작·로그아웃∙재발급 API. */
 @RestController
-@RequestMapping("/api/v1/auth")
+@RequestMapping("/auth")
 @RequiredArgsConstructor
 public class AuthController {
 
@@ -32,7 +32,7 @@ public class AuthController {
 
     /**
      * 소셜 로그인을 시작한다.
-     * 예: GET /api/v1/auth/login/github → GitHub 인가 화면으로 이동
+     * 예: GET /auth/login/github → GitHub 인가 화면으로 이동
      */
     @GetMapping("/login/{provider}")
     public void login(@PathVariable String provider, HttpServletResponse response) throws IOException {

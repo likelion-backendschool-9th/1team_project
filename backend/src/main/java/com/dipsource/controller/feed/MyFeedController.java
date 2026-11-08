@@ -14,9 +14,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-/** 내가 쓴 피드 목록 조회 — GET /api/v1/users/me/feeds */
+/** 내가 쓴 피드 목록 조회 — GET /users/me/feeds */
 @RestController
-@RequestMapping("/api/v1/users/me/feeds")
+@RequestMapping("/users/me/feeds")
 @RequiredArgsConstructor
 public class MyFeedController {
 

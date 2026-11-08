@@ -1,13 +1,18 @@
 package com.dipsource.service.report;
 
-import com.dipsource.dto.report.ReportCreateRequest;
 import com.dipsource.dto.report.ReportResponse;
+import com.dipsource.entity.demo.Demo;
+import com.dipsource.entity.demo.DemoStatus;
 import com.dipsource.entity.feed.Feed;
 import com.dipsource.entity.feed.FeedStatus;
+import com.dipsource.entity.post.Post;
+import com.dipsource.entity.post.PostStatus;
 import com.dipsource.entity.report.Report;
 import com.dipsource.global.exception.BusinessException;
 import com.dipsource.global.exception.ErrorCode;
+import com.dipsource.repository.demo.DemoRepository;
 import com.dipsource.repository.feed.FeedRepository;
+import com.dipsource.repository.post.PostRepository;
 import com.dipsource.repository.report.ReportRepository;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -24,6 +29,8 @@ public class ReportService {
 
     private final ReportRepository reportRepository;
     private final FeedRepository feedRepository;
+    private final PostRepository postRepository;
+    private final DemoRepository demoRepository;
 
     /**
      * 신고 생성
@@ -37,15 +44,15 @@ public class ReportService {
     private static final List<String> ALLOWED_TARGET_TYPES = List.of("FEED", "POST", "DEMO", "FEED_COMMENT", "GUESTBOOK", "USER");
 
     @Transactional
-    public ReportResponse create(Long userId, ReportCreateRequest request) {
+    public ReportResponse create(Long userId, String targetType, Long targetId, String reason) {
         // targetType 검증
-        if (!ALLOWED_TARGET_TYPES.contains(request.targetType())) {
+        if (!ALLOWED_TARGET_TYPES.contains(targetType)) {
             throw new BusinessException(ErrorCode.BAD_REQUEST, "지원하지 않는 신고 대상 종류입니다");
         }
 
         // 중복 신고 확인
         if (reportRepository.existsByReporterIdAndTargetTypeAndTargetId(
-                userId, request.targetType(), request.targetId())) {
+                userId, targetType, targetId)) {
             throw new BusinessException(ErrorCode.CONFLICT, "이미 신고한 대상입니다");
         }
 
@@ -53,8 +60,8 @@ public class ReportService {
         String contentSnapshot = null;
         List<String> imageSnapshotUrls = null;
 
-        if ("FEED".equals(request.targetType())) {
-            Feed feed = feedRepository.findById(request.targetId())
+        if ("FEED".equals(targetType)) {
+            Feed feed = feedRepository.findById(targetId)
                     .filter(f -> f.getStatus() == FeedStatus.ACTIVE)
                     .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "신고 대상 피드를 찾을 수 없습니다"));
             if (feed.getUserId().equals(userId)) {
@@ -62,14 +69,28 @@ public class ReportService {
             }
             contentSnapshot = feed.getContent();
             imageSnapshotUrls = feed.getImageUrls();
+        } else if ("POST".equals(targetType)) {
+            Post post = postRepository.findById(targetId)
+                    .filter(p -> p.getStatus() == PostStatus.ACTIVE)
+                    .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "신고 대상 블로그 글을 찾을 수 없습니다"));
+            if (post.getUserId().equals(userId)) {
+                throw new BusinessException(ErrorCode.BAD_REQUEST, "본인의 블로그 글은 신고할 수 없습니다");
+            }
+        } else if ("DEMO".equals(targetType)) {
+            Demo demo = demoRepository.findById(targetId)
+                    .filter(d -> d.getStatus() == DemoStatus.ACTIVE)
+                    .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "신고 대상 데모를 찾을 수 없습니다"));
+            if (demo.getUserId().equals(userId)) {
+                throw new BusinessException(ErrorCode.BAD_REQUEST, "본인의 데모는 신고할 수 없습니다");
+            }
         }
-        // TODO: POST, FEED_COMMENT 등 다른 타입은 추후 추가
+        // TODO: FEED_COMMENT, GUESTBOOK, USER 타입은 추후 추가
 
         Report report = Report.builder()
                 .reporterId(userId)
-                .targetType(request.targetType())
-                .targetId(request.targetId())
-                .reason(request.reason())
+                .targetType(targetType)
+                .targetId(targetId)
+                .reason(reason)
                 .contentSnapshot(contentSnapshot)
                 .imageSnapshotUrls(imageSnapshotUrls)
                 .build();

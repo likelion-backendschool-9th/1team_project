@@ -1,6 +1,6 @@
 package com.dipsource.service.user;
 
-import com.dipsource.entity.user.SocialProvider;
+import com.dipsource.entity.user.enums.SocialProvider;
 import java.util.Map;
 
 public record SocialProfile(

@@ -24,7 +24,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 /** 회원 조회·온보딩 프로필 API. */
 @RestController
-@RequestMapping("/api/v1/users")
+@RequestMapping("/users")
 @RequiredArgsConstructor
 @Validated
 public class UserController {

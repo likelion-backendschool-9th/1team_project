@@ -29,7 +29,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 /** 블로그 글 CRUD. 작성자는 JWT에서만 가져온다. */
 @RestController
-@RequestMapping("/api/v1")
+@RequestMapping("")
 @RequiredArgsConstructor
 public class PostController {
 
