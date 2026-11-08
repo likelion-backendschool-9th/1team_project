@@ -30,6 +30,8 @@ export type SearchResult = {
   relaxedMatch: boolean;
   /** 개별 탭의 전체 페이지 수. 전체 탭은 1이다 */
   totalPages: number;
+  /** 다음 페이지 요청에 보내면 같은 순서를 유지한다. 전체 탭과 PostgreSQL 경로에는 없다 */
+  searchId?: string;
 };
 
 export type SearchOutcome = { result: SearchResult } | { error: string };
@@ -49,6 +51,7 @@ type SearchPageResponse = PageResponse<unknown> & {
   suggestedQuery?: string;
   suggestionType?: SearchResult["suggestionType"];
   relaxedMatch?: boolean;
+  searchId?: string;
 };
 
 const EMPTY = { items: [], total: 0 };
@@ -118,16 +121,18 @@ function fromPage(type: Exclude<SearchType, "all">, data: SearchPageResponse): S
     correctedQuery: data.correctedQuery,
     relaxedMatch: data.relaxedMatch === true,
     totalPages: data.totalPages,
+    searchId: data.searchId,
   };
 }
 
 /** @param page 1부터 센다 */
-export async function search(q: string, type: SearchType, sort: SearchSort, page: number): Promise<SearchOutcome> {
+export async function search(q: string, type: SearchType, sort: SearchSort, page: number, searchId?: string): Promise<SearchOutcome> {
   if (isMockMode) return { result: mockSearch(q, sort) };
   const query = new URLSearchParams({ q });
   if (type !== "all") {
     query.set("type", type);
     query.set("page", String(page - 1));
+    if (searchId) query.set("searchId", searchId);
   }
   if (sort !== "relevance") query.set("sort", sort);
   try {

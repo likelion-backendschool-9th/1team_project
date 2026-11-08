@@ -4,6 +4,7 @@ import com.dipsource.dto.search.SearchCondition;
 import com.dipsource.dto.search.SearchOperator;
 import com.dipsource.dto.search.SearchSignal;
 import com.dipsource.dto.search.SearchSort;
+import com.dipsource.dto.search.SearchType;
 import com.dipsource.entity.user.User;
 import com.dipsource.global.common.LikePattern;
 import java.util.Collection;
@@ -28,6 +29,8 @@ public interface UserSearchRepository extends Repository<User, Long> {
                 LikePattern.contains(condition.phrase().toLowerCase(Locale.ROOT)),
                 condition.operator() == SearchOperator.AND,
                 condition.sort() == SearchSort.RELEVANCE,
+                condition.exclusions().hiddenIds(SearchType.USER),
+                condition.exclusions().blockedIds(),
                 pageable);
     }
 
@@ -51,6 +54,8 @@ public interface UserSearchRepository extends Repository<User, Long> {
                 FROM unnest(CAST(:patterns AS text[])) AS t(k)
             ) m
             WHERE u.status = 'ACTIVE'
+              AND u.id <> ALL(CAST(:excludedIds AS bigint[]))
+              AND u.id <> ALL(CAST(:excludedAuthors AS bigint[]))
               AND m.matched >= CASE WHEN :matchAll THEN cardinality(CAST(:patterns AS text[])) ELSE 1 END
             ORDER BY CASE WHEN :relevance THEN
                          CASE WHEN lower(u.nickname) = :phrase THEN 100 ELSE 0 END
@@ -69,6 +74,8 @@ public interface UserSearchRepository extends Repository<User, Long> {
                 FROM unnest(CAST(:patterns AS text[])) AS t(k)
             ) m
             WHERE u.status = 'ACTIVE'
+              AND u.id <> ALL(CAST(:excludedIds AS bigint[]))
+              AND u.id <> ALL(CAST(:excludedAuthors AS bigint[]))
               AND m.matched >= CASE WHEN :matchAll THEN cardinality(CAST(:patterns AS text[])) ELSE 1 END
             """)
     Page<User> searchByLikePatterns(
@@ -77,6 +84,8 @@ public interface UserSearchRepository extends Repository<User, Long> {
             @Param("phrasePattern") String phrasePattern,
             @Param("matchAll") boolean matchAll,
             @Param("relevance") boolean relevance,
+            @Param("excludedIds") Long[] excludedIds,
+            @Param("excludedAuthors") Long[] excludedAuthors,
             Pageable pageable);
 
     /** 재정렬 신호. 활동 중이 아닌 회원은 돌려주지 않아서, 인덱스가 늦어도 여기서 걸러진다 */

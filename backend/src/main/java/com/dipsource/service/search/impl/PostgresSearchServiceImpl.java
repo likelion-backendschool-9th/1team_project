@@ -15,6 +15,7 @@ import com.dipsource.service.demo.DemoSearchService;
 import com.dipsource.service.feed.FeedSearchService;
 import com.dipsource.service.post.PostSearchService;
 import com.dipsource.service.search.SearchService;
+import com.dipsource.service.search.personal.SearchPersonalizationService;
 import com.dipsource.service.tag.TagSearchService;
 import com.dipsource.service.user.UserSearchService;
 import java.util.List;
@@ -57,10 +58,12 @@ public class PostgresSearchServiceImpl implements SearchService {
     private final DemoSearchService demoSearchService;
     private final UserSearchService userSearchService;
     private final TagSearchService tagSearchService;
+    private final SearchPersonalizationService personalization;
 
     @Override
     public SearchAllResponse searchAll(String query, SearchOperator operator, SearchSort sort, Long viewerId) {
-        SearchCondition condition = SearchCondition.of(normalize(query), operator, sort);
+        SearchCondition condition = SearchCondition.of(normalize(query), operator, sort)
+                .withExclusions(personalization.exclusions(viewerId));
         SearchAllResponse result = searchAll(condition, null);
         long total = total(result);
         if (total == 0) {
@@ -80,8 +83,9 @@ public class PostgresSearchServiceImpl implements SearchService {
 
     @Override
     public SearchPageResponse<?> search(String query, SearchType type, SearchOperator operator, SearchSort sort,
-                                        Pageable pageable, Long viewerId) {
-        SearchCondition condition = SearchCondition.of(normalize(query), operator, sort);
+                                        Pageable pageable, Long viewerId, String searchId) {
+        SearchCondition condition = SearchCondition.of(normalize(query), operator, sort)
+                .withExclusions(personalization.exclusions(viewerId));
         // 정렬은 SearchSort로 받으므로 Pageable에 들어온 정렬은 쓰지 않는다
         Pageable page = PageRequest.of(pageable.getPageNumber(), Math.min(pageable.getPageSize(), MAX_PAGE_SIZE));
 

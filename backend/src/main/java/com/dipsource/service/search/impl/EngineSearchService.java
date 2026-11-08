@@ -13,6 +13,8 @@ import com.dipsource.dto.search.SearchSort;
 import com.dipsource.dto.search.SearchType;
 import com.dipsource.dto.user.UserSearchItemResponse;
 import com.dipsource.global.config.SearchProperties;
+import com.dipsource.global.exception.BusinessException;
+import com.dipsource.global.exception.ErrorCode;
 import com.dipsource.service.demo.DemoSearchService;
 import com.dipsource.service.feed.FeedSearchService;
 import com.dipsource.service.post.PostSearchService;
@@ -27,11 +29,14 @@ import com.dipsource.service.search.ranking.SearchRanker;
 import com.dipsource.service.search.suggest.SearchSuggester;
 import com.dipsource.service.search.query.SearchQueryParser;
 import com.dipsource.service.user.UserSearchService;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
@@ -65,6 +70,7 @@ public class EngineSearchService implements SearchService {
     private final DemoSearchService demoSearchService;
     private final UserSearchService userSearchService;
     private final Cache<String, RankedWindow> windowCache;
+    private final Cache<String, Snapshot> snapshots;
     private final MeterRegistry meterRegistry;
 
     public EngineSearchService(SearchPort searchPort, SearchQueryParser queryParser, SearchRanker ranker,
@@ -87,13 +93,26 @@ public class EngineSearchService implements SearchService {
                 .expireAfterWrite(properties.getRanking().getWindowCacheTtl())
                 .maximumSize(properties.getRanking().getWindowCacheSize())
                 .build();
+        this.snapshots = Caffeine.newBuilder()
+                .expireAfterAccess(properties.getRanking().getSnapshotIdle())
+                .maximumSize(properties.getRanking().getWindowCacheSize())
+                .build();
     }
 
-    private record RankedPage(List<Long> ids, long total) {
+    private record RankedPage(List<Long> ids, long total, String searchId) {
     }
 
-    /** 재정렬을 마친 상위 후보. truncated면 window 뒤에 문서가 더 있다 */
-    private record RankedWindow(List<Long> ids, long total, boolean truncated) {
+    /**
+     * 재정렬을 마친 상위 후보.
+     *
+     * @param truncated     window 뒤에 문서가 더 있다
+     * @param createdBefore 이 window를 만든 시각. 이어지는 페이지는 이후에 생긴 글을 빼서 순서가 밀리지 않게 한다
+     */
+    private record RankedWindow(List<Long> ids, long total, boolean truncated, LocalDateTime createdBefore) {
+    }
+
+    /** 한 번의 검색 탐색이 끝까지 보는 순서. key로 다른 사용자·검색어의 searchId를 쓰지 못하게 한다 */
+    private record Snapshot(String key, RankedWindow window) {
     }
 
     @Override
@@ -113,21 +132,21 @@ public class EngineSearchService implements SearchService {
 
     private SearchSection<?> section(SearchType type, ParsedQuery parsed, SearchOperator operator, SearchSort sort,
                                      Long viewerId, Set<Long> blocked) {
-        RankedPage page = rank(type, parsed, operator, sort, PageRequest.of(0, PREVIEW_SIZE), viewerId, blocked);
+        RankedPage page = rank(type, parsed, operator, sort, PageRequest.of(0, PREVIEW_SIZE), viewerId, blocked, null, false);
         return new SearchSection<>(items(type, page.ids()), page.total());
     }
 
     @Override
     public SearchPageResponse<?> search(String query, SearchType type, SearchOperator operator, SearchSort sort,
-                                        Pageable pageable, Long viewerId) {
+                                        Pageable pageable, Long viewerId, String searchId) {
         ParsedQuery parsed = queryParser.parse(query);
         Pageable page = PageRequest.of(pageable.getPageNumber(), Math.min(pageable.getPageSize(), MAX_PAGE_SIZE));
         Set<Long> blocked = personalization.blockedUsers(viewerId);
-        RankedPage ranked = rank(type, parsed, operator, sort, page, viewerId, blocked);
+        RankedPage ranked = rank(type, parsed, operator, sort, page, viewerId, blocked, searchId, true);
         Boolean relaxed = null;
         // 명시적 and는 절대 넓히지 않는다. op를 보내지 않았고 모든 단어가 일치하는 결과가 없을 때만 일부 일치를 보여 준다
         if (ranked.total() == 0 && operator == SearchOperator.AUTO && parsed.keywords().size() > 1) {
-            RankedPage partial = rank(type, parsed, SearchOperator.OR, sort, page, viewerId, blocked);
+            RankedPage partial = rank(type, parsed, SearchOperator.OR, sort, page, viewerId, blocked, searchId, true);
             if (partial.total() > 0) {
                 ranked = partial;
                 relaxed = Boolean.TRUE;
@@ -139,7 +158,8 @@ public class EngineSearchService implements SearchService {
                 ranked.total(), totalPages, null,
                 suggestion == null ? null : suggestion.query(),
                 suggestion == null ? null : suggestion.type(),
-                relaxed);
+                relaxed,
+                ranked.searchId());
     }
 
     /** 제안 검색어. 제안어로 실제 결과가 있을 때만 준다 */
@@ -151,7 +171,7 @@ public class EngineSearchService implements SearchService {
             }
             ParsedQuery suggested = queryParser.parse(candidate.get().query());
             for (SearchType type : types) {
-                if (retrieve(type, suggested, SearchOperator.AUTO, SearchSort.RELEVANCE, 0, 1, Set.of(), Set.of()).total() > 0) {
+                if (retrieve(type, suggested, SearchOperator.AUTO, SearchSort.RELEVANCE, 0, 1, Set.of(), Set.of(), null).total() > 0) {
                     return candidate.get();
                 }
             }
@@ -166,43 +186,63 @@ public class EngineSearchService implements SearchService {
     /**
      * 페이지 조회. 재정렬은 현재 페이지가 아니라 상위 후보(window) 전체에 한 번 적용하고 그 결과를 잘라 쓴다.
      * 페이지마다 따로 재정렬하면 페이지 경계에서 중복·누락이 생기기 때문이다.
-     * window를 넘는 페이지는 Elasticsearch 순서를 그대로 이어서 쓴다. window는 항상 BM25 상위 문서라 겹치지 않는다.
+     * window를 넘는 페이지는 window 문서를 뺀 나머지를 Elasticsearch 순서로 이어서 쓴다.
+     * 차단·숨김·삭제는 캐시와 상관없이 응답 직전에 다시 걸러서, window가 만들어진 뒤의 변경도 바로 반영된다.
+     *
+     * @param searchId 앞 페이지에서 받은 탐색 ID. 있으면 그때의 순서를 그대로 쓴다
+     * @param paging   이어지는 페이지를 볼 수 있는 조회인지. 전체 탭 미리보기는 탐색 ID를 만들지 않는다
      */
     private RankedPage rank(SearchType type, ParsedQuery parsed, SearchOperator operator, SearchSort sort,
-                            Pageable page, Long viewerId, Set<Long> blocked) {
+                            Pageable page, Long viewerId, Set<Long> blocked, String searchId, boolean paging) {
         int offset = (int) page.getOffset();
         int size = page.getPageSize();
         if (offset + size > MAX_RESULT_WINDOW) {
-            return new RankedPage(List.of(), 0);
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "검색 결과는 " + MAX_RESULT_WINDOW + "건까지 볼 수 있어요");
         }
         Set<Long> hidden = personalization.hiddenIds(viewerId, type);
-        if (sort == SearchSort.LATEST) {
-            SearchPort.Result result = retrieve(type, parsed, operator, sort, offset, size, hidden, blocked);
-            return new RankedPage(visibleIds(type, result.hits()), result.total());
+        String key = String.join("|", viewerKey(viewerId), type.name(), operator.name(), sort.name(), parsed.phrase(),
+                String.join(",", parsed.hashtags()));
+        Snapshot existing = searchId == null ? null : snapshots.getIfPresent(searchId);
+        boolean reuse = existing != null && existing.key().equals(key);
+        RankedWindow window = reuse ? existing.window() : window(type, parsed, operator, sort, viewerId, hidden, blocked, key, offset == 0);
+        String id = searchId;
+        if (!reuse && paging) {
+            id = UUID.randomUUID().toString();
+            snapshots.put(id, new Snapshot(key, window));
         }
 
-        RankedWindow ranked = window(type, parsed, operator, viewerId, hidden, blocked, offset == 0);
-        List<Long> ids = new ArrayList<>();
-        if (offset < ranked.ids().size()) {
-            ids.addAll(ranked.ids().subList(offset, Math.min(offset + size, ranked.ids().size())));
+        if (sort == SearchSort.LATEST) {
+            SearchPort.Result result = retrieve(type, parsed, operator, sort, offset, size, hidden, blocked, window.createdBefore());
+            List<Long> ids = result.hits().stream().map(SearchPort.Hit::id).toList();
+            return new RankedPage(servable(type, ids, hidden, blocked), result.total(), id);
         }
-        // 캐시된 뒤 삭제된 문서가 있을 수 있어서 돌려주기 전에 한 번 더 확인한다
-        Set<Long> visible = signals(type, ids).keySet();
-        List<Long> result = new ArrayList<>(ids.stream().filter(visible::contains).toList());
-        int missing = size - ids.size();
-        if (missing > 0 && ranked.truncated()) {
-            int beyond = properties.getRanking().getWindow() + Math.max(0, offset - ranked.ids().size());
-            result.addAll(visibleIds(type, retrieve(type, parsed, operator, sort, beyond, missing, hidden, blocked).hits()));
+
+        // 삭제·차단으로 빠진 문서를 제외한 목록을 잘라서 페이지 크기를 유지한다
+        List<Long> visible = servable(type, window.ids(), hidden, blocked);
+        List<Long> result = new ArrayList<>();
+        if (offset < visible.size()) {
+            result.addAll(visible.subList(offset, Math.min(offset + size, visible.size())));
         }
-        return new RankedPage(result, ranked.total());
+        int missing = size - result.size();
+        if (missing > 0 && window.truncated()) {
+            Set<Long> excluded = new HashSet<>(hidden);
+            excluded.addAll(window.ids());
+            int from = Math.max(0, offset - visible.size());
+            List<Long> beyond = retrieve(type, parsed, operator, sort, from, missing, excluded, blocked, window.createdBefore())
+                    .hits().stream().map(SearchPort.Hit::id).toList();
+            result.addAll(servable(type, beyond, hidden, blocked));
+        }
+        return new RankedPage(result, Math.max(0, window.total() - (window.ids().size() - visible.size())), id);
     }
 
-    private RankedWindow window(SearchType type, ParsedQuery parsed, SearchOperator operator, Long viewerId,
-                                Set<Long> hidden, Set<Long> blocked, boolean firstPage) {
-        String key = String.join("|", viewerKey(viewerId), type.name(), operator.name(), parsed.phrase(),
-                String.join(",", parsed.hashtags()));
+    private RankedWindow window(SearchType type, ParsedQuery parsed, SearchOperator operator, SearchSort sort, Long viewerId,
+                                Set<Long> hidden, Set<Long> blocked, String key, boolean firstPage) {
+        if (sort == SearchSort.LATEST) {
+            // 최신순은 재정렬이 없어서 기준 시각만 고정한다
+            return new RankedWindow(List.of(), 0, true, LocalDateTime.now());
+        }
         if (firstPage) {
-            // 새 검색은 항상 최신 결과로 시작한다. 캐시는 이어지는 페이지가 같은 순서를 보도록 할 때만 쓴다
+            // 새 검색은 항상 최신 결과로 시작한다
             RankedWindow fresh = computeWindow(type, parsed, operator, viewerId, hidden, blocked);
             windowCache.put(key, fresh);
             return fresh;
@@ -223,7 +263,8 @@ public class EngineSearchService implements SearchService {
     private RankedWindow computeWindow(SearchType type, ParsedQuery parsed, SearchOperator operator, Long viewerId,
                                        Set<Long> hidden, Set<Long> blocked) {
         int window = properties.getRanking().getWindow();
-        SearchPort.Result result = retrieve(type, parsed, operator, SearchSort.RELEVANCE, 0, window, hidden, blocked);
+        LocalDateTime createdBefore = LocalDateTime.now();
+        SearchPort.Result result = retrieve(type, parsed, operator, SearchSort.RELEVANCE, 0, window, hidden, blocked, null);
         List<Long> hitIds = result.hits().stream().map(SearchPort.Hit::id).toList();
         Map<Long, SearchSignal> visible = signals(type, hitIds);
         Map<Long, Double> personalBoosts = personalization.personalBoosts(viewerId, type, parsed, visible.keySet());
@@ -234,18 +275,20 @@ public class EngineSearchService implements SearchService {
                 .toList();
         long removed = result.hits().size() - candidates.size();
         List<Long> ids = meterRegistry.timer("search.rerank").record(() -> ranker.rank(type, candidates));
-        return new RankedWindow(ids, Math.max(0, result.total() - removed), result.total() > result.hits().size());
+        return new RankedWindow(ids, Math.max(0, result.total() - removed), result.total() > result.hits().size(), createdBefore);
     }
 
     private SearchPort.Result retrieve(SearchType type, ParsedQuery parsed, SearchOperator operator, SearchSort sort,
-                                       int from, int size, Set<Long> hidden, Set<Long> blocked) {
-        return searchPort.retrieve(new SearchPort.Request(type, parsed, operator, sort, from, size, hidden, blocked));
+                                       int from, int size, Set<Long> hidden, Set<Long> blocked, LocalDateTime createdBefore) {
+        return searchPort.retrieve(new SearchPort.Request(type, parsed, operator, sort, from, size, hidden, blocked, createdBefore));
     }
 
-    private List<Long> visibleIds(SearchType type, List<SearchPort.Hit> hits) {
-        List<Long> ids = hits.stream().map(SearchPort.Hit::id).toList();
-        Set<Long> visible = signals(type, ids).keySet();
-        return ids.stream().filter(visible::contains).toList();
+    /** 지금 보여 줄 수 있는 문서만 순서대로 남긴다. 공개 상태, 숨김, 차단을 PostgreSQL 현재 값으로 확인한다 */
+    private List<Long> servable(SearchType type, List<Long> ids, Set<Long> hidden, Set<Long> blocked) {
+        Map<Long, SearchSignal> visible = signals(type, ids);
+        return ids.stream()
+                .filter(id -> visible.containsKey(id) && !hidden.contains(id) && !blocked.contains(visible.get(id).getAuthorId()))
+                .toList();
     }
 
     private Map<Long, SearchSignal> signals(SearchType type, List<Long> ids) {

@@ -3,17 +3,13 @@ package com.dipsource.service.search.sync;
 import com.dipsource.dto.search.SearchType;
 import com.dipsource.global.exception.BusinessException;
 import com.dipsource.global.exception.ErrorCode;
-import com.dipsource.service.search.index.SearchDocumentRepository;
 import com.dipsource.service.search.index.SearchIndexManager;
 import com.dipsource.service.search.suggest.SuggestIndexService;
 import java.io.IOException;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -33,12 +29,9 @@ import org.springframework.stereotype.Service;
 @ConditionalOnProperty(prefix = "search.elasticsearch", name = "enabled", havingValue = "true")
 public class SearchReindexService {
 
-    private static final int ID_BATCH = 5000;
-
     private final SearchIndexManager indexManager;
     private final SuggestIndexService suggestIndex;
     private final SearchOutboxRepository outbox;
-    private final SearchDocumentRepository documents;
     private final ExecutorService executor = Executors.newSingleThreadExecutor(runnable -> {
         Thread thread = new Thread(runnable, "search-reindex");
         thread.setDaemon(true);
@@ -89,34 +82,17 @@ public class SearchReindexService {
         outbox.enqueue(type, List.of(id));
     }
 
-    /** 인덱스와 원본을 비교해서 없는 문서와 지워야 할 문서를 대기열에 넣는다 */
+    /** 인덱스와 원본을 비교해서 없는 문서, 지워야 할 문서, 내용이 뒤처진 문서를 대기열에 넣는다 */
     public Map<String, Integer> reconcile() throws IOException {
         Map<String, Integer> enqueued = new LinkedHashMap<>();
         for (SearchType type : SearchIndexManager.TYPES) {
-            Set<Long> source = activeIds(type);
-            Set<Long> indexed = indexManager.indexedIds(type);
-            List<Long> differences = new ArrayList<>();
-            source.stream().filter(id -> !indexed.contains(id)).forEach(differences::add);
-            indexed.stream().filter(id -> !source.contains(id)).forEach(differences::add);
+            List<Long> differences = indexManager.findDifferences(type);
             if (!differences.isEmpty()) {
                 outbox.enqueue(type, differences);
             }
             enqueued.put(type.name(), differences.size());
         }
         return enqueued;
-    }
-
-    private Set<Long> activeIds(SearchType type) {
-        Set<Long> ids = new HashSet<>();
-        long after = 0;
-        while (true) {
-            List<Long> batch = documents.findActiveIdsAfter(type, after, ID_BATCH);
-            if (batch.isEmpty()) {
-                return ids;
-            }
-            ids.addAll(batch);
-            after = batch.get(batch.size() - 1);
-        }
     }
 
     @Scheduled(cron = "0 40 4 * * *", zone = "Asia/Seoul")

@@ -28,7 +28,8 @@ public interface SearchService {
      * @param operator 여러 단어를 묶는 방식(and/or)
      * @param sort     정렬
      * @param viewerId 로그인한 사용자 ID. 비로그인이면 null. JWT에서 온 값만 넘긴다
+     * @param searchId 앞 페이지 응답의 searchId. 없으면 null
      */
     SearchPageResponse<?> search(String query, SearchType type, SearchOperator operator, SearchSort sort,
-                                 Pageable pageable, Long viewerId);
+                                 Pageable pageable, Long viewerId, String searchId);
 }

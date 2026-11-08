@@ -60,6 +60,10 @@ public class SearchIndexManager {
             String index = createVersionedIndex(type);
             client.indices().updateAliases(u -> u.actions(a -> a.add(add -> add.index(index).alias(alias(type)))));
             log.info("검색 인덱스 생성: {} -> {}", alias(type), index);
+        } else {
+            // 이전 버전으로 만든 인덱스에도 새 필드를 쓸 수 있게 한다. 값은 정합성 점검이 채운다
+            client.indices().putMapping(p -> p.index(alias(type))
+                    .properties("content_hash", f -> f.keyword(k -> k.index(false))));
         }
     }
 
@@ -87,8 +91,13 @@ public class SearchIndexManager {
         return count;
     }
 
-    /** 동기화 결과. failedIds는 다시 시도해야 하는 문서 */
-    public record SyncResult(List<Long> failedIds) {
+    /**
+     * 동기화 결과.
+     *
+     * @param failedIds      문서 자체가 거절된 것(시도 횟수를 쓴다)
+     * @param unavailableIds 검색 엔진·인덱스를 쓸 수 없어서 못 쓴 것(시도 횟수를 쓰지 않는다)
+     */
+    public record SyncResult(List<Long> failedIds, List<Long> unavailableIds) {
     }
 
     /**
@@ -116,15 +125,72 @@ public class SearchIndexManager {
         });
         BulkResponse response = client.bulk(bulk.build());
         List<Long> failed = new ArrayList<>();
+        List<Long> unavailable = new ArrayList<>();
         for (BulkResponseItem item : response.items()) {
             // 409는 더 최신 버전이 이미 반영됐다는 뜻이고, 404는 이미 지워졌다는 뜻이라 성공으로 본다
-            boolean ok = item.error() == null || item.status() == 409 || item.status() == 404;
-            if (!ok) {
-                failed.add(Long.parseLong(item.id()));
+            if (item.error() == null || item.status() == 409 || item.status() == 404) {
+                continue;
             }
+            (isUnavailable(item.status(), item.error().type()) ? unavailable : failed).add(Long.parseLong(item.id()));
         }
-        client.indices().refresh(r -> r.index(alias));
-        return new SyncResult(failed);
+        if (unavailable.size() < latest.size()) {
+            client.indices().refresh(r -> r.index(alias));
+        }
+        return new SyncResult(failed, unavailable);
+    }
+
+    /** 문서가 아니라 검색 엔진·인덱스 상태 때문에 실패했는지 */
+    static boolean isUnavailable(int status, String errorType) {
+        return status >= 500 || status == 429 || "index_closed_exception".equals(errorType)
+                || "cluster_block_exception".equals(errorType);
+    }
+
+    /** 원본과 다른 문서의 ID. 인덱스에 없는 문서, 지워야 할 문서, 내용이 뒤처진 문서를 모두 찾는다 */
+    public List<Long> findDifferences(SearchType type) throws IOException {
+        Map<Long, String> source = new HashMap<>();
+        long afterId = 0;
+        int bulkSize = properties.getElasticsearch().getBulkSize();
+        while (true) {
+            List<SourceRow> rows = documents.findAfter(type, afterId, bulkSize);
+            if (rows.isEmpty()) {
+                break;
+            }
+            for (SourceRow row : rows) {
+                source.put(row.id(), (String) documentFactory.create(type, row.id(), row.values()).get("content_hash"));
+            }
+            afterId = rows.get(rows.size() - 1).id();
+        }
+        Map<Long, String> indexed = indexedHashes(type);
+        List<Long> differences = new ArrayList<>();
+        source.forEach((id, hash) -> {
+            if (!hash.equals(indexed.get(id))) {
+                differences.add(id);
+            }
+        });
+        indexed.keySet().stream().filter(id -> !source.containsKey(id)).forEach(differences::add);
+        return differences;
+    }
+
+    private Map<Long, String> indexedHashes(SearchType type) throws IOException {
+        Map<Long, String> hashes = new HashMap<>();
+        Long after = null;
+        while (true) {
+            final Long cursor = after;
+            SearchResponse<Map> response = client.search(s -> {
+                s.index(alias(type)).size(5000).source(c -> c.filter(f -> f.includes("content_hash")))
+                        .sort(o -> o.field(f -> f.field("doc_id").order(SortOrder.Asc)));
+                if (cursor != null) {
+                    s.searchAfter(FieldValue.of(cursor));
+                }
+                return s;
+            }, Map.class);
+            List<Hit<Map>> hits = response.hits().hits();
+            if (hits.isEmpty()) {
+                return hashes;
+            }
+            hits.forEach(hit -> hashes.put(Long.parseLong(hit.id()), hit.source() == null ? null : (String) hit.source().get("content_hash")));
+            after = Long.parseLong(hits.get(hits.size() - 1).id());
+        }
     }
 
     /** 인덱스에 있는 문서 ID 전부. 원본과 비교할 때 쓴다 */

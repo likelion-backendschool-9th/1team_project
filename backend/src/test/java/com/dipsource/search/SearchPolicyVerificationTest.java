@@ -118,13 +118,13 @@ class SearchPolicyVerificationTest extends AbstractSearchVerification {
     }
 
     @Test
-    @DisplayName("[한계] 무료 글을 유료로 바꾸면 동기화 전까지 본문 단어로 찾힌다(응답에 본문은 없음) → 신호 조회에서 유료 여부 확인 필요")
+    @DisplayName("무료 글을 유료로 바꾸면 동기화 전에도 본문 단어로 찾히지 않는다")
     void paidConversionBeforeSync() throws Exception {
         long id = post(author, "Kafka 글", "비밀단어 본문");
         reindex();
 
         changePost(id, p -> p.update("Kafka 글", p.getCategory(), "비밀단어 본문", null, null, true, 100));
-        assertThat(search("비밀단어", "post").ids()).contains((int) id);
+        assertThat(search("비밀단어", "post").ids()).doesNotContain((int) id);
         drain();
         assertThat(search("비밀단어", "post").ids()).doesNotContain((int) id);
     }
@@ -172,7 +172,7 @@ class SearchPolicyVerificationTest extends AbstractSearchVerification {
     }
 
     @Test
-    @DisplayName("[한계] 차단 직후 이미 만들어진 재정렬 캐시로 다음 페이지를 보면 최대 60초 동안 차단한 작성자가 보인다 → 응답 직전 차단 재확인 필요")
+    @DisplayName("차단 직후 이미 만들어진 재정렬 캐시로 다음 페이지를 봐도 차단한 작성자가 보이지 않는다")
     void blockOnCachedPage() throws Exception {
         long other = user("작성자2", null);
         for (int i = 0; i < 30; i++) {
@@ -185,7 +185,7 @@ class SearchPolicyVerificationTest extends AbstractSearchVerification {
         var second = search(viewer, "kafka", "post", 1, 10).ids();
         var authors = jdbc.queryForList("SELECT user_id FROM posts WHERE id = ANY(?)", Long.class,
                 (Object) second.stream().map(Integer::longValue).toArray(Long[]::new));
-        assertThat(authors).contains(other);
+        assertThat(authors).doesNotContain(other);
     }
 
     @Test
@@ -238,7 +238,7 @@ class SearchPolicyVerificationTest extends AbstractSearchVerification {
     }
 
     @Test
-    @DisplayName("[한계] 삭제된 글의 제목 단어는 사전을 다시 만들 때까지(최대 10분) 자동완성에 남는다 → 사전 재구축 주기 단축 또는 후보 재확인 필요")
+    @DisplayName("삭제된 글의 제목 단어는 동기화되면 자동완성에 나오지 않는다")
     void autocompleteAfterDelete() throws Exception {
         long id = post(author, "비공개예정단어zxq 이야기", "본문");
         reindex();
@@ -246,6 +246,28 @@ class SearchPolicyVerificationTest extends AbstractSearchVerification {
 
         changePost(id, Post::delete);
         drain();
-        assertThat(autocomplete("비공개예정")).isNotEmpty();
+        assertThat(autocomplete("비공개예정")).isEmpty();
+    }
+
+    @Test
+    @DisplayName("글 수정 API로 태그를 전부 지우면 그 태그로 찾히지 않는다")
+    void tagRemovalThroughApi() throws Exception {
+        long id = post(author, "Kafka 운영 기록", "본문 내용을 충분히 길게 작성한 글입니다");
+        long tagId = jdbc.queryForObject("INSERT INTO tags(name) VALUES ('kafka') RETURNING id", Long.class);
+        jdbc.update("INSERT INTO post_tags(post_id, tag_id) VALUES (?, ?)", id, tagId);
+        reindex();
+        assertThat(search("#kafka", "post").ids()).containsExactly((int) id);
+
+        var principal = new com.dipsource.global.auth.UserPrincipal(author, "USER");
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put("/posts/" + id)
+                        .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                        .content("{\"title\":\"Kafka 운영 기록\",\"category\":\"backend\",\"tags\":[],\"content\":\"본문 내용을 충분히 길게 작성한 글입니다\",\"price\":0}")
+                        .with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication(
+                                new org.springframework.security.authentication.UsernamePasswordAuthenticationToken(principal, null, principal.getAuthorities())))
+                        .with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf()))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.status().is2xxSuccessful());
+        drain();
+
+        assertThat(search("#kafka", "post").total()).isZero();
     }
 }

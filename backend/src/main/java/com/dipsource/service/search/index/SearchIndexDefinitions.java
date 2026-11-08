@@ -107,6 +107,7 @@ public class SearchIndexDefinitions {
         fields.put("doc_id", Map.of("type", "long"));
         fields.put("created_at", Map.of("type", "date"));
         fields.put("quality", Map.of("type", "float"));
+        fields.put("content_hash", Map.of("type", "keyword", "index", false));
         switch (type) {
             case POST -> {
                 fields.put("author_id", Map.of("type", "long"));

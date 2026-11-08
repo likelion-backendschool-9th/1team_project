@@ -63,7 +63,7 @@ class PostServiceImplTest {
     @BeforeEach
     void setUp() {
         service = new PostServiceImpl(postRepository, postTagRepository, postPurchaseRepository,
-                blogSubscriptionRepository, tagRepository, userService);
+                blogSubscriptionRepository, tagRepository, userService, org.mockito.Mockito.mock(org.springframework.context.ApplicationEventPublisher.class));
     }
 
     @Nested

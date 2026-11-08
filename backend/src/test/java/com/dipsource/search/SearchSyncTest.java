@@ -183,7 +183,7 @@ class SearchSyncTest {
 
         worker.processBatch();
         assertThat(jdbc.queryForMap("SELECT attempts, processed_at FROM search_outbox WHERE target_id = ?", feed.getId()))
-                .containsEntry("attempts", 1).containsEntry("processed_at", null);
+                .containsEntry("attempts", 0).containsEntry("processed_at", null);
 
         client.indices().open(o -> o.index(index));
         jdbc.update("UPDATE search_outbox SET next_attempt_at = now()");

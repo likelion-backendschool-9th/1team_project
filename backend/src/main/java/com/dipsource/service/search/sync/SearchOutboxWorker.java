@@ -1,5 +1,6 @@
 package com.dipsource.service.search.sync;
 
+import co.elastic.clients.elasticsearch._types.ElasticsearchException;
 import com.dipsource.dto.search.SearchType;
 import com.dipsource.global.config.SearchProperties;
 import com.dipsource.service.search.index.SearchIndexManager;
@@ -10,6 +11,7 @@ import java.io.IOException;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -24,7 +26,8 @@ import org.springframework.transaction.support.TransactionTemplate;
 
 /**
  * 색인 대기열을 처리한다. 처리할 때마다 PostgreSQL의 현재 상태를 읽어서 색인하거나 지운다.
- * 실패하면 지수 백오프로 다시 시도한다. 한도를 넘긴 행은 남겨 두고 운영 API로 다시 시도한다.
+ * 문서 자체의 실패는 지수 백오프로 다시 시도하고, 한도를 넘긴 행은 남겨 두고 운영 API로 다시 시도한다.
+ * 검색 엔진이 죽은 경우는 시도 횟수를 쓰지 않으므로 장애가 길어져도 복구 뒤 자동으로 반영된다.
  */
 @Slf4j
 @Component
@@ -35,6 +38,7 @@ public class SearchOutboxWorker {
     private static final int BATCH = 200;
     public static final int MAX_ATTEMPTS = 10;
     private static final long BACKOFF_SECONDS = 5;
+    private static final long DEFER_SECONDS = 30;
     private static final Duration PROCESSED_RETENTION = Duration.ofDays(7);
 
     private final SearchOutboxRepository outbox;
@@ -65,20 +69,28 @@ public class SearchOutboxWorker {
         List<Long> eventIds = events.stream().map(Event::id).toList();
         try {
             SearchIndexManager.SyncResult result = indexManager.sync(type, latest);
-            List<Long> failedEvents = events.stream()
-                    .filter(event -> result.failedIds().contains(event.targetId()))
-                    .map(Event::id).toList();
+            List<Long> deferred = eventsOf(events, result.unavailableIds());
+            List<Long> failed = eventsOf(events, result.failedIds());
             List<Long> succeeded = new ArrayList<>(eventIds);
-            succeeded.removeAll(failedEvents);
+            succeeded.removeAll(deferred);
+            succeeded.removeAll(failed);
             outbox.markProcessed(succeeded);
-            if (!failedEvents.isEmpty()) {
-                outbox.markFailed(failedEvents, "문서 색인 실패", BACKOFF_SECONDS);
-            }
-            afterApplied(type, events, Set.copyOf(result.failedIds()));
-        } catch (IOException | RuntimeException e) {
+            outbox.markDeferred(deferred, "검색 엔진 사용 불가", DEFER_SECONDS);
+            outbox.markFailed(failed, "문서 색인 실패", BACKOFF_SECONDS);
+            Set<Long> notApplied = new HashSet<>(result.failedIds());
+            notApplied.addAll(result.unavailableIds());
+            afterApplied(type, events, notApplied);
+        } catch (IOException | ElasticsearchException e) {
+            log.warn("검색 엔진 사용 불가로 색인을 미룹니다({}건): {}", eventIds.size(), e.toString());
+            outbox.markDeferred(eventIds, e.toString(), DEFER_SECONDS);
+        } catch (RuntimeException e) {
             log.warn("검색 색인 동기화 실패({}건): {}", eventIds.size(), e.toString());
             outbox.markFailed(eventIds, e.toString(), BACKOFF_SECONDS);
         }
+    }
+
+    private static List<Long> eventsOf(List<Event> events, List<Long> targetIds) {
+        return events.stream().filter(event -> targetIds.contains(event.targetId())).map(Event::id).toList();
     }
 
     private void afterApplied(SearchType type, List<Event> events, Set<Long> failed) {

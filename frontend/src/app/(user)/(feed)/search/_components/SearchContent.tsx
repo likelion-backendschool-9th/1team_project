@@ -33,11 +33,12 @@ function parsePage(value: string | undefined) {
   return Number.isSafeInteger(page) && page > 0 ? page : 1;
 }
 
-function href(q: string, type: SearchType, sort: SearchSort = "relevance", page = 1) {
+function href(q: string, type: SearchType, sort: SearchSort = "relevance", page = 1, searchId?: string) {
   const query = new URLSearchParams({ q });
   if (type !== "all") query.set("type", type);
   if (sort !== "relevance") query.set("sort", sort);
   if (page > 1) query.set("page", String(page));
+  if (page > 1 && searchId) query.set("searchId", searchId);
   return `/search?${query}`;
 }
 
@@ -57,6 +58,7 @@ export async function SearchContent({ searchParams }: Props) {
   const type = types.find((item) => item.value === first(params.type))?.value ?? "all";
   const sort = sorts.find((item) => item.value === first(params.sort))?.value ?? "relevance";
   const page = parsePage(first(params.page));
+  const searchId = first(params.searchId)?.slice(0, 36);
   const popular = await getPopularKeywords();
 
   if (!q)
@@ -77,7 +79,7 @@ export async function SearchContent({ searchParams }: Props) {
       </section>
     );
 
-  const [outcome, me] = await Promise.all([search(q, type, sort, page), getMe()]);
+  const [outcome, me] = await Promise.all([search(q, type, sort, page, searchId), getMe()]);
   if ("error" in outcome)
     return (
       <p role="alert" className={kit.empty}>
@@ -151,7 +153,7 @@ export async function SearchContent({ searchParams }: Props) {
       {type !== "all" && result.totalPages > 1 && (
         <nav aria-label="검색 결과 페이지" className={styles.pages}>
           {page > 1 && (
-            <Link href={href(q, type, sort, page - 1)} className={kit.btn}>
+            <Link href={href(q, type, sort, page - 1, result.searchId)} className={kit.btn}>
               이전
             </Link>
           )}
@@ -159,7 +161,7 @@ export async function SearchContent({ searchParams }: Props) {
             {page} / {result.totalPages}
           </span>
           {page < result.totalPages && (
-            <Link href={href(q, type, sort, page + 1)} className={kit.btn}>
+            <Link href={href(q, type, sort, page + 1, result.searchId)} className={kit.btn}>
               다음
             </Link>
           )}

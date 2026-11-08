@@ -5,6 +5,7 @@ import com.dipsource.dto.search.SearchCondition;
 import com.dipsource.dto.search.SearchOperator;
 import com.dipsource.dto.search.SearchSignal;
 import com.dipsource.dto.search.SearchSort;
+import com.dipsource.dto.search.SearchType;
 import com.dipsource.dto.search.SearchTermCandidate;
 import com.dipsource.dto.search.SearchTermFrequency;
 import com.dipsource.entity.post.Post;
@@ -32,6 +33,8 @@ public interface PostSearchRepository extends Repository<Post, Long> {
                 LikePattern.contains(condition.phrase().toLowerCase(Locale.ROOT)),
                 condition.operator() == SearchOperator.AND,
                 condition.sort() == SearchSort.RELEVANCE,
+                condition.exclusions().hiddenIds(SearchType.POST),
+                condition.exclusions().blockedIds(),
                 pageable);
     }
 
@@ -64,6 +67,8 @@ public interface PostSearchRepository extends Repository<Post, Long> {
             ) m
             WHERE p.status = 'ACTIVE'
               AND p.deleted_at IS NULL
+              AND p.id <> ALL(CAST(:excludedIds AS bigint[]))
+              AND p.user_id <> ALL(CAST(:excludedAuthors AS bigint[]))
               AND m.matched >= CASE WHEN :matchAll THEN cardinality(CAST(:patterns AS text[])) ELSE 1 END
             ORDER BY CASE WHEN :relevance THEN
                          CASE WHEN lower(p.title) = :phrase THEN 100 ELSE 0 END
@@ -82,6 +87,8 @@ public interface PostSearchRepository extends Repository<Post, Long> {
             ) m
             WHERE p.status = 'ACTIVE'
               AND p.deleted_at IS NULL
+              AND p.id <> ALL(CAST(:excludedIds AS bigint[]))
+              AND p.user_id <> ALL(CAST(:excludedAuthors AS bigint[]))
               AND m.matched >= CASE WHEN :matchAll THEN cardinality(CAST(:patterns AS text[])) ELSE 1 END
             """)
     Page<Post> searchByLikePatterns(
@@ -90,6 +97,8 @@ public interface PostSearchRepository extends Repository<Post, Long> {
             @Param("phrasePattern") String phrasePattern,
             @Param("matchAll") boolean matchAll,
             @Param("relevance") boolean relevance,
+            @Param("excludedIds") Long[] excludedIds,
+            @Param("excludedAuthors") Long[] excludedAuthors,
             Pageable pageable);
 
     /**
@@ -174,13 +183,18 @@ public interface PostSearchRepository extends Repository<Post, Long> {
             @Param("nextTo") String nextTo,
             @Param("limit") int limit);
 
-    /** 재정렬 신호. 공개 상태가 아닌 글은 돌려주지 않아서, 인덱스가 늦어도 여기서 걸러진다 */
+    /**
+     * 재정렬 신호. 공개 상태가 아닌 글은 돌려주지 않아서, 인덱스가 늦어도 여기서 걸러진다.
+     * 유료로 바뀌고 색인이 아직 반영되지 않은 글도 뺀다. 색인에 남은 무료 시절 본문으로 찾히면 안 되기 때문이다.
+     */
     @Query(nativeQuery = true, value = """
             SELECT p.id AS id, p.user_id AS authorId, p.like_count AS likeCount, p.view_count AS viewCount,
                    CAST(extract(epoch FROM (now() - p.created_at)) AS double precision) / 86400 AS ageDays,
                    (SELECT count(*) FROM follows f WHERE f.following_id = p.user_id) AS followerCount
             FROM posts p
             WHERE p.id IN (:ids) AND p.status = 'ACTIVE' AND p.deleted_at IS NULL
+              AND NOT (p.is_paid AND EXISTS (SELECT 1 FROM search_outbox o
+                                             WHERE o.target_type = 'POST' AND o.target_id = p.id AND o.processed_at IS NULL))
             """)
     List<SearchSignal> findSignals(@Param("ids") Collection<Long> ids);
 

@@ -1,5 +1,6 @@
 package com.dipsource.service.search.personal;
 
+import com.dipsource.dto.search.SearchExclusions;
 import com.dipsource.dto.search.SearchType;
 import com.dipsource.entity.search.SearchVisit;
 import com.dipsource.global.config.SearchProperties;
@@ -14,6 +15,7 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -37,6 +39,19 @@ public class SearchPersonalizationService {
     private final SearchHiddenResultRepository hiddenRepository;
     private final SearchVisitRepository visitRepository;
     private final FollowRepository followRepository;
+
+    /** PostgreSQL 검색에 넘길 제외 대상. 비로그인이면 쿼리를 하지 않는다 */
+    @Transactional(readOnly = true)
+    public SearchExclusions exclusions(Long viewerId) {
+        if (viewerId == null) {
+            return SearchExclusions.NONE;
+        }
+        Map<SearchType, List<Long>> hidden = new EnumMap<>(SearchType.class);
+        for (SearchType type : List.of(SearchType.POST, SearchType.DEMO, SearchType.FEED, SearchType.USER)) {
+            hidden.put(type, List.copyOf(hiddenIds(viewerId, type)));
+        }
+        return new SearchExclusions(hidden, blockedUsers(viewerId));
+    }
 
     @Transactional(readOnly = true)
     public Set<Long> blockedUsers(Long viewerId) {

@@ -4,6 +4,7 @@ import com.dipsource.dto.search.SearchOperator;
 import com.dipsource.dto.search.SearchSort;
 import com.dipsource.dto.search.SearchType;
 import com.dipsource.service.search.query.ParsedQuery;
+import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
 
@@ -16,9 +17,10 @@ public interface SearchPort {
     /**
      * @param excludedIds     결과에서 뺄 문서 ID(사용자가 숨긴 결과)
      * @param excludedAuthors 결과에서 뺄 작성자 ID(차단 관계). 사용자 검색에서는 사용자 ID 자체를 뺀다
+     * @param createdBefore   이 시각 이후에 만들어진 문서를 뺀다. 페이지를 넘기는 동안 새 글로 순서가 밀리지 않게 한다. 없으면 null
      */
     record Request(SearchType type, ParsedQuery query, SearchOperator operator, SearchSort sort, int from, int size,
-                   Collection<Long> excludedIds, Collection<Long> excludedAuthors) {
+                   Collection<Long> excludedIds, Collection<Long> excludedAuthors, LocalDateTime createdBefore) {
     }
 
     /**

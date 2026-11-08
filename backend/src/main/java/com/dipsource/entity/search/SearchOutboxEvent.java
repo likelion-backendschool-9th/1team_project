@@ -21,7 +21,8 @@ import lombok.NoArgsConstructor;
 @Entity
 @Table(name = "search_outbox", indexes = {
         @Index(name = "idx_search_outbox_pending", columnList = "processed_at, next_attempt_at"),
-        @Index(name = "idx_search_outbox_created", columnList = "created_at")
+        @Index(name = "idx_search_outbox_created", columnList = "created_at"),
+        @Index(name = "idx_search_outbox_target", columnList = "target_type, target_id")
 })
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class SearchOutboxEvent {

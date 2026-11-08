@@ -34,7 +34,7 @@ abstract class AbstractSearchVerification {
         registry.add("spring.datasource.password", SearchContainers.POSTGRES::getPassword);
     }
 
-    record Page(int status, List<Integer> ids, long total, int totalPages) {
+    record Page(int status, List<Integer> ids, long total, int totalPages, String searchId) {
     }
 
     void reset() {
@@ -74,12 +74,12 @@ abstract class AbstractSearchVerification {
         }
         var response = mockMvc.perform(request).andReturn().getResponse();
         if (response.getStatus() != 200) {
-            return new Page(response.getStatus(), List.of(), 0, 0);
+            return new Page(response.getStatus(), List.of(), 0, 0, null);
         }
         String body = response.getContentAsString();
         List<Integer> ids = JsonPath.read(body, "$.data.content[*].id");
         return new Page(200, new ArrayList<>(ids), ((Number) JsonPath.read(body, "$.data.totalElements")).longValue(),
-                JsonPath.read(body, "$.data.totalPages"));
+                JsonPath.read(body, "$.data.totalPages"), body.contains("\"searchId\"") ? JsonPath.read(body, "$.data.searchId") : null);
     }
 
     Page search(String q, String type) throws Exception {

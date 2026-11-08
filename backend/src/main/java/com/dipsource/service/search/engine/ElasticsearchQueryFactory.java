@@ -46,6 +46,10 @@ public class ElasticsearchQueryFactory {
         BoolQuery.Builder bool = new BoolQuery.Builder();
         applyHashtags(bool, policy, query, request.operator());
         applyExclusions(bool, request);
+        if (request.createdBefore() != null) {
+            String before = request.createdBefore().toString();
+            bool.filter(f -> f.range(r -> r.date(d -> d.field("created_at").lte(before))));
+        }
 
         TechTermDictionary.SingleCharTerm singleChar = singleCharTerm(query);
         if (singleChar != null) {

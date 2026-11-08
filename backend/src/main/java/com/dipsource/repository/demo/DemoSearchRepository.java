@@ -5,6 +5,7 @@ import com.dipsource.dto.search.SearchCondition;
 import com.dipsource.dto.search.SearchOperator;
 import com.dipsource.dto.search.SearchSignal;
 import com.dipsource.dto.search.SearchSort;
+import com.dipsource.dto.search.SearchType;
 import com.dipsource.dto.search.SearchTermCandidate;
 import com.dipsource.dto.search.SearchTermFrequency;
 import com.dipsource.entity.demo.Demo;
@@ -32,6 +33,8 @@ public interface DemoSearchRepository extends Repository<Demo, Long> {
                 LikePattern.contains(condition.phrase().toLowerCase(Locale.ROOT)),
                 condition.operator() == SearchOperator.AND,
                 condition.sort() == SearchSort.RELEVANCE,
+                condition.exclusions().hiddenIds(SearchType.DEMO),
+                condition.exclusions().blockedIds(),
                 pageable);
     }
 
@@ -50,6 +53,8 @@ public interface DemoSearchRepository extends Repository<Demo, Long> {
             ) m
             WHERE d.status = 'ACTIVE'
               AND d.deleted_at IS NULL
+              AND d.id <> ALL(CAST(:excludedIds AS bigint[]))
+              AND d.user_id <> ALL(CAST(:excludedAuthors AS bigint[]))
               AND m.matched >= CASE WHEN :matchAll THEN cardinality(CAST(:patterns AS text[])) ELSE 1 END
             ORDER BY CASE WHEN :relevance THEN
                          CASE WHEN lower(d.title) = :phrase THEN 100 ELSE 0 END
@@ -67,6 +72,8 @@ public interface DemoSearchRepository extends Repository<Demo, Long> {
             ) m
             WHERE d.status = 'ACTIVE'
               AND d.deleted_at IS NULL
+              AND d.id <> ALL(CAST(:excludedIds AS bigint[]))
+              AND d.user_id <> ALL(CAST(:excludedAuthors AS bigint[]))
               AND m.matched >= CASE WHEN :matchAll THEN cardinality(CAST(:patterns AS text[])) ELSE 1 END
             """)
     Page<Demo> searchByLikePatterns(
@@ -75,6 +82,8 @@ public interface DemoSearchRepository extends Repository<Demo, Long> {
             @Param("phrasePattern") String phrasePattern,
             @Param("matchAll") boolean matchAll,
             @Param("relevance") boolean relevance,
+            @Param("excludedIds") Long[] excludedIds,
+            @Param("excludedAuthors") Long[] excludedAuthors,
             Pageable pageable);
 
     /**

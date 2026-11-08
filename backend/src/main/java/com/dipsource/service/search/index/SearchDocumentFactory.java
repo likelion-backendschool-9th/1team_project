@@ -2,13 +2,18 @@ package com.dipsource.service.search.index;
 
 import com.dipsource.dto.search.SearchType;
 import com.dipsource.service.search.query.TextNormalizer;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.HexFormat;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -51,7 +56,23 @@ public class SearchDocumentFactory {
             }
             case ALL -> throw new IllegalArgumentException("ALL은 인덱스가 아니다");
         }
+        doc.put("content_hash", contentHash(doc));
         return doc;
+    }
+
+    /** 원본과 색인의 내용이 같은지 비교하는 값. 태그 순서는 조회마다 달라질 수 있어서 정렬해서 계산한다 */
+    private static String contentHash(Map<String, Object> doc) {
+        StringBuilder canonical = new StringBuilder();
+        new TreeMap<>(doc).forEach((field, value) -> {
+            Object stable = value instanceof List<?> list ? list.stream().map(String::valueOf).sorted().toList() : value;
+            canonical.append(field).append('=').append(stable).append('\0');
+        });
+        try {
+            byte[] digest = MessageDigest.getInstance("SHA-256").digest(canonical.toString().getBytes(StandardCharsets.UTF_8));
+            return HexFormat.of().formatHex(digest, 0, 16);
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException(e);
+        }
     }
 
     private static void putTags(Map<String, Object> doc, List<String> tags) {

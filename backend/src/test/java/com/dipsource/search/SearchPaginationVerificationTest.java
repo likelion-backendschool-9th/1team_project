@@ -140,22 +140,62 @@ class SearchPaginationVerificationTest extends AbstractSearchVerification {
     }
 
     @Test
-    @DisplayName("[한계] window를 넘는 구간은 실시간 조회라 페이지를 넘기는 중 새 글이 들어오면 중복이 생긴다 → PIT·search_after 필요")
+    @DisplayName("페이지를 넘기는 중 새 글이 들어와도 window를 넘는 구간에서 중복·누락이 없다")
     void insertDuringTraversalBeyondWindow() throws Exception {
         seed(DOCS, "kafka");
-        List<Integer> all = new ArrayList<>(search(null, "kafka", "post", 0, 20).ids());
+        Page first = search(null, "kafka", "post", 0, 20);
+        List<Integer> all = new ArrayList<>(first.ids());
         for (int page = 1; page < 9; page++) {
-            all.addAll(search(null, "kafka", "post", page, 20).ids());
+            all.addAll(search(null, "kafka", "post", page, 20, "searchId", first.searchId()).ids());
         }
         insertAndIndex("kafka 새 글");
         for (int page = 9; page < 14; page++) {
-            all.addAll(search(null, "kafka", "post", page, 20).ids());
+            all.addAll(search(null, "kafka", "post", page, 20, "searchId", first.searchId()).ids());
         }
-        assertThat(all.stream().distinct().count()).isLessThan(all.size());
+        assertThat(all).hasSize(DOCS).doesNotHaveDuplicates();
     }
 
     @Test
-    @DisplayName("[한계] 비로그인은 캐시를 공유해서 다른 사람의 첫 페이지 요청이 순서를 바꾸면 중복·누락이 생긴다 → 탐색 단위 스냅샷 필요")
+    @DisplayName("최신순도 페이지를 넘기는 중 새 글이 들어오면 searchId로 순서를 유지한다")
+    void insertDuringLatestTraversal() throws Exception {
+        seed(60, "kafka");
+        Page first = search(null, "kafka", "post", 0, 20, "sort", "latest");
+        List<Integer> all = new ArrayList<>(first.ids());
+        Thread.sleep(50);
+        insertAndIndex("kafka 새 글");
+        for (int page = 1; page < 3; page++) {
+            all.addAll(search(null, "kafka", "post", page, 20, "sort", "latest", "searchId", first.searchId()).ids());
+        }
+        assertThat(all).hasSize(60).doesNotHaveDuplicates();
+    }
+
+    @Test
+    @DisplayName("다른 비로그인 사용자의 첫 페이지 요청이 와도 searchId로 내 순서가 유지된다")
+    void searchIdKeepsOrderAgainstOtherUsers() throws Exception {
+        seed(100, "kafka");
+        Page first = search(null, "kafka", "post", 0, 20);
+        List<Integer> all = new ArrayList<>(first.ids());
+        jdbc.update("UPDATE posts SET like_count = 100000 WHERE id IN (SELECT id FROM posts ORDER BY like_count LIMIT 30)");
+        search(null, "kafka", "post", 0, 20);
+        for (int page = 1; page < 5; page++) {
+            all.addAll(search(null, "kafka", "post", page, 20, "searchId", first.searchId()).ids());
+        }
+        assertThat(all).hasSize(100).doesNotHaveDuplicates();
+    }
+
+    @Test
+    @DisplayName("다른 사용자나 다른 검색어의 searchId는 쓰이지 않는다")
+    void searchIdIsBoundToSearch() throws Exception {
+        seed(40, "kafka");
+        Page first = search(null, "kafka", "post", 0, 20);
+        long viewer = user("다른사용자", null);
+
+        assertThat(search(viewer, "kafka", "post", 0, 20, "searchId", first.searchId()).searchId()).isNotEqualTo(first.searchId());
+        assertThat(search(null, "본문", "post", 0, 20, "searchId", first.searchId()).searchId()).isNotEqualTo(first.searchId());
+    }
+
+    @Test
+    @DisplayName("[한계] searchId 없이 넘기면 비로그인끼리 캐시를 공유해서 순서가 바뀔 수 있다 → 이전 방식 호출에만 해당")
     void anonymousFirstPageDoesNotDisturbPaging() throws Exception {
         seed(100, "kafka");
         List<Integer> all = new ArrayList<>(search(null, "kafka", "post", 0, 20).ids());
@@ -169,36 +209,38 @@ class SearchPaginationVerificationTest extends AbstractSearchVerification {
     }
 
     @Test
-    @DisplayName("[한계] 60초 캐시가 만료된 뒤 순위가 바뀌어 있으면 이어서 넘길 때 중복·누락이 생긴다 → 탐색 단위 스냅샷 필요")
+    @DisplayName("60초 캐시가 만료되어도 searchId로 이어서 넘기면 중복·누락이 없다")
     void cacheExpiryDuringPaging() throws Exception {
         seed(100, "kafka");
-        List<Integer> all = new ArrayList<>(search(null, "kafka", "post", 0, 20).ids());
-        all.addAll(search(null, "kafka", "post", 1, 20).ids());
+        Page first = search(null, "kafka", "post", 0, 20);
+        List<Integer> all = new ArrayList<>(first.ids());
+        all.addAll(search(null, "kafka", "post", 1, 20, "searchId", first.searchId()).ids());
         jdbc.update("UPDATE posts SET like_count = 100000 WHERE id IN (SELECT id FROM posts ORDER BY like_count LIMIT 30)");
         engine.invalidateViewer(null);
         for (int page = 2; page < 5; page++) {
-            all.addAll(search(null, "kafka", "post", page, 20).ids());
+            all.addAll(search(null, "kafka", "post", page, 20, "searchId", first.searchId()).ids());
         }
-        assertThat(all.stream().distinct().count()).isLessThan(100);
+        assertThat(all).hasSize(100).doesNotHaveDuplicates();
     }
 
     @Test
-    @DisplayName("[한계] 10,000건을 넘는 페이지를 요청하면 빈 결과와 함께 총개수가 0이 된다 → 총개수 유지 또는 400 필요")
+    @DisplayName("10,000건을 넘는 페이지를 요청하면 400이다")
     void beyondMaxResultWindow() throws Exception {
         seed(30, "kafka");
         Page deep = search(null, "kafka", "post", 500, 20);
-        assertThat(deep.status()).isEqualTo(200);
-        assertThat(deep.total()).isZero();
+        assertThat(deep.status()).isEqualTo(400);
     }
 
     @Test
-    @DisplayName("[한계] 캐시된 페이지에서 글이 지워지면 그 페이지만 한 건 짧아진다 → 뒤 문서로 채우는 처리 필요")
+    @DisplayName("캐시된 페이지에서 글이 지워져도 페이지 크기와 총개수가 맞다")
     void deletionKeepsPageSize() throws Exception {
         seed(60, "kafka");
         search(null, "kafka", "post", 0, 20);
         List<Integer> second = search(null, "kafka", "post", 1, 20).ids();
         jdbc.update("UPDATE posts SET status = 'DELETED', deleted_at = now() WHERE id = ?", second.get(0).longValue());
 
-        assertThat(search(null, "kafka", "post", 1, 20).ids()).hasSize(19);
+        Page after = search(null, "kafka", "post", 1, 20);
+        assertThat(after.ids()).hasSize(20).doesNotContain(second.get(0));
+        assertThat(after.total()).isEqualTo(59);
     }
 }

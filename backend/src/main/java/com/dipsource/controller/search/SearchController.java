@@ -38,7 +38,8 @@ public class SearchController {
      *   - 생략(auto): and와 같고, 세 단어 이상의 문장만 75% 일치로 찾는다
      *   - and: 모든 단어가 들어 있는 결과. 예: "spring jpa" → spring과 jpa가 둘 다 있는 글
      *   - or: 하나라도 들어 있는 결과. 많이 일치할수록 relevance 점수가 높다
-     * - page, size: 0부터 시작, size는 최대 50
+     * - page, size: 0부터 시작, size는 최대 50. Elasticsearch 경로는 10,000건을 넘는 페이지를 요청하면 400
+     * - searchId: 앞 페이지 응답의 searchId. 보내면 페이지를 넘기는 동안 순서가 유지된다
      * - Elasticsearch 경로: 검색어를 자동으로 바꾸지 않는다. 결과는 원래 검색어 기준이고 suggestedQuery와 suggestionType(KEYBOARD, TYPO)으로 제안만 한다
      *   예: q=네갸ㅜㅎ → suggestedQuery "spring", suggestionType KEYBOARD
      * - op를 보내지 않았고 모든 단어가 일치하는 결과가 없으면 일부 단어만 일치하는 결과와 relaxedMatch=true를 준다. op=and는 넓히지 않는다
@@ -50,6 +51,7 @@ public class SearchController {
             @RequestParam(required = false) String type,
             @RequestParam(required = false) String sort,
             @RequestParam(required = false) String op,
+            @RequestParam(required = false) String searchId,
             @PageableDefault(size = 20) Pageable pageable,
             @AuthenticationPrincipal UserPrincipal principal
     ) {
@@ -60,7 +62,7 @@ public class SearchController {
         if (searchType == SearchType.ALL) {
             return ApiResponse.of(searchService.searchAll(q, operator, searchSort, viewerId));
         }
-        return ApiResponse.of(searchService.search(q, searchType, operator, searchSort, pageable, viewerId));
+        return ApiResponse.of(searchService.search(q, searchType, operator, searchSort, pageable, viewerId, searchId));
     }
 
     /**

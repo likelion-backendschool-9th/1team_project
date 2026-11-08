@@ -1,15 +1,24 @@
 package com.dipsource.service.search.impl;
 
+import com.dipsource.dto.demo.DemoSearchItemResponse;
+import com.dipsource.dto.feed.FeedSearchItemResponse;
+import com.dipsource.dto.post.PostSearchItemResponse;
 import com.dipsource.dto.search.SearchAllResponse;
 import com.dipsource.dto.search.SearchOperator;
 import com.dipsource.dto.search.SearchPageResponse;
+import com.dipsource.dto.search.SearchSection;
 import com.dipsource.dto.search.SearchSort;
 import com.dipsource.dto.search.SearchType;
+import com.dipsource.dto.user.UserSearchItemResponse;
 import com.dipsource.global.config.SearchProperties;
 import com.dipsource.global.exception.BusinessException;
 import com.dipsource.service.search.SearchService;
-import com.dipsource.service.search.personal.SearchExclusionFilter;
+import com.dipsource.service.search.query.ParsedQuery;
+import com.dipsource.service.search.query.SearchQueryParser;
+import com.dipsource.service.search.query.TechTermDictionary;
 import io.micrometer.core.instrument.MeterRegistry;
+import java.util.List;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider;
@@ -31,42 +40,64 @@ public class SearchRouter implements SearchService {
     private final ObjectProvider<EngineSearchService> engine;
     private final SearchProperties properties;
     private final MeterRegistry meterRegistry;
-    private final SearchExclusionFilter exclusions;
+    private final SearchQueryParser queryParser;
+    private final TechTermDictionary dictionary;
     private volatile long circuitOpenUntil = 0;
 
     public SearchRouter(@Qualifier("postgresSearchService") SearchService postgres,
                         ObjectProvider<EngineSearchService> engine,
                         SearchProperties properties,
                         MeterRegistry meterRegistry,
-                        SearchExclusionFilter exclusions) {
+                        SearchQueryParser queryParser,
+                        TechTermDictionary dictionary) {
         this.postgres = postgres;
         this.engine = engine;
         this.properties = properties;
         this.meterRegistry = meterRegistry;
-        this.exclusions = exclusions;
+        this.queryParser = queryParser;
+        this.dictionary = dictionary;
     }
 
     @Override
     public SearchAllResponse searchAll(String query, SearchOperator operator, SearchSort sort, Long viewerId) {
-        return route(service -> service.searchAll(query, operator, sort, viewerId),
-                () -> exclusions.filter(postgres.searchAll(query, operator, sort, viewerId), viewerId));
+        return route(query, service -> service.searchAll(query, operator, sort, viewerId),
+                () -> postgres.searchAll(query, operator, sort, viewerId),
+                SearchRouter::emptyAll);
     }
 
     @Override
     public SearchPageResponse<?> search(String query, SearchType type, SearchOperator operator, SearchSort sort,
-                                        Pageable pageable, Long viewerId) {
-        return route(service -> service.search(query, type, operator, sort, pageable, viewerId),
-                () -> exclusions.filter(postgres.search(query, type, operator, sort, pageable, viewerId), type, viewerId));
+                                        Pageable pageable, Long viewerId, String searchId) {
+        return route(query, service -> service.search(query, type, operator, sort, pageable, viewerId, searchId),
+                () -> postgres.search(query, type, operator, sort, pageable, viewerId, searchId),
+                () -> new SearchPageResponse<>(List.of(), pageable.getPageNumber(), pageable.getPageSize(), 0, 0,
+                        null, null, null, null, null));
     }
 
-    private <T> T route(java.util.function.Function<SearchService, T> primary, Supplier<T> fallback) {
+    private static SearchAllResponse emptyAll() {
+        SearchSection<PostSearchItemResponse> posts = new SearchSection<>(List.of(), 0);
+        SearchSection<FeedSearchItemResponse> feeds = new SearchSection<>(List.of(), 0);
+        SearchSection<DemoSearchItemResponse> demos = new SearchSection<>(List.of(), 0);
+        SearchSection<UserSearchItemResponse> users = new SearchSection<>(List.of(), 0);
+        return new SearchAllResponse(posts, feeds, demos, users, null, null, null);
+    }
+
+    /** PostgreSQL LIKE로는 한 글자가 부분 문자열로 전부 걸리므로 대체 경로에서는 빈 결과를 준다 */
+    private <T> Supplier<T> degraded(ParsedQuery parsed, Supplier<T> fallback, Supplier<T> empty) {
+        boolean singleCharacter = parsed.keywords().size() == 1 && dictionary.isSingleCharacterTerm(parsed.keywords().get(0));
+        return singleCharacter ? empty : fallback;
+    }
+
+    private <T> T route(String query, Function<SearchService, T> primary, Supplier<T> fallback, Supplier<T> empty) {
         EngineSearchService service = engine.getIfAvailable();
         if (properties.getEngine() != SearchProperties.Engine.ELASTICSEARCH || service == null) {
             return fallback.get();
         }
+        // 대체 경로를 타더라도 검색어 규칙은 같아야 한다
+        Supplier<T> degraded = degraded(queryParser.parse(query), fallback, empty);
         if (System.currentTimeMillis() < circuitOpenUntil && properties.isFallbackToPostgres()) {
             meterRegistry.counter("search.fallback", "reason", "circuit_open").increment();
-            return fallback.get();
+            return degraded.get();
         }
         try {
             return primary.apply(service);
@@ -80,7 +111,7 @@ public class SearchRouter implements SearchService {
             log.warn("Elasticsearch 검색 실패, PostgreSQL로 대체합니다: {}", e.toString());
             circuitOpenUntil = System.currentTimeMillis() + properties.getCircuitOpenDuration().toMillis();
             meterRegistry.counter("search.fallback", "reason", "error").increment();
-            return fallback.get();
+            return degraded.get();
         }
     }
 }

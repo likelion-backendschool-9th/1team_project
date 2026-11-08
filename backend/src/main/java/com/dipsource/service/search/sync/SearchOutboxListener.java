@@ -1,5 +1,6 @@
 package com.dipsource.service.search.sync;
 
+import com.dipsource.dto.search.SearchTargetChangedEvent;
 import com.dipsource.dto.search.SearchType;
 import com.dipsource.entity.demo.Demo;
 import com.dipsource.entity.demo.DemoTag;
@@ -12,6 +13,7 @@ import jakarta.annotation.PostConstruct;
 import jakarta.persistence.EntityManagerFactory;
 import java.sql.PreparedStatement;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
@@ -28,6 +30,7 @@ import org.hibernate.event.spi.PostUpdateEvent;
 import org.hibernate.event.spi.PostUpdateEventListener;
 import org.hibernate.persister.entity.EntityPersister;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
 /**
@@ -49,6 +52,7 @@ public class SearchOutboxListener implements PostInsertEventListener, PostUpdate
             User.class, Set.of("nickname", "bio", "techStacks", "githubUsername", "status", "deletedAt"));
 
     private final EntityManagerFactory entityManagerFactory;
+    private final SearchOutboxRepository outbox;
 
     @PostConstruct
     void register() {
@@ -103,6 +107,12 @@ public class SearchOutboxListener implements PostInsertEventListener, PostUpdate
                 statement.executeUpdate();
             }
         }));
+    }
+
+    /** 벌크 쿼리처럼 JPA 이벤트로 잡히지 않는 변경. 발행한 트랜잭션 안에서 대기열에 넣는다 */
+    @EventListener
+    void onChanged(SearchTargetChangedEvent event) {
+        outbox.enqueue(event.type(), List.of(event.id()));
     }
 
     private record Target(SearchType type, long id) {

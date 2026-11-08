@@ -84,19 +84,6 @@ public class SearchDocumentRepository {
                 new MapSqlParameterSource().addValue("ids", ids).addValue("limit", ids.size()));
     }
 
-    /** 공개 상태인 ID만 ID 순서로. 인덱스와 비교할 때 쓴다 */
-    public List<Long> findActiveIdsAfter(SearchType type, long afterId, int limit) {
-        String sql = switch (type) {
-            case POST -> "SELECT id FROM posts WHERE status = 'ACTIVE' AND deleted_at IS NULL AND id > :afterId ORDER BY id LIMIT :limit";
-            case DEMO -> "SELECT id FROM demos WHERE status = 'ACTIVE' AND deleted_at IS NULL AND id > :afterId ORDER BY id LIMIT :limit";
-            case FEED -> "SELECT id FROM feeds WHERE status = 'ACTIVE' AND deleted_at IS NULL AND id > :afterId ORDER BY id LIMIT :limit";
-            case USER -> "SELECT id FROM users WHERE status = 'ACTIVE' AND id > :afterId ORDER BY id LIMIT :limit";
-            case ALL -> throw new IllegalArgumentException("ALL은 인덱스가 아니다");
-        };
-        return jdbc.queryForList(sql, new MapSqlParameterSource().addValue("afterId", afterId).addValue("limit", limit),
-                Long.class);
-    }
-
     private List<SourceRow> query(SearchType type, String condition, MapSqlParameterSource params) {
         String sql = switch (type) {
             case POST -> POST_SQL.formatted(condition);

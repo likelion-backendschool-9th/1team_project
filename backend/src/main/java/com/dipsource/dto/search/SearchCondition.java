@@ -11,8 +11,10 @@ import java.util.Locale;
  * @param keywords 공백으로 나눈 단어. 소문자, 중복 제거, 최대 {@link #MAX_KEYWORDS}개
  * @param operator 단어끼리 묶는 방식(and/or)
  * @param sort     정렬
+ * @param exclusions 사용자가 숨긴 문서와 차단 관계인 회원
  */
-public record SearchCondition(String phrase, List<String> keywords, SearchOperator operator, SearchSort sort) {
+public record SearchCondition(String phrase, List<String> keywords, SearchOperator operator, SearchSort sort,
+                              SearchExclusions exclusions) {
 
     /** 검색에 쓰는 최대 단어 수. 넘는 단어는 버린다 */
     public static final int MAX_KEYWORDS = 5;
@@ -27,12 +29,16 @@ public record SearchCondition(String phrase, List<String> keywords, SearchOperat
                 .toList();
         // PostgreSQL 경로에는 자동 모드가 없다. op를 보내지 않으면 지금까지처럼 and다
         SearchOperator resolved = operator == SearchOperator.AUTO ? SearchOperator.AND : operator;
-        return new SearchCondition(String.join(" ", words), keywords, resolved, sort);
+        return new SearchCondition(String.join(" ", words), keywords, resolved, sort, SearchExclusions.NONE);
     }
 
     /** 단어만 바꾼 조건. 오타를 고친 단어로 다시 검색할 때 쓴다. 검색어 전체는 고친 단어를 이어 붙인 것이다 */
     public SearchCondition withKeywords(List<String> correctedKeywords) {
         List<String> distinct = correctedKeywords.stream().distinct().toList();
-        return new SearchCondition(String.join(" ", distinct), distinct, operator, sort);
+        return new SearchCondition(String.join(" ", distinct), distinct, operator, sort, exclusions);
+    }
+
+    public SearchCondition withExclusions(SearchExclusions excluded) {
+        return new SearchCondition(phrase, keywords, operator, sort, excluded);
     }
 }

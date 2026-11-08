@@ -61,6 +61,19 @@ public class SearchOutboxRepository {
         }
     }
 
+    /** 검색 엔진 쪽 장애라 시도 횟수를 쓰지 않고 잠시 뒤 다시 시도한다. 장애가 얼마나 길어도 변경을 잃지 않는다 */
+    public void markDeferred(Collection<Long> ids, String error, long delaySeconds) {
+        if (!ids.isEmpty()) {
+            named.update("""
+                    UPDATE search_outbox
+                    SET next_attempt_at = now() + (:delay * interval '1 second'), last_error = :error
+                    WHERE id IN (:ids)
+                    """, new MapSqlParameterSource("ids", ids)
+                    .addValue("error", error.length() > 500 ? error.substring(0, 500) : error)
+                    .addValue("delay", delaySeconds));
+        }
+    }
+
     public void enqueue(SearchType type, Collection<Long> targetIds) {
         List<Object[]> rows = new ArrayList<>(targetIds.size());
         targetIds.forEach(id -> rows.add(new Object[] {type.name(), id}));

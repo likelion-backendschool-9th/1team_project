@@ -122,37 +122,37 @@ class SearchRecoveryVerificationTest extends AbstractSearchVerification {
     }
 
     @Test
-    @DisplayName("[한계] 장애가 길어져 재시도 한도를 넘긴 변경은 복구 뒤에도 자동으로 반영되지 않는다 → 인프라 장애는 재시도 횟수에서 제외 필요")
+    @DisplayName("검색 엔진 장애는 재시도 횟수를 쓰지 않아서 아무리 길어도 복구 뒤 자동으로 반영된다")
     void recoversAfterRetryLimit() throws Exception {
         Feed target = feed("kafka 옛내용");
         drain();
 
         close();
         update(target.getId(), "nginx 새내용");
-        for (int i = 0; i < SearchOutboxWorker.MAX_ATTEMPTS; i++) {
+        for (int i = 0; i < SearchOutboxWorker.MAX_ATTEMPTS + 5; i++) {
             retryNow();
             worker.processBatch();
         }
+        assertThat(jdbc.queryForObject("SELECT max(attempts) FROM search_outbox", Integer.class)).isZero();
         open();
         retryNow();
         drain();
 
-        assertThat(search("nginx", "feed").total()).isZero();
-        assertThat(jdbc.queryForObject("SELECT count(*) FROM search_outbox WHERE processed_at IS NULL", Long.class)).isEqualTo(1);
+        assertThat(search("nginx", "feed").ids()).containsExactly(target.getId().intValue());
     }
 
     @Test
-    @DisplayName("[한계] 정합성 점검은 문서 유무만 비교해서 내용이 뒤처진 문서를 찾지 못한다 → 내용 해시나 수정 시각 비교 필요")
+    @DisplayName("정합성 점검은 내용이 뒤처진 문서도 찾아서 복구한다")
     void reconcileDetectsStaleContent() throws Exception {
         Feed target = feed("kafka 옛내용");
         drain();
         // 대기열 없이 원본만 바뀐 상태(재시도 한도 초과 등)
         jdbc.update("UPDATE feeds SET content = 'nginx 새내용' WHERE id = ?", target.getId());
 
-        reindexService.reconcile();
+        assertThat(reindexService.reconcile().get("FEED")).isEqualTo(1);
         drain();
 
-        assertThat(search("nginx", "feed").total()).isZero();
+        assertThat(search("nginx", "feed").ids()).containsExactly(target.getId().intValue());
     }
 
     @Test
@@ -163,10 +163,9 @@ class SearchRecoveryVerificationTest extends AbstractSearchVerification {
 
         close();
         update(target.getId(), "nginx 새내용");
-        for (int i = 0; i < SearchOutboxWorker.MAX_ATTEMPTS; i++) {
-            retryNow();
-            worker.processBatch();
-        }
+        worker.processBatch();
+        // 문서 자체의 실패로 한도를 넘긴 상태를 만든다
+        jdbc.update("UPDATE search_outbox SET attempts = ?", SearchOutboxWorker.MAX_ATTEMPTS);
         open();
         outbox.retryDead(SearchOutboxWorker.MAX_ATTEMPTS);
         drain();

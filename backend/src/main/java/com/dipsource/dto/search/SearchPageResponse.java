@@ -11,6 +11,7 @@ import java.util.List;
  * @param suggestedQuery 제안하는 검색어. 결과는 원래 검색어 기준 그대로다. 없으면 null(응답에서 빠짐)
  * @param suggestionType 제안 이유(KEYBOARD, TYPO). 없으면 null
  * @param relaxedMatch   모든 단어가 일치하는 결과가 없어서 일부 단어만 일치하는 결과를 보여 줄 때 true. 아니면 null
+ * @param searchId       다음 페이지를 요청할 때 그대로 보내면 같은 순서를 유지한다. PostgreSQL 경로에서는 null
  */
 public record SearchPageResponse<T>(
         List<T> content,
@@ -21,21 +22,22 @@ public record SearchPageResponse<T>(
         String correctedQuery,
         String suggestedQuery,
         SuggestionType suggestionType,
-        Boolean relaxedMatch
+        Boolean relaxedMatch,
+        String searchId
 ) {
 
     public static <T> SearchPageResponse<T> of(PageResponse<T> page) {
         return new SearchPageResponse<>(page.content(), page.page(), page.size(),
-                page.totalElements(), page.totalPages(), null, null, null, null);
+                page.totalElements(), page.totalPages(), null, null, null, null, null);
     }
 
     public static <T> SearchPageResponse<T> corrected(PageResponse<T> page, String correctedQuery) {
         return new SearchPageResponse<>(page.content(), page.page(), page.size(),
-                page.totalElements(), page.totalPages(), correctedQuery, null, null, null);
+                page.totalElements(), page.totalPages(), correctedQuery, null, null, null, null);
     }
 
     public SearchPageResponse<T> withSuggestedQuery(String suggestedQuery) {
         return new SearchPageResponse<>(content, page, size, totalElements, totalPages, correctedQuery, suggestedQuery,
-                suggestionType, relaxedMatch);
+                suggestionType, relaxedMatch, searchId);
     }
 }

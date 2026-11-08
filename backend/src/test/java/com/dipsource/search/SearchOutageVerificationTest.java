@@ -55,7 +55,7 @@ class SearchOutageVerificationTest extends AbstractSearchVerification {
     }
 
     @Test
-    @DisplayName("[한계] 장애 중 총개수에는 차단한 작성자의 글이 포함된다(목록에서는 빠짐) → 대체 경로 SQL에 제외 조건 필요")
+    @DisplayName("장애 중 총개수도 차단·숨김을 뺀 값이다")
     void totalExcludesBlocked() throws Exception {
         long blockedAuthor = user("차단대상", null);
         post(blockedAuthor, "Kafka 차단 글", "본문");
@@ -64,15 +64,26 @@ class SearchOutageVerificationTest extends AbstractSearchVerification {
 
         Page page = search(viewer, "kafka", "post", 0, 20);
         assertThat(page.ids()).hasSize(1);
-        assertThat(page.total()).isEqualTo(2);
+        assertThat(page.total()).isEqualTo(1);
     }
 
     @Test
-    @DisplayName("[한계] 장애로 대체 경로를 타면 한 글자 검색 제한이 적용되지 않는다 → 라우터에서 먼저 검증 필요")
+    @DisplayName("장애 중에도 한 글자 검색 제한이 유지된다")
     void singleCharacterRule() throws Exception {
         post(author, "Kafka 글", "본문");
         search("kafka", "post");
 
-        assertThat(search("a", "post").status()).isEqualTo(200);
+        assertThat(search("a", "post").status()).isEqualTo(400);
+    }
+
+    @Test
+    @DisplayName("장애 중 허용된 한 글자는 부분 문자열로 찾지 않고 빈 결과를 준다")
+    void allowedSingleCharacterIsNotSubstring() throws Exception {
+        post(author, "Kafka 글", "본문 c 포함");
+        search("kafka", "post");
+
+        Page page = search("C", "post");
+        assertThat(page.status()).isEqualTo(200);
+        assertThat(page.total()).isZero();
     }
 }

@@ -9,6 +9,7 @@ import com.dipsource.service.search.suggest.SuggestIndexService.SuggestTerm;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Function;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -30,6 +31,7 @@ public class SearchSuggester {
     /** "ㄱ" → r처럼 짧은 변환은 우연히 사전과 맞을 가능성이 크다 */
     static final int MIN_KEYBOARD_LENGTH = 2;
     static final int MIN_SYLLABLE_KEYBOARD_LENGTH = 4;
+    private static final Set<String> INFLECTION_ENDINGS = Set.of("s", "es", "ed", "d", "ing", "er", "ers", "ly");
 
     private final TechTermDictionary dictionary;
     private final SuggestIndexService suggestIndex;
@@ -90,6 +92,21 @@ public class SearchSuggester {
         return null;
     }
 
+    /**
+     * 오타가 아니라 같은 단어의 다른 형태인지. 입력이 후보에 포함되면(jav → java, token → tokens) 이미 그 말을 쓴 것으로 보고,
+     * 후보가 입력의 앞부분이면 영어 어미(tokens → token)나 한국어 조사가 붙은 경우만 해당한다. reactt → react는 오타로 본다.
+     */
+    private static boolean isVariantOf(String word, String candidate) {
+        if (candidate.contains(word)) {
+            return true;
+        }
+        if (!word.startsWith(candidate)) {
+            return word.contains(candidate);
+        }
+        String ending = word.substring(candidate.length());
+        return INFLECTION_ENDINGS.contains(ending) || ending.codePoints().allMatch(HangulJamo::isSyllable);
+    }
+
     /** 훨씬 자주 쓰이는 단어거나, 쓰임이 비슷해도 사전에 있는 기술 용어면 더 나은 철자로 본다 */
     private boolean isBetterSpelling(SuggestTerm candidate, long ownCount) {
         if (dictionary.contains(candidate.norm())) {
@@ -106,8 +123,7 @@ public class SearchSuggester {
         long ownCount = own == null ? 0 : own.doc_count();
         return suggestIndex.findFuzzy(word, FUZZY_CANDIDATES).stream()
                 .filter(candidate -> !candidate.norm().equals(word))
-                // token → tokens처럼 입력을 포함하는 단어는 오타가 아니라 어형 변화다
-                .filter(candidate -> !candidate.norm().contains(word) && !word.contains(candidate.norm()))
+                .filter(candidate -> !isVariantOf(word, candidate.norm()))
                 .filter(candidate -> isBetterSpelling(candidate, ownCount))
                 .findFirst()
                 .map(SuggestTerm::norm)

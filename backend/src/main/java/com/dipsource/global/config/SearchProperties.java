@@ -66,6 +66,8 @@ public class SearchProperties {
         /** 재정렬 결과를 재사용하는 시간. 페이지를 넘기는 동안 순서가 흔들리지 않게 한다 */
         private Duration windowCacheTtl = Duration.ofSeconds(60);
         private int windowCacheSize = 10_000;
+        /** searchId로 고정한 순서를 쓰지 않고 이만큼 지나면 버린다 */
+        private Duration snapshotIdle = Duration.ofMinutes(10);
         /** 검색어 안의 단어끼리 다른 필드 점수를 얼마나 더할지(dis_max tie_breaker) */
         private float tieBreaker = 0.3f;
         /** 긴 문장 검색(auto)에서 필요한 단어 일치 비율 */

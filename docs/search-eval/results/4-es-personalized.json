@@ -7,8 +7,8 @@
     "mrr" : 1.0,
     "meanNdcg10" : 0.9767,
     "suggestionAccuracy" : 1.0,
-    "latencyMsP50" : 13,
-    "latencyMsMax" : 43
+    "latencyMsP50" : 14,
+    "latencyMsMax" : 78
   },
   "byCategory" : {
     "-" : {

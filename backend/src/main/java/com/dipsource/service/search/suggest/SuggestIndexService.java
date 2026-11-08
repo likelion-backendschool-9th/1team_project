@@ -2,10 +2,13 @@ package com.dipsource.service.search.suggest;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.SortOrder;
+import co.elastic.clients.elasticsearch._types.query_dsl.Operator;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch.core.BulkRequest;
 import co.elastic.clients.elasticsearch.core.GetResponse;
+import co.elastic.clients.elasticsearch.core.MsearchResponse;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
+import co.elastic.clients.elasticsearch.core.msearch.MultiSearchResponseItem;
 import com.dipsource.global.config.SearchProperties;
 import com.dipsource.service.search.query.TechTermDictionary;
 import com.dipsource.service.search.query.TextNormalizer;
@@ -13,9 +16,12 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.io.IOException;
 import java.io.StringReader;
 import java.io.UncheckedIOException;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -189,6 +195,41 @@ public class SuggestIndexService {
                 .must(m -> m.match(t -> t.field("prefix").query(normalizedPrefix)))
                 .filter(f -> f.term(t -> t.field("source").value(Source.DICT.name())))));
         return search(query, limit);
+    }
+
+    /**
+     * 공개 글·데모의 제목에 지금도 있는 단어만 돌려준다. 사전은 주기적으로 만들지만 글 색인은 몇 초 안에 반영되므로
+     * 삭제·비공개된 글의 제목 단어가 자동완성에 남지 않게 한다.
+     */
+    public Set<String> findLiveTitleWords(Collection<String> normalizedWords) {
+        if (normalizedWords.isEmpty()) {
+            return Set.of();
+        }
+        List<String> words = List.copyOf(normalizedWords);
+        String prefix = properties.getElasticsearch().getIndexPrefix();
+        List<String> indices = List.of(prefix + "_post", prefix + "_demo");
+        try {
+            MsearchResponse<Void> response = client.msearch(m -> {
+                words.forEach(word -> m.searches(s -> s
+                        .header(h -> h.index(indices))
+                        .body(b -> b.size(0).terminateAfter(1L)
+                                .query(q -> q.match(t -> t.field("title").query(word).operator(Operator.And))))));
+                return m;
+            }, Void.class);
+            Set<String> live = new HashSet<>();
+            for (int i = 0; i < words.size(); i++) {
+                MultiSearchResponseItem<Void> item = response.responses().get(i);
+                if (item.isFailure()) {
+                    throw new IllegalStateException("자동완성 단어 확인 실패: " + item.failure().error().reason());
+                }
+                if (item.result().hits().total() != null && item.result().hits().total().value() > 0) {
+                    live.add(words.get(i));
+                }
+            }
+            return live;
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 
     public SuggestTerm lookup(String normalized) {

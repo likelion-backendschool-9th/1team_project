@@ -428,6 +428,25 @@ class ElasticsearchSearchTest {
         }
 
         @Test
+        @DisplayName("글자가 하나 더 붙은 오타는 짧은 단어를 제안한다")
+        void repeatedLetterTypo() throws Exception {
+            post("React 입문", "내용", "ACTIVE");
+            reindex();
+
+            search("reactt").andExpect(jsonPath("$.data.suggestedQuery").value("react"));
+        }
+
+        @Test
+        @DisplayName("복수형은 단수형으로 고치지 않는다")
+        void pluralIsNotTypo() throws Exception {
+            post("token 이야기", "내용", "ACTIVE");
+            post("token 정리", "내용", "ACTIVE");
+            reindex();
+
+            search("tokens").andExpect(jsonPath("$.data.suggestedQuery").doesNotExist());
+        }
+
+        @Test
         @DisplayName("어형 변화는 오타로 제안하지 않는다")
         void inflectionIsNotTypo() throws Exception {
             post("tokens 이야기", "내용", "ACTIVE");
