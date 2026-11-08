@@ -69,18 +69,18 @@ class FeedBookmarkApiTest {
     @Test
     @DisplayName("비로그인은 401")
     void unauthenticated() throws Exception {
-        mockMvc.perform(post("/api/v1/feeds/{id}/bookmark", feed.getId()))
+        mockMvc.perform(post("/feeds/{id}/bookmark", feed.getId()))
                 .andExpect(status().isUnauthorized());
-        mockMvc.perform(delete("/api/v1/feeds/{id}/bookmark", feed.getId()))
+        mockMvc.perform(delete("/feeds/{id}/bookmark", feed.getId()))
                 .andExpect(status().isUnauthorized());
     }
 
     @Test
     @DisplayName("북마크 → 재요청해도 한 줄만 유지 (멱등)")
     void bookmarkIdempotent() throws Exception {
-        mockMvc.perform(post("/api/v1/feeds/{id}/bookmark", feed.getId()).with(authentication(auth(reader))))
+        mockMvc.perform(post("/feeds/{id}/bookmark", feed.getId()).with(authentication(auth(reader))))
                 .andExpect(status().isNoContent());
-        mockMvc.perform(post("/api/v1/feeds/{id}/bookmark", feed.getId()).with(authentication(auth(reader))))
+        mockMvc.perform(post("/feeds/{id}/bookmark", feed.getId()).with(authentication(auth(reader))))
                 .andExpect(status().isNoContent());
 
         assertThat(feedBookmarkRepository.existsById(new FeedUserId(reader.getId(), feed.getId()))).isTrue();
@@ -90,12 +90,12 @@ class FeedBookmarkApiTest {
     @Test
     @DisplayName("북마크 취소 → 재취소해도 없음 유지")
     void unbookmarkIdempotent() throws Exception {
-        mockMvc.perform(post("/api/v1/feeds/{id}/bookmark", feed.getId()).with(authentication(auth(reader))))
+        mockMvc.perform(post("/feeds/{id}/bookmark", feed.getId()).with(authentication(auth(reader))))
                 .andExpect(status().isNoContent());
 
-        mockMvc.perform(delete("/api/v1/feeds/{id}/bookmark", feed.getId()).with(authentication(auth(reader))))
+        mockMvc.perform(delete("/feeds/{id}/bookmark", feed.getId()).with(authentication(auth(reader))))
                 .andExpect(status().isNoContent());
-        mockMvc.perform(delete("/api/v1/feeds/{id}/bookmark", feed.getId()).with(authentication(auth(reader))))
+        mockMvc.perform(delete("/feeds/{id}/bookmark", feed.getId()).with(authentication(auth(reader))))
                 .andExpect(status().isNoContent());
 
         assertThat(feedBookmarkRepository.existsById(new FeedUserId(reader.getId(), feed.getId()))).isFalse();
@@ -104,14 +104,14 @@ class FeedBookmarkApiTest {
     @Test
     @DisplayName("없는 피드는 404")
     void missingFeed() throws Exception {
-        mockMvc.perform(post("/api/v1/feeds/{id}/bookmark", 999_999L).with(authentication(auth(reader))))
+        mockMvc.perform(post("/feeds/{id}/bookmark", 999_999L).with(authentication(auth(reader))))
                 .andExpect(status().isNotFound());
     }
 
     @Test
     @DisplayName("쿼리 userId로는 남을 대신 북마크할 수 없다")
     void ignoresQueryUserId() throws Exception {
-        mockMvc.perform(post("/api/v1/feeds/{id}/bookmark", feed.getId())
+        mockMvc.perform(post("/feeds/{id}/bookmark", feed.getId())
                         .param("userId", String.valueOf(author.getId()))
                         .with(authentication(auth(reader))))
                 .andExpect(status().isNoContent());

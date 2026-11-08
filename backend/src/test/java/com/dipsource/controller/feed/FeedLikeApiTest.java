@@ -69,18 +69,18 @@ class FeedLikeApiTest {
     @Test
     @DisplayName("비로그인은 401")
     void unauthenticated() throws Exception {
-        mockMvc.perform(post("/api/v1/feeds/{id}/like", feed.getId()))
+        mockMvc.perform(post("/feeds/{id}/like", feed.getId()))
                 .andExpect(status().isUnauthorized());
-        mockMvc.perform(delete("/api/v1/feeds/{id}/like", feed.getId()))
+        mockMvc.perform(delete("/feeds/{id}/like", feed.getId()))
                 .andExpect(status().isUnauthorized());
     }
 
     @Test
     @DisplayName("좋아요 → 카운트 +1, 재요청해도 +1만 유지 (멱등)")
     void likeIdempotent() throws Exception {
-        mockMvc.perform(post("/api/v1/feeds/{id}/like", feed.getId()).with(authentication(auth(liker))))
+        mockMvc.perform(post("/feeds/{id}/like", feed.getId()).with(authentication(auth(liker))))
                 .andExpect(status().isNoContent());
-        mockMvc.perform(post("/api/v1/feeds/{id}/like", feed.getId()).with(authentication(auth(liker))))
+        mockMvc.perform(post("/feeds/{id}/like", feed.getId()).with(authentication(auth(liker))))
                 .andExpect(status().isNoContent());
 
         assertThat(feedLikeRepository.existsById(new FeedUserId(liker.getId(), feed.getId()))).isTrue();
@@ -90,12 +90,12 @@ class FeedLikeApiTest {
     @Test
     @DisplayName("좋아요 취소 → 카운트 0, 재취소해도 0 유지")
     void unlikeIdempotent() throws Exception {
-        mockMvc.perform(post("/api/v1/feeds/{id}/like", feed.getId()).with(authentication(auth(liker))))
+        mockMvc.perform(post("/feeds/{id}/like", feed.getId()).with(authentication(auth(liker))))
                 .andExpect(status().isNoContent());
 
-        mockMvc.perform(delete("/api/v1/feeds/{id}/like", feed.getId()).with(authentication(auth(liker))))
+        mockMvc.perform(delete("/feeds/{id}/like", feed.getId()).with(authentication(auth(liker))))
                 .andExpect(status().isNoContent());
-        mockMvc.perform(delete("/api/v1/feeds/{id}/like", feed.getId()).with(authentication(auth(liker))))
+        mockMvc.perform(delete("/feeds/{id}/like", feed.getId()).with(authentication(auth(liker))))
                 .andExpect(status().isNoContent());
 
         assertThat(feedLikeRepository.existsById(new FeedUserId(liker.getId(), feed.getId()))).isFalse();
@@ -105,14 +105,14 @@ class FeedLikeApiTest {
     @Test
     @DisplayName("없는 피드는 404")
     void missingFeed() throws Exception {
-        mockMvc.perform(post("/api/v1/feeds/{id}/like", 999_999L).with(authentication(auth(liker))))
+        mockMvc.perform(post("/feeds/{id}/like", 999_999L).with(authentication(auth(liker))))
                 .andExpect(status().isNotFound());
     }
 
     @Test
     @DisplayName("쿼리 userId로는 남을 대신 좋아요할 수 없다 — JWT 사용자만 적용")
     void ignoresQueryUserId() throws Exception {
-        mockMvc.perform(post("/api/v1/feeds/{id}/like", feed.getId())
+        mockMvc.perform(post("/feeds/{id}/like", feed.getId())
                         .param("userId", String.valueOf(author.getId()))
                         .with(authentication(auth(liker))))
                 .andExpect(status().isNoContent());
