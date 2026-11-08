@@ -27,15 +27,6 @@ public interface PostCommentRepository extends JpaRepository<PostComment, Long> 
             @Param("cursor") Long cursor,
             @Param("size") int size);
 
-    /** 특정 댓글의 대댓글 목록 (삭제 안 된 것, 오래된 순) */
-    @Query(value = """
-            SELECT * FROM post_comments
-            WHERE parent_id = :parentId
-              AND deleted_at IS NULL
-            ORDER BY id ASC
-            """, nativeQuery = true)
-    List<PostComment> findReplies(@Param("parentId") Long parentId);
-
     /** 여러 부모 댓글의 대댓글을 한 번에 조회 (N+1 방지) */
     @Query(value = """
             SELECT * FROM post_comments
