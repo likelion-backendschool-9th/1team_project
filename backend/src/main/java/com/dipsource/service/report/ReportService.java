@@ -26,11 +26,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * 신고 비즈니스 로직.
+ * 신고 비즈니스 로직
  *
- * <p>신고 시점의 콘텐츠를 {@code contentSnapshot}으로 DB에 보존한다.
- * 나중에 대상이 삭제되어도 운영진이 내용을 확인할 수 있다.
- * 단, 비밀 방명록은 신고자에게 내용이 새지 않도록 스냅샷을 저장하되 응답에는 포함하지 않는다.
+ * <p>신고 시점의 콘텐츠를 {@code contentSnapshot}으로 DB에 보존
+ * 나중에 대상이 삭제되어도 운영진이 내용을 확인 가능
+ * 단, 비밀 방명록은 신고자에게 내용이 새지 않도록 스냅샷을 저장하되 응답에는 미포함
  *
  * <p>지원 대상 타입: FEED, POST, DEMO, FEED_COMMENT, GUESTBOOK, USER
  */
@@ -46,12 +46,12 @@ public class ReportService {
     private final GuestbookRepository guestbookRepository;
     private final UserRepository userRepository;
 
-    // 컨트롤러에서 넘어오는 targetType 허용 목록. 여기에 없으면 400 반환.
+    // 컨트롤러에서 넘어오는 targetType 허용 목록 — 여기에 없으면 400
     private static final List<String> ALLOWED_TARGET_TYPES =
             List.of("FEED", "POST", "DEMO", "FEED_COMMENT", "GUESTBOOK", "USER");
 
     /**
-     * 피드·블로그·데모·피드 댓글·유저 신고를 생성한다.
+     * 피드·블로그·데모·피드 댓글·유저 신고 생성
      *
      * @param reporterId 신고자 ID (JWT에서 추출)
      * @param targetType 신고 대상 종류 (FEED / POST / DEMO / FEED_COMMENT / USER)
@@ -86,15 +86,15 @@ public class ReportService {
     }
 
     /**
-     * 방명록 신고를 생성한다.
+     * 방명록 신고 생성
      *
      * <p>방명록은 URL 경로에 미니홈피 주인 ID({@code homeUserId})가 포함되므로,
-     * 해당 방명록이 실제로 그 미니홈피에 속하는지 별도로 검증한다.
-     * 비밀 방명록은 운영진을 위해 DB에는 스냅샷을 저장하지만, 신고자에게는 내용을 반환하지 않는다.
+     * 해당 방명록이 실제로 그 미니홈피에 속하는지 별도로 검증
+     * 비밀 방명록은 운영진을 위해 DB에는 스냅샷을 저장하지만, 신고자에게는 내용 미반환
      *
      * @param reporterId   신고자 ID (JWT에서 추출)
      * @param guestbookId  신고 대상 방명록 ID
-     * @param homeUserId   URL 경로의 미니홈피 주인 ID. 방명록 소속 검증에 사용.
+     * @param homeUserId   URL 경로의 미니홈피 주인 ID — 방명록 소속 검증에 사용
      * @param reason       신고 사유
      * @return 생성된 신고 응답
      * @throws BusinessException 400 — 본인 방명록 신고, 미니홈피 불일치
@@ -117,7 +117,7 @@ public class ReportService {
             throw new BusinessException(ErrorCode.BAD_REQUEST, "본인의 방명록은 신고할 수 없습니다");
         }
 
-        // 비밀 방명록은 운영진을 위해 DB에 저장하되, 신고자에게는 내용을 노출하지 않는다
+        // 비밀 방명록은 운영진을 위해 DB에 저장하되, 신고자에게는 내용 미노출
         String contentSnapshot = guestbook.isSecret() ? null : guestbook.getContent();
 
         return saveReport(reporterId, "GUESTBOOK", guestbookId, reason, contentSnapshot, null);
@@ -126,8 +126,8 @@ public class ReportService {
     // ── private 헬퍼 ──────────────────────────────────────────────────────────
 
     /**
-     * targetType이 허용 목록에 있는지 검증한다.
-     * GUESTBOOK은 {@link #createGuestbookReport}로만 처리하므로 여기서는 거부한다.
+     * targetType이 허용 목록에 있는지 검증
+     * GUESTBOOK은 {@link #createGuestbookReport}로만 처리하므로 여기서는 거부
      */
     private void validateTargetType(String targetType) {
         if (!ALLOWED_TARGET_TYPES.contains(targetType)) {
@@ -138,7 +138,7 @@ public class ReportService {
         }
     }
 
-    /** 같은 (신고자, 대상 타입, 대상 ID) 조합이 이미 존재하면 409 를 던진다. */
+    /** 같은 (신고자, 대상 타입, 대상 ID) 조합이 이미 존재하면 409 */
     private void checkDuplicate(Long reporterId, String targetType, Long targetId) {
         if (reportRepository.existsByReporterIdAndTargetTypeAndTargetId(reporterId, targetType, targetId)) {
             throw new BusinessException(ErrorCode.CONFLICT, "이미 신고한 대상입니다");
@@ -146,8 +146,8 @@ public class ReportService {
     }
 
     /**
-     * 피드 존재·활성 상태·본인 여부를 확인하고 피드 엔티티를 반환한다.
-     * 스냅샷(content, imageUrls)은 호출부에서 추출한다.
+     * 피드 존재·활성 상태·본인 여부 확인 후 엔티티 반환
+     * 스냅샷(content, imageUrls)은 호출부에서 추출
      */
     private Feed validateFeed(Long feedId, Long reporterId) {
         Feed feed = feedRepository.findById(feedId)
@@ -159,7 +159,7 @@ public class ReportService {
         return feed;
     }
 
-    /** 블로그 글 존재·활성 상태·본인 여부를 확인한다. */
+    /** 블로그 글 존재·활성 상태·본인 여부 확인 */
     private void validatePost(Long postId, Long reporterId) {
         Post post = postRepository.findById(postId)
                 .filter(p -> p.getStatus() == PostStatus.ACTIVE)
@@ -169,7 +169,7 @@ public class ReportService {
         }
     }
 
-    /** 데모 존재·활성 상태·본인 여부를 확인한다. */
+    /** 데모 존재·활성 상태·본인 여부 확인 */
     private void validateDemo(Long demoId, Long reporterId) {
         Demo demo = demoRepository.findById(demoId)
                 .filter(d -> d.getStatus() == DemoStatus.ACTIVE)
@@ -180,7 +180,7 @@ public class ReportService {
     }
 
     /**
-     * 피드 댓글 존재·삭제 여부·본인 여부를 확인하고 댓글 내용을 반환한다.
+     * 피드 댓글 존재·삭제 여부·본인 여부 확인 후 댓글 내용 반환
      *
      * @return 스냅샷으로 저장할 댓글 내용
      */
@@ -194,7 +194,7 @@ public class ReportService {
         return comment.getContent();
     }
 
-    /** 유저 존재·본인 여부를 확인한다. */
+    /** 유저 존재·본인 여부 확인 */
     private void validateUser(Long targetId, Long reporterId) {
         User target = userRepository.findById(targetId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "신고 대상 유저를 찾을 수 없습니다"));
@@ -203,7 +203,7 @@ public class ReportService {
         }
     }
 
-    /** Report 엔티티를 저장하고 응답 DTO를 반환한다. */
+    /** Report 엔티티 저장 후 응답 DTO 반환 */
     private ReportResponse saveReport(
             Long reporterId, String targetType, Long targetId,
             String reason, String contentSnapshot, List<String> imageSnapshotUrls) {

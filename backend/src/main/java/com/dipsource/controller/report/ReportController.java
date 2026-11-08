@@ -16,10 +16,10 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * 신고 컨트롤러.
+ * 신고 컨트롤러
  *
- * <p>모든 엔드포인트는 로그인 필수이며 201 Created를 반환한다.
- * 신고자 ID는 JWT에서 추출하므로 요청 본문에 포함하지 않는다.
+ * <p>모든 엔드포인트는 로그인 필수, 201 Created 반환
+ * 신고자 ID는 JWT에서 추출 — 요청 본문에 포함하지 않음
  *
  * <pre>
  * POST /feeds/{feedId}/report
@@ -81,11 +81,10 @@ public class ReportController {
     }
 
     /**
-     * 방명록 신고.
+     * 방명록 신고
      *
-     * <p>{@code homeUserId}는 방명록이 올바른 미니홈피에 속하는지 검증하는 데 사용된다.
-     * 예를 들어 {@code /mini-homes/5/guestbook/42/report}로 요청하면,
-     * 42번 방명록의 미니홈피 주인이 실제로 5번 유저인지 확인한다.
+     * <p>{@code homeUserId}는 방명록이 올바른 미니홈피에 속하는지 검증에 사용
+     * 예) /mini-homes/5/guestbook/42/report → 42번 방명록의 미니홈피 주인이 실제로 5번 유저인지 확인
      */
     @PostMapping("/mini-homes/{homeUserId}/guestbook/{guestbookId}/report")
     public ResponseEntity<ApiResponse<ReportResponse>> reportGuestbook(
