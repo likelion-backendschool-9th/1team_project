@@ -44,7 +44,6 @@ import org.springframework.transaction.support.TransactionTemplate;
         "search.elasticsearch.bootstrap-on-empty=false",
         "search.engine=elasticsearch",
         "search.fallback-to-postgres=false",
-        "search.ranking.window-cache-ttl=0s",
         "search.sync.poll-interval=PT1H"
 })
 class SearchSyncTest {

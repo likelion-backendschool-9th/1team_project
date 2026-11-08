@@ -188,8 +188,11 @@ public class SearchIndexManager {
         actions.add(co.elastic.clients.elasticsearch.indices.update_aliases.Action.of(
                 a -> a.add(add -> add.index(newIndex).alias(alias))));
         client.indices().updateAliases(u -> u.actions(actions));
-        for (String old : previous) {
-            client.indices().delete(d -> d.index(old));
+        // 이전 버전과, 재색인이 중간에 끊겨 Alias 없이 남은 인덱스를 함께 지운다
+        for (String old : client.indices().get(g -> g.index(alias + "_*")).result().keySet()) {
+            if (!old.equals(newIndex)) {
+                client.indices().delete(d -> d.index(old));
+            }
         }
     }
 

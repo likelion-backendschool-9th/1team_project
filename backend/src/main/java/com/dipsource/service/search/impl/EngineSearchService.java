@@ -181,7 +181,7 @@ public class EngineSearchService implements SearchService {
             return new RankedPage(visibleIds(type, result.hits()), result.total());
         }
 
-        RankedWindow ranked = window(type, parsed, operator, viewerId, hidden, blocked);
+        RankedWindow ranked = window(type, parsed, operator, viewerId, hidden, blocked, offset == 0);
         List<Long> ids = new ArrayList<>();
         if (offset < ranked.ids().size()) {
             ids.addAll(ranked.ids().subList(offset, Math.min(offset + size, ranked.ids().size())));
@@ -198,9 +198,15 @@ public class EngineSearchService implements SearchService {
     }
 
     private RankedWindow window(SearchType type, ParsedQuery parsed, SearchOperator operator, Long viewerId,
-                                Set<Long> hidden, Set<Long> blocked) {
+                                Set<Long> hidden, Set<Long> blocked, boolean firstPage) {
         String key = String.join("|", viewerKey(viewerId), type.name(), operator.name(), parsed.phrase(),
                 String.join(",", parsed.hashtags()));
+        if (firstPage) {
+            // 새 검색은 항상 최신 결과로 시작한다. 캐시는 이어지는 페이지가 같은 순서를 보도록 할 때만 쓴다
+            RankedWindow fresh = computeWindow(type, parsed, operator, viewerId, hidden, blocked);
+            windowCache.put(key, fresh);
+            return fresh;
+        }
         return windowCache.get(key, ignored -> computeWindow(type, parsed, operator, viewerId, hidden, blocked));
     }
 
