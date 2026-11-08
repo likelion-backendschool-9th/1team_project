@@ -5,6 +5,7 @@ import { LinkTabs } from "@/app/_components/ui/LinkTabs";
 import { getMe } from "@/app/(user)/_lib/api";
 import { getPopularKeywords, search, type SearchResult, type SearchSort, type SearchType } from "../_lib/api";
 import { SearchResults } from "./SearchResults";
+import { SearchSortSelect } from "./SearchSortSelect";
 import styles from "./SearchContent.module.css";
 
 type Props = {
@@ -121,23 +122,7 @@ export async function SearchContent({ searchParams }: Props) {
           count: type === "all" || item.value === type ? countOf(result, item.value) : undefined,
         }))}
       />
-      <form action="/search" method="get" className={styles.sortForm}>
-        <input type="hidden" name="q" value={q} />
-        {type !== "all" && <input type="hidden" name="type" value={type} />}
-        <label htmlFor="search-sort" className={kit.label}>
-          정렬
-        </label>
-        <select id="search-sort" name="sort" defaultValue={sort} className={`${kit.select} ${styles.sortSelect}`}>
-          {sorts.map((item) => (
-            <option key={item.value} value={item.value}>
-              {item.label}
-            </option>
-          ))}
-        </select>
-        <button type="submit" className={kit.btn}>
-          적용
-        </button>
-      </form>
+      <SearchSortSelect value={sort} options={sorts.map((item) => ({ ...item, href: href(q, type, item.value) }))} />
       {total === 0 && (
         <p className={kit.empty}>
           검색 결과가 없어요. 다른 키워드로 찾아보세요.
