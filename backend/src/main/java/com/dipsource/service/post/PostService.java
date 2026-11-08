@@ -19,7 +19,10 @@ public interface PostService {
     /** 한 회원의 블로그 글 목록 (최신순). 삭제한 글은 빠진다 */
     PageResponse<PostSummaryResponse> getUserPosts(Long userId, Long viewerId, Pageable pageable);
 
-    /** 글 상세. 조회수를 올린다(작성자 본인 제외). 잠긴 유료 글이면 앞부분만 준다. viewerId는 비로그인이면 null */
+    /**
+     * 글 상세. 조회수를 올린다(작성자 본인 제외, 로그인 회원은 같은 글을 한 시간에 한 번만).
+     * 잠긴 유료 글이면 앞부분만 준다. viewerId는 비로그인이면 null
+     */
     PostDetailResponse getPost(Long postId, Long viewerId);
 
     PostIdResponse create(Long userId, WritePostRequest request);

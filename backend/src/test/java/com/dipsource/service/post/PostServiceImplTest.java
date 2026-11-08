@@ -28,6 +28,7 @@ import com.dipsource.repository.post.PostRepository;
 import com.dipsource.repository.post.PostTagRepository;
 import com.dipsource.repository.tag.TagRepository;
 import com.dipsource.service.post.impl.PostServiceImpl;
+import com.dipsource.service.post.impl.PostViewCounter;
 import com.dipsource.service.user.UserService;
 import java.util.EnumSet;
 import java.util.List;
@@ -65,7 +66,7 @@ class PostServiceImplTest {
     @BeforeEach
     void setUp() {
         service = new PostServiceImpl(postRepository, postTagRepository, postLikeRepository, postPurchaseRepository,
-                blogSubscriptionRepository, tagRepository, userService);
+                blogSubscriptionRepository, tagRepository, userService, new PostViewCounter());
     }
 
     @Nested
@@ -202,6 +203,26 @@ class PostServiceImplTest {
             assertThat(detail.purchased()).isTrue();
             assertThat(detail.content()).contains("넷째 문단");
             verify(postRepository, never()).incrementViewCount(anyLong());
+        }
+
+        @Test
+        void memberViewIsCountedOncePerWindow() {
+            stubDetail(post(AUTHOR, 0));
+
+            service.getPost(10L, OTHER);
+            service.getPost(10L, OTHER);
+
+            verify(postRepository, times(1)).incrementViewCount(10L);
+        }
+
+        @Test
+        void guestViewIsCountedEveryTime() {
+            stubDetail(post(AUTHOR, 0));
+
+            service.getPost(10L, null);
+            service.getPost(10L, null);
+
+            verify(postRepository, times(2)).incrementViewCount(10L);
         }
 
         private void stubDetail(Post post) {

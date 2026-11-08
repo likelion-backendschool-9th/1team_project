@@ -62,6 +62,7 @@ public class PostServiceImpl implements PostService {
     private final BlogSubscriptionRepository blogSubscriptionRepository;
     private final TagRepository tagRepository;
     private final UserService userService;
+    private final PostViewCounter postViewCounter;
 
     @Override
     @Transactional(readOnly = true)
@@ -89,7 +90,8 @@ public class PostServiceImpl implements PostService {
     public PostDetailResponse getPost(Long postId, Long viewerId) {
         Post post = findActive(postId);
         boolean mine = post.getUserId().equals(viewerId);
-        if (!mine) {
+        // 작성자 본인은 세지 않고, 로그인 회원은 같은 글을 한 시간에 한 번만 센다.
+        if (!mine && postViewCounter.shouldCount(postId, viewerId)) {
             postRepository.incrementViewCount(postId);
             post = findActive(postId); // 올라간 조회수로 다시 읽는다
         }
