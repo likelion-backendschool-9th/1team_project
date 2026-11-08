@@ -84,7 +84,8 @@ export async function deletePost(postId: number) {
 
 export async function reportPost(postId: number) {
   if (!isId(postId)) return { ok: false, message: "잘못된 요청이에요." };
-  return mutate(`/api/v1/posts/${postId}/report`, "POST", { reason: "기타" }, "신고를 접수했어요.");
+  // 신고 API는 백엔드에 있어서 MOCK_EXCEPT_DM이어도 실서버를 쓴다.
+  return mutate(`/api/v1/posts/${postId}/report`, "POST", { reason: "기타" }, "신고를 접수했어요.", !hasBackend);
 }
 
 // 칩 사용 API는 아직 정해지지 않았다 (프론트엔드-청사진 11장).
