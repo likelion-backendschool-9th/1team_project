@@ -59,5 +59,21 @@ dependencies {
 }
 
 tasks.named('test') {
-    useJUnitPlatform()
+    useJUnitPlatform {
+        excludeTags 'search-eval'
+    }
+}
+
+// 검색 품질 평가. 결과는 docs/search-eval/results/에 남는다: ./gradlew searchEval
+tasks.register('searchEval', Test) {
+    description = '고정 평가셋으로 검색 품질(MRR, NDCG@10)을 측정한다'
+    group = 'verification'
+    testClassesDirs = sourceSets.test.output.classesDirs
+    classpath = sourceSets.test.runtimeClasspath
+    useJUnitPlatform {
+        includeTags 'search-eval'
+    }
+    systemProperty 'search.eval.output', "${rootDir}/../docs/search-eval/results"
+    outputs.upToDateWhen { false }
+    testLogging.showStandardStreams = true
 }
