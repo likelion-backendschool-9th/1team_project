@@ -17,6 +17,9 @@ public interface MiniHomeService {
     /** 공개 중인 데모를 대표(1번 칸)로 올린다. */
     MiniHomeResponse updateFeaturedDemo(Long userId, Long demoId);
 
+    /** 대표 글(제작기 글)을 바꾼다. postId가 null이면 연결을 끊는다. */
+    MiniHomeResponse updateFeaturedPost(Long userId, Long postId);
+
     /** 방문자 수. 없는 회원이면 예외. 홈이 없으면 0. */
     VisitorStatsResponse getVisitors(Long userId);
 

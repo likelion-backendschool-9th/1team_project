@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import kit from "@/app/_components/ui/kit.module.css";
 import { getMe } from "@/app/(user)/_lib/api";
-import { getDemos, getProfile } from "../../_lib/api";
+import { getDemos, getMyPosts, getProfile } from "../../_lib/api";
 import { parseUserId } from "../../_lib/parse";
 import { EditForm } from "./EditForm";
 
@@ -17,7 +17,7 @@ export async function EditContent({ params }: Props) {
   const profile = userId ? await getProfile(userId) : null;
   if (!userId || !profile) notFound();
 
-  const [me, demos] = await Promise.all([getMe(), getDemos(userId, 20)]);
+  const [me, demos, posts] = await Promise.all([getMe(), getDemos(userId, 20), getMyPosts(userId)]);
 
   if (!me) notFound();
   if (me.id !== userId)
@@ -33,5 +33,5 @@ export async function EditContent({ params }: Props) {
       </section>
     );
 
-  return <EditForm profile={profile} demos={demos} />;
+  return <EditForm profile={profile} demos={demos} posts={posts} />;
 }

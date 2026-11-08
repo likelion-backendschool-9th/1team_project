@@ -133,9 +133,10 @@
 | 6.11 | 방명록 목록 | /mini-home/[userId]/guestbook | GET | mini-homes/{userId}/guestbook | 비밀글은 작성자·주인만 내용 |
 | 6.12 | 방명록 작성 | /mini-home/[userId]/guestbook | POST | mini-homes/{userId}/guestbook | 500자. 여러 번 가능 |
 | 6.13 | 방명록 삭제 | /mini-home/[userId]/guestbook | DELETE | mini-homes/guestbook/{guestbookId} | 작성자 본인 또는 미니홈피 주인 삭제 가능 |
-| 6.14 | 미니홈피 수정 (본인만) | /mini-home/[userId]/edit | PUT | mini-homes/me | stackTags 저장. featuredPostId는 요청으로 바꾸지 않음 |
+| 6.14 | 미니홈피 수정 (본인만) | /mini-home/[userId]/edit | PUT | mini-homes/me | stackTags 저장. 대표 글은 6.17로 설정 |
 | 6.15 | 대표 데모 설정 | /mini-home/[userId]/edit | PUT | mini-homes/me/featured-demo | |
 | 6.16 | 사용자 데모 목록 | /mini-home/[userId]/demos | GET | demos?userId={userId} | 데모 목록(7.2) API 재사용 |
+| 6.17 | 대표 글(제작기 글) 설정 | /mini-home/[userId]/edit | PUT | mini-homes/me/featured-post | 본인의 게시 중인 블로그 글만. postId가 null이면 해제. 글이 삭제·숨김되면 조회 시 자동 해제 |
 
 ---
 
