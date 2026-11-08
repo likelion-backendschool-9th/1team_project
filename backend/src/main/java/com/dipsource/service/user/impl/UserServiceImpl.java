@@ -49,7 +49,7 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional(readOnly = true)
     public UserMeResponse getMe(Long userId) {
-        return UserMeResponse.from(getUser(userId));
+        return toMeResponse(getUser(userId));
     }
 
     @Override
@@ -102,7 +102,15 @@ public class UserServiceImpl implements UserService {
             userInterestTagRepository.save(new UserInterestTag(user, tag.getId()));
         }
 
-        return UserMeResponse.from(user);
+        return toMeResponse(user);
+    }
+
+    /** 내 정보 응답. 팔로워·팔로잉 수는 팔로우 목록과 같은 기준(활동 중인 회원만)으로 센다. */
+    private UserMeResponse toMeResponse(User user) {
+        return UserMeResponse.from(
+                user,
+                followRepository.countFollowers(user.getId(), UserStatus.ACTIVE),
+                followRepository.countFollowings(user.getId(), UserStatus.ACTIVE));
     }
 
     @Override 

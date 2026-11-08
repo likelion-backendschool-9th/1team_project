@@ -62,6 +62,20 @@ public interface FollowRepository extends JpaRepository<Follow, FollowId> {
             @Param("nicknamePattern") String nicknamePattern,
             Pageable pageable);
 
+    /** 나를 팔로우하는 사람 수 (해당 상태의 회원만. 팔로워 목록 전체 수와 같은 기준) */
+    @Query("""
+            SELECT COUNT(f) FROM Follow f JOIN User u ON u.id = f.id.followerId
+            WHERE f.id.followingId = :userId AND u.status = :status
+            """)
+    long countFollowers(@Param("userId") Long userId, @Param("status") UserStatus status);
+
+    /** 내가 팔로우하는 사람 수 (해당 상태의 회원만. 팔로잉 목록 전체 수와 같은 기준) */
+    @Query("""
+            SELECT COUNT(f) FROM Follow f JOIN User u ON u.id = f.id.followingId
+            WHERE f.id.followerId = :userId AND u.status = :status
+            """)
+    long countFollowings(@Param("userId") Long userId, @Param("status") UserStatus status);
+
     /** targetIds 가운데 내가 팔로우 중인 회원 ID */
     @Query("SELECT f.id.followingId FROM Follow f WHERE f.id.followerId = :userId AND f.id.followingId IN :targetIds")
     List<Long> findFollowingIdsIn(@Param("userId") Long userId, @Param("targetIds") Collection<Long> targetIds);

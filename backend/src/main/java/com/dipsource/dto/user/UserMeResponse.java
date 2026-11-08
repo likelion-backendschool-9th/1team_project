@@ -20,7 +20,11 @@ public record UserMeResponse(
         int followingCount,
         int chipBalance
 ) {
-    public static UserMeResponse from(User user) {
+    /**
+     * @param followerCount  나를 팔로우하는 활동 회원 수
+     * @param followingCount 내가 팔로우하는 활동 회원 수
+     */
+    public static UserMeResponse from(User user, long followerCount, long followingCount) {
         return new UserMeResponse(
                 user.getId(),
                 user.getNickname(),
@@ -33,8 +37,8 @@ public record UserMeResponse(
                 List.of(),   // badges — 아직 미구현
                 false,       // plus
                 null,        // company
-                0,           // followerCount — 추후 팔로우 테이블에서 조회
-                0,           // followingCount
+                Math.toIntExact(followerCount),
+                Math.toIntExact(followingCount),
                 0            // chipBalance
         );
     }
