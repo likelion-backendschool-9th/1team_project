@@ -65,10 +65,19 @@ class SearchSingleCharTest extends AbstractSearchVerification {
 
     @ParameterizedTest(name = "q={0}")
     @ValueSource(strings = {"K", "B", "X", "a", "스", "뷰", "F"})
-    @DisplayName("허용 목록에 없는 한 글자는 거절한다")
-    void rejected(String q) throws Exception {
+    @DisplayName("허용 목록에 없는 한 글자도 일반 검색으로 처리한다")
+    void otherSingleCharacters(String q) throws Exception {
         reindex();
-        assertThat(search(q, "post").status()).isEqualTo(400);
+        assertThat(search(q, "post").status()).isEqualTo(200);
+    }
+
+    @Test
+    @DisplayName("허용 목록에 없는 한 글자는 결과가 없으면 그 글자로 시작하는 단어를 찾는다")
+    void singleCharacterPrefixFallback() throws Exception {
+        long id = post(author, "스프링 입문", "내용");
+        reindex();
+
+        assertThat(search("스", "post").ids()).containsExactly((int) id);
     }
 
     @Test

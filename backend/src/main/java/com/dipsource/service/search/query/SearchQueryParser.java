@@ -6,23 +6,17 @@ import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 /** 검색어 전처리: 정규화, 길이 검증, 일반 검색어와 해시태그 분리. */
 @Component
-@RequiredArgsConstructor
 public class SearchQueryParser {
 
     /** 프론트 검색창 제한과 같다. 글자 수는 코드 포인트로 센다 */
     static final int MAX_QUERY_LENGTH = 50;
-    /** 일반 검색의 최소 글자 수(공백 제외) */
-    static final int MIN_TEXT_LENGTH = 2;
     /** 문장 검색까지 받아야 해서 PostgreSQL 경로(5개)보다 많다 */
     static final int MAX_KEYWORDS = 10;
     static final int MAX_HASHTAGS = 5;
-
-    private final TechTermDictionary dictionary;
 
     public ParsedQuery parse(String query) {
         String normalized = TextNormalizer.normalize(query);
@@ -45,8 +39,9 @@ public class SearchQueryParser {
                 keywords.add(word);
             }
         }
-        if (hashtags.isEmpty()) {
-            validateTextLength(textWords);
+        if (hashtags.isEmpty() && textWords.isEmpty()) {
+            // "#"만 입력한 경우
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "검색어를 입력해 주세요");
         }
         return new ParsedQuery(
                 String.join(" ", textWords),
@@ -66,13 +61,5 @@ public class SearchQueryParser {
 
     private static boolean isBareHash(String word) {
         return word.chars().allMatch(ch -> ch == '#');
-    }
-
-    private void validateTextLength(List<String> words) {
-        int length = words.stream().mapToInt(TextNormalizer::codePointLength).sum();
-        boolean allowedSingle = words.size() == 1 && dictionary.isSingleCharacterTerm(words.get(0));
-        if (length < MIN_TEXT_LENGTH && !allowedSingle) {
-            throw new BusinessException(ErrorCode.BAD_REQUEST, "검색어는 공백을 빼고 " + MIN_TEXT_LENGTH + "글자 이상 입력해 주세요");
-        }
     }
 }

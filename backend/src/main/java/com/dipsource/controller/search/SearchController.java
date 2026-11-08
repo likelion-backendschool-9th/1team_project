@@ -29,7 +29,7 @@ public class SearchController {
 
     /**
      * 검색. 예: GET /search?q=spring jpa&type=post&sort=relevance&op=and&page=0&size=20
-     * - q: 검색어. 앞뒤 공백 제거 후 50자 이하. Elasticsearch 경로는 공백 제외 2글자 이상(사전의 한 글자 용어 예외), #태그는 해시태그 조건
+     * - q: 검색어. 앞뒤 공백 제거 후 50자 이하. #태그는 해시태그 조건
      * - type: all(기본값), post, feed, demo, user
      *   - all: 대상별 상위 5건 + 총개수 (page, size 무시)
      *   - 그 외: 해당 대상의 페이지 응답

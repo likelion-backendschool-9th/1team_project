@@ -116,24 +116,25 @@ class ElasticsearchSearchTest {
     }
 
     @ParameterizedTest(name = "q=[{0}]")
-    @ValueSource(strings = {"a", "a ", "스", " "})
-    @DisplayName("한 글자 일반 검색어는 거절한다")
+    @ValueSource(strings = {" ", "   "})
+    @DisplayName("공백만 입력하면 거절한다")
     void tooShort(String q) throws Exception {
         search(q).andExpect(status().isBadRequest());
     }
 
     @ParameterizedTest(name = "q=[{0}]")
-    @ValueSource(strings = {"AI", "DB", "스프", "C", "R", "#c"})
-    @DisplayName("두 글자 이상과 사전의 한 글자 용어는 허용한다")
+    @ValueSource(strings = {"a", "a ", "스", "AI", "DB", "스프", "C", "R", "#c"})
+    @DisplayName("한 글자부터 검색할 수 있다")
     void allowed(String q) throws Exception {
         reindex();
         search(q).andExpect(status().isOk());
     }
 
     @Test
-    @DisplayName("이모지는 코드 포인트로 세서 한 글자로 본다")
+    @DisplayName("이모지 한 글자도 오류 없이 처리한다")
     void emojiIsOneCharacter() throws Exception {
-        search("😀").andExpect(status().isBadRequest());
+        reindex();
+        search("😀").andExpect(status().isOk());
     }
 
     @Test

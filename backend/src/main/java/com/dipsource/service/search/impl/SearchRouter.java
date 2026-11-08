@@ -15,7 +15,7 @@ import com.dipsource.global.exception.BusinessException;
 import com.dipsource.service.search.SearchService;
 import com.dipsource.service.search.query.ParsedQuery;
 import com.dipsource.service.search.query.SearchQueryParser;
-import com.dipsource.service.search.query.TechTermDictionary;
+import com.dipsource.service.search.query.TextNormalizer;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.List;
 import java.util.function.Function;
@@ -41,21 +41,18 @@ public class SearchRouter implements SearchService {
     private final SearchProperties properties;
     private final MeterRegistry meterRegistry;
     private final SearchQueryParser queryParser;
-    private final TechTermDictionary dictionary;
     private volatile long circuitOpenUntil = 0;
 
     public SearchRouter(@Qualifier("postgresSearchService") SearchService postgres,
                         ObjectProvider<EngineSearchService> engine,
                         SearchProperties properties,
                         MeterRegistry meterRegistry,
-                        SearchQueryParser queryParser,
-                        TechTermDictionary dictionary) {
+                        SearchQueryParser queryParser) {
         this.postgres = postgres;
         this.engine = engine;
         this.properties = properties;
         this.meterRegistry = meterRegistry;
         this.queryParser = queryParser;
-        this.dictionary = dictionary;
     }
 
     @Override
@@ -82,9 +79,9 @@ public class SearchRouter implements SearchService {
         return new SearchAllResponse(posts, feeds, demos, users, null, null, null);
     }
 
-    /** PostgreSQL LIKE로는 한 글자가 부분 문자열로 전부 걸리므로 대체 경로에서는 빈 결과를 준다 */
+    /** PostgreSQL LIKE로는 한 글자가 부분 문자열로 거의 다 걸리므로 대체 경로에서는 빈 결과를 준다 */
     private <T> Supplier<T> degraded(ParsedQuery parsed, Supplier<T> fallback, Supplier<T> empty) {
-        boolean singleCharacter = parsed.keywords().size() == 1 && dictionary.isSingleCharacterTerm(parsed.keywords().get(0));
+        boolean singleCharacter = parsed.keywords().size() == 1 && TextNormalizer.codePointLength(parsed.keywords().get(0)) == 1;
         return singleCharacter ? empty : fallback;
     }
 

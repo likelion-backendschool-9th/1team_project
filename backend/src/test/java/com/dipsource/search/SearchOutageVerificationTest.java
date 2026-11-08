@@ -68,12 +68,14 @@ class SearchOutageVerificationTest extends AbstractSearchVerification {
     }
 
     @Test
-    @DisplayName("장애 중에도 한 글자 검색 제한이 유지된다")
+    @DisplayName("장애 중 한 글자 검색은 부분 문자열로 전부 찾지 않고 빈 결과를 준다")
     void singleCharacterRule() throws Exception {
         post(author, "Kafka 글", "본문");
         search("kafka", "post");
 
-        assertThat(search("a", "post").status()).isEqualTo(400);
+        Page page = search("a", "post");
+        assertThat(page.status()).isEqualTo(200);
+        assertThat(page.total()).isZero();
     }
 
     @Test

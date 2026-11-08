@@ -6,14 +6,13 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.dipsource.global.exception.BusinessException;
 import com.dipsource.service.search.query.ParsedQuery;
 import com.dipsource.service.search.query.SearchQueryParser;
-import com.dipsource.service.search.query.TechTermDictionary;
 import com.dipsource.service.search.query.TextNormalizer;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 class SearchQueryParserTest {
 
-    private final SearchQueryParser parser = new SearchQueryParser(new TechTermDictionary());
+    private final SearchQueryParser parser = new SearchQueryParser();
 
     @Test
     @DisplayName("공백을 정리하고 소문자로 바꾸고 전각 문자를 접는다")
