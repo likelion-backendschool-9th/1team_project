@@ -2,7 +2,6 @@ package com.dipsource.dto.report;
 
 import com.dipsource.entity.report.Report;
 import java.time.LocalDateTime;
-import java.util.List;
 
 /**
  * 신고 응답 DTO
@@ -13,8 +12,6 @@ public record ReportResponse(
         String targetType,
         Long targetId,
         String reason,
-        String contentSnapshot,
-        List<String> imageSnapshotUrls,
         String status,
         LocalDateTime createdAt
 ) {
@@ -25,8 +22,6 @@ public record ReportResponse(
                 report.getTargetType(),
                 report.getTargetId(),
                 report.getReason(),
-                report.getContentSnapshot(),
-                report.getImageSnapshotUrls(),
                 report.getStatus().name(),
                 report.getCreatedAt()
         );

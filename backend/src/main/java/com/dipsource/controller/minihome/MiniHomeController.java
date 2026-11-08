@@ -1,6 +1,7 @@
 package com.dipsource.controller.minihome;
 
 import com.dipsource.dto.minihome.FeaturedDemoRequest;
+import com.dipsource.dto.minihome.FeaturedPostRequest;
 import com.dipsource.dto.minihome.GuestbookRequest;
 import com.dipsource.dto.minihome.MiniHomeCommentRequest;
 import com.dipsource.dto.minihome.MiniHomeCommentResponse;
@@ -81,6 +82,14 @@ public class MiniHomeController {
             @Valid @RequestBody FeaturedDemoRequest request
     ) {
         return ApiResponse.of(miniHomeService.updateFeaturedDemo(requireUserId(principal), request.demoId()));
+    }
+
+    @PutMapping("/me/featured-post")
+    public ApiResponse<MiniHomeResponse> updateFeaturedPost(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @RequestBody FeaturedPostRequest request
+    ) {
+        return ApiResponse.of(miniHomeService.updateFeaturedPost(requireUserId(principal), request.postId()));
     }
 
     @GetMapping("/{userId}/comments")

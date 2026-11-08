@@ -9,7 +9,8 @@ import pg from "pg";
 import WebSocket from "ws";
 
 const API_BASE = process.env.API_BASE ?? "http://localhost:8080";
-const WS_URL = process.env.WS_URL ?? API_BASE.replace(/^http/, "ws") + "/ws";
+// 백엔드 context-path(/api/v1) 아래에 있다.
+const WS_URL = process.env.WS_URL ?? API_BASE.replace(/^http/, "ws") + "/api/v1/ws";
 // 백엔드 FRONTEND_BASE_URL과 같아야 WebSocket 연결이 허용된다.
 const ORIGIN = process.env.ORIGIN ?? "http://localhost:3000";
 const DATABASE_URL = process.env.DATABASE_URL ?? "postgres://dipsource:dipsource@localhost:5432/dipsource";

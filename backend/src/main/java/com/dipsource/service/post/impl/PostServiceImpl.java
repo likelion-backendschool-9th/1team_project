@@ -162,6 +162,15 @@ public class PostServiceImpl implements PostService {
         }
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public boolean isActivePostOf(Long postId, Long userId) {
+        if (postId == null || userId == null) {
+            return false;
+        }
+        return postRepository.existsByIdAndUserIdAndStatus(postId, userId, PostStatus.ACTIVE);
+    }
+
     private PageResponse<PostSummaryResponse> toSummaries(Page<Post> page) {
         List<Long> authorIds = page.getContent().stream().map(Post::getUserId).distinct().toList();
         Map<Long, UserSummaryResponse> authors = userService.getSummaries(authorIds);

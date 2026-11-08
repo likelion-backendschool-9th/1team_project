@@ -16,7 +16,8 @@ export type DmSocketMessage = {
 export type DmSocketStatus = "mock" | "connecting" | "connected" | "disconnected";
 
 // 백엔드 STOMP 주소. 비워 두면 목업처럼 화면에만 추가한다.
-// 예: ws://localhost:8080/ws(로컬), /ws(Docker·배포: 접속한 주소 기준으로 ws://·wss://를 붙인다)
+// 백엔드 context-path(/api/v1) 아래에 있다.
+// 예: ws://localhost:8080/api/v1/ws(로컬), /api/v1/ws(Docker·배포: 접속한 주소 기준으로 ws://·wss://를 붙인다)
 const WS_URL = process.env.NEXT_PUBLIC_WS_URL;
 
 function resolveWsUrl(url: string) {
