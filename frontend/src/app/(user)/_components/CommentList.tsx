@@ -77,6 +77,7 @@ function CommentThread({ comment, now, me, actions, maxCommentLength }: ThreadPr
         me={me}
         actions={actions}
         onReply={canReply ? () => openReply() : undefined}
+        maxCommentLength={maxCommentLength}
       />
       {(replies.length > 0 || replyTo !== null) && (
         <ul className={styles.replies}>
@@ -88,6 +89,7 @@ function CommentThread({ comment, now, me, actions, maxCommentLength }: ThreadPr
                 me={me}
                 actions={actions}
                 onReply={canReply ? () => openReply(reply.author) : undefined}
+                maxCommentLength={maxCommentLength}
               />
             </li>
           ))}
@@ -132,9 +134,10 @@ type RowProps = {
   me?: UserSummary;
   actions: Actions;
   onReply?: () => void;
+  maxCommentLength: number;
 };
 
-function CommentRow({ comment, now, me, actions, onReply }: RowProps) {
+function CommentRow({ comment, now, me, actions, onReply, maxCommentLength }: RowProps) {
   const mine = comment.author.id === me?.id;
   // 방금 단 답글은 아직 서버 id가 없어 수정·삭제·좋아요를 막는다.
   const saved = comment.id > 0;
@@ -156,6 +159,7 @@ function CommentRow({ comment, now, me, actions, onReply }: RowProps) {
           <CommentEditor
             commentId={comment.id}
             content={comment.content}
+            maxLength={maxCommentLength}
             updateComment={actions.updateComment}
             deleteComment={actions.deleteComment}
             onReply={onReply}
