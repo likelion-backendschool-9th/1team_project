@@ -46,9 +46,9 @@ public class ReportService {
     private final GuestbookRepository guestbookRepository;
     private final UserRepository userRepository;
 
-    // 컨트롤러에서 넘어오는 targetType 허용 목록 — 여기에 없으면 400
+    // create()가 처리하는 타입 목록 — GUESTBOOK은 createGuestbookReport()로만 처리
     private static final List<String> ALLOWED_TARGET_TYPES =
-            List.of("FEED", "POST", "DEMO", "FEED_COMMENT", "GUESTBOOK", "USER");
+            List.of("FEED", "POST", "DEMO", "FEED_COMMENT", "USER");
 
     /**
      * 피드·블로그·데모·피드 댓글·유저 신고 생성
@@ -127,14 +127,11 @@ public class ReportService {
 
     /**
      * targetType이 허용 목록에 있는지 검증
-     * GUESTBOOK은 {@link #createGuestbookReport}로만 처리하므로 여기서는 거부
+     * GUESTBOOK은 {@link #createGuestbookReport}로만 처리 — 목록에 미포함
      */
     private void validateTargetType(String targetType) {
         if (!ALLOWED_TARGET_TYPES.contains(targetType)) {
             throw new BusinessException(ErrorCode.BAD_REQUEST, "지원하지 않는 신고 대상 종류입니다");
-        }
-        if ("GUESTBOOK".equals(targetType)) {
-            throw new BusinessException(ErrorCode.BAD_REQUEST, "방명록 신고는 올바른 경로로 요청해 주세요");
         }
     }
 
