@@ -36,13 +36,14 @@ final class EvalCorpusLoader {
     private final Map<Long, String> feedKeys = new HashMap<>();
     private final Map<Long, String> userKeys = new HashMap<>();
     private final Map<String, Long> tagIds = new HashMap<>();
+    private Long firstUserId;
 
     EvalCorpusLoader(JdbcTemplate jdbc) {
         this.jdbc = jdbc;
     }
 
-    void load() throws IOException {
-        JsonNode corpus = new ObjectMapper().readTree(new ClassPathResource("search-eval/corpus.json").getInputStream());
+    void load(String corpusResource) throws IOException {
+        JsonNode corpus = new ObjectMapper().readTree(new ClassPathResource(corpusResource).getInputStream());
         jdbc.execute("TRUNCATE posts, feeds, demos, users, tags, follows, blocks, post_tags, demo_tags, feed_tags "
                 + "RESTART IDENTITY CASCADE");
         for (JsonNode user : corpus.get("users")) {
@@ -109,6 +110,9 @@ final class EvalCorpusLoader {
                 user.get("techStacks").toString(), text(user, "githubUsername"), status(user));
         ids.put(key, id);
         userKeys.put(id, key);
+        if (firstUserId == null) {
+            firstUserId = id;
+        }
     }
 
     private void insertPost(JsonNode post) {
@@ -171,7 +175,7 @@ final class EvalCorpusLoader {
     }
 
     private void insertFiller() {
-        Long author = ids.get("u_author");
+        Long author = firstUserId;
         List<Object[]> rows = new ArrayList<>();
         for (int i = 0; i < FILLER_POSTS; i++) {
             rows.add(new Object[] {author, FILLER_TOPICS[i % FILLER_TOPICS.length] + " " + i,

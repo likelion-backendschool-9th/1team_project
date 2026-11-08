@@ -25,4 +25,41 @@ class PostgresBaselineEvalTest extends AbstractSearchEval {
     String profile() {
         return "0-postgres-like";
     }
+
+    /** 튜닝에 쓰지 않은 신규 평가셋을 PostgreSQL 경로로 잰다 */
+    @org.junit.jupiter.api.Nested
+    class Holdout extends AbstractSearchEval {
+        @Override
+        String profile() {
+            return "holdout-postgres";
+        }
+
+        @Override
+        String corpusResource() {
+            return "search-eval/holdout-corpus.json";
+        }
+
+        @Override
+        String queriesResource() {
+            return "search-eval/holdout-queries.json";
+        }
+    }
+
+    @org.junit.jupiter.api.Nested
+    class SingleChar extends AbstractSearchEval {
+        @Override
+        String profile() {
+            return "singlechar-postgres";
+        }
+
+        @Override
+        String corpusResource() {
+            return "search-eval/holdout-corpus.json";
+        }
+
+        @Override
+        String queriesResource() {
+            return "search-eval/single-char-queries.json";
+        }
+    }
 }

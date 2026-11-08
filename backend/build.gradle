@@ -76,6 +76,7 @@ tasks.register('searchEval', Test) {
         includeTags 'search-eval'
     }
     systemProperty 'search.eval.output', "${rootDir}/../docs/search-eval/results"
+    systemProperty 'search.eval.label', project.findProperty('evalLabel') ?: 'es'
     outputs.upToDateWhen { false }
     testLogging.showStandardStreams = true
 }

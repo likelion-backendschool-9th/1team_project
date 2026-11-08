@@ -48,6 +48,14 @@ abstract class AbstractSearchEval {
         return false;
     }
 
+    String corpusResource() {
+        return "search-eval/corpus.json";
+    }
+
+    String queriesResource() {
+        return "search-eval/queries.json";
+    }
+
     /** 말뭉치를 넣은 뒤 색인 등 엔진별 준비 */
     void prepare(EvalCorpusLoader corpus) throws Exception {
     }
@@ -55,10 +63,10 @@ abstract class AbstractSearchEval {
     @Test
     void evaluate() throws Exception {
         EvalCorpusLoader corpus = new EvalCorpusLoader(jdbc);
-        corpus.load();
+        corpus.load(corpusResource());
         prepare(corpus);
 
-        JsonNode queries = MAPPER.readTree(new ClassPathResource("search-eval/queries.json").getInputStream());
+        JsonNode queries = MAPPER.readTree(new ClassPathResource(queriesResource()).getInputStream());
         List<Map<String, Object>> rows = new ArrayList<>();
         double precision = 0;
         double mrr = 0;
@@ -67,6 +75,7 @@ abstract class AbstractSearchEval {
         int suggestQueries = 0;
         int suggestHits = 0;
         List<Long> latencies = new ArrayList<>();
+        Map<String, double[]> categories = new LinkedHashMap<>();
 
         for (JsonNode query : queries) {
             Map<String, Integer> grades = new HashMap<>();
@@ -82,7 +91,10 @@ abstract class AbstractSearchEval {
             data.path("content").forEach(item -> ranked.add(corpus.keyOf(type, item.get("id").asLong())));
 
             Map<String, Object> row = new LinkedHashMap<>();
+            String category = query.path("category").asText("-");
+            double[] stats = categories.computeIfAbsent(category, c -> new double[6]);
             row.put("id", query.get("id").asText());
+            row.put("category", category);
             row.put("q", query.get("q").asText());
             row.put("type", type);
             row.put("purpose", query.get("purpose").asText());
@@ -97,6 +109,8 @@ abstract class AbstractSearchEval {
                 boolean hit = query.get("suggest").asText().equalsIgnoreCase(suggested);
                 suggestHits += hit ? 1 : 0;
                 row.put("suggestHit", hit);
+                stats[3]++;
+                stats[4] += hit ? 1 : 0;
             }
             if (grades.values().stream().anyMatch(grade -> grade > 0)) {
                 double p = EvalMetrics.precisionAt(ranked, grades, K);
@@ -106,6 +120,9 @@ abstract class AbstractSearchEval {
                 mrr += rr;
                 ndcg += n;
                 rankedQueries++;
+                stats[0]++;
+                stats[1] += rr;
+                stats[2] += n;
                 row.put("p10", round(p));
                 row.put("rr", round(rr));
                 row.put("ndcg10", round(n));
@@ -125,8 +142,20 @@ abstract class AbstractSearchEval {
         summary.put("latencyMsP50", latencies.get(latencies.size() / 2));
         summary.put("latencyMsMax", latencies.get(latencies.size() - 1));
 
+        Map<String, Object> byCategory = new LinkedHashMap<>();
+        categories.forEach((name, stats) -> {
+            Map<String, Object> item = new LinkedHashMap<>();
+            item.put("rankedQueries", (int) stats[0]);
+            item.put("mrr", stats[0] == 0 ? null : round(stats[1] / stats[0]));
+            item.put("meanNdcg10", stats[0] == 0 ? null : round(stats[2] / stats[0]));
+            item.put("suggestQueries", (int) stats[3]);
+            item.put("suggestionAccuracy", stats[3] == 0 ? null : round(stats[4] / stats[3]));
+            byCategory.put(name, item);
+        });
+
         Map<String, Object> report = new LinkedHashMap<>();
         report.put("summary", summary);
+        report.put("byCategory", byCategory);
         report.put("results", rows);
         write(report);
         System.out.println("SEARCH-EVAL " + summary);

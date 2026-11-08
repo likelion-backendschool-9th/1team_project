@@ -119,4 +119,44 @@ final class EsEvalProfilesTest {
             return true;
         }
     }
+
+    /** 튜닝에 쓰지 않은 신규 평가셋. 기본 설정 그대로 잰다 */
+    @AutoConfigureMockMvc
+    @SpringBootTest(properties = {COMMON_JWT, GITHUB_ID, GITHUB_SECRET, ES_ON, ENGINE, NO_FALLBACK, NO_BOOTSTRAP})
+    static class HoldoutEsEval extends AbstractEsEval {
+        @Override
+        String profile() {
+            return "holdout-" + System.getProperty("search.eval.label", "es");
+        }
+
+        @Override
+        String corpusResource() {
+            return "search-eval/holdout-corpus.json";
+        }
+
+        @Override
+        String queriesResource() {
+            return "search-eval/holdout-queries.json";
+        }
+    }
+
+    /** 한 글자 검색 평가. 신규 평가셋의 문서를 쓴다 */
+    @AutoConfigureMockMvc
+    @SpringBootTest(properties = {COMMON_JWT, GITHUB_ID, GITHUB_SECRET, ES_ON, ENGINE, NO_FALLBACK, NO_BOOTSTRAP})
+    static class SingleCharEsEval extends AbstractEsEval {
+        @Override
+        String profile() {
+            return "singlechar-" + System.getProperty("search.eval.label", "es");
+        }
+
+        @Override
+        String corpusResource() {
+            return "search-eval/holdout-corpus.json";
+        }
+
+        @Override
+        String queriesResource() {
+            return "search-eval/single-char-queries.json";
+        }
+    }
 }
