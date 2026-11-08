@@ -50,6 +50,7 @@ public class SearchRanker {
         double top = candidates.stream().mapToDouble(Candidate::score).max().orElse(1);
         double divisor = top <= 0 ? 1 : top;
         double floor = properties.getRanking().getMinRelevanceForBoost();
+        double personalFloor = properties.getPersonalization().getMinRelevance();
 
         Comparator<Scored> order = Comparator
                 .comparing((Scored s) -> s.candidate().exactMatch()).reversed()
@@ -63,21 +64,22 @@ public class SearchRanker {
         return candidates.stream()
                 .map(candidate -> {
                     double relevance = candidate.score() / divisor;
-                    double boost = relevance < floor ? 0 : boost(candidate, popularity);
-                    return new Scored(candidate, relevance * (1 + boost));
+                    double boost = relevance < floor ? 0 : popularityBoost(candidate, popularity);
+                    double personal = relevance < personalFloor ? 0 : candidate.personalBoost();
+                    return new Scored(candidate, relevance * (1 + boost + personal));
                 })
                 .sorted(order)
                 .map(scored -> scored.candidate().id())
                 .toList();
     }
 
-    private static double boost(Candidate candidate, Popularity policy) {
+    private static double popularityBoost(Candidate candidate, Popularity policy) {
         SearchSignal signal = candidate.signal();
         double popularity = policy.getLikeWeight() * saturate(signal.getLikeCount(), policy.getLikeSaturation())
                 + policy.getViewWeight() * saturate(signal.getViewCount(), policy.getViewSaturation())
                 + policy.getFollowerWeight() * saturate(signal.getFollowerCount(), policy.getFollowerSaturation())
                 + policy.getRecencyWeight() * Math.pow(0.5, signal.getAgeDays() / policy.getRecencyHalfLifeDays());
-        return popularity * policy.getMaxBoost() + candidate.personalBoost();
+        return popularity * policy.getMaxBoost();
     }
 
     /** 0~1로 포화. 큰 숫자가 무한정 점수를 올리지 못한다 */

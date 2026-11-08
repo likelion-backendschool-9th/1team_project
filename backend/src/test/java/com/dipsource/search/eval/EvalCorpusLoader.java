@@ -63,6 +63,24 @@ final class EvalCorpusLoader {
             jdbc.update("INSERT INTO blocks(blocker_id, blocked_id, created_at) VALUES (?, ?, now())",
                     ids.get(block.get(0).asText()), ids.get(block.get(1).asText()));
         }
+        if (hasTable("search_hidden_results")) {
+            jdbc.execute("TRUNCATE search_hidden_results, search_visits RESTART IDENTITY");
+            for (JsonNode hidden : corpus.get("hidden")) {
+                jdbc.update("INSERT INTO search_hidden_results(user_id, target_type, target_id, created_at) VALUES (?, ?, ?, now())",
+                        ids.get(hidden.get("user").asText()), hidden.get("type").asText(), ids.get(hidden.get("target").asText()));
+            }
+            for (JsonNode visit : corpus.get("visits")) {
+                jdbc.update("""
+                        INSERT INTO search_visits(user_id, target_type, target_id, query_norm, visit_count, last_visited_at)
+                        VALUES (?, ?, ?, ?, ?, now() - (? * interval '1 day'))
+                        """, ids.get(visit.get("user").asText()), visit.get("type").asText(), ids.get(visit.get("target").asText()),
+                        visit.get("query").asText(), visit.get("count").asInt(), visit.get("daysAgo").asInt());
+            }
+        }
+    }
+
+    private boolean hasTable(String table) {
+        return Boolean.TRUE.equals(jdbc.queryForObject("SELECT to_regclass(?) IS NOT NULL", Boolean.class, table));
     }
 
     Long id(String key) {

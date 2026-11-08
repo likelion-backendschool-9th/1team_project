@@ -3,11 +3,13 @@ package com.dipsource.search;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.hasSize;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.dipsource.dto.search.SearchType;
+import com.dipsource.global.auth.UserPrincipal;
 import com.dipsource.service.search.index.SearchIndexManager;
 import java.util.ArrayList;
 import java.util.List;
@@ -22,6 +24,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
@@ -475,6 +478,198 @@ class ElasticsearchSearchTest {
             String body = mockMvc.perform(get("/api/v1/search/autocomplete").param("q", q))
                     .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
             return com.jayway.jsonpath.JsonPath.read(body, "$.data[*].text");
+        }
+    }
+
+    @Nested
+    @DisplayName("개인화와 숨김")
+    class Personalization {
+
+        long viewer;
+
+        @BeforeEach
+        void createViewer() {
+            viewer = user("검색하는사람", null);
+        }
+
+        private ResultActions searchAs(long userId, String q, String type) throws Exception {
+            UserPrincipal principal = new UserPrincipal(userId, "USER");
+            return mockMvc.perform(get("/api/v1/search").param("q", q).param("type", type)
+                    .with(authentication(new UsernamePasswordAuthenticationToken(principal, null, principal.getAuthorities()))));
+        }
+
+        private ResultActions postJson(long userId, String path, String body) throws Exception {
+            UserPrincipal principal = new UserPrincipal(userId, "USER");
+            return mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post(path)
+                    .contentType(org.springframework.http.MediaType.APPLICATION_JSON).content(body)
+                    .with(authentication(new UsernamePasswordAuthenticationToken(principal, null, principal.getAuthorities())))
+                    .with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf()));
+        }
+
+        private void visits(long userId, long targetId, String query, int count, int daysAgo) {
+            jdbc.update("""
+                    INSERT INTO search_visits(user_id, target_type, target_id, query_norm, visit_count, last_visited_at)
+                    VALUES (?, 'POST', ?, ?, ?, now() - (? * interval '1 day'))
+                    """, userId, targetId, query, count, daysAgo);
+        }
+
+        @BeforeEach
+        void clearPersonalData() {
+            jdbc.execute("TRUNCATE search_hidden_results, search_visits RESTART IDENTITY");
+        }
+
+        @Test
+        @DisplayName("숨긴 글은 그 사용자에게만 안 보이고, 해제하면 다시 보인다")
+        void hideAndUnhide() throws Exception {
+            long target = post("Spring 글", "본문", "ACTIVE");
+            long other = user("다른사용자", null);
+            reindex();
+
+            postJson(viewer, "/api/v1/search/hidden", "{\"targetType\":\"post\",\"targetId\":" + target + "}").andExpect(status().isNoContent());
+            postJson(viewer, "/api/v1/search/hidden", "{\"targetType\":\"post\",\"targetId\":" + target + "}").andExpect(status().isNoContent());
+
+            searchAs(viewer, "spring", "post").andExpect(jsonPath("$.data.totalElements").value(0));
+            searchAs(other, "spring", "post").andExpect(jsonPath("$.data.totalElements").value(1));
+            search("spring").andExpect(jsonPath("$.data.totalElements").value(1));
+            assertThat(jdbc.queryForObject("SELECT count(*) FROM search_hidden_results", Long.class)).isEqualTo(1);
+
+            UserPrincipal principal = new UserPrincipal(viewer, "USER");
+            mockMvc.perform(get("/api/v1/search/hidden")
+                            .with(authentication(new UsernamePasswordAuthenticationToken(principal, null, principal.getAuthorities()))))
+                    .andExpect(jsonPath("$.data.content[0].label").value("Spring 글"));
+
+            mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete("/api/v1/search/hidden/post/" + target)
+                            .with(authentication(new UsernamePasswordAuthenticationToken(principal, null, principal.getAuthorities())))
+                            .with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf()))
+                    .andExpect(status().isNoContent());
+            searchAs(viewer, "spring", "post").andExpect(jsonPath("$.data.totalElements").value(1));
+        }
+
+        @Test
+        @DisplayName("숨겨도 페이지 크기가 줄지 않고 총개수가 맞다")
+        void hiddenKeepsPageSize() throws Exception {
+            long first = 0;
+            for (int i = 0; i < 12; i++) {
+                long id = post("Spring 글 " + i, "본문", "ACTIVE");
+                if (i == 0) {
+                    first = id;
+                }
+            }
+            reindex();
+            jdbc.update("INSERT INTO search_hidden_results(user_id, target_type, target_id, created_at) VALUES (?, 'POST', ?, now())", viewer, first);
+
+            searchAs(viewer, "spring", "post").andExpect(jsonPath("$.data.totalElements").value(11))
+                    .andExpect(jsonPath("$.data.content", hasSize(11)));
+        }
+
+        @Test
+        @DisplayName("비로그인은 숨김·방문 기록 API를 쓸 수 없다")
+        void anonymousRejected() throws Exception {
+            mockMvc.perform(get("/api/v1/search/hidden")).andExpect(status().isUnauthorized());
+        }
+
+        @Test
+        @DisplayName("없는 대상은 숨길 수 없다")
+        void hideMissing() throws Exception {
+            reindex();
+            postJson(viewer, "/api/v1/search/hidden", "{\"targetType\":\"post\",\"targetId\":99999}").andExpect(status().isNotFound());
+        }
+
+        @Test
+        @DisplayName("차단은 양방향으로 글과 사용자를 뺀다")
+        void blocks() throws Exception {
+            long blockedByMe = user("spring_차단함", null);
+            long blockedMe = user("spring_차단당함", null);
+            long normal = user("spring_일반", null);
+            jdbc.update("INSERT INTO blocks(blocker_id, blocked_id, created_at) VALUES (?, ?, now())", viewer, blockedByMe);
+            jdbc.update("INSERT INTO blocks(blocker_id, blocked_id, created_at) VALUES (?, ?, now())", blockedMe, viewer);
+            jdbc.update("""
+                    INSERT INTO posts(user_id, title, content, is_paid, price_chips, status, view_count, like_count, comment_count, created_at, updated_at)
+                    VALUES (?, 'Spring 차단 글', '본문', false, 0, 'ACTIVE', 0, 0, 0, now(), now())
+                    """, blockedByMe);
+            reindex();
+
+            searchAs(viewer, "spring", "post").andExpect(jsonPath("$.data.totalElements").value(0));
+            assertThat(ids(searchAs(viewer, "spring", "user"))).containsExactly((int) normal);
+            search("spring").andExpect(jsonPath("$.data.totalElements").value(1));
+        }
+
+        @Test
+        @DisplayName("관련도가 같으면 내 팔로잉이 많이 팔로우한 사람이 먼저고, 비로그인은 그렇지 않다")
+        void mutualFollows() throws Exception {
+            long z = user("kafka_z", "메시징");
+            long y = user("kafka_y", "메시징");
+            long x = user("kafka_x", "메시징");
+            long a = user("친구a", null);
+            long b = user("친구b", null);
+            long c = user("친구c", null);
+            for (long friend : List.of(a, b, c)) {
+                follow(viewer, friend);
+                follow(friend, x);
+            }
+            follow(a, y);
+            for (int i = 0; i < 5; i++) {
+                follow(user("팔로워" + i, null), z);
+            }
+            reindex();
+
+            assertThat(ids(searchAs(viewer, "kafka", "user"))).containsExactly((int) x, (int) y, (int) z);
+            assertThat(ids(mockMvc.perform(get("/api/v1/search").param("q", "kafka").param("type", "user"))).get(0)).isEqualTo((int) z);
+        }
+
+        @Test
+        @DisplayName("같은 검색어로 3회 방문한 글은 올라가고, 2회면 그대로다")
+        void visitBoost() throws Exception {
+            long older = post("Spring Boot 입문", "본문 내용", "ACTIVE");
+            long newer = post("Spring Boot 입문", "본문 내용", "ACTIVE");
+            reindex();
+
+            visits(viewer, older, "spring boot", 2, 1);
+            assertThat(ids(searchAs(viewer, "spring boot", "post"))).containsExactly((int) newer, (int) older);
+
+            jdbc.update("UPDATE search_visits SET visit_count = 3");
+            assertThat(ids(searchAs(viewer, "spring boot", "post"))).containsExactly((int) older, (int) newer);
+        }
+
+        @Test
+        @DisplayName("다른 검색어와 오래된 방문에는 가산이 없다")
+        void visitBoostScope() throws Exception {
+            long older = post("Spring Boot 입문", "React 언급", "ACTIVE");
+            long newer = post("Spring Boot 입문", "React 언급", "ACTIVE");
+            reindex();
+
+            visits(viewer, older, "spring boot", 5, 1);
+            assertThat(ids(searchAs(viewer, "react", "post"))).containsExactly((int) newer, (int) older);
+
+            jdbc.update("UPDATE search_visits SET last_visited_at = now() - interval '200 day'");
+            assertThat(ids(searchAs(viewer, "spring boot", "post"))).containsExactly((int) newer, (int) older);
+        }
+
+        @Test
+        @DisplayName("방문 가산이 있어도 관련도가 크게 낮은 글은 올라가지 못한다")
+        void visitBoostCannotOvertakeRelevance() throws Exception {
+            long strong = post("Spring Boot 입문 Spring Boot 정리", "Spring Boot 설정과 Spring Boot 배포", "ACTIVE");
+            long weak = post("여러 프레임워크 이야기", "긴 글 가운데 spring boot 를 잠깐 언급한다. 다른 내용이 대부분이다. 다른 내용이 대부분이다.", "ACTIVE");
+            reindex();
+
+            visits(viewer, weak, "spring boot", 10, 0);
+            assertThat(ids(searchAs(viewer, "spring boot", "post")).get(0)).isEqualTo((int) strong);
+        }
+
+        @Test
+        @DisplayName("짧은 시간의 재방문은 세지 않는다")
+        void visitDedup() throws Exception {
+            long target = post("Spring 글", "본문", "ACTIVE");
+            String body = "{\"targetType\":\"post\",\"targetId\":" + target + ",\"query\":\"Spring\"}";
+            postJson(viewer, "/api/v1/search/visits", body).andExpect(status().isNoContent());
+            postJson(viewer, "/api/v1/search/visits", body).andExpect(status().isNoContent());
+
+            assertThat(jdbc.queryForObject("SELECT visit_count FROM search_visits", Integer.class)).isEqualTo(1);
+            assertThat(jdbc.queryForObject("SELECT query_norm FROM search_visits", String.class)).isEqualTo("spring");
+        }
+
+        private void follow(long follower, long following) {
+            jdbc.update("INSERT INTO follows(follower_id, following_id, created_at) VALUES (?, ?, now())", follower, following);
         }
     }
 

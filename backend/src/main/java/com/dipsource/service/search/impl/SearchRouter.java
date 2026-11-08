@@ -8,6 +8,7 @@ import com.dipsource.dto.search.SearchType;
 import com.dipsource.global.config.SearchProperties;
 import com.dipsource.global.exception.BusinessException;
 import com.dipsource.service.search.SearchService;
+import com.dipsource.service.search.personal.SearchExclusionFilter;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.function.Supplier;
 import lombok.extern.slf4j.Slf4j;
@@ -30,29 +31,32 @@ public class SearchRouter implements SearchService {
     private final ObjectProvider<EngineSearchService> engine;
     private final SearchProperties properties;
     private final MeterRegistry meterRegistry;
+    private final SearchExclusionFilter exclusions;
     private volatile long circuitOpenUntil = 0;
 
     public SearchRouter(@Qualifier("postgresSearchService") SearchService postgres,
                         ObjectProvider<EngineSearchService> engine,
                         SearchProperties properties,
-                        MeterRegistry meterRegistry) {
+                        MeterRegistry meterRegistry,
+                        SearchExclusionFilter exclusions) {
         this.postgres = postgres;
         this.engine = engine;
         this.properties = properties;
         this.meterRegistry = meterRegistry;
+        this.exclusions = exclusions;
     }
 
     @Override
     public SearchAllResponse searchAll(String query, SearchOperator operator, SearchSort sort, Long viewerId) {
         return route(service -> service.searchAll(query, operator, sort, viewerId),
-                () -> postgres.searchAll(query, operator, sort, viewerId));
+                () -> exclusions.filter(postgres.searchAll(query, operator, sort, viewerId), viewerId));
     }
 
     @Override
     public SearchPageResponse<?> search(String query, SearchType type, SearchOperator operator, SearchSort sort,
                                         Pageable pageable, Long viewerId) {
         return route(service -> service.search(query, type, operator, sort, pageable, viewerId),
-                () -> postgres.search(query, type, operator, sort, pageable, viewerId));
+                () -> exclusions.filter(postgres.search(query, type, operator, sort, pageable, viewerId), type, viewerId));
     }
 
     private <T> T route(java.util.function.Function<SearchService, T> primary, Supplier<T> fallback) {

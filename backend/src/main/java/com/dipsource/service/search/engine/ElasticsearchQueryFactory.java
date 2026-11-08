@@ -111,16 +111,22 @@ public class ElasticsearchQueryFactory {
             required.addAll(optional);
             optional.clear();
         }
-        List<Query> groups = required.stream().map(unit -> unitQuery(policy, unit, flat)).toList();
         boolean natural = operator == SearchOperator.AUTO
                 && required.size() >= properties.getRanking().getNaturalMinKeywords();
+        Context context = new Context(policy, flat, natural);
+        List<Query> groups = required.stream().map(unit -> unitQuery(context, unit)).toList();
         if (operator == SearchOperator.OR || natural) {
-            groups.forEach(bool::should);
-            bool.minimumShouldMatch(natural ? properties.getRanking().getNaturalMinimumShouldMatch() : "1");
+            // 일치 조건만 따로 묶는다. 가산용 should(구문·정확 일치)가 minimum_should_match 분모에 들어가면 안 된다
+            String minimum = natural ? properties.getRanking().getNaturalMinimumShouldMatch() : "1";
+            bool.must(m -> m.bool(b -> b.should(groups).minimumShouldMatch(minimum)));
         } else {
             groups.forEach(bool::must);
         }
-        optional.forEach(unit -> bool.should(unitQuery(policy, unit, flat)));
+        optional.forEach(unit -> bool.should(unitQuery(context, unit)));
+    }
+
+    /** @param natural 문장 검색. 활용형의 일부 형태소("만료됐을"의 "되")가 없어도 단어가 맞은 것으로 본다 */
+    private record Context(TypePolicy policy, boolean flat, boolean natural) {
     }
 
     /** 검색 단위. 사전에 있는 여러 단어 표기(스프링 부트)는 한 단위로 묶어서 동의어로 넓힌다 */
@@ -149,21 +155,22 @@ public class ElasticsearchQueryFactory {
         return 1;
     }
 
-    private Query unitQuery(TypePolicy policy, Unit unit, boolean flat) {
+    private Query unitQuery(Context context, Unit unit) {
+        TypePolicy policy = context.policy();
         if (unit.words().size() == 1) {
-            return keywordGroup(policy, unit.words().get(0), flat);
+            return keywordGroup(context, unit.words().get(0));
         }
         String form = String.join(" ", unit.words());
         List<Query> alternatives = new ArrayList<>();
         // 사전 표기 그대로: 단어가 모두 있어야 한다. 동의어보다 높은 점수다
         alternatives.add(Query.of(q -> q.bool(b -> {
-            unit.words().forEach(word -> b.must(keywordGroup(policy, word, flat)));
+            unit.words().forEach(word -> b.must(keywordGroup(context, word)));
             return b;
         })));
         float weight = properties.getRanking().getSynonymBoost();
         for (String synonym : dictionary.synonymsOf(form)) {
             for (Map.Entry<String, Float> field : policy.getFields().entrySet()) {
-                alternatives.add(fieldMatch(field.getKey(), synonym, field.getValue() * weight));
+                alternatives.add(fieldMatch(field.getKey(), synonym, field.getValue() * weight, context.natural()));
             }
             alternatives.add(keywordField(policy, synonym, policy.getKeywordBoost() * weight));
         }
@@ -171,25 +178,28 @@ public class ElasticsearchQueryFactory {
     }
 
     /** 단어 하나를 찾는 필드별 쿼리 묶음. 가장 잘 맞는 필드의 점수를 쓰고 나머지는 tie_breaker만큼만 더한다 */
-    private Query keywordGroup(TypePolicy policy, String keyword, boolean flat) {
+    private Query keywordGroup(Context context, String keyword) {
+        TypePolicy policy = context.policy();
+        boolean flat = context.flat();
         List<Query> clauses = new ArrayList<>();
         for (Map.Entry<String, Float> field : policy.getFields().entrySet()) {
             float boost = flat ? 1f : field.getValue();
-            clauses.add(fieldMatch(field.getKey(), keyword, boost));
+            clauses.add(fieldMatch(field.getKey(), keyword, boost, context.natural()));
         }
         clauses.add(keywordField(policy, keyword, flat ? 1f : policy.getKeywordBoost()));
-        addSynonyms(clauses, policy, keyword, flat);
+        addSynonyms(clauses, context, keyword);
         return Query.of(q -> q.disMax(d -> d.queries(clauses).tieBreaker((double) properties.getRanking().getTieBreaker())));
     }
 
-    private void addSynonyms(List<Query> clauses, TypePolicy policy, String keyword, boolean flat) {
-        if (flat || !properties.getAnalysis().isSynonyms()) {
+    private void addSynonyms(List<Query> clauses, Context context, String keyword) {
+        TypePolicy policy = context.policy();
+        if (context.flat() || !properties.getAnalysis().isSynonyms()) {
             return;
         }
         float weight = properties.getRanking().getSynonymBoost();
         for (String synonym : dictionary.synonymsOf(keyword)) {
             for (Map.Entry<String, Float> field : policy.getFields().entrySet()) {
-                clauses.add(fieldMatch(field.getKey(), synonym, field.getValue() * weight));
+                clauses.add(fieldMatch(field.getKey(), synonym, field.getValue() * weight, context.natural()));
             }
             clauses.add(keywordField(policy, synonym, policy.getKeywordBoost() * weight));
         }
@@ -201,12 +211,12 @@ public class ElasticsearchQueryFactory {
     }
 
     /** 원문 필드와, 단어에 쓰인 문자에 맞는 언어 서브필드에서 찾는다 */
-    private Query fieldMatch(String field, String word, float boost) {
+    private Query fieldMatch(String field, String word, float boost, boolean natural) {
         List<Query> languages = new ArrayList<>();
-        languages.add(match(field, word));
+        languages.add(match(field, word, false));
         if (!field.endsWith(".ngram") && properties.getAnalysis().isLanguageFields()) {
             for (String language : languagesOf(word)) {
-                languages.add(match(field + "." + language, word));
+                languages.add(match(field + "." + language, word, natural && language.equals("ko")));
             }
         }
         if (languages.size() == 1) {
@@ -215,8 +225,9 @@ public class ElasticsearchQueryFactory {
         return Query.of(q -> q.disMax(d -> d.queries(languages).boost(boost)));
     }
 
-    private static Query match(String field, String word) {
-        return Query.of(q -> q.match(m -> m.field(field).query(word).operator(Operator.And)));
+    private static Query match(String field, String word, boolean anyToken) {
+        Operator operator = anyToken ? Operator.Or : Operator.And;
+        return Query.of(q -> q.match(m -> m.field(field).query(word).operator(operator)));
     }
 
     /** 일본어·중국어는 한자를 같이 쓰므로 가나가 없는 한자 단어는 두 분석기를 모두 본다 */

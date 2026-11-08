@@ -26,6 +26,7 @@ public class SearchProperties {
     private Elasticsearch elasticsearch = new Elasticsearch();
     private Analysis analysis = new Analysis();
     private Ranking ranking = new Ranking();
+    private Personalization personalization = new Personalization();
 
     public enum Engine {
         POSTGRES, ELASTICSEARCH
@@ -103,6 +104,31 @@ public class SearchProperties {
             }
             return fields;
         }
+    }
+
+    @Getter
+    @Setter
+    public static class Personalization {
+        private boolean enabled = true;
+        /** 개인화 가산을 받을 수 있는 최소 상대 관련도. 관련 없는 문서가 개인화로 올라오지 않게 한다 */
+        private double minRelevance = 0.5;
+        /** 내 팔로잉이 그 사람을 팔로우한 수에 따른 가산의 상한 */
+        private double maxMutualBoost = 0.25;
+        private double mutualSaturation = 2;
+        /** 방문 기록 가산의 상한 */
+        private double maxVisitBoost = 0.1;
+        private int minVisits = 3;
+        /** 이 기간 안의 방문만 쓴다 */
+        private Duration visitRecency = Duration.ofDays(90);
+        private double visitHalfLifeDays = 30;
+        /** 지금 검색어와 방문 때 검색어의 단어 겹침(Jaccard)이 이 값 이상이어야 한다 */
+        private double minQuerySimilarity = 0.5;
+        /** 이 시간 안의 재방문은 세지 않는다 */
+        private Duration visitDedupWindow = Duration.ofMinutes(30);
+        /** 이 기간이 지난 방문 기록은 지운다 */
+        private Duration visitRetention = Duration.ofDays(180);
+        /** 검색 제외에 쓰는 숨긴 항목 수. 쿼리 크기를 제한한다 */
+        private int maxHiddenFilter = 1000;
     }
 
     @Getter

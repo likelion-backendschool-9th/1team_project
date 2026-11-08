@@ -20,6 +20,7 @@ import com.dipsource.service.search.SearchService;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.dipsource.service.search.engine.SearchPort;
+import com.dipsource.service.search.personal.SearchPersonalizationService;
 import com.dipsource.service.search.query.ParsedQuery;
 import com.dipsource.service.search.ranking.SearchRanker;
 import com.dipsource.service.search.suggest.SearchSuggester;
@@ -56,6 +57,7 @@ public class EngineSearchService implements SearchService {
     private final SearchQueryParser queryParser;
     private final SearchRanker ranker;
     private final SearchSuggester suggester;
+    private final SearchPersonalizationService personalization;
     private final SearchProperties properties;
     private final PostSearchService postSearchService;
     private final FeedSearchService feedSearchService;
@@ -64,7 +66,7 @@ public class EngineSearchService implements SearchService {
     private final Cache<String, RankedWindow> windowCache;
 
     public EngineSearchService(SearchPort searchPort, SearchQueryParser queryParser, SearchRanker ranker,
-                               SearchSuggester suggester,
+                               SearchSuggester suggester, SearchPersonalizationService personalization,
                                SearchProperties properties, PostSearchService postSearchService,
                                FeedSearchService feedSearchService, DemoSearchService demoSearchService,
                                UserSearchService userSearchService) {
@@ -72,6 +74,7 @@ public class EngineSearchService implements SearchService {
         this.queryParser = queryParser;
         this.ranker = ranker;
         this.suggester = suggester;
+        this.personalization = personalization;
         this.properties = properties;
         this.postSearchService = postSearchService;
         this.feedSearchService = feedSearchService;
@@ -94,18 +97,20 @@ public class EngineSearchService implements SearchService {
     @SuppressWarnings("unchecked")
     public SearchAllResponse searchAll(String query, SearchOperator operator, SearchSort sort, Long viewerId) {
         ParsedQuery parsed = queryParser.parse(query);
-        SearchSection<PostSearchItemResponse> posts = (SearchSection<PostSearchItemResponse>) section(SearchType.POST, parsed, operator, sort);
-        SearchSection<FeedSearchItemResponse> feeds = (SearchSection<FeedSearchItemResponse>) section(SearchType.FEED, parsed, operator, sort);
-        SearchSection<DemoSearchItemResponse> demos = (SearchSection<DemoSearchItemResponse>) section(SearchType.DEMO, parsed, operator, sort);
-        SearchSection<UserSearchItemResponse> users = (SearchSection<UserSearchItemResponse>) section(SearchType.USER, parsed, operator, sort);
+        Set<Long> blocked = personalization.blockedUsers(viewerId);
+        SearchSection<PostSearchItemResponse> posts = (SearchSection<PostSearchItemResponse>) section(SearchType.POST, parsed, operator, sort, viewerId, blocked);
+        SearchSection<FeedSearchItemResponse> feeds = (SearchSection<FeedSearchItemResponse>) section(SearchType.FEED, parsed, operator, sort, viewerId, blocked);
+        SearchSection<DemoSearchItemResponse> demos = (SearchSection<DemoSearchItemResponse>) section(SearchType.DEMO, parsed, operator, sort, viewerId, blocked);
+        SearchSection<UserSearchItemResponse> users = (SearchSection<UserSearchItemResponse>) section(SearchType.USER, parsed, operator, sort, viewerId, blocked);
         SearchSuggestion suggestion = suggestion(parsed, SearchType.POST, SearchType.DEMO, SearchType.FEED, SearchType.USER);
         return new SearchAllResponse(posts, feeds, demos, users, null,
                 suggestion == null ? null : suggestion.query(),
                 suggestion == null ? null : suggestion.type());
     }
 
-    private SearchSection<?> section(SearchType type, ParsedQuery parsed, SearchOperator operator, SearchSort sort) {
-        RankedPage page = rank(type, parsed, operator, sort, PageRequest.of(0, PREVIEW_SIZE));
+    private SearchSection<?> section(SearchType type, ParsedQuery parsed, SearchOperator operator, SearchSort sort,
+                                     Long viewerId, Set<Long> blocked) {
+        RankedPage page = rank(type, parsed, operator, sort, PageRequest.of(0, PREVIEW_SIZE), viewerId, blocked);
         return new SearchSection<>(items(type, page.ids()), page.total());
     }
 
@@ -114,11 +119,12 @@ public class EngineSearchService implements SearchService {
                                         Pageable pageable, Long viewerId) {
         ParsedQuery parsed = queryParser.parse(query);
         Pageable page = PageRequest.of(pageable.getPageNumber(), Math.min(pageable.getPageSize(), MAX_PAGE_SIZE));
-        RankedPage ranked = rank(type, parsed, operator, sort, page);
+        Set<Long> blocked = personalization.blockedUsers(viewerId);
+        RankedPage ranked = rank(type, parsed, operator, sort, page, viewerId, blocked);
         Boolean relaxed = null;
         // 명시적 and는 절대 넓히지 않는다. op를 보내지 않았고 모든 단어가 일치하는 결과가 없을 때만 일부 일치를 보여 준다
         if (ranked.total() == 0 && operator == SearchOperator.AUTO && parsed.keywords().size() > 1) {
-            RankedPage partial = rank(type, parsed, SearchOperator.OR, sort, page);
+            RankedPage partial = rank(type, parsed, SearchOperator.OR, sort, page, viewerId, blocked);
             if (partial.total() > 0) {
                 ranked = partial;
                 relaxed = Boolean.TRUE;
@@ -142,7 +148,7 @@ public class EngineSearchService implements SearchService {
             }
             ParsedQuery suggested = queryParser.parse(candidate.get().query());
             for (SearchType type : types) {
-                if (retrieve(type, suggested, SearchOperator.AUTO, SearchSort.RELEVANCE, 0, 1).total() > 0) {
+                if (retrieve(type, suggested, SearchOperator.AUTO, SearchSort.RELEVANCE, 0, 1, Set.of(), Set.of()).total() > 0) {
                     return candidate.get();
                 }
             }
@@ -160,45 +166,62 @@ public class EngineSearchService implements SearchService {
      * window를 넘는 페이지는 Elasticsearch 순서를 그대로 이어서 쓴다. window는 항상 BM25 상위 문서라 겹치지 않는다.
      */
     private RankedPage rank(SearchType type, ParsedQuery parsed, SearchOperator operator, SearchSort sort,
-                            Pageable page) {
+                            Pageable page, Long viewerId, Set<Long> blocked) {
         int offset = (int) page.getOffset();
         int size = page.getPageSize();
         if (offset + size > MAX_RESULT_WINDOW) {
             return new RankedPage(List.of(), 0);
         }
+        Set<Long> hidden = personalization.hiddenIds(viewerId, type);
         if (sort == SearchSort.LATEST) {
-            SearchPort.Result result = retrieve(type, parsed, operator, sort, offset, size);
+            SearchPort.Result result = retrieve(type, parsed, operator, sort, offset, size, hidden, blocked);
             return new RankedPage(visibleIds(type, result.hits()), result.total());
         }
 
-        RankedWindow ranked = window(type, parsed, operator);
+        RankedWindow ranked = window(type, parsed, operator, viewerId, hidden, blocked);
         List<Long> ids = new ArrayList<>();
         if (offset < ranked.ids().size()) {
             ids.addAll(ranked.ids().subList(offset, Math.min(offset + size, ranked.ids().size())));
         }
-        // 인덱스가 늦어서 캐시 뒤에 삭제된 문서가 있을 수 있어서 돌려주기 전에 한 번 더 확인한다
+        // 캐시된 뒤 삭제된 문서가 있을 수 있어서 돌려주기 전에 한 번 더 확인한다
         Set<Long> visible = signals(type, ids).keySet();
         List<Long> result = new ArrayList<>(ids.stream().filter(visible::contains).toList());
         int missing = size - ids.size();
         if (missing > 0 && ranked.truncated()) {
             int beyond = properties.getRanking().getWindow() + Math.max(0, offset - ranked.ids().size());
-            result.addAll(visibleIds(type, retrieve(type, parsed, operator, sort, beyond, missing).hits()));
+            result.addAll(visibleIds(type, retrieve(type, parsed, operator, sort, beyond, missing, hidden, blocked).hits()));
         }
         return new RankedPage(result, ranked.total());
     }
 
-    private RankedWindow window(SearchType type, ParsedQuery parsed, SearchOperator operator) {
-        String key = String.join("|", type.name(), operator.name(), parsed.phrase(), String.join(",", parsed.hashtags()));
-        return windowCache.get(key, ignored -> computeWindow(type, parsed, operator));
+    private RankedWindow window(SearchType type, ParsedQuery parsed, SearchOperator operator, Long viewerId,
+                                Set<Long> hidden, Set<Long> blocked) {
+        String key = String.join("|", viewerKey(viewerId), type.name(), operator.name(), parsed.phrase(),
+                String.join(",", parsed.hashtags()));
+        return windowCache.get(key, ignored -> computeWindow(type, parsed, operator, viewerId, hidden, blocked));
     }
 
-    private RankedWindow computeWindow(SearchType type, ParsedQuery parsed, SearchOperator operator) {
+    private static String viewerKey(Long viewerId) {
+        return viewerId == null ? "anon" : viewerId.toString();
+    }
+
+    /** 숨김·차단을 바꿨을 때 그 사용자의 재정렬 결과를 버린다 */
+    public void invalidateViewer(Long viewerId) {
+        String prefix = viewerKey(viewerId) + "|";
+        windowCache.asMap().keySet().removeIf(key -> key.startsWith(prefix));
+    }
+
+    private RankedWindow computeWindow(SearchType type, ParsedQuery parsed, SearchOperator operator, Long viewerId,
+                                       Set<Long> hidden, Set<Long> blocked) {
         int window = properties.getRanking().getWindow();
-        SearchPort.Result result = retrieve(type, parsed, operator, SearchSort.RELEVANCE, 0, window);
-        Map<Long, SearchSignal> visible = signals(type, result.hits().stream().map(SearchPort.Hit::id).toList());
+        SearchPort.Result result = retrieve(type, parsed, operator, SearchSort.RELEVANCE, 0, window, hidden, blocked);
+        List<Long> hitIds = result.hits().stream().map(SearchPort.Hit::id).toList();
+        Map<Long, SearchSignal> visible = signals(type, hitIds);
+        Map<Long, Double> personalBoosts = personalization.personalBoosts(viewerId, type, parsed, visible.keySet());
         List<SearchRanker.Candidate> candidates = result.hits().stream()
                 .filter(hit -> visible.containsKey(hit.id()))
-                .map(hit -> SearchRanker.Candidate.from(hit, visible.get(hit.id())))
+                .map(hit -> SearchRanker.Candidate.from(hit, visible.get(hit.id()))
+                        .withPersonalBoost(personalBoosts.getOrDefault(hit.id(), 0.0)))
                 .toList();
         long removed = result.hits().size() - candidates.size();
         List<Long> ids = ranker.rank(type, candidates);
@@ -206,8 +229,8 @@ public class EngineSearchService implements SearchService {
     }
 
     private SearchPort.Result retrieve(SearchType type, ParsedQuery parsed, SearchOperator operator, SearchSort sort,
-                                       int from, int size) {
-        return searchPort.retrieve(new SearchPort.Request(type, parsed, operator, sort, from, size, Set.of(), Set.of()));
+                                       int from, int size, Set<Long> hidden, Set<Long> blocked) {
+        return searchPort.retrieve(new SearchPort.Request(type, parsed, operator, sort, from, size, hidden, blocked));
     }
 
     private List<Long> visibleIds(SearchType type, List<SearchPort.Hit> hits) {

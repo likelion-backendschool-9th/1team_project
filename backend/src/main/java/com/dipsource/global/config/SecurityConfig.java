@@ -60,6 +60,8 @@ public class SecurityConfig {
                                 "/follows/**",
                                 "/coins/**",
                                 "/users/me/bookmarks", "/users/*").permitAll()
+                        // 재색인 등 검색 운영은 관리자만
+                        .requestMatchers("/admin/search/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/error").permitAll()
                         // 측정값 조회. metrics는 기본으로 닫혀 있고(application.yml), nginx도 /actuator를 넘기지 않는다

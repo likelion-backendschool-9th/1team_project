@@ -103,4 +103,19 @@ final class EsEvalProfilesTest {
             return "3x-synonym-0.15";
         }
     }
+
+    /** 4단계: 팔로잉·방문 기록 개인화, 숨김·차단. 평가는 로그인 사용자 검색어까지 포함한다 */
+    @AutoConfigureMockMvc
+    @SpringBootTest(properties = {COMMON_JWT, GITHUB_ID, GITHUB_SECRET, ES_ON, ENGINE, NO_FALLBACK})
+    static class Stage4PersonalizedEval extends AbstractEsEval {
+        @Override
+        String profile() {
+            return "4-es-personalized";
+        }
+
+        @Override
+        boolean personalized() {
+            return true;
+        }
+    }
 }
