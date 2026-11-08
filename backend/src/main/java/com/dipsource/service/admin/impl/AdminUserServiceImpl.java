@@ -4,6 +4,7 @@ import com.dipsource.dto.admin.AdminSanctionResponse;
 import com.dipsource.dto.admin.AdminUserDetailResponse;
 import com.dipsource.dto.admin.AdminUserResponse;
 import com.dipsource.dto.admin.BanUserRequest;
+import com.dipsource.entity.post.PostStatus;
 import com.dipsource.entity.user.enums.UserRole;
 import com.dipsource.entity.user.User;
 import com.dipsource.entity.user.UserSanction;
@@ -11,11 +12,15 @@ import com.dipsource.entity.user.enums.UserStatus;
 import com.dipsource.global.common.PageResponse;
 import com.dipsource.global.exception.BusinessException;
 import com.dipsource.global.exception.ErrorCode;
+import com.dipsource.repository.demo.DemoRepository;
+import com.dipsource.repository.post.PostRepository;
+import com.dipsource.repository.report.ReportRepository;
 import com.dipsource.repository.user.UserRepository;
 import com.dipsource.repository.user.UserSanctionRepository;
 import com.dipsource.service.admin.AdminUserService;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -34,9 +39,13 @@ import org.springframework.transaction.annotation.Transactional;
 public class AdminUserServiceImpl implements AdminUserService {
 
     private static final int MAX_PAGE_SIZE = 100;
+    private static final String USER_REPORT_TYPE = "USER";
 
     private final UserRepository userRepository;
     private final UserSanctionRepository userSanctionRepository;
+    private final DemoRepository demoRepository;
+    private final PostRepository postRepository;
+    private final ReportRepository reportRepository;
 
     @Override
     @Transactional(readOnly = true)
@@ -44,7 +53,22 @@ public class AdminUserServiceImpl implements AdminUserService {
         int size = pageable.getPageSize() <= 0 ? 10 : Math.min(pageable.getPageSize(), MAX_PAGE_SIZE);
         Pageable limited = PageRequest.of(pageable.getPageNumber(), size);
         Page<User> page = userRepository.searchForAdmin(parseStatus(status), likePattern(q), limited);
-        return PageResponse.of(page, user -> AdminUserResponse.from(user, providerOf(user), 0, 0, 0));
+        List<Long> userIds = page.getContent().stream().map(User::getId).toList();
+        Map<Long, Integer> demoCounts = userIds.isEmpty()
+                ? Map.of()
+                : countMap(demoRepository.countActiveByUserIds(userIds));
+        Map<Long, Integer> postCounts = userIds.isEmpty()
+                ? Map.of()
+                : countMap(postRepository.countByUserIdsAndStatus(userIds, PostStatus.ACTIVE));
+        Map<Long, Integer> reportCounts = userIds.isEmpty()
+                ? Map.of()
+                : countMap(reportRepository.countByTargetTypeAndTargetIds(USER_REPORT_TYPE, userIds));
+        return PageResponse.of(page, user -> AdminUserResponse.from(
+                user,
+                providerOf(user),
+                demoCounts.getOrDefault(user.getId(), 0),
+                postCounts.getOrDefault(user.getId(), 0),
+                reportCounts.getOrDefault(user.getId(), 0)));
     }
 
     @Override 
@@ -60,7 +84,7 @@ public class AdminUserServiceImpl implements AdminUserService {
                     adminNames.getOrDefault(sanction.getAdminId(), "관리자")))
                 .toList();
         return new AdminUserDetailResponse(
-            AdminUserResponse.from(user, providerOf(user), 0, 0, 0),
+            toAdminUser(user),
             items);
     }
 
@@ -70,7 +94,7 @@ public class AdminUserServiceImpl implements AdminUserService {
         if (adminId.equals(userId)) {
             throw new BusinessException(ErrorCode.BAD_REQUEST, "자기 자신은 제재할 수 없습니다.");
         }
-        User user = requireUser(userId);
+        User user = requireUserForUpdate(userId);
         if (user.isWithdrawn()) {
             throw new BusinessException(ErrorCode.BAD_REQUEST, "탈퇴한 회원입니다.");
         }
@@ -95,7 +119,7 @@ public class AdminUserServiceImpl implements AdminUserService {
     @Override
     @Transactional
     public void unbanUser(Long userId) {
-        User user = requireUser(userId);
+        User user = requireUserForUpdate(userId);
         if (user.getStatus() != UserStatus.SUSPENDED) {
             throw new BusinessException(ErrorCode.BAD_REQUEST, "제재 중인 회원이 아닙니다.");
         }
@@ -115,9 +139,26 @@ public class AdminUserServiceImpl implements AdminUserService {
         }
     }
 
-    private User requireUser(Long userId) {
-        return userRepository.findById(userId)
+    private User requireUserForUpdate(Long userId) {
+        return userRepository.findByIdForUpdate(userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "회원을 찾을 수 없습니다"));
+    }
+
+    private AdminUserResponse toAdminUser(User user) {
+        return AdminUserResponse.from(
+                user,
+                providerOf(user),
+                (int) demoRepository.countByUserIdAndDeletedAtIsNull(user.getId()),
+                (int) postRepository.countByUserIdAndStatus(user.getId(), PostStatus.ACTIVE),
+                (int) reportRepository.countByTargetTypeAndTargetId(USER_REPORT_TYPE, user.getId()));
+    }
+
+    private static Map<Long, Integer> countMap(List<Object[]> rows) {
+        Map<Long, Integer> map = new HashMap<>();
+        for (Object[] row : rows) {
+            map.put((Long) row[0], ((Number) row[1]).intValue());
+        }
+        return map;
     }
 
     private static LocalDateTime endsAtOf(String period, LocalDateTime startsAt) {
