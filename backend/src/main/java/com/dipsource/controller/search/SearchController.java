@@ -64,7 +64,7 @@ public class SearchController {
     }
 
     /**
-     * 검색어 자동완성. 예: GET /api/v1/search/autocomplete?q=spr
+     * 검색어 자동완성. 예: GET /search/autocomplete?q=spr
      * - q: 입력 중인 검색어. 비어 있거나 공백만 있으면 빈 목록, 50자를 넘으면 400
      * - 응답: 최대 8개. text(검색창에 채울 검색어), type(TAG: 태그 이름, WORD: 공개 제목·태그의 단어)
      *   - 태그는 입력 전체로 시작하는 것: "spring b" → Spring Boot

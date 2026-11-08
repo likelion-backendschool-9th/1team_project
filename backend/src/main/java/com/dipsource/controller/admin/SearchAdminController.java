@@ -23,7 +23,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 /** 검색 인덱스 운영. SecurityConfig에서 ADMIN만 허용한다. */
 @RestController
-@RequestMapping("/api/v1/admin/search")
+@RequestMapping("/admin/search")
 @RequiredArgsConstructor
 @ConditionalOnProperty(prefix = "search.elasticsearch", name = "enabled", havingValue = "true")
 public class SearchAdminController {

@@ -31,7 +31,7 @@ metric() { # metric 이름 [tag=값 ...] → 측정값 JSON (없으면 빈 값)
   local name=$1; shift
   local query=""
   for tag in "$@"; do query+="&tag=${tag/=/:}"; done
-  curl -sf "$BASE_URL/actuator/metrics/$name?${query#&}" || true
+  curl -sf "$BASE_URL/api/v1/actuator/metrics/$name?${query#&}" || true
 }
 
 stat() { # metric JSON에서 COUNT·TOTAL_TIME·VALUE 같은 값 하나

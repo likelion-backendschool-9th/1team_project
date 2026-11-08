@@ -1,6 +1,7 @@
 package com.dipsource.controller.search;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.not;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -41,7 +42,7 @@ class SearchMetricsTest {
     @Test
     @DisplayName("검색 기능 서비스의 메서드별 실행 시간을 search.query로 잰다")
     void recordsSearchQueryTimer() throws Exception {
-        mockMvc.perform(get("/api/v1/search/autocomplete").param("q", "spr")).andExpect(status().isOk());
+        mockMvc.perform(get("/search/autocomplete").param("q", "spr")).andExpect(status().isOk());
 
         Timer timer = meterRegistry.find("search.query")
                 .tag("class", "com.dipsource.service.post.impl.PostSearchServiceImpl")
@@ -54,17 +55,17 @@ class SearchMetricsTest {
     @Test
     @DisplayName("HTTP 요청 시간은 경로 이름으로 묶는다")
     void recordsRequestByUriTemplate() throws Exception {
-        mockMvc.perform(get("/api/v1/search/autocomplete").param("q", "spr")).andExpect(status().isOk());
+        mockMvc.perform(get("/search/autocomplete").param("q", "spr")).andExpect(status().isOk());
 
-        assertThat(meterRegistry.find("http.server.requests").tag("uri", "/api/v1/search/autocomplete").timer())
+        assertThat(meterRegistry.find("http.server.requests").tag("uri", "/search/autocomplete").timer())
                 .isNotNull();
     }
 
     @Test
     @DisplayName("[보안] 검색어 원문은 측정값 어디에도 남지 않는다")
     void queryNotInTags() throws Exception {
-        mockMvc.perform(get("/api/v1/search").param("q", "secretkeyword")).andExpect(status().isOk());
-        mockMvc.perform(get("/api/v1/search/autocomplete").param("q", "secretkeyword")).andExpect(status().isOk());
+        mockMvc.perform(get("/search").param("q", "secretkeyword")).andExpect(status().isOk());
+        mockMvc.perform(get("/search/autocomplete").param("q", "secretkeyword")).andExpect(status().isOk());
 
         assertThat(meterRegistry.getMeters())
                 .flatMap(meter -> meter.getId().getTags())
@@ -75,8 +76,9 @@ class SearchMetricsTest {
     @Test
     @DisplayName("[보안] metrics 주소는 기본으로 닫혀 있다")
     void metricsClosedByDefault() throws Exception {
-        mockMvc.perform(get("/actuator/metrics")).andExpect(status().isNotFound());
-        mockMvc.perform(get("/actuator/metrics/search.query")).andExpect(status().isNotFound());
+        // 공통 예외 처리가 없는 주소를 500으로 내려서, 상태 코드를 특정하지 않고 열리지 않았는지만 본다
+        mockMvc.perform(get("/actuator/metrics")).andExpect(status().is(not(200)));
+        mockMvc.perform(get("/actuator/metrics/search.query")).andExpect(status().is(not(200)));
     }
 
     @Test

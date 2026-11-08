@@ -100,7 +100,7 @@ class SearchSyncTest {
     }
 
     private long searchTotal(String q) throws Exception {
-        String body = mockMvc.perform(get("/api/v1/search").param("q", q).param("type", "feed"))
+        String body = mockMvc.perform(get("/search").param("q", q).param("type", "feed"))
                 .andReturn().getResponse().getContentAsString();
         return ((Number) com.jayway.jsonpath.JsonPath.read(body, "$.data.totalElements")).longValue();
     }
@@ -156,7 +156,7 @@ class SearchSyncTest {
         tx.executeWithoutResult(status -> userRepository.findById(author.getId()).orElseThrow()
                 .updateProfile("springdev", null, "소개", List.of("Java"), null));
         drain();
-        String found = mockMvc.perform(get("/api/v1/search").param("q", "springdev").param("type", "user"))
+        String found = mockMvc.perform(get("/search").param("q", "springdev").param("type", "user"))
                 .andReturn().getResponse().getContentAsString();
         assertThat(found).contains("springdev");
 
@@ -233,13 +233,13 @@ class SearchSyncTest {
     void adminOnly() throws Exception {
         UserPrincipal user = new UserPrincipal(1L, "USER");
         UserPrincipal admin = new UserPrincipal(2L, "ADMIN");
-        mockMvc.perform(post("/api/v1/admin/search/reconcile").with(csrf())
+        mockMvc.perform(post("/admin/search/reconcile").with(csrf())
                         .with(authentication(new UsernamePasswordAuthenticationToken(user, null, user.getAuthorities()))))
                 .andExpect(status().isForbidden());
-        mockMvc.perform(post("/api/v1/admin/search/reconcile").with(csrf())
+        mockMvc.perform(post("/admin/search/reconcile").with(csrf())
                         .with(authentication(new UsernamePasswordAuthenticationToken(admin, null, admin.getAuthorities()))))
                 .andExpect(status().isOk());
-        mockMvc.perform(get("/api/v1/admin/search/status")
+        mockMvc.perform(get("/admin/search/status")
                         .with(authentication(new UsernamePasswordAuthenticationToken(admin, null, admin.getAuthorities()))))
                 .andExpect(jsonPath("$.data.outbox.pending").isNumber());
     }

@@ -37,7 +37,7 @@ start_backend() { # start_backend 엔진 로그파일
   backend_env
   SEARCH_ENGINE=$1 java -Xms1g -Xmx1g -jar "$JAR" > "$2" 2>&1 &
   BACKEND_PID=$!
-  until curl -sf "localhost:$PORT/actuator/health" > /dev/null; do sleep 1; done
+  until curl -sf "localhost:$PORT/api/v1/actuator/health" > /dev/null; do sleep 1; done
 }
 
 stop_backend() {
@@ -58,7 +58,7 @@ setup() {
   backend_env; export SEARCH_ES_ENABLED=false
   SEARCH_ENGINE=postgres java -jar "$JAR" > "$OUT/boot.log" 2>&1 &
   BACKEND_PID=$!
-  until curl -sf "localhost:$PORT/actuator/health" > /dev/null; do sleep 1; done
+  until curl -sf "localhost:$PORT/api/v1/actuator/health" > /dev/null; do sleep 1; done
   stop_backend
   docker exec -i "$DB" psql -U dipsource -d dipsource -q < "$DIR/seed.sql"
   docker exec -i "$DB" sh -c 'psql -U dipsource -d dipsource -q -v posts=100000' < "$DIR/load-seed.sql"
@@ -78,7 +78,7 @@ sampler() { # 2초마다: 시각 PG_CPU PG_MEM ES_CPU ES_MEM JVM_CPU JVM_RSS_MB 
     pg=$(awk -v n="$DB" '$1 == n {gsub("%", "", $2); print $2, $3}' <<<"$stats")
     es=$(awk -v n="$ES" '$1 == n {gsub("%", "", $2); print $2, $3}' <<<"$stats")
     jvm=$(ps -o %cpu=,rss= -p "$BACKEND_PID" | awk '{printf "%s %d", $1, $2 / 1024}')
-    pending=$(curl -s "localhost:$PORT/actuator/metrics/hikaricp.connections.pending" | jq -r '.measurements[0].value // 0')
+    pending=$(curl -s "localhost:$PORT/api/v1/actuator/metrics/hikaricp.connections.pending" | jq -r '.measurements[0].value // 0')
     echo "$(date +%s) $pg $es $jvm $pending"
     sleep 2
   done

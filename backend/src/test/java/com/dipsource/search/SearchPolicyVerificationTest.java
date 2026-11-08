@@ -82,7 +82,7 @@ class SearchPolicyVerificationTest extends AbstractSearchVerification {
         long id = post(author, "Kafka 옛제목", "본문");
         reindex();
 
-        changePost(id, p -> p.update("Redis 새제목", "본문", null, null, false, 0));
+        changePost(id, p -> p.update("Redis 새제목", p.getCategory(), "본문", null, null, false, 0));
         assertThat(search("kafka", "post").ids()).as("동기화 전에는 옛 색인으로 찾히지만 최신 글을 응답").contains((int) id);
         assertThat(search("redis", "post").total()).as("새 검색어는 아직 없음").isZero();
 
@@ -123,7 +123,7 @@ class SearchPolicyVerificationTest extends AbstractSearchVerification {
         long id = post(author, "Kafka 글", "비밀단어 본문");
         reindex();
 
-        changePost(id, p -> p.update("Kafka 글", "비밀단어 본문", null, null, true, 100));
+        changePost(id, p -> p.update("Kafka 글", p.getCategory(), "비밀단어 본문", null, null, true, 100));
         assertThat(search("비밀단어", "post").ids()).contains((int) id);
         drain();
         assertThat(search("비밀단어", "post").ids()).doesNotContain((int) id);
@@ -197,7 +197,7 @@ class SearchPolicyVerificationTest extends AbstractSearchVerification {
 
         // 실제 숨김 API를 거쳐야 캐시가 비워진다
         var principal = new com.dipsource.global.auth.UserPrincipal(viewer, "USER");
-        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/api/v1/search/hidden")
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/search/hidden")
                 .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
                 .content("{\"targetType\":\"post\",\"targetId\":" + first + "}")
                 .with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication(

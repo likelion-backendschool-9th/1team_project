@@ -154,7 +154,7 @@ class ElasticsearchSearchTest {
 
         List<Integer> seen = new ArrayList<>();
         for (int page = 0; page < 3; page++) {
-            String body = mockMvc.perform(get("/api/v1/search").param("q", "spring").param("type", "post")
+            String body = mockMvc.perform(get("/search").param("q", "spring").param("type", "post")
                             .param("page", String.valueOf(page)).param("size", "10"))
                     .andReturn().getResponse().getContentAsString();
             seen.addAll(com.jayway.jsonpath.JsonPath.read(body, "$.data.content[*].id"));
@@ -169,7 +169,7 @@ class ElasticsearchSearchTest {
         user("springdev", "소개");
         reindex();
 
-        mockMvc.perform(get("/api/v1/search").param("q", "spring"))
+        mockMvc.perform(get("/search").param("q", "spring"))
                 .andExpect(jsonPath("$.data.posts.totalElements").value(1))
                 .andExpect(jsonPath("$.data.users.totalElements").value(1))
                 .andExpect(jsonPath("$.data.demos.totalElements").value(0))
@@ -210,7 +210,7 @@ class ElasticsearchSearchTest {
         }
         reindex();
 
-        ResultActions result = mockMvc.perform(get("/api/v1/search").param("q", "springdev").param("type", "user"));
+        ResultActions result = mockMvc.perform(get("/search").param("q", "springdev").param("type", "user"));
         assertThat(ids(result).get(0)).isEqualTo((int) exact);
     }
 
@@ -225,7 +225,7 @@ class ElasticsearchSearchTest {
 
         List<Integer> seen = new ArrayList<>();
         for (int page = 0; page < 5; page++) {
-            seen.addAll(ids(mockMvc.perform(get("/api/v1/search").param("q", "spring").param("type", "post")
+            seen.addAll(ids(mockMvc.perform(get("/search").param("q", "spring").param("type", "post")
                     .param("page", String.valueOf(page)).param("size", "10"))));
         }
         assertThat(seen).hasSize(45).doesNotHaveDuplicates();
@@ -476,7 +476,7 @@ class ElasticsearchSearchTest {
         }
 
         private List<String> autocomplete(String q) throws Exception {
-            String body = mockMvc.perform(get("/api/v1/search/autocomplete").param("q", q))
+            String body = mockMvc.perform(get("/search/autocomplete").param("q", q))
                     .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
             return com.jayway.jsonpath.JsonPath.read(body, "$.data[*].text");
         }
@@ -495,7 +495,7 @@ class ElasticsearchSearchTest {
 
         private ResultActions searchAs(long userId, String q, String type) throws Exception {
             UserPrincipal principal = new UserPrincipal(userId, "USER");
-            return mockMvc.perform(get("/api/v1/search").param("q", q).param("type", type)
+            return mockMvc.perform(get("/search").param("q", q).param("type", type)
                     .with(authentication(new UsernamePasswordAuthenticationToken(principal, null, principal.getAuthorities()))));
         }
 
@@ -526,8 +526,8 @@ class ElasticsearchSearchTest {
             long other = user("다른사용자", null);
             reindex();
 
-            postJson(viewer, "/api/v1/search/hidden", "{\"targetType\":\"post\",\"targetId\":" + target + "}").andExpect(status().isNoContent());
-            postJson(viewer, "/api/v1/search/hidden", "{\"targetType\":\"post\",\"targetId\":" + target + "}").andExpect(status().isNoContent());
+            postJson(viewer, "/search/hidden", "{\"targetType\":\"post\",\"targetId\":" + target + "}").andExpect(status().isNoContent());
+            postJson(viewer, "/search/hidden", "{\"targetType\":\"post\",\"targetId\":" + target + "}").andExpect(status().isNoContent());
 
             searchAs(viewer, "spring", "post").andExpect(jsonPath("$.data.totalElements").value(0));
             searchAs(other, "spring", "post").andExpect(jsonPath("$.data.totalElements").value(1));
@@ -535,11 +535,11 @@ class ElasticsearchSearchTest {
             assertThat(jdbc.queryForObject("SELECT count(*) FROM search_hidden_results", Long.class)).isEqualTo(1);
 
             UserPrincipal principal = new UserPrincipal(viewer, "USER");
-            mockMvc.perform(get("/api/v1/search/hidden")
+            mockMvc.perform(get("/search/hidden")
                             .with(authentication(new UsernamePasswordAuthenticationToken(principal, null, principal.getAuthorities()))))
                     .andExpect(jsonPath("$.data.content[0].label").value("Spring 글"));
 
-            mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete("/api/v1/search/hidden/post/" + target)
+            mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete("/search/hidden/post/" + target)
                             .with(authentication(new UsernamePasswordAuthenticationToken(principal, null, principal.getAuthorities())))
                             .with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf()))
                     .andExpect(status().isNoContent());
@@ -566,14 +566,14 @@ class ElasticsearchSearchTest {
         @Test
         @DisplayName("비로그인은 숨김·방문 기록 API를 쓸 수 없다")
         void anonymousRejected() throws Exception {
-            mockMvc.perform(get("/api/v1/search/hidden")).andExpect(status().isUnauthorized());
+            mockMvc.perform(get("/search/hidden")).andExpect(status().isUnauthorized());
         }
 
         @Test
         @DisplayName("없는 대상은 숨길 수 없다")
         void hideMissing() throws Exception {
             reindex();
-            postJson(viewer, "/api/v1/search/hidden", "{\"targetType\":\"post\",\"targetId\":99999}").andExpect(status().isNotFound());
+            postJson(viewer, "/search/hidden", "{\"targetType\":\"post\",\"targetId\":99999}").andExpect(status().isNotFound());
         }
 
         @Test
@@ -615,7 +615,7 @@ class ElasticsearchSearchTest {
             reindex();
 
             assertThat(ids(searchAs(viewer, "kafka", "user"))).containsExactly((int) x, (int) y, (int) z);
-            assertThat(ids(mockMvc.perform(get("/api/v1/search").param("q", "kafka").param("type", "user"))).get(0)).isEqualTo((int) z);
+            assertThat(ids(mockMvc.perform(get("/search").param("q", "kafka").param("type", "user"))).get(0)).isEqualTo((int) z);
         }
 
         @Test
@@ -662,8 +662,8 @@ class ElasticsearchSearchTest {
         void visitDedup() throws Exception {
             long target = post("Spring 글", "본문", "ACTIVE");
             String body = "{\"targetType\":\"post\",\"targetId\":" + target + ",\"query\":\"Spring\"}";
-            postJson(viewer, "/api/v1/search/visits", body).andExpect(status().isNoContent());
-            postJson(viewer, "/api/v1/search/visits", body).andExpect(status().isNoContent());
+            postJson(viewer, "/search/visits", body).andExpect(status().isNoContent());
+            postJson(viewer, "/search/visits", body).andExpect(status().isNoContent());
 
             assertThat(jdbc.queryForObject("SELECT visit_count FROM search_visits", Integer.class)).isEqualTo(1);
             assertThat(jdbc.queryForObject("SELECT query_norm FROM search_visits", String.class)).isEqualTo("spring");
@@ -686,7 +686,7 @@ class ElasticsearchSearchTest {
     }
 
     private ResultActions search(String q, String... extra) throws Exception {
-        var request = get("/api/v1/search").param("q", q).param("type", "post");
+        var request = get("/search").param("q", q).param("type", "post");
         for (int i = 0; i + 1 < extra.length; i += 2) {
             request.param(extra[i], extra[i + 1]);
         }

@@ -25,7 +25,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 /** 사용자별 검색 설정. 모두 로그인이 필요하고, 사용자는 JWT에서만 알아낸다. */
 @RestController
-@RequestMapping("/api/v1/search")
+@RequestMapping("/search")
 @RequiredArgsConstructor
 public class SearchPreferenceController {
 

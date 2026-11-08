@@ -54,13 +54,13 @@ class SearchFallbackTest {
                 VALUES (?, 'Spring 글', '본문', false, 0, 'ACTIVE', 0, 0, 0, now(), now())
                 """, author);
 
-        mockMvc.perform(get("/api/v1/search").param("q", "spring").param("type", "post"))
+        mockMvc.perform(get("/search").param("q", "spring").param("type", "post"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.totalElements").value(1));
-        mockMvc.perform(get("/api/v1/search").param("q", "spring"))
+        mockMvc.perform(get("/search").param("q", "spring"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.posts.totalElements").value(1));
-        mockMvc.perform(get("/api/v1/search/autocomplete").param("q", "spr"))
+        mockMvc.perform(get("/search/autocomplete").param("q", "spr"))
                 .andExpect(status().isOk());
     }
 }

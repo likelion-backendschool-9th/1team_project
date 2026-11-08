@@ -11,6 +11,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.dipsource.entity.demo.Demo;
 import com.dipsource.entity.demo.DemoType;
 import com.dipsource.entity.post.Post;
+import com.dipsource.entity.post.PostCategory;
 import com.dipsource.entity.tag.Tag;
 import com.dipsource.entity.user.User;
 import jakarta.persistence.EntityManager;
@@ -228,7 +229,7 @@ class SearchAutocompleteControllerTest {
         @Test
         @DisplayName("q가 없어도 빈 목록")
         void missing() throws Exception {
-            mockMvc.perform(get("/api/v1/search/autocomplete"))
+            mockMvc.perform(get("/search/autocomplete"))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.data", hasSize(0)));
         }
@@ -288,7 +289,7 @@ class SearchAutocompleteControllerTest {
         @Test
         @DisplayName("[보안] 유료 글은 공개된 제목의 단어만 후보이고, 본문 단어는 후보가 아니다")
         void paidContent() throws Exception {
-            persist(Post.builder().userId(author.getId()).title("Terraform 강의")
+            persist(Post.builder().userId(author.getId()).title("Terraform 강의").category(PostCategory.BACKEND)
                     .content("terragrunt 비밀 노하우").paid(true).priceChips(30).build());
 
             autocomplete("terra")
@@ -345,7 +346,7 @@ class SearchAutocompleteControllerTest {
     }
 
     private ResultActions autocomplete(String q) throws Exception {
-        return mockMvc.perform(get("/api/v1/search/autocomplete").param("q", q));
+        return mockMvc.perform(get("/search/autocomplete").param("q", q));
     }
 
     private <T> T persist(T entity) {
@@ -364,11 +365,11 @@ class SearchAutocompleteControllerTest {
     }
 
     private void savePost(String title, String content) {
-        persist(Post.builder().userId(author.getId()).title(title).content(content).paid(false).priceChips(0).build());
+        persist(Post.builder().userId(author.getId()).title(title).category(PostCategory.BACKEND).content(content).paid(false).priceChips(0).build());
     }
 
     private Post post(String title, boolean paid) {
-        return Post.builder().userId(author.getId()).title(title).content("본문").paid(paid).priceChips(paid ? 30 : 0).build();
+        return Post.builder().userId(author.getId()).title(title).category(PostCategory.BACKEND).content("본문").paid(paid).priceChips(paid ? 30 : 0).build();
     }
 
     private void saveDemo(String title) {

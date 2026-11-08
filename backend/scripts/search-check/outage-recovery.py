@@ -104,7 +104,7 @@ def main():
     record("장애 중 삭제 글 미노출", "0건", feed_total(words["gone"])[1], feed_total(words["gone"])[1] == 0)
     record("장애 중 새 글 검색", "1건(PostgreSQL)", feed_total(words["fresh"])[1], feed_total(words["fresh"])[1] == 1)
     record("장애 중 수정 전 단어 미노출", "0건", feed_total(words["oldtext"])[1], feed_total(words["oldtext"])[1] == 0)
-    health = request("/actuator/health")[0]
+    health = request("/api/v1/actuator/health")[0]
     record("장애 중 서버 상태", "200", health, health == 200)
 
     time.sleep(40)

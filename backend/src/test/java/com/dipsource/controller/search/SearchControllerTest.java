@@ -443,7 +443,7 @@ class SearchControllerTest {
             saveDemo("Spring 데모", null);
             user("spring_user", null, List.of());
 
-            mockMvc.perform(get("/api/v1/search").param("q", "spring"))
+            mockMvc.perform(get("/search").param("q", "spring"))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.data.posts.totalElements").value(1))
                     .andExpect(jsonPath("$.data.posts.content[0].title").value("Spring 블로그"))
@@ -987,7 +987,7 @@ class SearchControllerTest {
         @Test
         @DisplayName("검색어가 없으면 400")
         void missingQuery() throws Exception {
-            mockMvc.perform(get("/api/v1/search").param("type", "post"))
+            mockMvc.perform(get("/search").param("type", "post"))
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.error.code").value("BAD_REQUEST"));
         }
@@ -1116,7 +1116,7 @@ class SearchControllerTest {
     }
 
     private ResultActions search(String q, String type, String... extraParams) throws Exception {
-        var request = get("/api/v1/search").param("q", q).param("type", type);
+        var request = get("/search").param("q", q).param("type", type);
         for (int i = 0; i < extraParams.length; i += 2) {
             request.param(extraParams[i], extraParams[i + 1]);
         }

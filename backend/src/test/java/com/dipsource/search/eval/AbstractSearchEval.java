@@ -162,7 +162,7 @@ abstract class AbstractSearchEval {
     }
 
     private JsonNode search(JsonNode query, EvalCorpusLoader corpus) throws Exception {
-        MockHttpServletRequestBuilder request = get("/api/v1/search")
+        MockHttpServletRequestBuilder request = get("/search")
                 .param("q", query.get("q").asText())
                 .param("type", query.get("type").asText())
                 .param("size", String.valueOf(K))

@@ -63,7 +63,7 @@ abstract class AbstractSearchVerification {
     }
 
     Page search(Long viewer, String q, String type, int page, int size, String... extra) throws Exception {
-        MockHttpServletRequestBuilder request = get("/api/v1/search").param("q", q).param("type", type)
+        MockHttpServletRequestBuilder request = get("/search").param("q", q).param("type", type)
                 .param("page", String.valueOf(page)).param("size", String.valueOf(size));
         for (int i = 0; i + 1 < extra.length; i += 2) {
             request.param(extra[i], extra[i + 1]);
@@ -87,7 +87,7 @@ abstract class AbstractSearchVerification {
     }
 
     List<String> autocomplete(String q) throws Exception {
-        String body = mockMvc.perform(get("/api/v1/search/autocomplete").param("q", q)).andReturn().getResponse()
+        String body = mockMvc.perform(get("/search/autocomplete").param("q", q)).andReturn().getResponse()
                 .getContentAsString(java.nio.charset.StandardCharsets.UTF_8);
         return JsonPath.read(body, "$.data[*].text");
     }
