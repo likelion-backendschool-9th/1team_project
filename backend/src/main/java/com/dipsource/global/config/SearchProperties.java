@@ -41,6 +41,8 @@ public class SearchProperties {
         private int shards = 1;
         private int replicas = 0;
         private int bulkSize = 500;
+        /** 서버가 뜰 때 인덱스가 비어 있으면 자동으로 초기 색인한다 */
+        private boolean bootstrapOnEmpty = true;
     }
 
     @Getter

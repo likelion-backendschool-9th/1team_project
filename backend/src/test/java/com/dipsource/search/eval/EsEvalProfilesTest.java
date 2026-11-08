@@ -12,13 +12,14 @@ final class EsEvalProfilesTest {
     private static final String ES_ON = "search.elasticsearch.enabled=true";
     private static final String ENGINE = "search.engine=elasticsearch";
     private static final String NO_FALLBACK = "search.fallback-to-postgres=false";
+    private static final String NO_BOOTSTRAP = "search.elasticsearch.bootstrap-on-empty=false";
 
     private EsEvalProfilesTest() {
     }
 
     /** 1단계: 순수 BM25. 필드 가중치·언어 분석·기술 용어·재정렬 없음 */
     @AutoConfigureMockMvc
-    @SpringBootTest(properties = {COMMON_JWT, GITHUB_ID, GITHUB_SECRET, ES_ON, ENGINE, NO_FALLBACK,
+    @SpringBootTest(properties = {COMMON_JWT, GITHUB_ID, GITHUB_SECRET, ES_ON, ENGINE, NO_FALLBACK, NO_BOOTSTRAP,
             "search.ranking.flat=true",
             "search.analysis.language-fields=false",
             "search.analysis.tech-terms=false",
@@ -32,7 +33,7 @@ final class EsEvalProfilesTest {
 
     /** 2단계: 필드 가중치 + 구문·정확 일치 + 인기도 재정렬 + 스팸 감점. 다국어·기술 용어는 아직 끔 */
     @AutoConfigureMockMvc
-    @SpringBootTest(properties = {COMMON_JWT, GITHUB_ID, GITHUB_SECRET, ES_ON, ENGINE, NO_FALLBACK,
+    @SpringBootTest(properties = {COMMON_JWT, GITHUB_ID, GITHUB_SECRET, ES_ON, ENGINE, NO_FALLBACK, NO_BOOTSTRAP,
             "search.analysis.language-fields=false",
             "search.analysis.tech-terms=false",
             "search.analysis.synonyms=false"})
@@ -45,7 +46,7 @@ final class EsEvalProfilesTest {
 
     /** 2단계 실험: 블로그 해시태그 가중치를 요구사항 초기값(4)으로 올렸을 때 */
     @AutoConfigureMockMvc
-    @SpringBootTest(properties = {COMMON_JWT, GITHUB_ID, GITHUB_SECRET, ES_ON, ENGINE, NO_FALLBACK,
+    @SpringBootTest(properties = {COMMON_JWT, GITHUB_ID, GITHUB_SECRET, ES_ON, ENGINE, NO_FALLBACK, NO_BOOTSTRAP,
             "search.analysis.language-fields=false",
             "search.analysis.tech-terms=false",
             "search.analysis.synonyms=false",
@@ -59,7 +60,7 @@ final class EsEvalProfilesTest {
 
     /** 2단계 실험: 인기도를 끄면(최대 가산 0) 어떻게 되는지 */
     @AutoConfigureMockMvc
-    @SpringBootTest(properties = {COMMON_JWT, GITHUB_ID, GITHUB_SECRET, ES_ON, ENGINE, NO_FALLBACK,
+    @SpringBootTest(properties = {COMMON_JWT, GITHUB_ID, GITHUB_SECRET, ES_ON, ENGINE, NO_FALLBACK, NO_BOOTSTRAP,
             "search.analysis.language-fields=false",
             "search.analysis.tech-terms=false",
             "search.analysis.synonyms=false",
@@ -76,7 +77,7 @@ final class EsEvalProfilesTest {
 
     /** 3단계: 언어별 분석 + 기술 용어 보존 + 동의어 + 제안어 */
     @AutoConfigureMockMvc
-    @SpringBootTest(properties = {COMMON_JWT, GITHUB_ID, GITHUB_SECRET, ES_ON, ENGINE, NO_FALLBACK})
+    @SpringBootTest(properties = {COMMON_JWT, GITHUB_ID, GITHUB_SECRET, ES_ON, ENGINE, NO_FALLBACK, NO_BOOTSTRAP})
     static class Stage3MultilingualEval extends AbstractEsEval {
         @Override
         String profile() {
@@ -85,7 +86,7 @@ final class EsEvalProfilesTest {
     }
 
     @AutoConfigureMockMvc
-    @SpringBootTest(properties = {COMMON_JWT, GITHUB_ID, GITHUB_SECRET, ES_ON, ENGINE, NO_FALLBACK,
+    @SpringBootTest(properties = {COMMON_JWT, GITHUB_ID, GITHUB_SECRET, ES_ON, ENGINE, NO_FALLBACK, NO_BOOTSTRAP,
             "search.ranking.synonym-boost=0.3"})
     static class Stage3Synonym03Eval extends AbstractEsEval {
         @Override
@@ -95,7 +96,7 @@ final class EsEvalProfilesTest {
     }
 
     @AutoConfigureMockMvc
-    @SpringBootTest(properties = {COMMON_JWT, GITHUB_ID, GITHUB_SECRET, ES_ON, ENGINE, NO_FALLBACK,
+    @SpringBootTest(properties = {COMMON_JWT, GITHUB_ID, GITHUB_SECRET, ES_ON, ENGINE, NO_FALLBACK, NO_BOOTSTRAP,
             "search.ranking.synonym-boost=0.15"})
     static class Stage3Synonym015Eval extends AbstractEsEval {
         @Override
@@ -106,7 +107,7 @@ final class EsEvalProfilesTest {
 
     /** 4단계: 팔로잉·방문 기록 개인화, 숨김·차단. 평가는 로그인 사용자 검색어까지 포함한다 */
     @AutoConfigureMockMvc
-    @SpringBootTest(properties = {COMMON_JWT, GITHUB_ID, GITHUB_SECRET, ES_ON, ENGINE, NO_FALLBACK})
+    @SpringBootTest(properties = {COMMON_JWT, GITHUB_ID, GITHUB_SECRET, ES_ON, ENGINE, NO_FALLBACK, NO_BOOTSTRAP})
     static class Stage4PersonalizedEval extends AbstractEsEval {
         @Override
         String profile() {

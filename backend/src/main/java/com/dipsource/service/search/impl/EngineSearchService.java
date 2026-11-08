@@ -19,6 +19,7 @@ import com.dipsource.service.post.PostSearchService;
 import com.dipsource.service.search.SearchService;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
+import io.micrometer.core.instrument.MeterRegistry;
 import com.dipsource.service.search.engine.SearchPort;
 import com.dipsource.service.search.personal.SearchPersonalizationService;
 import com.dipsource.service.search.query.ParsedQuery;
@@ -64,12 +65,13 @@ public class EngineSearchService implements SearchService {
     private final DemoSearchService demoSearchService;
     private final UserSearchService userSearchService;
     private final Cache<String, RankedWindow> windowCache;
+    private final MeterRegistry meterRegistry;
 
     public EngineSearchService(SearchPort searchPort, SearchQueryParser queryParser, SearchRanker ranker,
                                SearchSuggester suggester, SearchPersonalizationService personalization,
                                SearchProperties properties, PostSearchService postSearchService,
                                FeedSearchService feedSearchService, DemoSearchService demoSearchService,
-                               UserSearchService userSearchService) {
+                               UserSearchService userSearchService, MeterRegistry meterRegistry) {
         this.searchPort = searchPort;
         this.queryParser = queryParser;
         this.ranker = ranker;
@@ -80,6 +82,7 @@ public class EngineSearchService implements SearchService {
         this.feedSearchService = feedSearchService;
         this.demoSearchService = demoSearchService;
         this.userSearchService = userSearchService;
+        this.meterRegistry = meterRegistry;
         this.windowCache = Caffeine.newBuilder()
                 .expireAfterWrite(properties.getRanking().getWindowCacheTtl())
                 .maximumSize(properties.getRanking().getWindowCacheSize())
@@ -224,7 +227,7 @@ public class EngineSearchService implements SearchService {
                         .withPersonalBoost(personalBoosts.getOrDefault(hit.id(), 0.0)))
                 .toList();
         long removed = result.hits().size() - candidates.size();
-        List<Long> ids = ranker.rank(type, candidates);
+        List<Long> ids = meterRegistry.timer("search.rerank").record(() -> ranker.rank(type, candidates));
         return new RankedWindow(ids, Math.max(0, result.total() - removed), result.total() > result.hits().size());
     }
 

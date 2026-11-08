@@ -39,7 +39,8 @@ import org.springframework.test.web.servlet.ResultActions;
         "search.elasticsearch.enabled=true",
         "search.engine=elasticsearch",
         "search.fallback-to-postgres=false",
-        "search.ranking.window-cache-ttl=0s"
+        "search.ranking.window-cache-ttl=0s",
+        "search.elasticsearch.bootstrap-on-empty=false"
 })
 class ElasticsearchSearchTest {
 

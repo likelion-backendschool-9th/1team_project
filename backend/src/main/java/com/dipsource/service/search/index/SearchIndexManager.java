@@ -1,9 +1,14 @@
 package com.dipsource.service.search.index;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch._types.FieldValue;
+import co.elastic.clients.elasticsearch._types.SortOrder;
+import co.elastic.clients.elasticsearch._types.VersionType;
 import co.elastic.clients.elasticsearch.core.BulkRequest;
 import co.elastic.clients.elasticsearch.core.BulkResponse;
+import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.bulk.BulkResponseItem;
+import co.elastic.clients.elasticsearch.core.search.Hit;
 import co.elastic.clients.elasticsearch.indices.GetAliasResponse;
 import com.dipsource.dto.search.SearchType;
 import com.dipsource.global.config.SearchProperties;
@@ -15,6 +20,8 @@ import java.io.UncheckedIOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -78,6 +85,72 @@ public class SearchIndexManager {
         client.indices().refresh(r -> r.index(index));
         swapAlias(type, index);
         return count;
+    }
+
+    /** 동기화 결과. failedIds는 다시 시도해야 하는 문서 */
+    public record SyncResult(List<Long> failedIds) {
+    }
+
+    /**
+     * 문서들을 PostgreSQL의 현재 상태로 맞춘다. 공개 상태면 색인하고, 아니면 지운다.
+     * 대기열 ID를 외부 버전으로 써서 더 오래된 처리가 늦게 도착해도 새 내용을 덮어쓰지 못한다.
+     *
+     * @param latest 문서 ID → 그 문서의 가장 최근 대기열 ID
+     */
+    public SyncResult sync(SearchType type, Map<Long, Long> latest) throws IOException {
+        String alias = alias(type);
+        Map<Long, SourceRow> rows = new HashMap<>();
+        documents.findByIds(type, latest.keySet()).forEach(row -> rows.put(row.id(), row));
+
+        BulkRequest.Builder bulk = new BulkRequest.Builder();
+        latest.forEach((id, version) -> {
+            SourceRow row = rows.get(id);
+            if (row == null) {
+                bulk.operations(op -> op.delete(d -> d.index(alias).id(String.valueOf(id))
+                        .version(version).versionType(VersionType.ExternalGte)));
+            } else {
+                Map<String, Object> doc = documentFactory.create(type, id, row.values());
+                bulk.operations(op -> op.index(i -> i.index(alias).id(String.valueOf(id)).document(doc)
+                        .version(version).versionType(VersionType.ExternalGte)));
+            }
+        });
+        BulkResponse response = client.bulk(bulk.build());
+        List<Long> failed = new ArrayList<>();
+        for (BulkResponseItem item : response.items()) {
+            // 409는 더 최신 버전이 이미 반영됐다는 뜻이고, 404는 이미 지워졌다는 뜻이라 성공으로 본다
+            boolean ok = item.error() == null || item.status() == 409 || item.status() == 404;
+            if (!ok) {
+                failed.add(Long.parseLong(item.id()));
+            }
+        }
+        client.indices().refresh(r -> r.index(alias));
+        return new SyncResult(failed);
+    }
+
+    /** 인덱스에 있는 문서 ID 전부. 원본과 비교할 때 쓴다 */
+    public Set<Long> indexedIds(SearchType type) throws IOException {
+        Set<Long> ids = new HashSet<>();
+        Long after = null;
+        while (true) {
+            final Long cursor = after;
+            SearchResponse<Void> response = client.search(s -> {
+                s.index(alias(type)).size(5000).source(c -> c.fetch(false)).sort(o -> o.field(f -> f.field("doc_id").order(SortOrder.Asc)));
+                if (cursor != null) {
+                    s.searchAfter(FieldValue.of(cursor));
+                }
+                return s;
+            }, Void.class);
+            List<Hit<Void>> hits = response.hits().hits();
+            if (hits.isEmpty()) {
+                return ids;
+            }
+            hits.forEach(hit -> ids.add(Long.parseLong(hit.id())));
+            after = Long.parseLong(hits.get(hits.size() - 1).id());
+        }
+    }
+
+    public long count(SearchType type) throws IOException {
+        return client.count(c -> c.index(alias(type))).count();
     }
 
     private void bulkIndex(String index, SearchType type, List<SourceRow> rows) throws IOException {
