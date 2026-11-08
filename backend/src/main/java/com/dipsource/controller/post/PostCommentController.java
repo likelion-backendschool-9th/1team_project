@@ -27,7 +27,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 /** 블로그 댓글·답글·댓글 좋아요. 작성자는 JWT에서만 가져온다. 삭제된 글이면 모두 404 */
 @RestController
-@RequestMapping("/api/v1/posts")
+@RequestMapping("/posts")
 @RequiredArgsConstructor
 public class PostCommentController {
 
