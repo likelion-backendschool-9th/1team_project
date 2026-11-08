@@ -112,6 +112,7 @@ public class PostgresSearchServiceImpl implements SearchService {
                 SearchSection.from(demoSearchService.search(condition, preview)),
                 SearchSection.from(userSearchService.search(condition, preview)),
                 correctedQuery,
+                null,
                 null
         );
     }

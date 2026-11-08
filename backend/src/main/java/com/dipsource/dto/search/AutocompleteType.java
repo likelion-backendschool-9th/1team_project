@@ -5,5 +5,9 @@ public enum AutocompleteType {
     /** 태그 이름 전체(예: Spring Boot) */
     TAG,
     /** 공개 제목·태그에 나오는 단어 */
-    WORD
+    WORD,
+    /** 기술 용어 사전의 표기 */
+    TERM,
+    /** 자판 보정 등 입력과 다른 후보 */
+    CORRECTION
 }

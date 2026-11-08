@@ -73,4 +73,34 @@ final class EsEvalProfilesTest {
             return "2x-no-popularity";
         }
     }
+
+    /** 3단계: 언어별 분석 + 기술 용어 보존 + 동의어 + 제안어 */
+    @AutoConfigureMockMvc
+    @SpringBootTest(properties = {COMMON_JWT, GITHUB_ID, GITHUB_SECRET, ES_ON, ENGINE, NO_FALLBACK})
+    static class Stage3MultilingualEval extends AbstractEsEval {
+        @Override
+        String profile() {
+            return "3-es-multilingual";
+        }
+    }
+
+    @AutoConfigureMockMvc
+    @SpringBootTest(properties = {COMMON_JWT, GITHUB_ID, GITHUB_SECRET, ES_ON, ENGINE, NO_FALLBACK,
+            "search.ranking.synonym-boost=0.3"})
+    static class Stage3Synonym03Eval extends AbstractEsEval {
+        @Override
+        String profile() {
+            return "3x-synonym-0.3";
+        }
+    }
+
+    @AutoConfigureMockMvc
+    @SpringBootTest(properties = {COMMON_JWT, GITHUB_ID, GITHUB_SECRET, ES_ON, ENGINE, NO_FALLBACK,
+            "search.ranking.synonym-boost=0.15"})
+    static class Stage3Synonym015Eval extends AbstractEsEval {
+        @Override
+        String profile() {
+            return "3x-synonym-0.15";
+        }
+    }
 }

@@ -13,8 +13,10 @@ import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -33,7 +35,8 @@ import org.springframework.test.web.servlet.ResultActions;
         "spring.security.oauth2.client.registration.github.client-secret=test",
         "search.elasticsearch.enabled=true",
         "search.engine=elasticsearch",
-        "search.fallback-to-postgres=false"
+        "search.fallback-to-postgres=false",
+        "search.ranking.window-cache-ttl=0s"
 })
 class ElasticsearchSearchTest {
 
@@ -51,6 +54,8 @@ class ElasticsearchSearchTest {
     JdbcTemplate jdbc;
     @Autowired
     SearchIndexManager indexManager;
+    @Autowired
+    com.dipsource.service.search.suggest.SuggestIndexService suggestIndex;
 
     long author;
 
@@ -222,6 +227,257 @@ class ElasticsearchSearchTest {
         assertThat(seen).hasSize(45).doesNotHaveDuplicates();
     }
 
+    @Nested
+    @DisplayName("다국어·기술 용어·해시태그")
+    class Analysis {
+
+        @ParameterizedTest(name = "q={0} → {1}")
+        @CsvSource({"C++, C++ 포인터", "c++, C++ 포인터", "C#, C# 비동기", ".NET, .NET 미니멀 API", "Node.js, Node.js 이벤트 루프", "NODE.JS, Node.js 이벤트 루프"})
+        @DisplayName("특수문자 기술 용어는 다른 언어와 섞이지 않는다")
+        void techTerms(String q, String expected) throws Exception {
+            post("C++ 포인터", "메모리", "ACTIVE");
+            post("C# 비동기", "태스크", "ACTIVE");
+            post("C 언어 기초", "포인터", "ACTIVE");
+            post(".NET 미니멀 API", "경량", "ACTIVE");
+            post("Node.js 이벤트 루프", "libuv", "ACTIVE");
+            post("트리 node 순회", "js 구현 비교", "ACTIVE");
+            reindex();
+
+            search(q).andExpect(jsonPath("$.data.content[*].title", contains(expected)));
+        }
+
+        @Test
+        @DisplayName("java 검색에 JavaScript 글이 섞이지 않는다")
+        void wordBoundary() throws Exception {
+            post("Java 스트림", "컬렉션", "ACTIVE");
+            post("JavaScript 클로저", "스코프", "ACTIVE");
+            reindex();
+
+            search("java").andExpect(jsonPath("$.data.content[*].title", contains("Java 스트림")));
+        }
+
+        @Test
+        @DisplayName("조사가 붙은 한국어 문장에서 핵심 단어로 찾는다")
+        void koreanMorphology() throws Exception {
+            post("스프링으로 로그인 기능 만드는 방법", "세션 로그인 구현", "ACTIVE");
+            post("요리 레시피", "된장찌개 끓이기", "ACTIVE");
+            reindex();
+
+            search("스프링 로그인을 만들기").andExpect(jsonPath("$.data.content[*].title", contains("스프링으로 로그인 기능 만드는 방법")));
+        }
+
+        @Test
+        @DisplayName("부정 표현이 있는 문서가 그렇지 않은 문서보다 위다")
+        void negation() throws Exception {
+            long fixed = post("로그인이 안 되는 문제 해결", "쿠키 설정이 잘못돼서 로그인이 안 됐다", "ACTIVE");
+            long other = post("로그인 되는 문제 정리", "로그인이 잘 된다", "ACTIVE");
+            reindex();
+
+            assertThat(ids(search("로그인이 안 되는 문제")).get(0)).isEqualTo((int) fixed);
+            assertThat(ids(search("로그인이 안 되는 문제")).indexOf((int) other)).isNotEqualTo(0);
+        }
+
+        @Test
+        @DisplayName("동의어는 찾아 주되 원문 일치가 먼저다")
+        void synonymsBelowExact() throws Exception {
+            long ko = post("리액트 훅 입문", "훅 사용법", "ACTIVE");
+            long en = post("React 상태 관리", "리덕스", "ACTIVE");
+            reindex();
+
+            assertThat(ids(search("리액트"))).containsExactly((int) ko, (int) en);
+            assertThat(ids(search("react"))).containsExactly((int) en, (int) ko);
+        }
+
+        @Test
+        @DisplayName("여러 단어 동의어(스프링 부트 ↔ Spring Boot)를 찾는다")
+        void multiWordSynonym() throws Exception {
+            long en = post("Spring Boot 시작하기", "자동 설정", "ACTIVE");
+            reindex();
+
+            assertThat(ids(search("스프링 부트"))).containsExactly((int) en);
+        }
+
+        @Test
+        @DisplayName("일본어와 중국어 제목을 해당 언어로 찾는다")
+        void japaneseAndChinese() throws Exception {
+            long ja = post("Springでログイン機能を作る方法", "ログイン画面", "ACTIVE");
+            long zh = post("如何连接数据库", "配置数据源", "ACTIVE");
+            reindex();
+
+            assertThat(ids(search("ログイン機能"))).containsExactly((int) ja);
+            assertThat(ids(search("数据库"))).containsExactly((int) zh);
+        }
+
+        @Test
+        @DisplayName("#spring은 태그 정확 일치만 찾고 본문 언급은 뺀다")
+        void explicitHashtag() throws Exception {
+            long tagged = post("태그 글", "내용", "ACTIVE");
+            tag("post_tags", "post_id", tagged, "Spring");
+            post("본문 글", "spring 이야기", "ACTIVE");
+            reindex();
+
+            assertThat(ids(search("#spring"))).containsExactly((int) tagged);
+        }
+
+        @Test
+        @DisplayName("여러 해시태그는 기본 and, op=or면 or다")
+        void multipleHashtags() throws Exception {
+            long both = post("둘 다", "내용", "ACTIVE");
+            tag("post_tags", "post_id", both, "spring");
+            tag("post_tags", "post_id", both, "java");
+            long one = post("하나만", "내용", "ACTIVE");
+            tag("post_tags", "post_id", one, "spring");
+            reindex();
+
+            assertThat(ids(search("#spring #java"))).containsExactly((int) both);
+            assertThat(ids(search("#spring #java", "op", "or"))).containsExactlyInAnyOrder((int) both, (int) one);
+        }
+
+        @Test
+        @DisplayName("일반 검색어 + 태그 조건을 함께 건다")
+        void textAndHashtag() throws Exception {
+            long match = post("Spring 글", "내용", "ACTIVE");
+            tag("post_tags", "post_id", match, "java");
+            post("Spring 다른 글", "내용", "ACTIVE");
+            reindex();
+
+            assertThat(ids(search("spring #java"))).containsExactly((int) match);
+        }
+
+        @Test
+        @DisplayName("명시적 and는 결과가 없어도 or로 넓히지 않고, op 없는 검색만 일부 일치를 표시해서 보여 준다")
+        void relaxedOnlyWithoutExplicitOperator() throws Exception {
+            post("Spring 글", "내용", "ACTIVE");
+            reindex();
+
+            search("spring 없는단어", "op", "and").andExpect(jsonPath("$.data.totalElements").value(0));
+            search("spring 없는단어").andExpect(jsonPath("$.data.totalElements").value(1))
+                    .andExpect(jsonPath("$.data.relaxedMatch").value(true));
+        }
+    }
+
+    @Nested
+    @DisplayName("검색어 제안과 자동완성")
+    class Suggestions {
+
+        @BeforeEach
+        void seed() throws Exception {
+            post("Spring Security 입문", "내용", "ACTIVE");
+            post("Spring Boot 시작하기", "내용", "ACTIVE");
+            post("스프링 기초", "내용", "ACTIVE");
+            post("Docker 입문", "내용", "ACTIVE");
+            reindex();
+        }
+
+        @Test
+        @DisplayName("자판 오입력은 원래 결과를 유지하고 제안만 한다")
+        void keyboardSuggestion() throws Exception {
+            search("네갸ㅜㅎ")
+                    .andExpect(jsonPath("$.data.totalElements").value(0))
+                    .andExpect(jsonPath("$.data.suggestedQuery").value("spring"))
+                    .andExpect(jsonPath("$.data.suggestionType").value("KEYBOARD"))
+                    .andExpect(jsonPath("$.data.correctedQuery").doesNotExist());
+        }
+
+        @Test
+        @DisplayName("영문 자판으로 친 한글도 사전에 있으면 제안한다")
+        void reverseKeyboard() throws Exception {
+            search("tmvmfld").andExpect(jsonPath("$.data.suggestedQuery").value("스프링"));
+        }
+
+        @ParameterizedTest(name = "q={0}")
+        @ValueSource(strings = {"안녕하세요", "오늘 날씨", "스프링", "맛집 추천"})
+        @DisplayName("일반 한국어는 자판 보정 제안이 붙지 않는다")
+        void noFalsePositive(String q) throws Exception {
+            search(q).andExpect(jsonPath("$.data.suggestionType").doesNotExist());
+        }
+
+        @Test
+        @DisplayName("사전에 없는 변환은 제안하지 않는다")
+        void notInDictionary() throws Exception {
+            search("ㅋㅋㅋㅋㅋ").andExpect(jsonPath("$.data.suggestedQuery").doesNotExist());
+        }
+
+        @Test
+        @DisplayName("대소문자가 섞여도 자판 보정이 된다")
+        void keyboardWithNormalization() throws Exception {
+            search("네갸ㅜㅎ ").andExpect(jsonPath("$.data.suggestedQuery").value("spring"));
+        }
+
+        @Test
+        @DisplayName("오타는 결과가 있어도 제안하고 검색어를 자동으로 바꾸지 않는다")
+        void typoSuggestionKeepsResults() throws Exception {
+            post("sprng 설정 오류", "제목에 오타가 있는 글", "ACTIVE");
+            reindex();
+
+            search("sprng")
+                    .andExpect(jsonPath("$.data.totalElements").value(1))
+                    .andExpect(jsonPath("$.data.content[0].title").value("sprng 설정 오류"))
+                    .andExpect(jsonPath("$.data.suggestedQuery").value("spring"))
+                    .andExpect(jsonPath("$.data.suggestionType").value("TYPO"));
+        }
+
+        @Test
+        @DisplayName("사전에 있는 정상 단어는 오타로 보지 않는다")
+        void dictionaryWordIsNotTypo() throws Exception {
+            search("docker").andExpect(jsonPath("$.data.suggestedQuery").doesNotExist());
+        }
+
+        @Test
+        @DisplayName("어형 변화는 오타로 제안하지 않는다")
+        void inflectionIsNotTypo() throws Exception {
+            post("tokens 이야기", "내용", "ACTIVE");
+            post("tokens 정리", "내용", "ACTIVE");
+            reindex();
+
+            search("token").andExpect(jsonPath("$.data.suggestedQuery").doesNotExist());
+        }
+
+        @ParameterizedTest(name = "입력 {0}")
+        @ValueSource(strings = {"스", "슾", "스프", "스플", "스프리", "스프링"})
+        @DisplayName("한글 입력 중간 상태에서도 스프링이 나온다")
+        void hangulComposing(String input) throws Exception {
+            assertThat(autocomplete(input)).contains("스프링");
+        }
+
+        @Test
+        @DisplayName("초성으로 찾는다")
+        void initialConsonants() throws Exception {
+            assertThat(autocomplete("ㅅㅍㄹ")).contains("스프링");
+        }
+
+        @Test
+        @DisplayName("영어 접두어로 사전 용어와 단어를 찾고 앞 단어는 유지한다")
+        void englishPrefix() throws Exception {
+            assertThat(autocomplete("sp")).contains("spring");
+            assertThat(autocomplete("spring b")).contains("spring boot");
+        }
+
+        @Test
+        @DisplayName("자동완성은 한 글자도 받는다")
+        void singleCharacter() throws Exception {
+            assertThat(autocomplete("s")).isNotEmpty();
+        }
+
+        @Test
+        @DisplayName("자판을 잘못 두고 입력해도 사전 용어를 후보로 낸다")
+        void keyboardAutocomplete() throws Exception {
+            assertThat(autocomplete("네갸")).contains("spring");
+        }
+
+        @Test
+        @DisplayName("입력과 같은 후보가 맨 앞이다")
+        void exactFirst() throws Exception {
+            assertThat(autocomplete("spring").get(0)).isEqualToIgnoringCase("spring");
+        }
+
+        private List<String> autocomplete(String q) throws Exception {
+            String body = mockMvc.perform(get("/api/v1/search/autocomplete").param("q", q))
+                    .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+            return com.jayway.jsonpath.JsonPath.read(body, "$.data[*].text");
+        }
+    }
+
     private static List<Integer> ids(ResultActions result) throws Exception {
         return com.jayway.jsonpath.JsonPath.read(result.andReturn().getResponse().getContentAsString(), "$.data.content[*].id");
     }
@@ -262,5 +518,6 @@ class ElasticsearchSearchTest {
         for (SearchType type : SearchIndexManager.TYPES) {
             indexManager.rebuild(type);
         }
+        suggestIndex.rebuild();
     }
 }

@@ -25,7 +25,7 @@ import org.springframework.stereotype.Service;
  * <p>단어 사전은 3단계 오타 교정과 같다(태그 이름, 공개 글 제목, 공개 데모 제목). 유료 글 본문과 숨김·삭제 글은 쓰지 않는다.
  * 사전은 요청할 때마다 계산한다. 5단계에서 속도를 재고, 6단계에서 미리 만든 사전과 인덱스로 바꾸는 것이 목표다.
  */
-@Service
+@Service("postgresAutocompleteService")
 @RequiredArgsConstructor
 public class AutocompleteServiceImpl implements AutocompleteService {
 

@@ -12,6 +12,8 @@ abstract class AbstractEsEval extends AbstractSearchEval {
 
     @Autowired
     SearchIndexManager indexManager;
+    @Autowired
+    com.dipsource.service.search.suggest.SuggestIndexService suggestIndex;
 
     @DynamicPropertySource
     static void containers(DynamicPropertyRegistry registry) {
@@ -26,5 +28,6 @@ abstract class AbstractEsEval extends AbstractSearchEval {
         for (SearchType type : SearchIndexManager.TYPES) {
             indexManager.rebuild(type);
         }
+        suggestIndex.rebuild();
     }
 }

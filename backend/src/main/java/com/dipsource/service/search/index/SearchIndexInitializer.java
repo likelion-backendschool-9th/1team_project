@@ -1,6 +1,7 @@
 package com.dipsource.service.search.index;
 
 import com.dipsource.dto.search.SearchType;
+import com.dipsource.service.search.suggest.SuggestIndexService;
 import java.io.IOException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -17,6 +18,7 @@ import org.springframework.stereotype.Component;
 public class SearchIndexInitializer implements ApplicationRunner {
 
     private final SearchIndexManager indexManager;
+    private final SuggestIndexService suggestIndex;
 
     @Override
     public void run(ApplicationArguments args) {
@@ -26,6 +28,11 @@ public class SearchIndexInitializer implements ApplicationRunner {
             } catch (IOException | RuntimeException e) {
                 log.warn("검색 인덱스 준비 실패({}): {}", type, e.toString());
             }
+        }
+        try {
+            suggestIndex.ensureIndex();
+        } catch (IOException | RuntimeException e) {
+            log.warn("검색어 사전 인덱스 준비 실패: {}", e.toString());
         }
     }
 }

@@ -28,6 +28,8 @@ public class ElasticsearchQueryFactory {
 
     /** 정확 일치 쿼리 이름. 응답의 matched_queries로 정확 일치 여부를 받는다 */
     static final String EXACT_QUERY_NAME = "exact";
+    /** 사전에서 찾을 수 있는 여러 단어 표기의 최대 단어 수 */
+    private static final int MAX_TERM_WORDS = 3;
 
     /** 검색 의도만 나타내는 단어. 문서에 없어도 되지만 있으면 점수를 받는다. 부정 표현은 넣지 않는다 */
     private static final List<String> OPTIONAL_WORDS = List.of(
@@ -98,18 +100,18 @@ public class ElasticsearchQueryFactory {
 
     private void applyKeywords(BoolQuery.Builder bool, TypePolicy policy, ParsedQuery query, SearchOperator operator,
                                boolean flat) {
-        List<String> required = new ArrayList<>();
-        List<String> optional = new ArrayList<>();
-        for (String keyword : query.keywords()) {
-            boolean droppable = operator == SearchOperator.AUTO && OPTIONAL_WORDS.contains(keyword)
-                    && query.keywords().size() > 1;
-            (droppable ? optional : required).add(keyword);
+        List<Unit> required = new ArrayList<>();
+        List<Unit> optional = new ArrayList<>();
+        for (Unit unit : units(query.keywords())) {
+            boolean droppable = operator == SearchOperator.AUTO && unit.words().size() == 1
+                    && OPTIONAL_WORDS.contains(unit.words().get(0)) && query.keywords().size() > 1;
+            (droppable ? optional : required).add(unit);
         }
         if (required.isEmpty()) {
             required.addAll(optional);
             optional.clear();
         }
-        List<Query> groups = required.stream().map(keyword -> keywordGroup(policy, keyword, flat)).toList();
+        List<Query> groups = required.stream().map(unit -> unitQuery(policy, unit, flat)).toList();
         boolean natural = operator == SearchOperator.AUTO
                 && required.size() >= properties.getRanking().getNaturalMinKeywords();
         if (operator == SearchOperator.OR || natural) {
@@ -118,7 +120,54 @@ public class ElasticsearchQueryFactory {
         } else {
             groups.forEach(bool::must);
         }
-        optional.forEach(keyword -> bool.should(keywordGroup(policy, keyword, flat)));
+        optional.forEach(unit -> bool.should(unitQuery(policy, unit, flat)));
+    }
+
+    /** 검색 단위. 사전에 있는 여러 단어 표기(스프링 부트)는 한 단위로 묶어서 동의어로 넓힌다 */
+    private record Unit(List<String> words) {
+    }
+
+    private List<Unit> units(List<String> keywords) {
+        List<Unit> units = new ArrayList<>();
+        int index = 0;
+        while (index < keywords.size()) {
+            int span = dictionarySpan(keywords, index);
+            units.add(new Unit(keywords.subList(index, index + span)));
+            index += span;
+        }
+        return units;
+    }
+
+    private int dictionarySpan(List<String> keywords, int start) {
+        if (properties.getAnalysis().isSynonyms()) {
+            for (int span = Math.min(MAX_TERM_WORDS, keywords.size() - start); span > 1; span--) {
+                if (dictionary.contains(String.join(" ", keywords.subList(start, start + span)))) {
+                    return span;
+                }
+            }
+        }
+        return 1;
+    }
+
+    private Query unitQuery(TypePolicy policy, Unit unit, boolean flat) {
+        if (unit.words().size() == 1) {
+            return keywordGroup(policy, unit.words().get(0), flat);
+        }
+        String form = String.join(" ", unit.words());
+        List<Query> alternatives = new ArrayList<>();
+        // 사전 표기 그대로: 단어가 모두 있어야 한다. 동의어보다 높은 점수다
+        alternatives.add(Query.of(q -> q.bool(b -> {
+            unit.words().forEach(word -> b.must(keywordGroup(policy, word, flat)));
+            return b;
+        })));
+        float weight = properties.getRanking().getSynonymBoost();
+        for (String synonym : dictionary.synonymsOf(form)) {
+            for (Map.Entry<String, Float> field : policy.getFields().entrySet()) {
+                alternatives.add(fieldMatch(field.getKey(), synonym, field.getValue() * weight));
+            }
+            alternatives.add(keywordField(policy, synonym, policy.getKeywordBoost() * weight));
+        }
+        return Query.of(q -> q.disMax(d -> d.queries(alternatives)));
     }
 
     /** 단어 하나를 찾는 필드별 쿼리 묶음. 가장 잘 맞는 필드의 점수를 쓰고 나머지는 tie_breaker만큼만 더한다 */

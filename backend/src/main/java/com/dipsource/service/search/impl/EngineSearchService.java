@@ -8,6 +8,7 @@ import com.dipsource.dto.search.SearchOperator;
 import com.dipsource.dto.search.SearchPageResponse;
 import com.dipsource.dto.search.SearchSection;
 import com.dipsource.dto.search.SearchSignal;
+import com.dipsource.dto.search.SearchSuggestion;
 import com.dipsource.dto.search.SearchSort;
 import com.dipsource.dto.search.SearchType;
 import com.dipsource.dto.user.UserSearchItemResponse;
@@ -21,14 +22,17 @@ import com.github.benmanes.caffeine.cache.Caffeine;
 import com.dipsource.service.search.engine.SearchPort;
 import com.dipsource.service.search.query.ParsedQuery;
 import com.dipsource.service.search.ranking.SearchRanker;
+import com.dipsource.service.search.suggest.SearchSuggester;
 import com.dipsource.service.search.query.SearchQueryParser;
 import com.dipsource.service.user.UserSearchService;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -38,6 +42,7 @@ import org.springframework.stereotype.Service;
  * Elasticsearch 검색 경로: 후보 검색 → PostgreSQL 권한·신호 확인 → 재정렬 → 응답 조립.
  * 인덱스가 늦어도 삭제·비공개 문서는 신호 조회에서 빠져서 노출되지 않는다.
  */
+@Slf4j
 @Service
 @ConditionalOnProperty(prefix = "search.elasticsearch", name = "enabled", havingValue = "true")
 public class EngineSearchService implements SearchService {
@@ -50,6 +55,7 @@ public class EngineSearchService implements SearchService {
     private final SearchPort searchPort;
     private final SearchQueryParser queryParser;
     private final SearchRanker ranker;
+    private final SearchSuggester suggester;
     private final SearchProperties properties;
     private final PostSearchService postSearchService;
     private final FeedSearchService feedSearchService;
@@ -58,12 +64,14 @@ public class EngineSearchService implements SearchService {
     private final Cache<String, RankedWindow> windowCache;
 
     public EngineSearchService(SearchPort searchPort, SearchQueryParser queryParser, SearchRanker ranker,
+                               SearchSuggester suggester,
                                SearchProperties properties, PostSearchService postSearchService,
                                FeedSearchService feedSearchService, DemoSearchService demoSearchService,
                                UserSearchService userSearchService) {
         this.searchPort = searchPort;
         this.queryParser = queryParser;
         this.ranker = ranker;
+        this.suggester = suggester;
         this.properties = properties;
         this.postSearchService = postSearchService;
         this.feedSearchService = feedSearchService;
@@ -86,13 +94,14 @@ public class EngineSearchService implements SearchService {
     @SuppressWarnings("unchecked")
     public SearchAllResponse searchAll(String query, SearchOperator operator, SearchSort sort, Long viewerId) {
         ParsedQuery parsed = queryParser.parse(query);
-        return new SearchAllResponse(
-                (SearchSection<PostSearchItemResponse>) section(SearchType.POST, parsed, operator, sort),
-                (SearchSection<FeedSearchItemResponse>) section(SearchType.FEED, parsed, operator, sort),
-                (SearchSection<DemoSearchItemResponse>) section(SearchType.DEMO, parsed, operator, sort),
-                (SearchSection<UserSearchItemResponse>) section(SearchType.USER, parsed, operator, sort),
-                null,
-                null);
+        SearchSection<PostSearchItemResponse> posts = (SearchSection<PostSearchItemResponse>) section(SearchType.POST, parsed, operator, sort);
+        SearchSection<FeedSearchItemResponse> feeds = (SearchSection<FeedSearchItemResponse>) section(SearchType.FEED, parsed, operator, sort);
+        SearchSection<DemoSearchItemResponse> demos = (SearchSection<DemoSearchItemResponse>) section(SearchType.DEMO, parsed, operator, sort);
+        SearchSection<UserSearchItemResponse> users = (SearchSection<UserSearchItemResponse>) section(SearchType.USER, parsed, operator, sort);
+        SearchSuggestion suggestion = suggestion(parsed, SearchType.POST, SearchType.DEMO, SearchType.FEED, SearchType.USER);
+        return new SearchAllResponse(posts, feeds, demos, users, null,
+                suggestion == null ? null : suggestion.query(),
+                suggestion == null ? null : suggestion.type());
     }
 
     private SearchSection<?> section(SearchType type, ParsedQuery parsed, SearchOperator operator, SearchSort sort) {
@@ -106,9 +115,43 @@ public class EngineSearchService implements SearchService {
         ParsedQuery parsed = queryParser.parse(query);
         Pageable page = PageRequest.of(pageable.getPageNumber(), Math.min(pageable.getPageSize(), MAX_PAGE_SIZE));
         RankedPage ranked = rank(type, parsed, operator, sort, page);
+        Boolean relaxed = null;
+        // 명시적 and는 절대 넓히지 않는다. op를 보내지 않았고 모든 단어가 일치하는 결과가 없을 때만 일부 일치를 보여 준다
+        if (ranked.total() == 0 && operator == SearchOperator.AUTO && parsed.keywords().size() > 1) {
+            RankedPage partial = rank(type, parsed, SearchOperator.OR, sort, page);
+            if (partial.total() > 0) {
+                ranked = partial;
+                relaxed = Boolean.TRUE;
+            }
+        }
         int totalPages = page.getPageSize() == 0 ? 0 : (int) Math.ceil((double) ranked.total() / page.getPageSize());
+        SearchSuggestion suggestion = suggestion(parsed, type);
         return new SearchPageResponse<>(items(type, ranked.ids()), page.getPageNumber(), page.getPageSize(),
-                ranked.total(), totalPages, null, null);
+                ranked.total(), totalPages, null,
+                suggestion == null ? null : suggestion.query(),
+                suggestion == null ? null : suggestion.type(),
+                relaxed);
+    }
+
+    /** 제안 검색어. 제안어로 실제 결과가 있을 때만 준다 */
+    private SearchSuggestion suggestion(ParsedQuery parsed, SearchType... types) {
+        try {
+            Optional<SearchSuggestion> candidate = suggester.suggest(parsed);
+            if (candidate.isEmpty()) {
+                return null;
+            }
+            ParsedQuery suggested = queryParser.parse(candidate.get().query());
+            for (SearchType type : types) {
+                if (retrieve(type, suggested, SearchOperator.AUTO, SearchSort.RELEVANCE, 0, 1).total() > 0) {
+                    return candidate.get();
+                }
+            }
+            return null;
+        } catch (RuntimeException e) {
+            // 제안은 부가 기능이라 실패해도 검색 결과는 그대로 준다
+            log.warn("검색어 제안 실패: {}", e.toString());
+            return null;
+        }
     }
 
     /**

@@ -70,7 +70,7 @@ public class SearchProperties {
         /** auto 모드에서 이 단어 수 이상이면 문장으로 본다 */
         private int naturalMinKeywords = 3;
         /** 동의어 일치의 상대 가중치. 원문 일치(1.0)보다 낮아야 한다 */
-        private float synonymBoost = 0.6f;
+        private float synonymBoost = 0.3f;
         private float maxSpamPenalty = 0.7f;
 
         /** 재정렬로 올릴 수 있는 최소 관련도(1위 대비 비율). 이보다 낮은 문서는 인기도를 받지 못한다 */
