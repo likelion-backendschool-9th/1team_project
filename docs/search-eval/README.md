@@ -2,6 +2,8 @@
 
 이 문서의 숫자는 모두 실제 측정값이다. 측정하지 않은 항목과 설계상 예상일 뿐인 항목은 따로 표시했다.
 
+> 이후 진행한 신규 평가셋, 동일 조건 부하 비교, 장애 복구, 페이지네이션 검증과 **발견한 문제 목록**은 [추가 검증 보고서](verification/README.md)에 있다.
+
 - 품질 재측정: `cd backend && ./gradlew searchEval` (Docker 필요, 결과는 `results/`)
 - 두 결과 비교: `python3 docs/search-eval/compare.py <이전.json> <이후.json>`
 - 평가 데이터: `backend/src/test/resources/search-eval/` (`corpus.json`, `queries.json`)
