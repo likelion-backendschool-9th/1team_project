@@ -491,6 +491,42 @@ class ElasticsearchSearchTest {
         }
 
         @Test
+        @DisplayName("스프링부를 치면 스프링부트를 제안하고, 스프링부트는 영어·띄어 쓴 표기의 글까지 찾는다")
+        void compoundTermCompletionAndSynonyms() throws Exception {
+            post("스프링부트 자동 설정", "내용", "ACTIVE");
+            post("스프링 부트 로깅", "내용", "ACTIVE");
+            jdbc.update("""
+                    INSERT INTO feeds(user_id, content, status, like_count, comment_count, repost_count, created_at, updated_at)
+                    VALUES (?, '스프링 공부 시작', 'ACTIVE', 0, 0, 0, now(), now())
+                    """, author);
+            reindex();
+
+            search("스프링부").andExpect(jsonPath("$.data.suggestedQuery").value("스프링부트"));
+            mockMvc.perform(get("/search").param("q", "스프링부"))
+                    .andExpect(jsonPath("$.data.suggestedQuery").value("스프링부트"));
+            String body = search("스프링부트").andReturn().getResponse().getContentAsString(java.nio.charset.StandardCharsets.UTF_8);
+            List<String> titles = com.jayway.jsonpath.JsonPath.read(body, "$.data.content[*].title");
+            assertThat(titles).contains("스프링부트 자동 설정", "스프링 부트 로깅", "Spring Boot 시작하기");
+            assertThat(titles.get(0)).isEqualTo("스프링부트 자동 설정");
+        }
+
+        @Test
+        @DisplayName("전체 검색은 여러 단어도 결과가 없는 대상만 일부 일치로 보여 준다")
+        void partialMatchPerSection() throws Exception {
+            jdbc.update("""
+                    INSERT INTO feeds(user_id, content, status, like_count, comment_count, repost_count, created_at, updated_at)
+                    VALUES (?, 'docker 공부', 'ACTIVE', 0, 0, 0, now(), now())
+                    """, author);
+            reindex();
+
+            mockMvc.perform(get("/search").param("q", "docker 입문"))
+                    .andExpect(jsonPath("$.data.posts.totalElements").value(1))
+                    .andExpect(jsonPath("$.data.posts.relaxedMatch").doesNotExist())
+                    .andExpect(jsonPath("$.data.feeds.totalElements").value(1))
+                    .andExpect(jsonPath("$.data.feeds.relaxedMatch").value(true));
+        }
+
+        @Test
         @DisplayName("이미 완성된 용어와 글에 쓰이는 단어는 일부 대상이 0건이어도 제안하지 않는다")
         void noCompletionForKnownWords() throws Exception {
             post("채팅 서버 회고", "내용", "ACTIVE");

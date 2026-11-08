@@ -138,11 +138,17 @@ public class EngineSearchService implements SearchService {
                 suggestion == null ? null : suggestion.type());
     }
 
-    /** 대상 하나의 미리보기. 정확히 일치하는 결과가 없는 대상만 검색어로 시작하는 단어로 다시 찾는다 */
+    /** 대상 하나의 미리보기. 결과가 없는 대상만 일부 단어 일치나 검색어로 시작하는 단어로 다시 찾는다 */
     private SearchSection<?> section(SearchType type, ParsedQuery parsed, SearchOperator operator, SearchSort sort,
                                      Long viewerId, Set<Long> blocked) {
         Pageable preview = PageRequest.of(0, PREVIEW_SIZE);
         RankedPage page = rank(type, parsed, operator, sort, preview, viewerId, blocked, null, false);
+        if (page.total() == 0 && operator == SearchOperator.AUTO && parsed.keywords().size() > 1) {
+            RankedPage partial = rank(type, parsed, SearchOperator.OR, sort, preview, viewerId, blocked, null, false);
+            if (partial.total() > 0) {
+                return new SearchSection<>(items(type, partial.ids()), partial.total(), Boolean.TRUE);
+            }
+        }
         if (page.total() == 0 && canExpandToPrefix(parsed, operator)) {
             RankedPage expanded = rank(type, parsed.asPrefix(), operator, sort, preview, viewerId, blocked, null, false);
             if (expanded.total() > 0) {
