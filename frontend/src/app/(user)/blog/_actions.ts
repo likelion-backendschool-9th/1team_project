@@ -134,7 +134,9 @@ export async function replyPostComment(postId: number, parentId: number, content
   if (!isId(postId) || !isId(parentId)) return { ok: false, message: "잘못된 요청이에요." };
   const text = content.trim();
   if (!text || text.length > 1000) return { ok: false, message: "1~1000자로 입력해 주세요." };
-  return mutate(`/api/v1/posts/${postId}/comments`, "POST", { content: text, parentId }, "답글을 남겼어요.");
+  const result = await mutate(`/api/v1/posts/${postId}/comments`, "POST", { content: text, parentId }, "답글을 남겼어요.");
+  if (result.ok) revalidatePath(`/blog/posts/${postId}`);
+  return result;
 }
 
 export async function togglePostCommentLike(commentId: number, like: boolean) {
