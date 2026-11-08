@@ -27,6 +27,19 @@ spring:
   jackson:
     default-property-inclusion: non_null
 
+  elasticsearch:
+    uris: ${SPRING_ELASTICSEARCH_URIS:http://localhost:9200}
+    username: ${SPRING_ELASTICSEARCH_USERNAME:}
+    password: ${SPRING_ELASTICSEARCH_PASSWORD:}
+    connection-timeout: 1s
+    socket-timeout: 3s
+
+  data:
+    elasticsearch:
+      repositories:
+        # 공식 클라이언트로 직접 쿼리를 만든다. 문서 Repository를 쓰지 않으므로 스캔하지 않는다
+        enabled: false
+
   security:
     oauth2:
       client:
@@ -80,10 +93,22 @@ management:
   endpoint:
     health:
       show-details: never
+  health:
+    elasticsearch:
+      # 검색 엔진이 죽어도 PostgreSQL로 대체되므로 서버 전체를 DOWN으로 표시하지 않는다
+      enabled: false
   observations:
     annotations:
       # @Timed가 붙은 메서드의 실행 시간을 잰다 (검색 기능 서비스, search.query)
       enabled: true
+
+# 통합 검색. elasticsearch.enabled는 색인·동기화를 켜고, engine은 읽기 경로를 고른다.
+# 전환 순서: enabled=true로 띄움 → 재색인 → engine=elasticsearch (docs/search-eval/README.md)
+search:
+  engine: ${SEARCH_ENGINE:postgres}
+  fallback-to-postgres: true
+  elasticsearch:
+    enabled: ${SEARCH_ES_ENABLED:false}
 
 server:
   port: 8080

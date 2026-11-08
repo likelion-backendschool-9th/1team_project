@@ -2,9 +2,12 @@ package com.dipsource.repository.feed;
 
 import com.dipsource.dto.search.SearchCondition;
 import com.dipsource.dto.search.SearchOperator;
+import com.dipsource.dto.search.SearchSignal;
 import com.dipsource.dto.search.SearchSort;
 import com.dipsource.entity.feed.Feed;
 import com.dipsource.global.common.LikePattern;
+import java.util.Collection;
+import java.util.List;
 import java.util.Locale;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -68,4 +71,16 @@ public interface FeedSearchRepository extends Repository<Feed, Long> {
             @Param("matchAll") boolean matchAll,
             @Param("relevance") boolean relevance,
             Pageable pageable);
+
+    /** 재정렬 신호. 공개 상태가 아닌 피드는 돌려주지 않아서, 인덱스가 늦어도 여기서 걸러진다. 피드에는 조회수가 없다 */
+    @Query(nativeQuery = true, value = """
+            SELECT f.id AS id, f.user_id AS authorId, f.like_count AS likeCount, 0 AS viewCount,
+                   CAST(extract(epoch FROM (now() - f.created_at)) AS double precision) / 86400 AS ageDays,
+                   (SELECT count(*) FROM follows x WHERE x.following_id = f.user_id) AS followerCount
+            FROM feeds f
+            WHERE f.id IN (:ids) AND f.status = 'ACTIVE' AND f.deleted_at IS NULL
+            """)
+    List<SearchSignal> findSignals(@Param("ids") Collection<Long> ids);
+
+    List<Feed> findByIdIn(Collection<Long> ids);
 }

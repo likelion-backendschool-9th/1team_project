@@ -25,7 +25,9 @@ public record SearchCondition(String phrase, List<String> keywords, SearchOperat
                 .distinct()
                 .limit(MAX_KEYWORDS)
                 .toList();
-        return new SearchCondition(String.join(" ", words), keywords, operator, sort);
+        // PostgreSQL 경로에는 자동 모드가 없다. op를 보내지 않으면 지금까지처럼 and다
+        SearchOperator resolved = operator == SearchOperator.AUTO ? SearchOperator.AND : operator;
+        return new SearchCondition(String.join(" ", words), keywords, resolved, sort);
     }
 
     /** 단어만 바꾼 조건. 오타를 고친 단어로 다시 검색할 때 쓴다. 검색어 전체는 고친 단어를 이어 붙인 것이다 */

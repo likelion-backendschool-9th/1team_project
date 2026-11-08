@@ -45,9 +45,9 @@ public class AutocompleteServiceImpl implements AutocompleteService {
             // 입력창을 지우는 순간에도 호출되므로 오류가 아니라 빈 목록이다
             return List.of();
         }
-        if (stripped.length() > SearchServiceImpl.MAX_QUERY_LENGTH) {
+        if (stripped.length() > PostgresSearchServiceImpl.MAX_QUERY_LENGTH) {
             throw new BusinessException(ErrorCode.BAD_REQUEST,
-                    "검색어는 " + SearchServiceImpl.MAX_QUERY_LENGTH + "자 이하로 입력해 주세요");
+                    "검색어는 " + PostgresSearchServiceImpl.MAX_QUERY_LENGTH + "자 이하로 입력해 주세요");
         }
         String input = stripped.replaceAll("\\s+", " ").toLowerCase(Locale.ROOT);
         // "spring b" → 앞 단어 "spring "은 그대로 두고 마지막 단어 "b"만 완성한다

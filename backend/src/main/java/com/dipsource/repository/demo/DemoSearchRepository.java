@@ -3,11 +3,13 @@ package com.dipsource.repository.demo;
 import com.dipsource.dto.search.AutocompletePrefix;
 import com.dipsource.dto.search.SearchCondition;
 import com.dipsource.dto.search.SearchOperator;
+import com.dipsource.dto.search.SearchSignal;
 import com.dipsource.dto.search.SearchSort;
 import com.dipsource.dto.search.SearchTermCandidate;
 import com.dipsource.dto.search.SearchTermFrequency;
 import com.dipsource.entity.demo.Demo;
 import com.dipsource.global.common.LikePattern;
+import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
 import org.springframework.data.domain.Page;
@@ -149,4 +151,16 @@ public interface DemoSearchRepository extends Repository<Demo, Long> {
             @Param("nextFrom") String nextFrom,
             @Param("nextTo") String nextTo,
             @Param("limit") int limit);
+
+    /** 재정렬 신호. 공개 상태가 아닌 데모는 돌려주지 않아서, 인덱스가 늦어도 여기서 걸러진다 */
+    @Query(nativeQuery = true, value = """
+            SELECT d.id AS id, d.user_id AS authorId, d.like_count AS likeCount, d.play_count AS viewCount,
+                   CAST(extract(epoch FROM (now() - d.created_at)) AS double precision) / 86400 AS ageDays,
+                   (SELECT count(*) FROM follows f WHERE f.following_id = d.user_id) AS followerCount
+            FROM demos d
+            WHERE d.id IN (:ids) AND d.status = 'ACTIVE' AND d.deleted_at IS NULL
+            """)
+    List<SearchSignal> findSignals(@Param("ids") Collection<Long> ids);
+
+    List<Demo> findByIdIn(Collection<Long> ids);
 }

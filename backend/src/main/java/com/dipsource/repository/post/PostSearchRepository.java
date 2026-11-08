@@ -3,11 +3,13 @@ package com.dipsource.repository.post;
 import com.dipsource.dto.search.AutocompletePrefix;
 import com.dipsource.dto.search.SearchCondition;
 import com.dipsource.dto.search.SearchOperator;
+import com.dipsource.dto.search.SearchSignal;
 import com.dipsource.dto.search.SearchSort;
 import com.dipsource.dto.search.SearchTermCandidate;
 import com.dipsource.dto.search.SearchTermFrequency;
 import com.dipsource.entity.post.Post;
 import com.dipsource.global.common.LikePattern;
+import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
 import org.springframework.data.domain.Page;
@@ -171,4 +173,16 @@ public interface PostSearchRepository extends Repository<Post, Long> {
             @Param("nextFrom") String nextFrom,
             @Param("nextTo") String nextTo,
             @Param("limit") int limit);
+
+    /** 재정렬 신호. 공개 상태가 아닌 글은 돌려주지 않아서, 인덱스가 늦어도 여기서 걸러진다 */
+    @Query(nativeQuery = true, value = """
+            SELECT p.id AS id, p.user_id AS authorId, p.like_count AS likeCount, p.view_count AS viewCount,
+                   CAST(extract(epoch FROM (now() - p.created_at)) AS double precision) / 86400 AS ageDays,
+                   (SELECT count(*) FROM follows f WHERE f.following_id = p.user_id) AS followerCount
+            FROM posts p
+            WHERE p.id IN (:ids) AND p.status = 'ACTIVE' AND p.deleted_at IS NULL
+            """)
+    List<SearchSignal> findSignals(@Param("ids") Collection<Long> ids);
+
+    List<Post> findByIdIn(Collection<Long> ids);
 }

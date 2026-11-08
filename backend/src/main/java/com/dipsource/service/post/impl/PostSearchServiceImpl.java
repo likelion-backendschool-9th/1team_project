@@ -3,6 +3,7 @@ package com.dipsource.service.post.impl;
 import com.dipsource.dto.post.PostSearchItemResponse;
 import com.dipsource.dto.search.AutocompletePrefix;
 import com.dipsource.dto.search.SearchCondition;
+import com.dipsource.dto.search.SearchSignal;
 import com.dipsource.dto.search.SearchTermCandidate;
 import com.dipsource.dto.search.SearchTermFrequency;
 import com.dipsource.dto.user.UserSummaryResponse;
@@ -14,6 +15,10 @@ import com.dipsource.service.user.UserService;
 import io.micrometer.core.annotation.Timed;
 import java.util.List;
 import java.util.Map;
+import java.util.Collection;
+import java.util.Objects;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -51,6 +56,27 @@ public class PostSearchServiceImpl implements PostSearchService {
     @Transactional(readOnly = true)
     public List<SearchTermFrequency> findTermsByPrefix(AutocompletePrefix prefix, int limit) {
         return postSearchRepository.findTermsByPrefix(prefix, limit);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<SearchSignal> findSignals(Collection<Long> ids) {
+        return ids.isEmpty() ? List.of() : postSearchRepository.findSignals(ids);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<PostSearchItemResponse> findItems(List<Long> ids) {
+        if (ids.isEmpty()) {
+            return List.of();
+        }
+        Map<Long, Post> posts = postSearchRepository.findByIdIn(ids).stream()
+                .collect(Collectors.toMap(Post::getId, Function.identity()));
+        Map<Long, UserSummaryResponse> authors = userService.getSummaries(
+                posts.values().stream().map(Post::getUserId).distinct().toList());
+        return ids.stream().map(posts::get).filter(Objects::nonNull)
+                .map(post -> toSearchItem(post, authors.get(post.getUserId())))
+                .toList();
     }
 
     private PostSearchItemResponse toSearchItem(Post post, UserSummaryResponse author) {

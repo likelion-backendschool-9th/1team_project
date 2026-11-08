@@ -3,9 +3,11 @@ package com.dipsource.service.post;
 import com.dipsource.dto.post.PostSearchItemResponse;
 import com.dipsource.dto.search.AutocompletePrefix;
 import com.dipsource.dto.search.SearchCondition;
+import com.dipsource.dto.search.SearchSignal;
 import com.dipsource.dto.search.SearchTermCandidate;
 import com.dipsource.dto.search.SearchTermFrequency;
 import com.dipsource.global.common.PageResponse;
+import java.util.Collection;
 import java.util.List;
 import org.springframework.data.domain.Pageable;
 
@@ -35,4 +37,10 @@ public interface PostSearchService {
      * @param limit  최대 개수
      */
     List<SearchTermFrequency> findTermsByPrefix(AutocompletePrefix prefix, int limit);
+
+    /** 재정렬 신호. 공개 상태가 아닌 글은(는) 빠진다 */
+    List<SearchSignal> findSignals(Collection<Long> ids);
+
+    /** 검색 결과 항목을 주어진 ID 순서대로 만든다 */
+    List<PostSearchItemResponse> findItems(List<Long> ids);
 }

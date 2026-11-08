@@ -4,6 +4,7 @@ import com.dipsource.dto.search.AutocompleteResponse;
 import com.dipsource.dto.search.SearchOperator;
 import com.dipsource.dto.search.SearchSort;
 import com.dipsource.dto.search.SearchType;
+import com.dipsource.global.auth.UserPrincipal;
 import com.dipsource.global.common.ApiResponse;
 import com.dipsource.service.search.AutocompleteService;
 import com.dipsource.service.search.SearchService;
@@ -11,6 +12,7 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -47,15 +49,17 @@ public class SearchController {
             @RequestParam(required = false) String type,
             @RequestParam(required = false) String sort,
             @RequestParam(required = false) String op,
-            @PageableDefault(size = 20) Pageable pageable
+            @PageableDefault(size = 20) Pageable pageable,
+            @AuthenticationPrincipal UserPrincipal principal
     ) {
         SearchType searchType = SearchType.from(type);
         SearchSort searchSort = SearchSort.from(sort);
         SearchOperator operator = SearchOperator.from(op);
+        Long viewerId = principal == null ? null : principal.getUserId();
         if (searchType == SearchType.ALL) {
-            return ApiResponse.of(searchService.searchAll(q, operator, searchSort));
+            return ApiResponse.of(searchService.searchAll(q, operator, searchSort, viewerId));
         }
-        return ApiResponse.of(searchService.search(q, searchType, operator, searchSort, pageable));
+        return ApiResponse.of(searchService.search(q, searchType, operator, searchSort, pageable, viewerId));
     }
 
     /**

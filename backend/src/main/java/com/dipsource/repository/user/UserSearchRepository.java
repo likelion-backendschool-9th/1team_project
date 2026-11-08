@@ -2,9 +2,12 @@ package com.dipsource.repository.user;
 
 import com.dipsource.dto.search.SearchCondition;
 import com.dipsource.dto.search.SearchOperator;
+import com.dipsource.dto.search.SearchSignal;
 import com.dipsource.dto.search.SearchSort;
 import com.dipsource.entity.user.User;
 import com.dipsource.global.common.LikePattern;
+import java.util.Collection;
+import java.util.List;
 import java.util.Locale;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -75,4 +78,16 @@ public interface UserSearchRepository extends Repository<User, Long> {
             @Param("matchAll") boolean matchAll,
             @Param("relevance") boolean relevance,
             Pageable pageable);
+
+    /** 재정렬 신호. 활동 중이 아닌 회원은 돌려주지 않아서, 인덱스가 늦어도 여기서 걸러진다 */
+    @Query(nativeQuery = true, value = """
+            SELECT u.id AS id, u.id AS authorId, 0 AS likeCount, 0 AS viewCount,
+                   CAST(extract(epoch FROM (now() - u.created_at)) AS double precision) / 86400 AS ageDays,
+                   (SELECT count(*) FROM follows f WHERE f.following_id = u.id) AS followerCount
+            FROM users u
+            WHERE u.id IN (:ids) AND u.status = 'ACTIVE'
+            """)
+    List<SearchSignal> findSignals(@Param("ids") Collection<Long> ids);
+
+    List<User> findByIdIn(Collection<Long> ids);
 }

@@ -24,7 +24,7 @@
   "posts": [
     {"key": "p_a", "author": "u_author", "title": "Spring 핵심 개념 정리", "content": "프레임워크의 의존성 주입과 컨테이너 구조를 다룬다", "likes": 3, "views": 40, "daysAgo": 20},
     {"key": "p_b", "author": "u_author", "title": "백엔드 프레임워크 선택기", "content": "우리 팀이 spring 을 고른 이유를 적었다. spring 의 생태계, spring 커뮤니티, spring 문서 품질, spring 의 안정성을 비교했다. 다른 프레임워크와의 비교도 담았고 도입 후 운영 경험도 함께 정리했다.", "likes": 5, "views": 80, "daysAgo": 15},
-    {"key": "p_c", "author": "u_author", "title": "검색 잘되는 글", "contentRepeat": {"text": "spring ", "times": 100}, "likes": 0, "views": 5, "daysAgo": 2},
+    {"key": "p_spam", "author": "u_author", "title": "검색 잘되는 글", "contentRepeat": {"text": "spring ", "times": 100}, "likes": 0, "views": 5, "daysAgo": 2},
     {"key": "p_d", "author": "u_author", "title": "오늘의 개발 일기", "content": "특별한 내용 없이 작성한 짧은 일기", "tags": ["spring"], "likes": 1, "views": 10, "daysAgo": 9},
     {"key": "p_e", "author": "u_author", "title": "맛집 탐방 후기 모음", "content": "주말에 다녀온 맛집과 카페를 정리했다. 음식 사진과 가격, 웨이팅 정보가 들어 있다. 참고로 spring 시즌 메뉴가 좋았다.", "likes": 1000, "views": 50000, "daysAgo": 3},
     {"key": "p_f", "author": "u_author", "title": "Spring 완벽 가이드: Spring으로 백엔드 시작하기", "content": "Spring 의 IoC와 DI를 설명한다. Spring MVC 요청 흐름과 Spring 설정 방법, Spring 테스트 작성까지 예제로 다룬다.", "tags": ["spring", "java"], "likes": 20, "views": 900, "daysAgo": 30},

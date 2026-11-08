@@ -27,7 +27,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 /**
- * {@link SearchService} 구현체. 검색 기술은 모르고, 입력 검증과 대상별 분기, 오타 교정 시점만 정한다.
+ * PostgreSQL 검색 경로. 검색 엔진 전환 전 기본값이자, Elasticsearch 장애 시 대체 경로다.
+ * 검색 기술은 모르고, 입력 검증과 대상별 분기, 오타 교정 시점만 정한다.
  *
  * <p>오타 교정(3단계): 결과가 0건이면 검색 단어를 공개된 제목·태그의 가장 가까운 단어로 고쳐서 한 번 더 검색한다.
  * 고친 검색으로 결과가 나오면 그 결과와 correctedQuery를 주고, 그래도 0건이면 원래 결과(0건)를 준다.
@@ -36,9 +37,9 @@ import org.springframework.stereotype.Service;
  * sprng로 쓴 글이 있어서 sprng 검색 결과가 0건이 아니어도, 사전에서 spring이 훨씬 자주 나오면 spring을 제안한다.
  * 제안한 검색어로 결과가 있을 때만 붙인다.
  */
-@Service
+@Service("postgresSearchService")
 @RequiredArgsConstructor
-public class SearchServiceImpl implements SearchService {
+public class PostgresSearchServiceImpl implements SearchService {
 
     /** 검색어 최대 글자 수. 프론트 검색창 제한과 같다 */
     static final int MAX_QUERY_LENGTH = 50;
@@ -58,7 +59,7 @@ public class SearchServiceImpl implements SearchService {
     private final TagSearchService tagSearchService;
 
     @Override
-    public SearchAllResponse searchAll(String query, SearchOperator operator, SearchSort sort) {
+    public SearchAllResponse searchAll(String query, SearchOperator operator, SearchSort sort, Long viewerId) {
         SearchCondition condition = SearchCondition.of(normalize(query), operator, sort);
         SearchAllResponse result = searchAll(condition, null);
         long total = total(result);
@@ -79,7 +80,7 @@ public class SearchServiceImpl implements SearchService {
 
     @Override
     public SearchPageResponse<?> search(String query, SearchType type, SearchOperator operator, SearchSort sort,
-                                        Pageable pageable) {
+                                        Pageable pageable, Long viewerId) {
         SearchCondition condition = SearchCondition.of(normalize(query), operator, sort);
         // 정렬은 SearchSort로 받으므로 Pageable에 들어온 정렬은 쓰지 않는다
         Pageable page = PageRequest.of(pageable.getPageNumber(), Math.min(pageable.getPageSize(), MAX_PAGE_SIZE));
