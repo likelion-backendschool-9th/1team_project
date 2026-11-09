@@ -122,7 +122,7 @@ export async function DemoDetailView({ params }: Props) {
               label="신고하기"
               title="이 데모를 신고할까요?"
               className={styles.report}
-              onConfirm={(reason) => reportDemo(demo.id, reason)}
+              onConfirm={reportDemo.bind(null, demo.id)}
             />
           )}
         </div>
