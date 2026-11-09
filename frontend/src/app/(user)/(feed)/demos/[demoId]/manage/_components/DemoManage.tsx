@@ -7,7 +7,7 @@ import { ConfirmButton } from "@/app/_components/ui/ConfirmButton";
 import { FormMessage } from "@/app/_components/ui/FormMessage";
 import kit from "@/app/_components/ui/kit.module.css";
 import { initialFormState } from "@/app/_lib/formState";
-import type { DemoDetail } from "@/app/_lib/types/demo";
+import type { DemoDetail, DemoUsage, DemoVersion } from "@/app/_lib/types/demo";
 import {
   deleteOwnDemo,
   publishDemoVersion,
@@ -15,14 +15,18 @@ import {
   unpublishDemo,
   updateDemoInfo,
 } from "../../../_actions";
-import { uploadDemoZip } from "../../../_lib/uploadZip";
+import { UsageMeter } from "../../../_components/UsageMeter";
+import { uploadDemoThumbnail, uploadDemoZip } from "../../../_lib/uploadZip";
 import { checkDemoZip, MAX_DEMO_MB, MAX_DESCRIPTION, MAX_TITLE } from "../../../upload/_lib/rules";
+import { DemoVersions } from "./DemoVersions";
 
 type Props = {
   demo: DemoDetail;
+  versions: DemoVersion[];
+  usage: DemoUsage | null;
 };
 
-export function DemoManage({ demo }: Props) {
+export function DemoManage({ demo, versions, usage }: Props) {
   const router = useRouter();
   const [state, formAction, saving] = useActionState(updateDemoInfo.bind(null, demo.id), initialFormState);
   const [uploading, setUploading] = useState(false);
@@ -47,13 +51,33 @@ export function DemoManage({ demo }: Props) {
       return;
     }
     form.reset();
-    setNotice({ ok: true, message: `v${result.version.number}을 저장했어요. 공개하면 방문자에게 보여요.` });
+    setNotice({ ok: true, message: `v${result.data.number}을 저장했어요. 공개하면 방문자에게 보여요.` });
+    await refreshDemo(demo.id);
+    router.refresh();
+  }
+
+  async function handleThumbnail(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const file = new FormData(form).get("thumbnail") as File | null;
+    if (!file || file.size === 0) {
+      setNotice({ ok: false, message: "이미지를 선택해 주세요." });
+      return;
+    }
+    const result = await uploadDemoThumbnail(demo.id, file);
+    if (!result.ok) {
+      setNotice({ ok: false, message: result.message });
+      return;
+    }
+    form.reset();
+    setNotice({ ok: true, message: "썸네일을 바꿨어요." });
     await refreshDemo(demo.id);
     router.refresh();
   }
 
   return (
     <div className={kit.stack}>
+      {usage && <UsageMeter usage={usage} />}
       <section className={`${kit.card} ${kit.stack}`} aria-labelledby="manage-status">
         <div className={kit.between}>
           <h2 id="manage-status" className={kit.cardTitle}>
@@ -123,6 +147,30 @@ export function DemoManage({ demo }: Props) {
           <div>
             <button type="submit" className={kit.btnPrimary} disabled={uploading}>
               {uploading ? "올리는 중…" : "새 버전 저장"}
+            </button>
+          </div>
+        </form>
+      </section>
+
+      <DemoVersions demoId={demo.id} versions={versions} currentVersionId={demo.currentVersionId ?? null} />
+
+      <section className={`${kit.card} ${kit.stack}`} aria-labelledby="manage-thumbnail">
+        <h2 id="manage-thumbnail" className={kit.cardTitle}>
+          썸네일
+        </h2>
+        <p className={kit.muted}>
+          올린 버전을 자동으로 캡처해요. 실패하면 기본 썸네일을 쓰고, 직접 올리면 자동 캡처로 덮어쓰지 않아요.
+        </p>
+        <form onSubmit={handleThumbnail} className={kit.form}>
+          <div className={kit.field}>
+            <label htmlFor="manage-thumbnail-file" className={kit.label}>
+              이미지 (JPEG·PNG, 2MB 이하)
+            </label>
+            <input id="manage-thumbnail-file" name="thumbnail" type="file" accept="image/jpeg,image/png" className={kit.input} />
+          </div>
+          <div>
+            <button type="submit" className={`${kit.btnGhost} ${kit.sm}`}>
+              썸네일 올리기
             </button>
           </div>
         </form>

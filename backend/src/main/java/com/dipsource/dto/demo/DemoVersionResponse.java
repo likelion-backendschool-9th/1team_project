@@ -12,7 +12,10 @@ public record DemoVersionResponse(
         int fileCount,
         long totalBytes,
         boolean current,
-        LocalDateTime createdAt
+        LocalDateTime createdAt,
+        String thumbnailStatus,
+        String thumbnailUrl,
+        String thumbnailError
 ) {
     public static DemoVersionResponse of(DemoVersion version, Long currentVersionId) {
         return new DemoVersionResponse(
@@ -23,6 +26,9 @@ public record DemoVersionResponse(
                 version.getFileCount(),
                 version.getTotalBytes(),
                 version.getId().equals(currentVersionId),
-                version.getCreatedAt());
+                version.getCreatedAt(),
+                version.getThumbnailStatus().name(),
+                version.getThumbnailUrl(),
+                version.getThumbnailError());
     }
 }

@@ -46,7 +46,7 @@ class DemoZipValidatorTest {
     }
 
     private DemoZipValidator validatorWith(DemoProperties.Limits limits) {
-        return new DemoZipValidator(new DemoProperties("bucket", "http://worker", limits));
+        return new DemoZipValidator(new DemoProperties("bucket", "http://worker", "secret", limits, null, null, null));
     }
 
     private static byte[] zip(Map<String, byte[]> files) throws IOException {

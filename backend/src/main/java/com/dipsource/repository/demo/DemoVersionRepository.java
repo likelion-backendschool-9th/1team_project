@@ -1,8 +1,10 @@
 package com.dipsource.repository.demo;
 
+import com.dipsource.entity.demo.DemoThumbnailStatus;
 import com.dipsource.entity.demo.DemoVersion;
 import com.dipsource.entity.demo.DemoVersionStatus;
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.domain.Pageable;
@@ -17,6 +19,16 @@ public interface DemoVersionRepository extends JpaRepository<DemoVersion, Long> 
 
     long countByDemoId(Long demoId);
 
+    /** 지워지지 않은 버전 수. 보관 개수 제한에 쓴다 */
+    long countByDemoIdAndStatusIn(Long demoId, Collection<DemoVersionStatus> statuses);
+
+    /** 관리 화면에 보여 줄 버전. 최신순 */
+    List<DemoVersion> findByDemoIdAndStatusInOrderByIdDesc(Long demoId, Collection<DemoVersionStatus> statuses);
+
+    /** 촬영할 차례가 된 버전 하나 */
+    Optional<DemoVersion> findFirstByStatusAndThumbnailStatusAndThumbnailNextAtLessThanEqualOrderByThumbnailNextAtAsc(
+            DemoVersionStatus status, DemoThumbnailStatus thumbnailStatus, LocalDateTime now);
+
     Optional<DemoVersion> findFirstByDemoIdAndStatusOrderByIdDesc(Long demoId, DemoVersionStatus status);
 
     /**
@@ -27,6 +39,7 @@ public interface DemoVersionRepository extends JpaRepository<DemoVersion, Long> 
             SELECT v FROM DemoVersion v
             WHERE v.status <> com.dipsource.entity.demo.DemoVersionStatus.DELETED
               AND (v.status = com.dipsource.entity.demo.DemoVersionStatus.FAILED
+                   OR v.status = com.dipsource.entity.demo.DemoVersionStatus.DELETING
                    OR (v.status = com.dipsource.entity.demo.DemoVersionStatus.UPLOADING AND v.updatedAt < :stuckBefore)
                    OR EXISTS (SELECT 1 FROM Demo d WHERE d.id = v.demoId AND d.deletedAt IS NOT NULL))
             ORDER BY v.id

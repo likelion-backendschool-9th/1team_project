@@ -104,6 +104,10 @@ public class Demo extends BaseEntity {
     @Column(name = "current_version_id")
     private Long currentVersionId;
 
+    /** 작성자가 직접 올린 썸네일이면 true. 자동 썸네일로 덮어쓰지 않는다 */
+    @Column(name = "thumbnail_manual", nullable = false, columnDefinition = "boolean default false not null")
+    private boolean thumbnailManual = false;
+
     @Builder
     private Demo(Long userId, String title, String description, DemoType demoType, String filePath,
                  String apiUrl, String openapiJson, String scenarioJson, String externalUrl, String thumbnail,
@@ -139,6 +143,18 @@ public class Demo extends BaseEntity {
         this.filePath = target.getStoragePrefix();
         this.version = target.getNumber();
         this.status = DemoStatus.ACTIVE;
+    }
+
+    /** 자동 생성한 썸네일을 쓴다. 직접 올린 썸네일이 있으면 그대로 둔다. */
+    public void applyAutoThumbnail(String url) {
+        if (!this.thumbnailManual) {
+            this.thumbnail = url;
+        }
+    }
+
+    public void applyManualThumbnail(String url) {
+        this.thumbnail = url;
+        this.thumbnailManual = true;
     }
 
     /** 공개를 내리고 초안으로 돌린다. 파일과 버전은 그대로 둔다. */

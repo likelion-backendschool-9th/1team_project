@@ -4,9 +4,12 @@ import { useRouter } from "next/navigation";
 import { useRef, useState, type FormEvent } from "react";
 import { FormMessage } from "@/app/_components/ui/FormMessage";
 import kit from "@/app/_components/ui/kit.module.css";
+import type { DemoUsage } from "@/app/_lib/types/demo";
 import { createDemoDraft, deleteOwnDemo, publishDemoVersion } from "../../_actions";
 import { uploadDemoZip } from "../../_lib/uploadZip";
+import { UsageMeter } from "../../_components/UsageMeter";
 import { checkDemoZip, MAX_DEMO_MB, MAX_DESCRIPTION, MAX_TITLE } from "../_lib/rules";
+import { ZipPreview } from "./ZipPreview";
 import styles from "./UploadForm.module.css";
 
 const steps = ["정보 저장", "zip 검증·업로드", "공개"];
@@ -14,9 +17,10 @@ const steps = ["정보 저장", "zip 검증·업로드", "공개"];
 type Props = {
   used: number;
   capacity: number;
+  usage: DemoUsage | null;
 };
 
-export function UploadForm({ used, capacity }: Props) {
+export function UploadForm({ used, capacity, usage }: Props) {
   const router = useRouter();
   const fileRef = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
@@ -68,7 +72,7 @@ export function UploadForm({ used, capacity }: Props) {
 
       if (form.get("publish") === "on") {
         setStep(3);
-        const published = await publishDemoVersion(draft.demoId, upload.version.id);
+        const published = await publishDemoVersion(draft.demoId, upload.data.id);
         if (!published.ok) {
           setResult({ ok: false, message: `파일은 저장했지만 공개하지 못했어요: ${published.message}` });
           router.push(`/demos/${draft.demoId}/manage`);
@@ -122,6 +126,7 @@ export function UploadForm({ used, capacity }: Props) {
           <p id="upload-file-error" className={kit.error}>
             {fileError}
           </p>
+          {file && !fileError && <ZipPreview key={`${file.name}-${file.size}-${file.lastModified}`} file={file} />}
         </div>
 
         <div className={kit.field}>
@@ -197,6 +202,7 @@ export function UploadForm({ used, capacity }: Props) {
             {full && " · 칸이 가득 찼어요. 미니홈피 데모 탭에서 칸을 늘리거나 데모를 지워 주세요."}
           </p>
         </section>
+        {usage && <UsageMeter usage={usage} />}
         <section className={kit.card} aria-live="polite">
           <h2 className={kit.cardTitle}>진행 상황</h2>
           <ol className={styles.steps}>

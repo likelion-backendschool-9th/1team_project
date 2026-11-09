@@ -94,11 +94,23 @@ r2:
 demo:
   bucket: ${R2_DEMO_BUCKET:dipsource-demos}
   worker-base-url: ${DEMO_WORKER_BASE_URL:http://localhost:8787}
+  signing-secret: ${DEMO_SIGNING_SECRET:}
   limits:
     max-zip-bytes: 10485760
     max-total-bytes: 31457280
     max-file-bytes: 10485760
     max-files: 200
+  quota:
+    max-demos: ${DEMO_QUOTA_MAX_DEMOS:20}
+    max-storage-bytes: ${DEMO_QUOTA_MAX_STORAGE_BYTES:209715200}
+    max-versions-per-demo: ${DEMO_QUOTA_MAX_VERSIONS:10}
+  preview:
+    ttl-minutes: ${DEMO_PREVIEW_TTL_MINUTES:30}
+    max-active-per-user: 3
+  thumbnail:
+    enabled: ${DEMO_THUMBNAIL_ENABLED:false}
+    account-id: ${CLOUDFLARE_ACCOUNT_ID:}
+    api-token: ${CLOUDFLARE_BROWSER_API_TOKEN:}
 
 management:
   endpoints:

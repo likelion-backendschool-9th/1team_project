@@ -45,6 +45,7 @@ public class DemoService {
     private final DemoAccess demoAccess;
     private final DemoResponseAssembler assembler;
     private final DemoPublicationService publicationService;
+    private final DemoQuotaService quotaService;
     private final ApplicationEventPublisher eventPublisher;
 
     /** 초안으로 만든다. 파일을 올리고 공개해야 다른 사람에게 보인다. */
@@ -53,6 +54,7 @@ public class DemoService {
         if (!userService.isActiveUser(userId)) {
             throw new BusinessException(ErrorCode.FORBIDDEN, "데모를 올릴 수 없는 계정이에요.");
         }
+        quotaService.reserveDemoSlot(userId);
         Demo demo = demoRepository.save(Demo.builder()
                 .userId(userId)
                 .title(request.title().strip())
@@ -112,8 +114,8 @@ public class DemoService {
     }
 
     @Transactional
-    public DemoResponse publish(Long userId, Long demoId, Long versionId) {
-        return assembler.toResponse(publicationService.publish(userId, demoId, versionId), userId);
+    public DemoResponse publish(Long userId, Long demoId, Long versionId, Long expectedCurrentId) {
+        return assembler.toResponse(publicationService.publish(userId, demoId, versionId, expectedCurrentId), userId);
     }
 
     @Transactional

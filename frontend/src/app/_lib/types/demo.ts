@@ -50,4 +50,17 @@ export type DemoVersion = {
   totalBytes: number;
   current: boolean;
   createdAt: string;
+  thumbnailStatus: "PENDING" | "READY" | "FAILED" | "SKIPPED";
+  thumbnailUrl?: string;
+  thumbnailError?: string;
+};
+
+export type DemoPreview = { url: string; expiresAt: string };
+
+export type DemoUsage = {
+  usedBytes: number;
+  limitBytes: number;
+  remainingBytes: number;
+  demoCount: number;
+  maxDemos: number;
 };

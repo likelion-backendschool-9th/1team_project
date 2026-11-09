@@ -37,19 +37,31 @@ public class DemoPublicationService {
     private final DemoAccess demoAccess;
     private final DemoVersionRepository versionRepository;
     private final DemoStorage storage;
+    private final DemoQuotaService quotaService;
     private final ObjectMapper objectMapper;
 
-    /** 버전을 공개한다. versionId가 없으면 가장 최근 READY 버전. */
+    /**
+     * 버전을 공개한다. 이전 버전을 고르면 그대로 복구가 된다 — 다시 빌드하지 않고 보관된 파일을 다시 가리킨다.
+     *
+     * @param versionId         없으면 가장 최근 READY 버전
+     * @param expectedCurrentId 있으면 현재 공개 버전과 같을 때만 진행한다. 동시 변경이 뒤늦게 덮어쓰는 것을 막는다
+     */
     @Transactional
-    public Demo publish(Long userId, Long demoId, Long versionId) {
+    public Demo publish(Long userId, Long demoId, Long versionId, Long expectedCurrentId) {
         Demo demo = demoAccess.findOwnedForUpdate(userId, demoId);
         if (demo.getStatus() == DemoStatus.HIDDEN) {
             throw new BusinessException(ErrorCode.FORBIDDEN, "관리자가 숨긴 데모는 공개할 수 없습니다");
+        }
+        if (expectedCurrentId != null && !expectedCurrentId.equals(demo.getCurrentVersionId())) {
+            throw new BusinessException(ErrorCode.CONFLICT, "다른 곳에서 공개 버전이 바뀌었습니다. 새로고침 후 다시 시도해 주세요");
         }
         DemoVersion version = findPublishable(demoId, versionId);
         requireFilesIntact(version);
         writePointer(demoId, publicationJson(version));
         demo.publish(version);
+        if (version.getThumbnailUrl() != null) {
+            demo.applyAutoThumbnail(version.getThumbnailUrl());
+        }
         return demo;
     }
 
@@ -74,6 +86,7 @@ public class DemoPublicationService {
             removePointer(demo.getId());
         }
         demo.delete();
+        quotaService.releaseDemoSlot(demo.getUserId());
     }
 
     private DemoVersion findPublishable(Long demoId, Long versionId) {

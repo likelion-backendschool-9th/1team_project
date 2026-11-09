@@ -60,6 +60,7 @@ export async function DemoDetailView({ params }: Props) {
           label={demo.runtime === "unity" ? "unity webgl" : demo.techTags[0]}
           thumbnail={demo.thumbnail}
           runUrl={demo.runUrl ?? null}
+          mine={mine}
           initialPlays={demo.playCount}
           initialLikes={demo.likeCount}
           liked={demo.liked}

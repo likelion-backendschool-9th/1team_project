@@ -13,166 +13,19 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.dipsource.global.auth.UserPrincipal;
-import com.dipsource.service.demo.DemoCleanupService;
-import com.dipsource.service.demo.DemoPublicationService;
-import com.dipsource.service.demo.storage.DemoStorage;
-import com.dipsource.service.demo.storage.InMemoryDemoStorage;
 import com.jayway.jsonpath.JsonPath;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipOutputStream;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Import;
-import org.springframework.context.annotation.Primary;
 import org.springframework.http.MediaType;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.ResultActions;
-import org.springframework.transaction.support.TransactionTemplate;
-import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
 /** 등록 → 업로드 → 공개 → 소비 → 삭제 흐름을 실제 PostgreSQL과 메모리 저장소로 검증한다. */
-@Testcontainers
-@AutoConfigureMockMvc
-@Import(DemoFlowTest.StorageConfig.class)
-@SpringBootTest(properties = {
-        "app.jwt.secret=test-secret-test-secret-test-secret-test-secret-0000",
-        "spring.security.oauth2.client.registration.github.client-id=test",
-        "spring.security.oauth2.client.registration.github.client-secret=test",
-        "demo.worker-base-url=https://runner.test",
-        "demo.cleanup-interval-ms=3600000"
-})
-class DemoFlowTest {
-
-    @Container
-    @ServiceConnection
-    static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16");
-
-    @TestConfiguration
-    static class StorageConfig {
-        @Bean
-        @Primary
-        InMemoryDemoStorage inMemoryDemoStorage() {
-            return new InMemoryDemoStorage();
-        }
-    }
-
-    private static final String HTML = "<!doctype html><html><head><script type=\"module\" src=\"./assets/app.js\"></script></head><body></body></html>";
-
-    @Autowired MockMvc mockMvc;
-    @Autowired JdbcTemplate jdbc;
-    @Autowired InMemoryDemoStorage storage;
-    @Autowired DemoStorage injectedStorage;
-    @Autowired DemoCleanupService cleanupService;
-    @Autowired DemoPublicationService publicationService;
-    @Autowired TransactionTemplate transactionTemplate;
-
-    private long owner;
-    private long other;
-
-    @BeforeEach
-    void setUp() {
-        storage.reset();
-        jdbc.execute("TRUNCATE demos, demo_versions, users, tags, demo_tags, demo_likes, demo_feedbacks, demo_feedback_likes, "
-                + "bookmarks, blocks RESTART IDENTITY CASCADE");
-        owner = user("owner");
-        other = user("other");
-    }
-
-    private long user(String nickname) {
-        return jdbc.queryForObject("""
-                INSERT INTO users(email, nickname, bio, tech_stacks, role, status, chip_balance,
-                                  blog_subscription_price, created_at, updated_at)
-                VALUES (?, ?, '', '[]', 'USER', 'ACTIVE', 0, 0, now(), now()) RETURNING id
-                """, Long.class, nickname + "@test.local", nickname);
-    }
-
-    private static Authentication as(long userId) {
-        UserPrincipal principal = new UserPrincipal(userId, "USER");
-        return new UsernamePasswordAuthenticationToken(principal, null, principal.getAuthorities());
-    }
-
-    private static byte[] zip(Map<String, String> files) throws IOException {
-        ByteArrayOutputStream bytes = new ByteArrayOutputStream();
-        try (ZipOutputStream out = new ZipOutputStream(bytes, StandardCharsets.UTF_8)) {
-            for (Map.Entry<String, String> file : files.entrySet()) {
-                out.putNextEntry(new ZipEntry(file.getKey()));
-                out.write(file.getValue().getBytes(StandardCharsets.UTF_8));
-                out.closeEntry();
-            }
-        }
-        return bytes.toByteArray();
-    }
-
-    private static byte[] validZip() throws IOException {
-        Map<String, String> files = new LinkedHashMap<>();
-        files.put("index.html", HTML);
-        files.put("assets/app.js", "export default 1");
-        files.put("assets/app.css", "body{}");
-        return zip(files);
-    }
-
-    private ResultActions createRaw(long userId, String title) throws Exception {
-        return mockMvc.perform(post("/demos").with(authentication(as(userId)))
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"title\":\"" + title + "\",\"description\":\"설명\",\"tags\":[\"React\",\"vite\"]}"));
-    }
-
-    private long createDemo(long userId) throws Exception {
-        String body = createRaw(userId, "내 데모").andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
-        return ((Number) JsonPath.read(body, "$.data.id")).longValue();
-    }
-
-    private ResultActions uploadRaw(long userId, long demoId, byte[] zip) throws Exception {
-        return mockMvc.perform(multipart("/demos/{id}/versions", demoId)
-                .file(new MockMultipartFile("file", "demo.zip", "application/zip", zip))
-                .with(authentication(as(userId))));
-    }
-
-    private long upload(long demoId) throws Exception {
-        String body = uploadRaw(owner, demoId, validZip()).andExpect(status().isCreated())
-                .andReturn().getResponse().getContentAsString();
-        return ((Number) JsonPath.read(body, "$.data.id")).longValue();
-    }
-
-    private ResultActions publishRaw(long userId, long demoId, Long versionId) throws Exception {
-        return mockMvc.perform(post("/demos/{id}/publish", demoId).with(authentication(as(userId)))
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(versionId == null ? "{}" : "{\"versionId\":" + versionId + "}"));
-    }
-
-    private long publishedDemo() throws Exception {
-        long demoId = createDemo(owner);
-        long versionId = upload(demoId);
-        publishRaw(owner, demoId, versionId).andExpect(status().isOk());
-        return demoId;
-    }
-
-    private String pointerKey(long demoId) {
-        return "demos/" + demoId + "/publication.json";
-    }
-
-    private String pointer(long demoId) {
-        return new String(storage.bytes(pointerKey(demoId)), StandardCharsets.UTF_8);
-    }
+class DemoFlowTest extends DemoFlowSupport {
 
     @Test
     @DisplayName("업로드 → 공개 → 다른 사용자 실행 흐름")
@@ -406,7 +259,7 @@ class DemoFlowTest {
         long second = upload(demoId);
 
         transactionTemplate.executeWithoutResult(tx -> {
-            publicationService.publish(owner, demoId, second);
+            publicationService.publish(owner, demoId, second, null);
             assertThat(pointer(demoId)).contains("\"versionId\":" + second);
             tx.setRollbackOnly();
         });

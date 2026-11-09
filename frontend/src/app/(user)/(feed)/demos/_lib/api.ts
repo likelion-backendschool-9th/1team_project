@@ -1,7 +1,7 @@
 import "server-only";
 import { cache } from "react";
 import { ApiRequestError, apiFetch, hasBackend, type ApiResponse } from "@/app/_lib/api/client";
-import type { DemoComment, DemoDetail, DemoSort } from "@/app/_lib/types/demo";
+import type { DemoComment, DemoDetail, DemoSort, DemoUsage, DemoVersion } from "@/app/_lib/types/demo";
 import { createMockDemoComments, mockDemoTags, mockDemos } from "./mock";
 
 // 커서 페이지네이션 응답. 데모는 백엔드가 이미 있으므로 MOCK_EXCEPT_DM이어도 실서버를 쓴다.
@@ -78,4 +78,16 @@ export async function getDemoComments(demoId: number): Promise<DemoComment[]> {
     `/api/v1/demos/${demoId}/comments?size=50`,
   );
   return data.content.map(normalizeComment);
+}
+
+export async function getDemoVersions(demoId: number): Promise<DemoVersion[]> {
+  if (!hasBackend) return [];
+  const { data } = await apiFetch<ApiResponse<DemoVersion[]>>(`/api/v1/demos/${demoId}/versions`);
+  return data;
+}
+
+export async function getDemoUsage(): Promise<DemoUsage | null> {
+  if (!hasBackend) return null;
+  const { data } = await apiFetch<ApiResponse<DemoUsage>>("/api/v1/demos/usage");
+  return data;
 }

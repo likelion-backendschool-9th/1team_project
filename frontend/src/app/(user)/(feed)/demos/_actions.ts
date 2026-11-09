@@ -5,7 +5,7 @@ import { apiFetch, ApiRequestError, hasBackend, type ApiResponse } from "@/app/_
 import { runForm } from "@/app/_lib/api/formAction";
 import { mutate, type MutationResult } from "@/app/_lib/api/mutate";
 import { readValues, type FormState } from "@/app/_lib/formState";
-import type { DemoDetail } from "@/app/_lib/types/demo";
+import type { DemoDetail, DemoPreview } from "@/app/_lib/types/demo";
 import { getMe } from "@/app/(user)/_lib/api";
 import { MAX_DESCRIPTION, MAX_TITLE, parseTags } from "./upload/_lib/rules";
 
@@ -93,4 +93,50 @@ export async function deleteOwnDemo(demoId: number): Promise<MutationResult> {
 /** 파일을 올린 뒤 화면에 새 버전이 보이도록 캐시를 비운다. */
 export async function refreshDemo(demoId: number): Promise<void> {
   revalidateDemo(demoId);
+}
+
+/** 복구. expectedCurrentVersionId가 지금 공개 버전과 다르면 백엔드가 409를 준다. */
+export async function restoreDemoVersion(
+  demoId: number,
+  versionId: number,
+  expectedCurrentVersionId: number | null,
+): Promise<MutationResult> {
+  const result = await mutate(
+    `/api/v1/demos/${demoId}/versions/${versionId}/restore`,
+    "POST",
+    expectedCurrentVersionId === null ? {} : { expectedCurrentVersionId },
+    "선택한 버전으로 복구했어요.",
+    !hasBackend,
+  );
+  if (result.ok) revalidateDemo(demoId);
+  return result;
+}
+
+export async function deleteDemoVersion(demoId: number, versionId: number): Promise<MutationResult> {
+  const result = await mutate(
+    `/api/v1/demos/${demoId}/versions/${versionId}`,
+    "DELETE",
+    undefined,
+    "버전을 지웠어요.",
+    !hasBackend,
+  );
+  if (result.ok) revalidateDemo(demoId);
+  return result;
+}
+
+export async function createVersionPreview(
+  demoId: number,
+  versionId: number,
+): Promise<MutationResult & { url?: string }> {
+  if (!hasBackend) return { ok: false, message: NO_BACKEND };
+  try {
+    const { data } = await apiFetch<ApiResponse<DemoPreview>>(
+      `/api/v1/demos/${demoId}/versions/${versionId}/preview`,
+      { method: "POST" },
+    );
+    return { ok: true, message: "미리보기를 열었어요.", url: data.url };
+  } catch (error) {
+    if (error instanceof ApiRequestError) return { ok: false, message: error.error.message };
+    throw error;
+  }
 }

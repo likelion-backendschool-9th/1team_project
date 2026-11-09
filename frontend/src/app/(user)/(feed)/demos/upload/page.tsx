@@ -3,7 +3,7 @@ import { Suspense } from "react";
 import kit from "@/app/_components/ui/kit.module.css";
 import { inventoryCapacity } from "@/app/_lib/policy";
 import { getMe } from "@/app/(user)/_lib/api";
-import { countMyDemos } from "../_lib/api";
+import { countMyDemos, getDemoUsage } from "../_lib/api";
 import { UploadForm } from "./_components/UploadForm";
 
 export const metadata: Metadata = { title: "데모 올리기", robots: { index: false } };
@@ -11,8 +11,8 @@ export const metadata: Metadata = { title: "데모 올리기", robots: { index: 
 async function UploadContent() {
   const me = await getMe();
   if (!me) return null;
-  const used = await countMyDemos(me.id);
-  return <UploadForm used={used} capacity={inventoryCapacity(me.plus, 0)} />;
+  const [used, usage] = await Promise.all([countMyDemos(me.id), getDemoUsage()]);
+  return <UploadForm used={used} capacity={inventoryCapacity(me.plus, 0)} usage={usage} />;
 }
 
 export default function DemoUploadPage() {
