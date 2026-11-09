@@ -180,6 +180,16 @@ export async function createPostComment(
   return state.ok ? { ...state, values: {} } : state;
 }
 
+export async function togglePostLike(postId: number, like: boolean) {
+  if (!isId(postId)) return { ok: false, message: '잘못된 요청이에요.' };
+  return mutate(
+    `/api/v1/posts/${postId}/like`,
+    like ? 'POST' : 'DELETE',
+    undefined,
+    like ? '좋아요를 반영했어요.' : '좋아요를 취소했어요.',
+  );
+}
+
 export async function togglePostBookmark(postId: number, bookmark: boolean) {
   if (!isId(postId)) return { ok: false, message: '잘못된 요청이에요.' };
   return mutate(

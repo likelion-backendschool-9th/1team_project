@@ -8,7 +8,7 @@ import {
   HeartIcon,
   RepostIcon,
 } from "@/app/_components/ui/Icons";
-import { togglePostBookmark } from "../_actions";
+import { togglePostBookmark, togglePostLike } from "../_actions";
 import styles from "./PostActions.module.css";
 
 type Props = {
@@ -20,7 +20,6 @@ type Props = {
   readMinutes: number;
 };
 
-// 글 좋아요 API는 아직 없어 화면 상태만 바꾼다. 북마크는 posts/{postId}/bookmark로 보낸다.
 export function PostActions({
   postId,
   likeCount,
@@ -29,14 +28,25 @@ export function PostActions({
   liked,
   readMinutes,
 }: Props) {
-  const [like, setLike] = useState(liked);
+  const [likeState, setLikeState] = useState({ active: liked, count: likeCount });
   const [bookmarked, setBookmarked] = useState(false);
-  const [, startTransition] = useTransition();
+  const [likePending, startLikeTransition] = useTransition();
+  const [, startBookmarkTransition] = useTransition();
+
+  function handleLike() {
+    const previous = likeState;
+    const next = !previous.active;
+    setLikeState({ active: next, count: previous.count + (next ? 1 : -1) });
+    startLikeTransition(async () => {
+      const result = await togglePostLike(postId, next);
+      if (!result.ok) setLikeState(previous);
+    });
+  }
 
   function handleBookmark() {
     const next = !bookmarked;
     setBookmarked(next);
-    startTransition(async () => {
+    startBookmarkTransition(async () => {
       const result = await togglePostBookmark(postId, next);
       if (!result.ok) setBookmarked(!next);
     });
@@ -46,13 +56,14 @@ export function PostActions({
     <div className={styles.actions}>
       <button
         type="button"
-        className={`${styles.action} ${like ? styles.liked : ""}`}
-        aria-pressed={like}
-        onClick={() => setLike((value) => !value)}
+        className={`${styles.action} ${likeState.active ? styles.liked : ""}`}
+        aria-pressed={likeState.active}
+        disabled={likePending}
+        onClick={handleLike}
       >
-        <HeartIcon filled={like} />
+        <HeartIcon filled={likeState.active} />
         <span className="sr-only">좋아요</span>
-        {likeCount - (liked ? 1 : 0) + (like ? 1 : 0)}
+        {likeState.count}
       </button>
       <Link href={`/blog/posts/${postId}#comments`} className={styles.action}>
         <CommentIcon />
