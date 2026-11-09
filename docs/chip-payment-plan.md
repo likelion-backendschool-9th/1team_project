@@ -91,21 +91,27 @@
 
 ### 5단계 — 관리자
 
-> 브랜치: `feature/admin-coins`
+> 브랜치: ① 조회 `feature/admin-payment-read` → ② 정산 → ③ 환불·이상 거래 (PR 3개로 나눔)
+
+**정한 것 (2026-11-09)**
+- 정산 수수료 **30%** (database-design.md 기준). 관리자 목업의 20%는 맞춰 고친다
+- 정산은 **관리자 버튼**("지난달 정산 만들기")으로 작가별로 만든다. 대상은 판매 수익(BLOG_INCOME)·후원 수익(DONATION_INCOME) 칩. 매달 자동 배치는 나중에
+- 관리자 환불은 **칩 충전 환불만**. 결제를 REFUNDED로 바꾸고 칩을 회수하며, 남은 칩이 모자라면 환불 불가. 회원 "환불 요청" 기능과 유료 글 24시간 환불은 만들지 않는다
+- 이상 거래는 **간단한 규칙 2~3개**를 집계로 계산 (짧은 시간 충전 반복, 충전 후 환불 반복, 같은 사람끼리 후원 반복). 새 테이블 없음
 
 **백엔드**
-- [ ] `GET /admin/coins/purchases?userId=&type=` — 충전 내역 조회
+- [x] `GET /admin/coins/purchases?userId=&type=` — 충전 내역 조회 (①)
 - [ ] `PUT /admin/coins/purchases/{purchaseId}/refund` — 환불 처리
-- [ ] `GET /admin/subscriptions` — 구독 목록
-- [ ] `GET /admin/revenue?from=&to=` — 수익 현황
+- [x] `GET /admin/subscriptions` — 구독 목록 (①)
+- [x] `GET /admin/revenue?from=&to=` — 수익 현황 (①). 대시보드 `revenueMonth`(지난달 매출)도 채움
 - [ ] `GET /admin/settlements`, `PUT /admin/settlements/{id}/confirm` — 정산
 - [ ] `GET /admin/coins/suspicious` — 이상 거래 탐지
 - [ ] `백엔드-청사진.md` 상태 업데이트
 
 **프론트**
-- [ ] `/admin/coins` 페이지 — 충전 내역 + 환불 버튼
-- [ ] `/admin/subscriptions` 페이지
-- [ ] `/admin/revenue` 페이지
+- [ ] `/admin/coins` 페이지 — 충전 내역(① 완료) + 환불 버튼(③)
+- [x] `/admin/subscriptions` 페이지 (①)
+- [x] `/admin/revenue` 페이지 (①)
 - [ ] `/admin/settlements` 페이지
 
 ---

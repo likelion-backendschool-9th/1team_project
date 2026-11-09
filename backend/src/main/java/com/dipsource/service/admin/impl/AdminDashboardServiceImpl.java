@@ -7,10 +7,12 @@ import com.dipsource.repository.demo.DemoRepository;
 import com.dipsource.repository.report.ReportRepository;
 import com.dipsource.repository.user.UserRepository;
 import com.dipsource.service.admin.AdminDashboardService;
+import com.dipsource.service.admin.AdminPaymentService;
 import java.sql.Date;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.YearMonth;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -29,6 +31,7 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
     private final UserRepository userRepository;
     private final DemoRepository demoRepository;
     private final ReportRepository reportRepository;
+    private final AdminPaymentService adminPaymentService;
 
     @Override
     @Transactional(readOnly = true)
@@ -59,7 +62,8 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
                 demoRepository.countByDeletedAtIsNullAndCreatedAtGreaterThanEqualAndCreatedAtLessThan(
                         weekStart, weekEnd),
                 reportRepository.countByStatus(ReportStatus.PENDING),
-                0,
+                // 화면에 "지난달 매출"로 보여 준다. 이번 달은 아직 끝나지 않아서 마감된 지난달을 쓴다
+                adminPaymentService.revenueOf(YearMonth.from(today).minusMonths(1)),
                 signups);
     }
 
