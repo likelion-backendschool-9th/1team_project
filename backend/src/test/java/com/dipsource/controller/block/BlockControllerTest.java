@@ -153,6 +153,16 @@ class BlockControllerTest {
                 .andExpect(status().isNotFound());
     }
 
+    @Test
+    @DisplayName("알림·칩·북마크·미니홈피·GitHub 잔디는 비로그인이면 401")
+    void memberOnlyApisRejectAnonymous() throws Exception {
+        for (String path : List.of("/notifications", "/notifications/unread-count", "/coins/history",
+                "/users/me/bookmarks", "/mini-homes/1", "/users/1/github/repos")) {
+            mockMvc.perform(get(path)).andExpect(status().isUnauthorized());
+        }
+        mockMvc.perform(get("/notifications").with(authentication(auth(me)))).andExpect(status().isOk());
+    }
+
     private void block(User blocker, User blocked) throws Exception {
         mockMvc.perform(post("/blocks/{id}", blocked.getId()).with(authentication(auth(blocker))))
                 .andExpect(status().isNoContent());

@@ -56,10 +56,8 @@ public class SecurityConfig {
                                 "/search", "/search/**",
                                 "/events", "/events/*",
                                 "/rankings",
-                                "/notifications", "/notifications/**",
                                 "/follows/**",
-                                "/coins/**",
-                                "/users/me/bookmarks", "/users/*").permitAll()
+                                "/users/*").permitAll()
                         // 재색인 등 검색 운영은 관리자만
                         .requestMatchers("/admin/search/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
