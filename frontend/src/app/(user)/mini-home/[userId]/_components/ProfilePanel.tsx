@@ -9,6 +9,21 @@ import { UserBadges } from "@/app/(user)/_components/UserBadges";
 import { BgmPlayer } from "./BgmPlayer";
 import styles from "./ProfilePanel.module.css";
 
+// 잔디는 GitHub처럼 세로 7칸(일~토) · 가로 주 단위로 그린다. 패널 폭에 맞게 최근 20주만 보여 준다.
+const GRASS_WEEKS = 20;
+
+type GrassCell = { date: string; level: number } | null;
+
+/** 최근 GRASS_WEEKS주를 일요일부터 시작하도록 앞을 빈칸으로 채운다. (날짜는 YYYY-MM-DD) */
+function toGrassCells(days: GithubContributions["days"]): GrassCell[] {
+  if (days.length === 0) return [];
+  const lastDay = new Date(`${days[days.length - 1].date}T00:00:00Z`).getUTCDay();
+  // 마지막 주는 오늘 요일까지만 있다. 그 앞 (GRASS_WEEKS - 1)주는 꽉 채운다.
+  const recent = days.slice(-((GRASS_WEEKS - 1) * 7 + lastDay + 1));
+  const firstDay = new Date(`${recent[0].date}T00:00:00Z`).getUTCDay();
+  return [...Array.from({ length: firstDay }, () => null), ...recent];
+}
+
 type Props = {
   profile: MiniHomeProfile;
   languages: GithubLanguage[];
@@ -77,11 +92,15 @@ export function ProfilePanel({ profile, languages, contributions, repos }: Props
       <div
         className={styles.grass}
         role="img"
-        aria-label={`최근 ${contributions.days.length}일 활동, 총 ${contributions.totalCommits}커밋`}
+        aria-label={`최근 ${GRASS_WEEKS}주 활동, 총 ${contributions.totalCommits}커밋`}
       >
-        {contributions.days.map((day) => (
-          <span key={day.date} className={styles[`level${day.level}`]} />
-        ))}
+        {toGrassCells(contributions.days).map((day, index) =>
+          day ? (
+            <span key={day.date} className={styles[`level${day.level}`]} title={day.date} />
+          ) : (
+            <span key={`empty-${index}`} className={styles.grassEmpty} />
+          ),
+        )}
       </div>
 
       <h3 className={`${styles.rowLabel} ${styles.repoLabel}`}>대표 레포지토리</h3>
