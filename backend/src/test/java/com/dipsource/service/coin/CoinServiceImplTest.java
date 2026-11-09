@@ -181,6 +181,23 @@ class CoinServiceImplTest {
         }
 
         @Test
+        void 정지된_글쓴이에게는_수익을_넣지_않음() {
+            User buyer = userWithId(USER_ID, 100);
+            User author = userWithId(AUTHOR_ID, 0);
+            author.suspend();
+            when(userRepository.findByIdForUpdate(USER_ID)).thenReturn(Optional.of(buyer));
+            when(userRepository.findByIdForUpdate(AUTHOR_ID)).thenReturn(Optional.of(author));
+
+            assertThatThrownBy(() -> service.payForPost(USER_ID, AUTHOR_ID, POST_ID, "유료 글", 30))
+                    .isInstanceOf(BusinessException.class)
+                    .extracting(e -> ((BusinessException) e).getErrorCode())
+                    .isEqualTo(ErrorCode.NOT_FOUND);
+            assertThat(buyer.getChipBalance()).isEqualTo(100);
+            assertThat(author.getChipBalance()).isZero();
+            verify(chipTransactionRepository, never()).save(any());
+        }
+
+        @Test
         void 정지된_회원은_칩을_쓸_수_없음() {
             User buyer = userWithId(USER_ID, 100);
             buyer.suspend();

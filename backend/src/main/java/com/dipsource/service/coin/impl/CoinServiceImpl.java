@@ -149,6 +149,10 @@ public class CoinServiceImpl implements CoinService {
         if (buyer.getStatus() != UserStatus.ACTIVE) {
             throw new BusinessException(ErrorCode.FORBIDDEN, "칩을 사용할 수 없는 계정이에요.");
         }
+        // 정지·탈퇴한 글쓴이에게는 수익을 쌓지 않는다 (후원과 같은 정책). 잠근 뒤에 확인해야 동시 정지에도 안전하다
+        if (author.getStatus() != UserStatus.ACTIVE) {
+            throw new BusinessException(ErrorCode.NOT_FOUND, "글을 찾을 수 없어요.");
+        }
 
         buyer.deductChips(chips);
         author.addChips(chips);

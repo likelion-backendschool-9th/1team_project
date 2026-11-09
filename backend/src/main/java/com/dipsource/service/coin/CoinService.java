@@ -29,7 +29,7 @@ public interface CoinService {
     /**
      * 유료 글 결제. 구매자 칩을 차감하고 같은 칩을 글쓴이에게 판매 수익으로 넣는다.
      * 두 회원을 함께 잠그고, 거래 내역을 양쪽에 남긴다. 수수료는 정산 때 뗀다.
-     * 잔액이 부족하면 InsufficientChipsException (호출한 트랜잭션 전체가 롤백된다)
+     * 잔액이 부족하면 InsufficientChipsException, 글쓴이가 정지·탈퇴했으면 404 (호출한 트랜잭션 전체가 롤백된다)
      *
      * @param buyerId   구매자
      * @param authorId  글쓴이

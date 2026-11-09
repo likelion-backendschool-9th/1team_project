@@ -202,13 +202,18 @@ public class PostServiceImpl implements PostService {
         if (isSubscriber(userId, post.getUserId())) {
             throw new BusinessException(ErrorCode.BAD_REQUEST, "구독 중이라 이미 읽을 수 있어요.");
         }
+        // insertIgnore는 영속성 컨텍스트를 비워(clearAutomatically) 이후 post는 detached가 된다.
+        // 지연 로딩 필드를 건드리지 않도록 필요한 값은 여기서 미리 읽어 둔다.
+        Long authorId = post.getUserId();
+        String title = post.getTitle();
+        int price = post.getPriceChips();
         // 구매 기록을 먼저 넣어 중복 결제를 막는다. 이미 샀으면 칩을 다시 빼지 않고 끝낸다 (멱등)
-        int inserted = postPurchaseRepository.insertIgnore(userId, postId, post.getPriceChips());
+        int inserted = postPurchaseRepository.insertIgnore(userId, postId, price);
         if (inserted == 0) {
             return;
         }
-        // 잔액이 부족하면 예외가 나서 위의 구매 기록도 함께 롤백된다
-        coinService.payForPost(userId, post.getUserId(), postId, post.getTitle(), post.getPriceChips());
+        // 잔액 부족·글쓴이 정지면 예외가 나서 위의 구매 기록도 함께 롤백된다
+        coinService.payForPost(userId, authorId, postId, title, price);
     }
 
     /** 유료 글 본문 전체를 볼 수 있는지: 무료 글, 작성자, 구매자, 구독자 */
