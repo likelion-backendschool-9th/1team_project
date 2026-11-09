@@ -1,5 +1,6 @@
 import "server-only";
 import { mockEvents } from "@/app/_lib/mockEvents";
+import type { DevEvent } from "@/app/_lib/types/event";
 import { apiFetch, ApiRequestError, hasBackend, isMockMode, type ApiResponse, type PageResponse } from "@/app/_lib/api/client";
 import {
   mockAdminSubscriptions,
@@ -177,4 +178,8 @@ export const getSettlements = () => get("/api/v1/admin/settlements", mockSettlem
 export const getCoinTx = () => get("/api/v1/admin/coins/purchases", mockCoinTx);
 export const getSuspicious = () => get("/api/v1/admin/coins/suspicious", mockSuspicious);
 
-export const getAdminEvents = () => get("/api/v1/events", mockEvents);
+export async function getAdminEvents(): Promise<DevEvent[]> {
+  if (isMockMode) return mockEvents;
+  const { data } = await apiFetch<ApiResponse<PageResponse<DevEvent>>>("/api/v1/events");
+  return data.content;
+}
