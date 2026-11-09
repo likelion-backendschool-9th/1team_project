@@ -71,7 +71,9 @@
   box-shadow: 0 2px 8px rgb(60 40 10 / 18%);
   color: var(--ink);
   font-size: 20px;
-  transition: background 0.15s ease, transform 0.15s ease;
+  transition:
+    background 0.15s ease,
+    transform 0.15s ease;
 }
 
 .arrow:hover {
@@ -94,7 +96,7 @@
 /* 카드 크기는 고정하고, 넓어진 만큼 더 많이 보이며 넘치는 카드는 가로로 스크롤한다. */
 .grid {
   display: grid;
-  grid-auto-columns: 167px;
+  grid-auto-columns: 248px;
   grid-auto-flow: column;
   gap: 12px;
   padding: 4px 4px 14px;
