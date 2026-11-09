@@ -1,5 +1,7 @@
 package com.dipsource.controller.demo;
 
+import com.dipsource.dto.demo.DemoBackendRequest;
+import com.dipsource.dto.demo.DemoBackendResponse;
 import com.dipsource.dto.demo.DemoCreateRequest;
 import com.dipsource.dto.demo.DemoCursorResponse;
 import com.dipsource.dto.demo.DemoEditorSaveRequest;
@@ -18,6 +20,8 @@ import com.dipsource.service.demo.DemoPreviewService;
 import com.dipsource.service.demo.DemoQuotaService;
 import com.dipsource.service.demo.DemoService;
 import com.dipsource.service.demo.DemoVersionService;
+import com.dipsource.service.demo.backend.DemoBackendHealthService;
+import com.dipsource.service.demo.backend.DemoBackendService;
 import com.dipsource.service.demo.thumbnail.DemoThumbnailService;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -61,6 +65,8 @@ import org.springframework.web.multipart.MultipartFile;
  * POST   /demos/{demoId}/thumbnail    — 썸네일 직접 올리기 (본인만)
  * POST   /demos/{demoId}/versions/editor — 코드 편집 결과 저장 (본인만)
  * GET·POST /demos/{demoId}/versions/{versionId}/config — Mock·샘플 데이터 (본인만)
+ * PUT·DELETE /demos/{demoId}/backend  — 외부 백엔드 연결·해제 (본인만)
+ * POST   /demos/{demoId}/backend/health-check — 외부 백엔드 상태 확인 (로그인)
  */
 @RestController
 @RequestMapping("/demos")
@@ -72,6 +78,8 @@ public class DemoController {
     private final DemoPreviewService previewService;
     private final DemoQuotaService quotaService;
     private final DemoThumbnailService thumbnailService;
+    private final DemoBackendService backendService;
+    private final DemoBackendHealthService backendHealthService;
 
     @GetMapping
     public ResponseEntity<ApiResponse<DemoCursorResponse>> list(
@@ -214,6 +222,31 @@ public class DemoController {
             @Valid @RequestBody DemoVersionConfigRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.of(versionService.saveConfig(requireUserId(principal), demoId, versionId, request)));
+    }
+
+    /** 외부 백엔드 주소 등록·수정 */
+    @PutMapping("/{demoId}/backend")
+    public ResponseEntity<ApiResponse<DemoResponse>> connectBackend(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @PathVariable Long demoId,
+            @Valid @RequestBody DemoBackendRequest request) {
+        return ResponseEntity.ok(ApiResponse.of(backendService.connect(requireUserId(principal), demoId, request)));
+    }
+
+    @DeleteMapping("/{demoId}/backend")
+    public ResponseEntity<Void> disconnectBackend(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @PathVariable Long demoId) {
+        backendService.disconnect(requireUserId(principal), demoId);
+        return ResponseEntity.noContent().build();
+    }
+
+    /** 한도에 걸리거나 꺼져 있으면 외부 요청 없이 마지막 상태를 돌려준다 */
+    @PostMapping("/{demoId}/backend/health-check")
+    public ResponseEntity<ApiResponse<DemoBackendResponse>> checkBackendHealth(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @PathVariable Long demoId) {
+        return ResponseEntity.ok(ApiResponse.of(backendHealthService.check(requireUserId(principal), demoId)));
     }
 
     /** 썸네일 직접 올리기 */

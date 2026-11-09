@@ -55,7 +55,7 @@ public class Demo extends BaseEntity {
     @Column(name = "file_path", length = 500)
     private String filePath;
 
-    /** API 주소. API일 때 사용 */
+    /** 외부 백엔드 API Base URL. 실행 방식(demoType)과 무관하며 없으면 연결하지 않은 데모다 */
     @Column(name = "api_url", length = 500)
     private String apiUrl;
 
@@ -155,6 +155,14 @@ public class Demo extends BaseEntity {
     public void applyManualThumbnail(String url) {
         this.thumbnail = url;
         this.thumbnailManual = true;
+    }
+
+    public void connectBackend(String apiBaseUrl) {
+        this.apiUrl = apiBaseUrl;
+    }
+
+    public void disconnectBackend() {
+        this.apiUrl = null;
     }
 
     /** 공개를 내리고 초안으로 돌린다. 파일과 버전은 그대로 둔다. */

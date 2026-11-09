@@ -7,7 +7,7 @@ import { mutate, type MutationResult } from "@/app/_lib/api/mutate";
 import { readValues, type FormState } from "@/app/_lib/formState";
 import type { DemoDetail, DemoPreview } from "@/app/_lib/types/demo";
 import { getMe } from "@/app/(user)/_lib/api";
-import { MAX_DESCRIPTION, MAX_TITLE, parseTags } from "./upload/_lib/rules";
+import { checkBackendFields, MAX_DESCRIPTION, MAX_TITLE, parseTags } from "./upload/_lib/rules";
 
 const NO_BACKEND = "백엔드 연결 전이라 저장할 수 없어요.";
 
@@ -86,6 +86,30 @@ export async function unpublishDemo(demoId: number): Promise<MutationResult> {
 
 export async function deleteOwnDemo(demoId: number): Promise<MutationResult> {
   const result = await mutate(`/api/v1/demos/${demoId}`, "DELETE", undefined, "데모를 삭제했어요.", !hasBackend);
+  if (result.ok) revalidateDemo(demoId);
+  return result;
+}
+
+export type BackendInput = { apiBaseUrl: string; healthCheckUrl: string };
+
+/** 등록 흐름에서 초안에 외부 백엔드를 붙인다. */
+export async function connectDemoBackend(demoId: number, input: BackendInput): Promise<MutationResult> {
+  const result = await mutate(`/api/v1/demos/${demoId}/backend`, "PUT", input, "외부 백엔드를 연결했어요.", !hasBackend);
+  if (result.ok) revalidateDemo(demoId);
+  return result;
+}
+
+export async function saveDemoBackend(demoId: number, previous: FormState, formData: FormData): Promise<FormState> {
+  const values = readValues(formData, ["apiBaseUrl", "healthCheckUrl"]);
+  const state = await runForm(previous, values, checkBackendFields(values.apiBaseUrl, values.healthCheckUrl), () =>
+    mutate(`/api/v1/demos/${demoId}/backend`, "PUT", values, "외부 백엔드 연결을 저장했어요.", !hasBackend),
+  );
+  if (state.ok) revalidateDemo(demoId);
+  return state;
+}
+
+export async function disconnectDemoBackend(demoId: number): Promise<MutationResult> {
+  const result = await mutate(`/api/v1/demos/${demoId}/backend`, "DELETE", undefined, "외부 백엔드 연결을 해제했어요.", !hasBackend);
   if (result.ok) revalidateDemo(demoId);
   return result;
 }

@@ -57,12 +57,23 @@ public class DemoPublicationService {
         }
         DemoVersion version = findPublishable(demoId, versionId);
         requireFilesIntact(version);
-        writePointer(demoId, publicationJson(version));
+        writePointer(demoId, publicationJson(version, demo.getApiUrl()));
         demo.publish(version);
         if (version.getThumbnailUrl() != null) {
             demo.applyAutoThumbnail(version.getThumbnailUrl());
         }
         return demo;
+    }
+
+    /** 외부 백엔드 설정이 바뀌면 공개 중인 데모의 포인터에 바로 반영한다. 공개 전이면 공개할 때 함께 쓰인다. */
+    @Transactional
+    public void refreshBackend(Demo demo) {
+        if (demo.getStatus() != DemoStatus.ACTIVE || demo.getCurrentVersionId() == null) {
+            return;
+        }
+        DemoVersion version = versionRepository.findByIdAndDemoId(demo.getCurrentVersionId(), demo.getId())
+                .orElseThrow(() -> new BusinessException(ErrorCode.CONFLICT, "공개 중인 버전을 찾을 수 없습니다"));
+        writePointer(demo.getId(), publicationJson(version, demo.getApiUrl()));
     }
 
     /** 공개를 내린다. 파일과 버전은 남기고 포인터만 지운다. */
@@ -111,13 +122,16 @@ public class DemoPublicationService {
         }
     }
 
-    private byte[] publicationJson(DemoVersion version) {
+    private byte[] publicationJson(DemoVersion version, String apiBaseUrl) {
         Map<String, Object> pointer = new LinkedHashMap<>();
         pointer.put("versionId", version.getId());
         pointer.put("storagePrefix", version.getStoragePrefix());
         pointer.put("entryPath", version.getEntryPath());
         if (version.getMockKey() != null) {
             pointer.put("mockKey", version.getMockKey());
+        }
+        if (apiBaseUrl != null) {
+            pointer.put("apiBaseUrl", apiBaseUrl);
         }
         try {
             return objectMapper.writeValueAsBytes(pointer);

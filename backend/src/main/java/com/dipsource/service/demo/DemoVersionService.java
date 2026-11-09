@@ -200,11 +200,11 @@ public class DemoVersionService {
     /** 공개 전 버전을 작성자가 확인할 임시 URL. */
     @Transactional(readOnly = true)
     public DemoPreviewResponse previewUrl(Long userId, Long demoId, Long versionId) {
-        demoAccess.findOwned(userId, demoId);
+        Demo demo = demoAccess.findOwned(userId, demoId);
         DemoVersion version = findReady(demoId, versionId);
         Instant expiresAt = Instant.now().plus(VERSION_PREVIEW_TTL);
         return new DemoPreviewResponse(
-                urlSigner.sign(urlSigner.grantOf(version), version.getEntryPath(), expiresAt),
+                urlSigner.sign(urlSigner.grantOf(version, demo.getApiUrl()), version.getEntryPath(), expiresAt),
                 LocalDateTime.ofInstant(expiresAt, ZoneId.systemDefault()));
     }
 

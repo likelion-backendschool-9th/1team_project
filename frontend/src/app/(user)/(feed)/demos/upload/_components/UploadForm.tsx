@@ -5,14 +5,23 @@ import { useRef, useState, type FormEvent } from "react";
 import { FormMessage } from "@/app/_components/ui/FormMessage";
 import kit from "@/app/_components/ui/kit.module.css";
 import type { DemoUsage } from "@/app/_lib/types/demo";
-import { createDemoDraft, deleteOwnDemo, publishDemoVersion } from "../../_actions";
+import { connectDemoBackend, createDemoDraft, deleteOwnDemo, publishDemoVersion } from "../../_actions";
+import { BackendFields } from "../../_components/BackendFields";
 import { uploadDemoZip } from "../../_lib/uploadZip";
 import { UsageMeter } from "../../_components/UsageMeter";
-import { checkDemoZip, MAX_DEMO_MB, MAX_DESCRIPTION, MAX_TITLE } from "../_lib/rules";
+import { checkBackendFields, checkDemoZip, MAX_DEMO_MB, MAX_DESCRIPTION, MAX_TITLE } from "../_lib/rules";
 import { ZipPreview } from "./ZipPreview";
 import styles from "./UploadForm.module.css";
 
 const steps = ["정보 저장", "zip 검증·업로드", "공개"];
+
+type ApiMode = "none" | "mock" | "external";
+
+const apiModes: { value: ApiMode; label: string; hint: string }[] = [
+  { value: "none", label: "백엔드 없이 실행", hint: "html/css/js만으로 동작하는 데모" },
+  { value: "mock", label: "Mock API 사용", hint: "업로드 후 코드 편집기에서 가짜 응답을 정하고 공개해요" },
+  { value: "external", label: "외부 백엔드 연결", hint: "직접 배포한 서버의 주소를 등록해요" },
+];
 
 type Props = {
   used: number;
@@ -28,6 +37,7 @@ export function UploadForm({ used, capacity, usage }: Props) {
   const [result, setResult] = useState<{ ok: boolean; message: string } | null>(null);
   const [step, setStep] = useState(0);
   const [pending, setPending] = useState(false);
+  const [apiMode, setApiMode] = useState<ApiMode>("none");
   const full = used >= capacity;
   const fileError = errors.file ?? (file ? checkDemoZip(file) : null);
 
@@ -44,6 +54,19 @@ export function UploadForm({ used, capacity, usage }: Props) {
     if (checkDemoZip(file)) return;
 
     const form = new FormData(event.currentTarget);
+    const backend = {
+      apiBaseUrl: String(form.get("apiBaseUrl") ?? "").trim(),
+      healthCheckUrl: String(form.get("healthCheckUrl") ?? "").trim(),
+    };
+    if (apiMode === "external") {
+      const problems = checkBackendFields(backend.apiBaseUrl, backend.healthCheckUrl);
+      const first = Object.keys(problems)[0];
+      if (first) {
+        setErrors(problems);
+        document.getElementById(`upload-backend-${first}`)?.focus();
+        return;
+      }
+    }
     setPending(true);
     setErrors({});
     setResult(null);
@@ -60,6 +83,16 @@ export function UploadForm({ used, capacity, usage }: Props) {
         return;
       }
 
+      if (apiMode === "external") {
+        const connected = await connectDemoBackend(draft.demoId, backend);
+        if (!connected.ok) {
+          await deleteOwnDemo(draft.demoId);
+          setErrors({ apiBaseUrl: connected.message });
+          setResult({ ok: false, message: "외부 백엔드를 연결하지 못했어요." });
+          return;
+        }
+      }
+
       setStep(2);
       const upload = await uploadDemoZip(draft.demoId, file);
       if (!upload.ok) {
@@ -67,6 +100,12 @@ export function UploadForm({ used, capacity, usage }: Props) {
         await deleteOwnDemo(draft.demoId);
         setErrors({ file: upload.message });
         setResult({ ok: false, message: "zip을 올리지 못했어요." });
+        return;
+      }
+
+      // Mock은 버전마다 저장되므로 응답을 정한 새 버전을 코드 편집기에서 공개한다
+      if (apiMode === "mock") {
+        router.push(`/demos/studio?demoId=${draft.demoId}&versionId=${upload.data.id}`);
         return;
       }
 
@@ -181,6 +220,26 @@ export function UploadForm({ used, capacity, usage }: Props) {
           </p>
         </div>
 
+        <fieldset className={kit.fieldset}>
+          <legend className={kit.label}>API 연결</legend>
+          {apiModes.map((mode) => (
+            <label key={mode.value} className={kit.check}>
+              <input
+                type="radio"
+                name="apiMode"
+                value={mode.value}
+                checked={apiMode === mode.value}
+                onChange={() => setApiMode(mode.value)}
+              />
+              <span>
+                {mode.label} <span className={kit.faint}>· {mode.hint}</span>
+              </span>
+            </label>
+          ))}
+        </fieldset>
+
+        {apiMode === "external" && <BackendFields idPrefix="upload-backend" errors={errors} />}
+
         <label className={kit.check}>
           <input type="checkbox" name="publish" defaultChecked />
           업로드가 끝나면 바로 공개
@@ -228,7 +287,7 @@ export function UploadForm({ used, capacity, usage }: Props) {
             <li>zip {MAX_DEMO_MB}MB, 압축 해제 후 30MB, 파일 200개까지 올릴 수 있어요.</li>
             <li>Vite는 base: &apos;./&apos;, CRA는 homepage: &apos;.&apos;로 빌드해 주세요.</li>
             <li>라우터는 Hash Router를 권장해요.</li>
-            <li>외부 서버 호출은 샌드박스에서 막혀요. 쿠키·브라우저 저장소도 쓸 수 없어요.</li>
+            <li>외부 서버는 등록한 백엔드 주소로만 호출할 수 있어요. 쿠키·브라우저 저장소는 쓸 수 없어요.</li>
           </ul>
         </section>
       </aside>

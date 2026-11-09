@@ -6,7 +6,7 @@ import { CommentForm } from "@/app/_components/ui/CommentForm";
 import { ConfirmButton } from "@/app/_components/ui/ConfirmButton";
 import { ReportModal } from "@/app/_components/ui/ReportModal";
 import kit from "@/app/_components/ui/kit.module.css";
-import { formatCount, formatDate } from "@/app/_lib/format";
+import { formatCount, formatDate, formatDateTime } from "@/app/_lib/format";
 import type { DemoFeedbackType } from "@/app/_lib/types/demo";
 import { CommentList } from "@/app/(user)/_components/CommentList";
 import { DmOpenButton } from "@/app/(user)/_components/DmOpenButton";
@@ -21,12 +21,21 @@ import {
   updateDemoComment,
 } from "../_actions";
 import { getDemo, getDemoComments, getServerTime } from "@/app/(user)/(feed)/demos/_lib/api";
+import { DemoBackendPanel } from "./DemoBackendPanel";
 import { DemoStage } from "./DemoStage";
 import styles from "./DemoDetail.module.css";
 
 type Props = {
   params: Promise<{ userId: string; demoId: string }>;
 };
+
+function hostOf(url: string): string {
+  try {
+    return new URL(url).host;
+  } catch {
+    return url;
+  }
+}
 
 const feedbackLabels: Record<DemoFeedbackType, string> = {
   question: "❓ 질문",
@@ -97,6 +106,15 @@ export async function DemoDetailView({ params }: Props) {
               <dd>{formatCount(comments.length)}</dd>
             </div>
           </dl>
+          {demo.backend?.apiBaseUrl && (
+            <DemoBackendPanel
+              demoId={demo.id}
+              host={hostOf(demo.backend.apiBaseUrl)}
+              status={demo.backend.status}
+              lastChecked={demo.backend.lastCheckedAt ? formatDateTime(demo.backend.lastCheckedAt) : null}
+              canCheck={Boolean(me) && demo.backend.healthCheckAvailable}
+            />
+          )}
           <div className={styles.author}>
             <Link href={`/mini-home/${demo.author.id}`} className={styles.authorLink}>
               <Avatar name={demo.author.nickname} size={40} />

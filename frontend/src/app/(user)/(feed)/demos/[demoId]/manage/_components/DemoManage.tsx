@@ -18,6 +18,7 @@ import {
 import { UsageMeter } from "../../../_components/UsageMeter";
 import { uploadDemoThumbnail, uploadDemoZip } from "../../../_lib/uploadZip";
 import { checkDemoZip, MAX_DEMO_MB, MAX_DESCRIPTION, MAX_TITLE } from "../../../upload/_lib/rules";
+import { DemoBackendSettings } from "./DemoBackendSettings";
 import { DemoVersions } from "./DemoVersions";
 
 type Props = {
@@ -153,6 +154,11 @@ export function DemoManage({ demo, versions, usage }: Props) {
       </section>
 
       <DemoVersions demoId={demo.id} versions={versions} currentVersionId={demo.currentVersionId ?? null} />
+
+      <DemoBackendSettings
+        demo={demo}
+        mockVersionId={demo.currentVersionId ?? versions.find((version) => version.status === "READY")?.id ?? null}
+      />
 
       <section className={`${kit.card} ${kit.stack}`} aria-labelledby="manage-thumbnail">
         <h2 id="manage-thumbnail" className={kit.cardTitle}>

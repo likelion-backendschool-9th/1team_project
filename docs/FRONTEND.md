@@ -42,10 +42,10 @@
 | `/home/[userId]/demos` | `GET mini-home/{userId}/demos` | 미니홈피 내 데모 목록 |
 | `/home/[userId]/blog` | `GET users/{userId}/posts` | 미니홈피 내 블로그 목록 |
 | `/demos` | `GET demos` | 데모 탐색 (태그 필터, 정렬) |
-| `/demos/upload` | `POST demos`, `POST demos/{id}/versions`, `POST demos/{id}/publish` | 데모 업로드. zip만 브라우저에서 API로 바로 보낸다 (Server Action 용량 제한) |
-| `/demos/[demoId]/manage` | `PUT·DELETE demos/{id}`, `POST demos/{id}/versions`, `publish`, `unpublish`, `GET demos/{id}/versions`, `restore` | 데모 관리 (본인만) |
+| `/demos/upload` | `POST demos`, `PUT demos/{id}/backend`, `POST demos/{id}/versions`, `POST demos/{id}/publish` | 데모 업로드. zip만 브라우저에서 API로 바로 보낸다 (Server Action 용량 제한) |
+| `/demos/[demoId]/manage` | `PUT·DELETE demos/{id}`, `POST demos/{id}/versions`, `publish`, `unpublish`, `GET demos/{id}/versions`, `restore`, `PUT·DELETE demos/{id}/backend` | 데모 관리 (본인만) |
 | `/demos/studio` | `GET demo-templates`, `POST demos/{id}/versions/editor`, `GET·POST demos/{id}/versions/{vid}/config` | 코드 편집·Mock API·템플릿 |
-| `/mini-home/[userId]/demos/[demoId]` | `GET demos/{id}`, 댓글/좋아요/북마크 | 데모 상세·실행 (작성자 미니홈피 틀 안) |
+| `/mini-home/[userId]/demos/[demoId]` | `GET demos/{id}`, 댓글/좋아요/북마크, `POST demos/{id}/backend/health-check` | 데모 상세·실행 (작성자 미니홈피 틀 안) |
 | `/demos/[id]` | `GET demos/{id}` | 작성자의 미니홈피 데모 상세로 리다이렉트 |
 | `/blog/write` | `POST posts` | 글 작성 |
 | `/blog/[id]` | `GET posts/{id}`, 댓글 | 글 상세 |

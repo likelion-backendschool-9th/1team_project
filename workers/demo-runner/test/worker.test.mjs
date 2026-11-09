@@ -9,8 +9,11 @@ const ANCESTOR = "https://dipsource.test";
 const SECRET = "test-signing-secret";
 const NONCE = "abcdefghijklmnop1234";
 
-function signedPath(prefix, expiresInSeconds, file = "index.html", secret = SECRET, mockKey = undefined) {
-  const scope = Buffer.from(JSON.stringify(mockKey ? { p: prefix, m: mockKey } : { p: prefix })).toString("base64url");
+function signedPath(prefix, expiresInSeconds, file = "index.html", secret = SECRET, mockKey = undefined, apiBaseUrl = undefined) {
+  const grant = { p: prefix };
+  if (mockKey) grant.m = mockKey;
+  if (apiBaseUrl) grant.b = apiBaseUrl;
+  const scope = Buffer.from(JSON.stringify(grant)).toString("base64url");
   const expires = Math.floor(Date.now() / 1000) + expiresInSeconds;
   const signature = createHmac("sha256", secret).update(`${scope}.${expires}`).digest("base64url");
   return `/p/${scope}/${expires}.${signature}/${file}`;
@@ -409,5 +412,126 @@ describe("Mock API", () => {
   it("CSP가 Mock 경로로의 fetch를 허용하는 범위를 넓히지 않는다", async () => {
     const csp = (await call(`/demos/${demo}/versions/${version}/index.html`)).headers.get("content-security-policy");
     assert.match(csp, new RegExp(`connect-src http://[^ ]+/demos/${demo}/versions/${version}/(;|$)`));
+  });
+});
+
+describe("외부 백엔드 연결", () => {
+  const HTML = "<!doctype html><html><head><title>t</title></head><body><script src=app.js></script></body></html>";
+  const API = "https://api.example.com/v1";
+  const pointer = (demo, version, extra) =>
+    JSON.stringify({ versionId: version, storagePrefix: `demos/${demo}/versions/${version}`, entryPath: "index.html", ...extra });
+  const connectSrc = (res) => /connect-src ([^;]*)/.exec(res.headers.get("content-security-policy"))[1].trim().split(" ");
+
+  before(async () => {
+    await bucket.put("demos/70/publication.json", pointer(70, 1, { apiBaseUrl: API }));
+    await bucket.put("demos/70/versions/1/files/index.html", HTML);
+    await bucket.put("demos/70/versions/1/files/app.js", "1");
+    await bucket.put("demos/71/publication.json", pointer(71, 1));
+    await bucket.put("demos/71/versions/1/files/index.html", HTML);
+    await bucket.put("demos/72/publication.json", pointer(72, 1, { apiBaseUrl: 'https://x.com"; script-src *' }));
+    await bucket.put("demos/72/versions/1/files/index.html", HTML);
+    await bucket.put("demos/73/publication.json", pointer(73, 1, { apiBaseUrl: "http://api.example.com" }));
+    await bucket.put("demos/73/versions/1/files/index.html", HTML);
+    await bucket.put("demos/74/publication.json", pointer(74, 1, { apiBaseUrl: "https://api.example.com:8443/a</script><script>alert(1)" }));
+    await bucket.put("demos/74/versions/1/files/index.html", HTML);
+    await bucket.put("demos/77/publication.json", pointer(77, 1, { apiBaseUrl: "https://api.example.com:99999" }));
+    await bucket.put("demos/77/versions/1/files/index.html", HTML);
+    await bucket.put("demos/75/publication.json", pointer(75, 1, { apiBaseUrl: API, mockKey: "demos/75/versions/1/mock.json" }));
+    await bucket.put("demos/75/versions/1/files/index.html", HTML);
+    await bucket.put("demos/75/versions/1/mock.json", JSON.stringify({ endpoints: [{ method: "GET", path: "/a", status: 200, response: [1] }] }));
+  });
+
+  it("등록한 출처만 connect-src에 추가하고 https와 wss 외에는 열지 않는다", async () => {
+    const res = await call("/demos/70/versions/1/index.html");
+    const sources = connectSrc(res);
+    assert.equal(sources.length, 3);
+    assert.match(sources[0], /\/demos\/70\/versions\/1\/$/);
+    assert.equal(sources[1], "https://api.example.com");
+    assert.equal(sources[2], "wss://api.example.com");
+    await res.text();
+  });
+
+  it("sandbox와 다른 CSP 지시어는 그대로다", async () => {
+    const res = await call("/demos/70/versions/1/index.html");
+    const csp = res.headers.get("content-security-policy");
+    assert.match(csp, /sandbox allow-scripts(;|$)/);
+    assert.doesNotMatch(csp, /allow-same-origin/);
+    assert.match(csp, /default-src 'none'/);
+    assert.match(csp, new RegExp(`frame-ancestors ${ANCESTOR}`));
+    const scriptSrc = /script-src ([^;]*)/.exec(csp)[1];
+    assert.doesNotMatch(scriptSrc, /api\.example\.com/);
+    await res.text();
+  });
+
+  it("런타임 설정을 사용자 스크립트보다 먼저 넣는다", async () => {
+    const res = await call("/demos/70/versions/1/index.html");
+    const body = await res.text();
+    assert.ok(body.includes(`window.DIP_DEMO_ENV=Object.freeze({"API_BASE_URL":"${API}"})`));
+    assert.ok(body.indexOf("DIP_DEMO_ENV") < body.indexOf("<script src=app.js>"));
+  });
+
+  it("상태 스크립트와 함께 넣어도 런타임 설정이 유지된다", async () => {
+    const body = await (await call(`/demos/70/versions/1/index.html?dip_nonce=${NONCE}`)).text();
+    assert.ok(body.includes("DIP_DEMO_ENV"));
+    assert.ok(body.includes("dipsource-demo"));
+    assert.ok(body.indexOf("dipDemo") < body.indexOf("<script src=app.js>"));
+  });
+
+  it("HTML이 아닌 파일에는 설정을 넣지 않지만 CSP는 같다", async () => {
+    const res = await call("/demos/70/versions/1/app.js");
+    assert.equal(await res.text(), "1");
+    assert.equal(connectSrc(res).length, 3);
+  });
+
+  it("백엔드가 없는 데모는 기존 CSP와 응답 그대로다", async () => {
+    const res = await call("/demos/71/versions/1/index.html");
+    assert.equal(connectSrc(res).length, 1);
+    assert.equal(await res.text(), HTML);
+  });
+
+  for (const [demo, label] of [[72, "CSP 주입 시도"], [73, "http 주소"], [74, "스크립트 주입 시도"], [77, "범위를 벗어난 포트"]]) {
+    it(`형식이 잘못된 포인터는 무시한다: ${label}`, async () => {
+      const res = await call(`/demos/${demo}/versions/1/index.html`);
+      assert.equal(connectSrc(res).length, 1);
+      const body = await res.text();
+      assert.ok(!body.includes("DIP_DEMO_ENV"));
+      assert.ok(!body.includes("alert(1)"));
+    });
+  }
+
+  it("Mock과 외부 백엔드를 함께 쓸 수 있다", async () => {
+    const page = await call("/demos/75/versions/1/index.html");
+    assert.equal(connectSrc(page).length, 3);
+    await page.text();
+    const mock = await call("/demos/75/versions/1/__mock/a");
+    assert.equal(mock.status, 200);
+    assert.deepEqual(await mock.json(), [1]);
+  });
+
+  it("서명 미리보기도 권한에 있는 백엔드만 연다", async () => {
+    await bucket.put("demos/76/versions/1/files/index.html", HTML);
+    const withBackend = await call(signedPath("demos/76/versions/1", 60, "index.html", SECRET, undefined, API));
+    assert.equal(withBackend.status, 200);
+    assert.equal(connectSrc(withBackend).length, 3);
+    assert.ok((await withBackend.text()).includes("DIP_DEMO_ENV"));
+
+    const without = await call(signedPath("demos/76/versions/1", 60));
+    assert.equal(connectSrc(without).length, 1);
+    await without.text();
+  });
+
+  it("긴 주소가 든 서명 권한도 처리한다", async () => {
+    const long = `https://api.example.com/${"a".repeat(470)}`;
+    const res = await call(signedPath("demos/76/versions/1", 60, "index.html", SECRET, undefined, long));
+    assert.equal(res.status, 200);
+    await res.text();
+  });
+
+  it("서명을 바꿔 다른 백엔드를 넣을 수 없다", async () => {
+    const valid = signedPath("demos/76/versions/1", 60, "index.html", SECRET, undefined, API);
+    const forged = Buffer.from(JSON.stringify({ p: "demos/76/versions/1", b: "https://evil.example.org" })).toString("base64url");
+    const res = await call(valid.replace(/^\/p\/[^/]+/, `/p/${forged}`));
+    assert.equal(res.status, 403);
+    await res.text();
   });
 });

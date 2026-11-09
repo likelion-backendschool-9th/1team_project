@@ -26,6 +26,18 @@ export async function playDemo(demoId: number) {
   );
 }
 
+/** 서버가 최소 간격과 동시 실행 수를 지키고, 한도에 걸리면 마지막 상태를 그대로 돌려준다. */
+export async function checkDemoBackendHealth(demoId: number) {
+  const result = await send(
+    `/api/v1/demos/${demoId}/backend/health-check`,
+    'POST',
+    undefined,
+    '상태를 확인했어요.',
+  );
+  if (result.ok) revalidatePath('/mini-home/[userId]/demos/[demoId]', 'page');
+  return result;
+}
+
 export async function toggleDemoLike(demoId: number, like: boolean) {
   return send(
     `/api/v1/demos/${demoId}/like`,

@@ -5,11 +5,13 @@ const MOCK_ROUTE = /^\/demos\/(\d{1,18})\/versions\/(\d{1,18})\/__mock(\/.*)$/;
 const SIGNED_MOCK_PATH = /^__mock(\/.*)$/;
 const MOCK_KEY = /^demos\/\d{1,18}\/versions\/\d{1,18}\/mock\.json$/;
 const DEMO_ROUTE = /^\/demos\/(\d{1,18})\/versions\/(\d{1,18})\/(.*)$/;
-const SIGNED_ROUTE = /^\/p\/([A-Za-z0-9_-]{1,512})\/(\d{1,12})\.([A-Za-z0-9_-]{43})\/(.*)$/;
+const SIGNED_ROUTE = /^\/p\/([A-Za-z0-9_-]{1,1024})\/(\d{1,12})\.([A-Za-z0-9_-]{43})\/(.*)$/;
 const THUMBNAIL_ROUTE = /^\/thumbnails\/(\d{1,18})\/([0-9a-f-]{36}\.jpg)$/;
 const SIGNED_PREFIX = /^(previews\/[0-9a-f-]{36}|demos\/\d{1,18}\/versions\/\d{1,18})$/;
 const RESERVED_ROOT = "__mock";
 const NONCE = /^[A-Za-z0-9_-]{16,64}$/;
+// 서버 검증을 통과한 값만 포인터에 들어오지만, CSP 헤더와 스크립트에 쓰이므로 여기서 한 번 더 좁힌다
+const API_BASE_URL = /^https:\/\/[a-z0-9.-]{1,253}(:\d{1,5})?(\/[A-Za-z0-9._~\/-]*)?$/;
 
 const MIME_TYPES = {
   html: "text/html; charset=utf-8",
@@ -82,6 +84,7 @@ async function route(request, env) {
     filePath,
     scope: `${url.origin}/demos/${demoId}/versions/${versionId}/`,
     nonce,
+    backend: backendOf(publication.apiBaseUrl),
   });
 }
 
@@ -102,7 +105,18 @@ async function serveSigned(request, env, url, [, scope, expires, signature, rawP
     filePath,
     scope: `${url.origin}/p/${scope}/${expires}.${signature}/`,
     nonce,
+    backend: backendOf(grant.b),
   });
+}
+
+/** 작성자가 등록한 외부 백엔드. 형식이 다르면 연결하지 않은 것으로 본다. */
+function backendOf(apiBaseUrl) {
+  if (typeof apiBaseUrl !== "string" || !API_BASE_URL.test(apiBaseUrl)) return null;
+  try {
+    return { apiBaseUrl, origin: new URL(apiBaseUrl).origin };
+  } catch {
+    return null;
+  }
 }
 
 function parseGrant(scope) {
@@ -244,11 +258,11 @@ function decodeFilePath(rawPath) {
   return segments[0] === RESERVED_ROOT ? null : segments.join("/");
 }
 
-async function serveFile(request, env, { objectKey, filePath, scope, nonce }) {
+async function serveFile(request, env, { objectKey, filePath, scope, nonce, backend }) {
   const contentType = MIME_TYPES[filePath.split(".").pop().toLowerCase()];
   if (!contentType) return failure(request, env, nonce, 404, "not_found");
 
-  const headers = staticHeaders(env, scope);
+  const headers = staticHeaders(env, scope, backend);
   headers.set("Content-Type", contentType);
 
   if (request.method === "HEAD") {
@@ -265,7 +279,8 @@ async function serveFile(request, env, { objectKey, filePath, scope, nonce }) {
   // onlyIf 조건에 걸리면 본문 없는 객체가 온다 (If-None-Match 일치)
   if (!("body" in object)) return new Response(null, { status: 304, headers });
   const response = new Response(object.body, { headers });
-  return nonce && contentType.startsWith("text/html") ? injectStatusScript(response, nonce) : response;
+  const scripts = (backend ? environmentScript(backend) : "") + (nonce ? statusScript(nonce) : "");
+  return scripts && contentType.startsWith("text/html") ? injectScripts(response, scripts) : response;
 }
 
 function readNonce(url) {
@@ -287,9 +302,14 @@ window.dipDemo={ready:function(){p("ready")},error:function(m){p("error",{kind:"
 })();</script>`;
 }
 
-function injectStatusScript(response, nonce) {
+/** 런타임에 API 주소를 읽도록 만든 데모가 쓴다. 빌드 결과물 안에 고정된 주소를 바꾸지는 않는다. */
+function environmentScript({ apiBaseUrl }) {
+  const environment = JSON.stringify({ API_BASE_URL: apiBaseUrl }).replace(/</g, "\\u003c");
+  return `<script>window.DIP_DEMO_ENV=Object.freeze(${environment});</script>`;
+}
+
+function injectScripts(response, script) {
   let injected = false;
-  const script = statusScript(nonce);
   return new HTMLRewriter()
     .on("*", {
       element(element) {
@@ -319,9 +339,9 @@ function failure(request, env, nonce, status, code) {
   });
 }
 
-function staticHeaders(env, scope) {
+function staticHeaders(env, scope, backend) {
   return new Headers({
-    "Content-Security-Policy": contentSecurityPolicy(env, scope),
+    "Content-Security-Policy": contentSecurityPolicy(env, scope, backend),
     "X-Content-Type-Options": "nosniff",
     "Referrer-Policy": "no-referrer",
     // sandbox 문서의 출처는 "null"이라 type=module 스크립트와 폰트를 불러오려면 CORS가 열려 있어야 한다. 자격 증명은 쓰지 않는다
@@ -336,8 +356,10 @@ function staticHeaders(env, scope) {
  * HTML뿐 아니라 모든 응답에 붙인다. SVG를 주소창으로 직접 열어도 sandbox 안에서 열리게 하려는 것이다.
  * sandbox 문서에서는 'self'가 브라우저마다 다르게 해석되므로 쓰지 않고, 이 버전의 경로를 직접 적는다.
  */
-function contentSecurityPolicy(env, scope) {
+function contentSecurityPolicy(env, scope, backend) {
   const ancestors = (env.ALLOWED_FRAME_ANCESTORS ?? "").trim() || "'none'";
+  // 외부로 나가는 통신은 작성자가 등록한 출처 하나만 연다. https 소스는 wss를 포함하지 않아 따로 적는다
+  const connect = backend ? `${scope} ${backend.origin} ${backend.origin.replace("https://", "wss://")}` : scope;
   return [
     "sandbox allow-scripts",
     "default-src 'none'",
@@ -346,7 +368,7 @@ function contentSecurityPolicy(env, scope) {
     `img-src data: blob: ${scope}`,
     `font-src data: ${scope}`,
     `media-src data: blob: ${scope}`,
-    `connect-src ${scope}`,
+    `connect-src ${connect}`,
     "form-action 'none'",
     "base-uri 'none'",
     `frame-ancestors ${ancestors}`,

@@ -10,6 +10,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.time.Instant;
 import java.util.Base64;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
@@ -32,6 +33,15 @@ public class DemoUrlSigner {
         return version.getMockKey() == null
                 ? Map.of("p", version.getStoragePrefix())
                 : Map.of("p", version.getStoragePrefix(), "m", version.getMockKey());
+    }
+
+    /** 작성자 미리보기용. 공개 전에도 등록한 외부 백엔드를 호출해 볼 수 있다. */
+    public Map<String, String> grantOf(DemoVersion version, String apiBaseUrl) {
+        Map<String, String> grant = new LinkedHashMap<>(grantOf(version));
+        if (apiBaseUrl != null) {
+            grant.put("b", apiBaseUrl);
+        }
+        return grant;
     }
 
     /**

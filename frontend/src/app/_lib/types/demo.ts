@@ -14,6 +14,17 @@ export type DemoStatus = "DRAFT" | "ACTIVE" | "HIDDEN";
 
 export type DemoSort = "trending" | "latest" | "popular";
 
+export type DemoBackendStatus = "ONLINE" | "OFFLINE" | "UNKNOWN" | "NOT_CONFIGURED";
+
+export type DemoBackend = {
+  apiBaseUrl?: string;
+  /** 작성자에게만 온다. */
+  healthCheckUrl?: string;
+  status: DemoBackendStatus;
+  lastCheckedAt?: string;
+  healthCheckAvailable: boolean;
+};
+
 export type DemoDetail = DemoSummary & {
   playCount: number;
   commentCount: number;
@@ -26,6 +37,7 @@ export type DemoDetail = DemoSummary & {
   currentVersionId?: number | null;
   /** 실행 주소. 공개 중인 데모에만 있다. */
   runUrl?: string | null;
+  backend?: DemoBackend;
 };
 
 export type DemoFeedbackType = "question" | "bug" | "praise";

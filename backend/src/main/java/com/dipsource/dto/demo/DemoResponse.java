@@ -9,6 +9,7 @@ import java.util.List;
  *
  * @param runUrl 실행 주소. 공개 중일 때만 있다
  * @param engine 카드에 보여 줄 대표 기술 (첫 태그)
+ * @param backend 외부 백엔드 연결 정보. 연결하지 않았어도 NOT_CONFIGURED로 온다
  */
 public record DemoResponse(
         Long id,
@@ -28,6 +29,7 @@ public record DemoResponse(
         String status,
         Long currentVersionId,
         String runUrl,
-        String engine
+        String engine,
+        DemoBackendResponse backend
 ) {
 }

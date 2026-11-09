@@ -10,12 +10,13 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import java.time.LocalDateTime;
+import java.util.Objects;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-/** API·외부 데모의 상태 확인 설정. 데모 하나에 하나. 테이블: demo_type_config */
+/** 외부 백엔드의 상태 확인 설정. 데모 하나에 하나. 테이블: demo_type_config */
 @Getter
 @Entity
 @Table(name = "demo_type_config")
@@ -40,7 +41,7 @@ public class DemoTypeConfig {
     @Column(name = "last_health_at")
     private LocalDateTime lastHealthAt;
 
-    /** 정상 동작 여부 */
+    /** 정상 동작 여부. last_health_at이 없으면 아직 확인 전이라 의미가 없다 */
     @Column(name = "is_healthy", nullable = false)
     private boolean healthy = true;
 
@@ -48,11 +49,25 @@ public class DemoTypeConfig {
     @Column(name = "fallback_to_replay", nullable = false)
     private boolean fallbackToReplay = false;
 
+    /** 마지막으로 헬스체크 권한을 얻은 시각. 최소 간격 판단에 쓴다 */
+    @Column(name = "health_claimed_at")
+    private LocalDateTime healthClaimedAt;
+
     @Builder
     private DemoTypeConfig(Demo demo, String healthCheckUrl, boolean fallbackToReplay) {
         this.demo = demo;
         this.healthCheckUrl = healthCheckUrl;
         this.fallbackToReplay = fallbackToReplay;
+    }
+
+    /** 주소가 바뀌면 이전 주소의 결과를 버린다. 최소 간격 기록은 유지한다. */
+    public void changeHealthCheckUrl(String url) {
+        if (Objects.equals(this.healthCheckUrl, url)) {
+            return;
+        }
+        this.healthCheckUrl = url;
+        this.healthy = true;
+        this.lastHealthAt = null;
     }
 
     public void recordHealth(boolean healthy) {

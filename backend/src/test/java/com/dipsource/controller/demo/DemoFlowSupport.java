@@ -8,15 +8,18 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.dipsource.global.auth.UserPrincipal;
 import com.dipsource.service.demo.DemoCleanupService;
 import com.dipsource.service.demo.DemoPublicationService;
+import com.dipsource.service.demo.backend.DemoBackendProbe;
 import com.dipsource.service.demo.storage.DemoStorage;
 import com.dipsource.service.demo.storage.InMemoryDemoStorage;
 import com.dipsource.service.demo.thumbnail.DemoScreenshotClient;
 import com.jayway.jsonpath.JsonPath;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
@@ -51,6 +54,7 @@ import org.testcontainers.containers.PostgreSQLContainer;
         "demo.signing-secret=test-signing-secret",
         "demo.cleanup-interval-ms=3600000",
         "demo.thumbnail.interval-ms=3600000",
+        "demo.backend.health-check-enabled=true",
         "demo.quota.max-demos=5",
         "demo.quota.max-storage-bytes=100000",
         "demo.quota.max-versions-per-demo=4"
@@ -82,6 +86,12 @@ abstract class DemoFlowSupport {
         FakeScreenshotClient fakeScreenshotClient() {
             return new FakeScreenshotClient();
         }
+
+        @Bean
+        @Primary
+        FakeBackendProbe fakeBackendProbe() {
+            return new FakeBackendProbe();
+        }
     }
 
     /** 격리 브라우저 대신 쓰는 테스트 대역 */
@@ -96,6 +106,24 @@ abstract class DemoFlowSupport {
         }
     }
 
+    /** 외부 서버 대신 쓰는 테스트 대역. 실제 소켓 동작은 SocketDemoBackendProbeTest가 본다 */
+    static class FakeBackendProbe implements DemoBackendProbe {
+        final AtomicInteger calls = new AtomicInteger();
+        volatile Outcome outcome = Outcome.ONLINE;
+        volatile RuntimeException failure;
+        volatile URI lastUrl;
+
+        @Override
+        public Outcome probe(URI url) {
+            calls.incrementAndGet();
+            lastUrl = url;
+            if (failure != null) {
+                throw failure;
+            }
+            return outcome;
+        }
+    }
+
     static final String HTML = "<!doctype html><html><head><script type=\"module\" src=\"./assets/app.js\"></script></head><body></body></html>";
 
     @Autowired MockMvc mockMvc;
@@ -104,6 +132,7 @@ abstract class DemoFlowSupport {
     @Autowired DemoStorage injectedStorage;
     @Autowired DemoCleanupService cleanupService;
     @Autowired FakeScreenshotClient screenshots;
+    @Autowired FakeBackendProbe backendProbe;
     @Autowired DemoPublicationService publicationService;
     @Autowired TransactionTemplate transactionTemplate;
 
@@ -113,6 +142,10 @@ abstract class DemoFlowSupport {
     @BeforeEach
     void setUp() {
         storage.reset();
+        backendProbe.calls.set(0);
+        backendProbe.outcome = DemoBackendProbe.Outcome.ONLINE;
+        backendProbe.failure = null;
+        backendProbe.lastUrl = null;
         screenshots.behavior = url -> {
             throw new IllegalStateException("촬영 실패");
         };
