@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -54,6 +55,32 @@ class NotificationServiceImplTest {
         assertThat(captor.getValue().getActorId()).isEqualTo(2L);
         assertThat(captor.getValue().getType()).isEqualTo(NotificationType.FOLLOW);
         assertThat(captor.getValue().isRead()).isFalse();
+    }
+
+    @Test
+    void groupsRepeatedGuestbookNotifications() {
+        when(repository.existsByReceiverIdAndActorIdAndTypeAndReadFalseAndCreatedAtAfter(
+                eq(1L), eq(2L), eq(NotificationType.GUESTBOOK), any())).thenReturn(true);
+
+        service.notify(1L, 2L, NotificationType.GUESTBOOK, NotificationService.TARGET_MINI_HOME, 1L);
+
+        verify(repository, never()).save(any());
+    }
+
+    @Test
+    void savesGuestbookNotificationWhenNoRecentUnread() {
+        service.notify(1L, 2L, NotificationType.GUESTBOOK, NotificationService.TARGET_MINI_HOME, 1L);
+
+        verify(repository).save(any());
+    }
+
+    @Test
+    void doesNotGroupOtherTypes() {
+        service.notify(1L, 2L, NotificationType.SPONSOR, NotificationService.TARGET_MINI_HOME, 1L);
+
+        verify(repository).save(any());
+        verify(repository, never()).existsByReceiverIdAndActorIdAndTypeAndReadFalseAndCreatedAtAfter(
+                any(), any(), any(), any());
     }
 
     @Test
