@@ -68,12 +68,14 @@ export function FeedComposer({ nickname, myDemos }: Props) {
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
 
-  // 성공 시 이미지·링크 초기화
+  // 성공 시 이미지·링크 초기화 (attempt 변화 감지용, state.message 의존성 의도적 생략)
   useEffect(() => {
     if (state.message) {
+      /* eslint-disable react-hooks/set-state-in-effect */
       setImages([]);
       setLinkVisible(false);
       setUploadError(null);
+      /* eslint-enable react-hooks/set-state-in-effect */
     }
   // attempt가 바뀔 때만 실행
   // eslint-disable-next-line react-hooks/exhaustive-deps
