@@ -79,19 +79,6 @@ export function SponsorButton({ userId, nickname, chipBalance }: Props) {
               {error}
             </p>
           </div>
-          <div className={kit.field}>
-            <label htmlFor="sponsor-message" className={kit.label}>
-              한마디 (선택)
-            </label>
-            <input
-              id="sponsor-message"
-              name="message"
-              maxLength={50}
-              defaultValue={state.values.message}
-              placeholder="데모 잘 봤어요!"
-              className={kit.input}
-            />
-          </div>
           <FormMessage ok={state.ok} message={state.message} />
           <div className={styles.dialogActions}>
             <button type="button" className={kit.btn} onClick={() => dialogRef.current?.close()}>
