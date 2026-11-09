@@ -44,18 +44,6 @@ public class StubController {
         return ok(List.of());
     }
 
-    // ── 알림 ──
-
-    @GetMapping("/notifications")
-    public ResponseEntity<ApiResponse<Map<String, Object>>> notifications() {
-        return ok(EMPTY_PAGE);
-    }
-
-    @GetMapping("/notifications/unread-count")
-    public ResponseEntity<ApiResponse<Map<String, Object>>> unreadCount() {
-        return ok(Map.of("count", 0));
-    }
-
     // ── 북마크 ──
 
     @GetMapping("/users/me/bookmarks")

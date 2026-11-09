@@ -53,4 +53,10 @@ public interface PostService {
      * 이미 샀으면 칩을 다시 빼지 않는다 (멱등). 무료 글·내 글·구독 중인 블로그 글은 400, 잔액 부족은 400, 글쓴이가 정지·탈퇴했으면 404
      */
     void purchase(Long userId, Long postId);
+
+    /** 북마크. 이미 했어도 오류 없이 넘어간다 (멱등). 공개 글만, 차단 관계인 글은 404 */
+    void bookmark(Long userId, Long postId);
+
+    /** 북마크 취소. 안 했어도 오류 없이 넘어간다 (멱등). 공개 글만, 차단 관계여도 취소는 허용 */
+    void unbookmark(Long userId, Long postId);
 }

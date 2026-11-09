@@ -97,7 +97,7 @@ export function FeedMenu({ feedId, authorId, authorName, mine }: Props) {
             <ConfirmButton
               label={`🚫 ${authorName}님 차단`}
               title={`${authorName}님을 차단할까요?`}
-              description="차단하면 서로의 피드와 DM이 보이지 않아요. 설정에서 해제할 수 있어요."
+              description="차단하면 서로의 피드와 DM이 보이지 않고, 이 사용자의 블로그 글 북마크도 해제돼요. 설정에서 차단을 풀어도 북마크는 돌아오지 않아요."
               confirmLabel="차단"
               danger
               className={`${styles.item} ${styles.danger}`}

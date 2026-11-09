@@ -17,7 +17,8 @@ export type AdminUser = {
 
 export type Sanction = { id: number; period: string; reason: string; createdAt: string; admin: string };
 
-export type ContentKind = "demos" | "posts" | "feeds" | "comments";
+// comments는 피드 댓글, post-comments는 블로그 댓글이다. 테이블이 달라 ID가 겹칠 수 있어 나눈다.
+export type ContentKind = "demos" | "posts" | "feeds" | "comments" | "post-comments";
 
 export type ContentRow = {
   id: number;
@@ -74,7 +75,8 @@ const contentSeed: Record<ContentKind, [string, string, string][]> = {
   demos: [["실시간 채팅앱", "차재인", "체험 318"], ["날씨 대시보드", "곽다윗", "체험 254"], ["오목 게임", "김승조", "체험 199"], ["무료 칩 받는 법 (클릭)", "스팸봇123", "체험 3"], ["CSS 로딩 컬렉션", "김진엽", "체험 402"], ["Spring Batch 모니터", "딥소스", "체험 210"]],
   posts: [["10만 동시접속 채팅 서버 구축기", "차재인", "조회 3,120"], ["라자냐 코드 회고", "곽다윗", "조회 1,840"], ["Unity WebGL 38MB → 9MB", "김승조", "조회 1,302"], ["JPA N+1 해결기", "딥소스", "조회 980"], ["칩 무한 충전 꿀팁", "스팸봇123", "조회 12"]],
   feeds: [["채팅앱 데모 올렸어요. 피드백 부탁드려요", "차재인", "좋아요 42"], ["라자냐 코드 발견함. 레이어 7겹", "곽다윗", "좋아요 18"], ["Unity WebGL 빌드 용량 줄인 후기", "김승조", "좋아요 27"], ["useEffect AbortController 질문", "박준하", "좋아요 15"], ["여기 들어오면 칩 드려요 → bit.ly/xxxx", "스팸봇123", "좋아요 0"]],
-  comments: [["STOMP 구독 경로 나눈 이유가 궁금해요!", "곽다윗", "피드 #1"], ["모바일 사파리에서도 되나요?", "김진엽", "데모 #2"], ["광고 문의는 DM 주세요", "스팸봇123", "글 #1"], ["측정 → 가설 → 검증 공감합니다", "박준하", "글 #21"], ["하트비트 주기는 몇 초로 두셨어요?", "김진엽", "피드 #1"]],
+  comments: [["STOMP 구독 경로 나눈 이유가 궁금해요!", "곽다윗", "피드 #1"], ["모바일 사파리에서도 되나요?", "김진엽", "피드 #2"], ["하트비트 주기는 몇 초로 두셨어요?", "김진엽", "피드 #1"]],
+  "post-comments": [["광고 문의는 DM 주세요", "스팸봇123", "글 #1"], ["측정 → 가설 → 검증 공감합니다", "박준하", "글 #21"]],
 };
 
 export const mockContent: Record<ContentKind, ContentRow[]> = Object.fromEntries(

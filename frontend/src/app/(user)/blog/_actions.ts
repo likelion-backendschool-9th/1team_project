@@ -207,6 +207,8 @@ export async function togglePostBookmark(postId: number, bookmark: boolean) {
     bookmark ? 'POST' : 'DELETE',
     undefined,
     bookmark ? '북마크했어요.' : '북마크를 해제했어요.',
+    // 북마크 API는 백엔드에 있어서 MOCK_EXCEPT_DM이어도 실서버를 쓴다.
+    !hasBackend,
   );
 }
 

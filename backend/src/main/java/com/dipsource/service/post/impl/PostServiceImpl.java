@@ -20,6 +20,7 @@ import com.dipsource.global.exception.BusinessException;
 import com.dipsource.global.exception.ErrorCode;
 import com.dipsource.repository.block.BlockRepository;
 import com.dipsource.repository.post.BlogSubscriptionRepository;
+import com.dipsource.repository.post.PostBookmarkRepository;
 import com.dipsource.repository.post.PostLikeRepository;
 import com.dipsource.repository.post.PostPurchaseRepository;
 import com.dipsource.repository.post.PostRepository;
@@ -62,6 +63,7 @@ public class PostServiceImpl implements PostService {
 
     private final PostRepository postRepository;
     private final PostLikeRepository postLikeRepository;
+    private final PostBookmarkRepository postBookmarkRepository;
     private final PostTagRepository postTagRepository;
     private final PostPurchaseRepository postPurchaseRepository;
     private final BlogSubscriptionRepository blogSubscriptionRepository;
@@ -110,7 +112,8 @@ public class PostServiceImpl implements PostService {
         UserSummaryResponse author = userService.getSummaries(List.of(post.getUserId())).get(post.getUserId());
         List<String> tags = postTagRepository.findTagNames(postId);
         boolean liked = viewerId != null && !postLikeRepository.findLikedPostIds(viewerId, List.of(postId)).isEmpty();
-        return PostDetailResponse.of(post, author, tags, canReadAll(post, viewerId), liked);
+        boolean bookmarked = viewerId != null && postBookmarkRepository.existsById(new PostUserId(viewerId, postId));
+        return PostDetailResponse.of(post, author, tags, canReadAll(post, viewerId), liked, bookmarked);
     }
 
     @Override
@@ -214,6 +217,25 @@ public class PostServiceImpl implements PostService {
         }
         // 잔액 부족·글쓴이 정지면 예외가 나서 위의 구매 기록도 함께 롤백된다
         coinService.payForPost(userId, authorId, postId, title, price);
+    }
+
+    @Override
+    @Transactional
+    public void bookmark(Long userId, Long postId) {
+        Post post = findActive(postId);
+        // 상세에서 404인 글(차단 관계)은 북마크도 404로 맞춘다.
+        if (hiddenFrom(userId, post.getUserId())) {
+            throw new BusinessException(ErrorCode.NOT_FOUND, "글을 찾을 수 없어요.");
+        }
+        postBookmarkRepository.insertIgnore(userId, postId);
+    }
+
+    @Override
+    @Transactional
+    public void unbookmark(Long userId, Long postId) {
+        findActive(postId);
+        // 차단 관계여도 취소는 막지 않는다. 차단할 때 북마크를 이미 지우므로 보통은 지울 게 없고, 남아 있으면 정리되는 쪽이 낫다.
+        postBookmarkRepository.deleteByUserIdAndPostId(userId, postId);
     }
 
     /** 유료 글 본문 전체를 볼 수 있는지: 무료 글, 작성자, 구매자, 구독자 */

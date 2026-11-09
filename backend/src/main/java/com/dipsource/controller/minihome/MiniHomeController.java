@@ -69,7 +69,7 @@ public class MiniHomeController {
             @PathVariable Long userId
     ) {
         Long viewerId = principal == null ? null : principal.getUserId();
-        return ApiResponse.of(miniHomeService.getOrCreate(userId, viewerId));
+        return ApiResponse.of(miniHomeService.get(userId, viewerId));
     }
 
     @PutMapping("/me")

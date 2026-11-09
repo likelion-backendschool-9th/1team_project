@@ -13,6 +13,7 @@ import com.dipsource.entity.feed.Feed;
 import com.dipsource.entity.feed.FeedComment;
 import com.dipsource.entity.post.Post;
 import com.dipsource.entity.post.PostCategory;
+import com.dipsource.entity.post.PostComment;
 import com.dipsource.entity.post.PostStatus;
 import com.dipsource.entity.report.Report;
 import com.dipsource.entity.user.User;
@@ -64,7 +65,7 @@ class AdminContentControllerTest {
     @BeforeEach
     void setUp() {
         jdbc.execute("""
-                TRUNCATE reports, admin_action_logs, feed_comments, feeds, posts, demos, users
+                TRUNCATE reports, admin_action_logs, feed_comments, feeds, post_comments, posts, demos, users
                 RESTART IDENTITY CASCADE
                 """);
         admin = persist(User.builder().email("admin@test.local").nickname("관리자").techStacks(List.of()).build());
@@ -81,6 +82,8 @@ class AdminContentControllerTest {
                 .build());
         persist(Report.builder().reporterId(reporter1.getId()).targetType("POST").targetId(percentPost.getId()).reason("스팸").build());
         persist(Report.builder().reporterId(reporter2.getId()).targetType("POST").targetId(percentPost.getId()).reason("광고").build());
+        persist(PostComment.builder().post(percentPost).userId(author.getId()).content("일반 블로그 댓글").build());
+        persist(PostComment.builder().post(percentPost).userId(author.getId()).content("100% 블로그 댓글").build());
 
         Feed feed = persist(Feed.builder().userId(author.getId()).content("피드").build());
         commentFeedId = feed.getId();
@@ -137,6 +140,28 @@ class AdminContentControllerTest {
     }
 
     @Test
+    @DisplayName("관리자 블로그 댓글 목록은 피드 댓글과 따로, 닉네임·글 번호·% 이스케이프")
+    void adminPostComments() throws Exception {
+        mockMvc.perform(get("/admin/post-comments")
+                        .param("q", "%")
+                        .with(authentication(auth(admin, "ADMIN"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.totalElements").value(1))
+                .andExpect(jsonPath("$.data.content[0].title").value("100% 블로그 댓글"))
+                .andExpect(jsonPath("$.data.content[0].author").value("검색러"))
+                .andExpect(jsonPath("$.data.content[0].reported").value(0))
+                .andExpect(jsonPath("$.data.content[0].metric").value("글 #" + percentPost.getId()))
+                .andExpect(jsonPath("$.data.content[0].status").value("visible"));
+    }
+
+    @Test
+    @DisplayName("일반 회원은 관리자 블로그 댓글 목록이 403")
+    void userForbiddenPostComments() throws Exception {
+        mockMvc.perform(get("/admin/post-comments").with(authentication(auth(author, "USER"))))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
     @DisplayName("관리자 데모 목록은 닉네임·신고 수·% 이스케이프")
     void adminDemos() throws Exception {
         mockMvc.perform(get("/admin/demos")
@@ -190,6 +215,40 @@ class AdminContentControllerTest {
                 Integer.class,
                 comment.getId());
         assertThat(logs).isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("관리자 블로그 댓글 삭제 후 소프트 삭제되고 글 댓글 수가 줄며, 다시 지우면 404")
+    void adminDeletesPostComment() throws Exception {
+        Post post = persist(Post.builder()
+                .userId(author.getId())
+                .title("댓글 삭제 테스트")
+                .category(PostCategory.BACKEND)
+                .content("본문")
+                .build());
+        PostComment comment = persist(PostComment.builder()
+                .post(post)
+                .userId(author.getId())
+                .content("지울 블로그 댓글")
+                .build());
+        jdbc.update("UPDATE posts SET comment_count = 1 WHERE id = ?", post.getId());
+
+        mockMvc.perform(delete("/admin/post-comments/{id}", comment.getId())
+                        .with(authentication(auth(admin, "ADMIN"))))
+                .andExpect(status().isNoContent());
+
+        em.clear();
+        assertThat(em.find(PostComment.class, comment.getId()).getDeletedAt()).isNotNull();
+        assertThat(em.find(Post.class, post.getId()).getCommentCount()).isEqualTo(0);
+        Integer logs = jdbc.queryForObject(
+                "SELECT COUNT(*) FROM admin_action_logs WHERE target_type = 'POST_COMMENT' AND target_id = ?",
+                Integer.class,
+                comment.getId());
+        assertThat(logs).isEqualTo(1);
+
+        mockMvc.perform(delete("/admin/post-comments/{id}", comment.getId())
+                        .with(authentication(auth(admin, "ADMIN"))))
+                .andExpect(status().isNotFound());
     }
 
     private Authentication auth(User user, String role) {

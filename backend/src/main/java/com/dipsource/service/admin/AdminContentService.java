@@ -24,6 +24,12 @@ public interface AdminContentService {
     /** 관리자 피드 댓글 삭제. 소프트 삭제 후 작업 기록을 남긴다. */
     void deleteComment(Long adminId, Long commentId);
 
+    /** 관리자 블로그 댓글 목록. q는 본문·작성자 닉네임. */
+    PageResponse<AdminContentResponse> listPostComments(String q, Pageable pageable);
+
+    /** 관리자 블로그 댓글 삭제. 소프트 삭제 후 작업 기록을 남긴다. */
+    void deletePostComment(Long adminId, Long commentId);
+
     /** 관리자 데모 목록. q는 제목·설명·작성자 닉네임. */
     PageResponse<AdminContentResponse> listDemos(String q, Pageable pageable);
 

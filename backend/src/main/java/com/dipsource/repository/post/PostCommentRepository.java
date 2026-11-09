@@ -2,6 +2,8 @@ package com.dipsource.repository.post;
 
 import com.dipsource.entity.post.PostComment;
 import java.util.List;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -70,4 +72,21 @@ public interface PostCommentRepository extends JpaRepository<PostComment, Long> 
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("UPDATE PostComment c SET c.likeCount = c.likeCount - 1 WHERE c.id = :commentId AND c.likeCount > 0")
     int decrementCommentLikeCount(@Param("commentId") Long commentId);
+
+    /** 관리자 블로그 댓글 목록. 삭제된 댓글은 빼고, 본문·작성자 닉네임 검색. */
+    @Query(
+            value = """
+                    SELECT c FROM PostComment c JOIN FETCH c.post JOIN User u ON u.id = c.userId
+                    WHERE c.deletedAt IS NULL
+                      AND (:q IS NULL OR LOWER(c.content) LIKE :q ESCAPE '\\'
+                          OR LOWER(u.nickname) LIKE :q ESCAPE '\\')
+                    ORDER BY c.createdAt DESC, c.id DESC
+                    """,
+            countQuery = """
+                    SELECT COUNT(c) FROM PostComment c JOIN User u ON u.id = c.userId
+                    WHERE c.deletedAt IS NULL
+                      AND (:q IS NULL OR LOWER(c.content) LIKE :q ESCAPE '\\'
+                          OR LOWER(u.nickname) LIKE :q ESCAPE '\\')
+                    """)
+    Page<PostComment> searchForAdmin(@Param("q") String q, Pageable pageable);
 }

@@ -4,12 +4,14 @@ import com.dipsource.dto.minihome.MiniHomeCommentResponse;
 import com.dipsource.dto.user.UserSummaryResponse;
 import com.dipsource.entity.minihome.Guestbook;
 import com.dipsource.entity.minihome.MiniHome;
+import com.dipsource.entity.notification.NotificationType;
 import com.dipsource.global.common.PageResponse;
 import com.dipsource.global.exception.BusinessException;
 import com.dipsource.global.exception.ErrorCode;
 import com.dipsource.repository.block.BlockRepository;
 import com.dipsource.repository.minihome.GuestbookRepository;
 import com.dipsource.service.minihome.GuestbookService;
+import com.dipsource.service.notification.NotificationService;
 import com.dipsource.service.user.UserService;
 import java.util.HashSet;
 import java.util.Set;
@@ -33,6 +35,7 @@ public class GuestbookServiceImpl implements GuestbookService {
     private final GuestbookRepository guestbookRepository;
     private final UserService userService;
     private final BlockRepository blockRepository;
+    private final NotificationService notificationService;
 
     @Override
     @Transactional(readOnly = true)
@@ -75,6 +78,9 @@ public class GuestbookServiceImpl implements GuestbookService {
                 .content(text)
                 .secret(isSecret)
                 .build());
+        // 주인이 자기 홈에 쓴 글은 notify 안에서 걸러진다.
+        notificationService.notify(ownerId, writerId, NotificationType.GUESTBOOK,
+                NotificationService.TARGET_MINI_HOME, ownerId);
         return toResponse(saved, true, userService.getSummaries(List.of(writerId)));
     }
 

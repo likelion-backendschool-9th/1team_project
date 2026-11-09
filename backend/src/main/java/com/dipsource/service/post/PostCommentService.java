@@ -152,6 +152,16 @@ public class PostCommentService {
         }
     }
 
+    /** 관리자 삭제. 작성자 검사 없이 소프트 삭제하고 글 댓글 수를 맞춘다. 이미 삭제된 댓글이면 404 */
+    @Transactional
+    public void deleteByAdmin(Long commentId) {
+        PostComment comment = findComment(commentId);
+        int updated = postCommentRepository.softDeleteIfActive(commentId);
+        if (updated > 0) {
+            postCommentRepository.decrementCommentCount(comment.getPost().getId());
+        }
+    }
+
     /** 댓글 좋아요. 이미 눌렀으면 no-op (멱등) */
     @Transactional
     public void likeComment(Long userId, Long commentId) {
