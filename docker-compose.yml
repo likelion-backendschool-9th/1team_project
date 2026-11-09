@@ -46,6 +46,8 @@ services:
       JWT_SECRET: ${JWT_SECRET}
       GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID}
       GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET}
+      # 미니홈피 잔디(GitHub GraphQL)용 토큰. 없으면 잔디가 비어 보인다. (로그인 OAuth와 별개)
+      GITHUB_TOKEN: ${GITHUB_TOKEN:-}
       FRONTEND_BASE_URL: ${FRONTEND_BASE_URL}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-not-configured}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-not-configured}
