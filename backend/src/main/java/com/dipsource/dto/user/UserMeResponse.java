@@ -19,7 +19,7 @@ public record UserMeResponse(
         int followerCount,
         int followingCount,
         int chipBalance,
-        // USER / ADMIN. 프론트가 관리자 화면 접근을 막는 데 쓴다 (실제 권한 검사는 SecurityConfig의 /admin/** hasRole)
+        // USER / ADMIN / MASTER. 프론트가 관리자 화면 접근을 막는 데 쓴다 (실제 권한 검사는 SecurityConfig의 /admin/**)
         String role
 ) {
     /**

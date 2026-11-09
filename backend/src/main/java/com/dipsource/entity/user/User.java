@@ -147,6 +147,11 @@ public class User extends BaseEntity {
     public void suspend() {
         this.status = UserStatus.SUSPENDED;
     }
+
+    /** 권한 변경. 누가 바꿀 수 있는지는 서비스(MasterRoleService)에서 검사한다 */
+    public void changeRole(UserRole role) {
+        this.role = role;
+    }
     
     public void unsuspend() {
         this.status = UserStatus.ACTIVE;

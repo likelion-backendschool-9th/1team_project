@@ -16,6 +16,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
   return (
     <Suspense fallback={<p role="status" aria-busy="true" style={{ padding: 32 }}>권한을 확인하는 중…</p>}>
       <AdminGate>
+        {(master) => (
         <div className={styles.shell}>
           <header className={styles.header}>
             <div className={styles.headerTop}>
@@ -28,12 +29,13 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
                 서비스로 돌아가기 →
               </Link>
             </div>
-            <AdminNav />
+            <AdminNav master={master} />
           </header>
           <main id="main-content" tabIndex={-1} className={styles.main}>
             {children}
           </main>
         </div>
+        )}
       </AdminGate>
     </Suspense>
   );

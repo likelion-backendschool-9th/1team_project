@@ -37,16 +37,20 @@ const groups = [
   },
 ];
 
+// 최고 관리자(MASTER)에게만 보이는 메뉴. 일반 관리자에게는 메뉴 자체를 그리지 않는다.
+const masterGroup = { title: "권한", items: [{ href: "/admin/roles", label: "🔑 권한 관리" }] };
+
 function isActive(pathname: string | null, href: string) {
   if (!pathname) return false;
   if (href === "/admin" || href === "/admin/coins") return pathname === href;
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
-function NavList({ pathname }: { pathname: string | null }) {
+function NavList({ pathname, master }: { pathname: string | null; master: boolean }) {
+  const visibleGroups = master ? [...groups, masterGroup] : groups;
   return (
     <nav aria-label="관리자 메뉴" className={styles.nav}>
-      {groups.map((group) => (
+      {visibleGroups.map((group) => (
         <div key={group.title ?? "home"} className={styles.group}>
           {group.title && <span className={styles.groupTitle}>{group.title}</span>}
           <ul>
@@ -71,14 +75,14 @@ function NavList({ pathname }: { pathname: string | null }) {
   );
 }
 
-function ActiveNavList() {
-  return <NavList pathname={usePathname()} />;
+function ActiveNavList({ master }: { master: boolean }) {
+  return <NavList pathname={usePathname()} master={master} />;
 }
 
-export function AdminNav() {
+export function AdminNav({ master = false }: { master?: boolean }) {
   return (
-    <Suspense fallback={<NavList pathname={null} />}>
-      <ActiveNavList />
+    <Suspense fallback={<NavList pathname={null} master={master} />}>
+      <ActiveNavList master={master} />
     </Suspense>
   );
 }

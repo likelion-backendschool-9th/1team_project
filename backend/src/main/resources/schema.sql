@@ -6,3 +6,5 @@ CREATE EXTENSION IF NOT EXISTS fuzzystrmatch;
 -- ddl-auto=update는 이미 있는 CHECK 제약을 고치지 않는다. 데모에 DRAFT 상태가 추가되어 옛 제약을 지운다(새 DB는 Hibernate가 새 값으로 만든다).
 ALTER TABLE IF EXISTS demos DROP CONSTRAINT IF EXISTS demos_status_check;
 ALTER TABLE IF EXISTS demo_versions DROP CONSTRAINT IF EXISTS demo_versions_status_check;
+-- 회원 권한에 MASTER(최고 관리자)가 추가되어 옛 role 제약을 지운다(새 DB는 Hibernate가 새 값으로 만든다).
+ALTER TABLE IF EXISTS users DROP CONSTRAINT IF EXISTS users_role_check;

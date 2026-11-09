@@ -24,8 +24,8 @@ export type MyProfile = UserSummary & {
   followingCount: number;
   chipBalance: number;
   onboardingIncomplete?: boolean;
-  /** USER / ADMIN. 관리자 화면 접근 확인용 */
-  role?: "USER" | "ADMIN";
+  /** USER / ADMIN / MASTER(최고 관리자). 관리자 화면 접근 확인용 */
+  role?: "USER" | "ADMIN" | "MASTER";
 };
 
 export type Following = UserSummary & {

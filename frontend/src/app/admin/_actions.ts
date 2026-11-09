@@ -154,3 +154,17 @@ export async function deleteEvent(eventId: number) {
   if (!isId(eventId)) return { ok: false, message: "잘못된 요청이에요." };
   return mutate(`/api/v1/admin/events/${eventId}`, "DELETE", undefined, "이벤트를 삭제했어요.");
 }
+
+// 최고 관리자(MASTER)만 쓸 수 있다. 실제 권한 검사는 백엔드(/admin/roles/** hasRole MASTER)가 한다.
+export async function changeUserRole(userId: number, role: "ADMIN" | "USER") {
+  if (!isId(userId) || (role !== "ADMIN" && role !== "USER")) return { ok: false, message: "잘못된 요청이에요." };
+  const result = await mutate(
+    `/api/v1/admin/roles/users/${userId}`,
+    "PUT",
+    { role },
+    role === "ADMIN" ? "관리자로 지정했어요. 다음 로그인(토큰 갱신)부터 적용돼요." : "일반 회원으로 바꿨어요. 다음 토큰 갱신부터 적용돼요.",
+    !hasBackend,
+  );
+  if (result.ok) revalidatePath("/admin/roles");
+  return result;
+}
