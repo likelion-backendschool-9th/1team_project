@@ -9,4 +9,14 @@ public interface AuthService {
 
     /** 프로필로 기존 회원을 찾거나 신규 가입시킨다. */
     AuthResult findOrCreate(SocialProfile profile);
+
+    IssuedTokens issueTokens(User user);          // 로그인. 새 family
+    
+    IssuedTokens rotate(String refreshToken);     // refresh
+
+    void revokePresented(String refreshToken);    // logout. 이 기기 줄만
+
+    void revokeAll(Long userId);                  // 탈퇴
+
+    record IssuedTokens(String accessToken, String refreshToken) {}
 }

@@ -4,11 +4,12 @@ import com.dipsource.dto.auth.DevLoginRequest;
 import com.dipsource.dto.auth.DevLoginResponse;
 import com.dipsource.entity.user.User;
 import com.dipsource.entity.user.enums.UserStatus;
-import com.dipsource.global.auth.JwtProvider;
 import com.dipsource.global.common.ApiResponse;
 import com.dipsource.global.exception.BusinessException;
 import com.dipsource.global.exception.ErrorCode;
 import com.dipsource.repository.user.UserRepository;
+import com.dipsource.service.user.AuthService;
+
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -28,7 +29,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class DevLoginController {
 
     private final UserRepository userRepository;
-    private final JwtProvider jwtProvider;
+    private final AuthService authService;
 
     @PostMapping("/dev-login")
     public ApiResponse<DevLoginResponse> devLogin(@Valid @RequestBody DevLoginRequest request) {
@@ -39,12 +40,11 @@ public class DevLoginController {
             throw new BusinessException(ErrorCode.UNAUTHORIZED, "활성 계정이 아니에요.");
         }
 
-        String accessToken = jwtProvider.createAccessToken(user.getId(), user.getRole().name());
-        String refreshToken = jwtProvider.createRefreshToken(user.getId());
+        AuthService.IssuedTokens tokens = authService.issueTokens(user);
 
-        return ApiResponse.of(new DevLoginResponse(
-                accessToken,
-                refreshToken,
+                return ApiResponse.of(new DevLoginResponse(
+                tokens.accessToken(),
+                tokens.refreshToken(),
                 user.getId(),
                 user.getNickname(),
                 user.getEmail()

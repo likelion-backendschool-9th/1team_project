@@ -16,6 +16,7 @@ import com.dipsource.repository.follow.FollowRepository;
 import com.dipsource.repository.tag.TagRepository;
 import com.dipsource.repository.user.UserInterestTagRepository;
 import com.dipsource.repository.user.UserRepository;
+import com.dipsource.service.user.AuthService;
 import com.dipsource.service.user.UserService;
 import java.time.Duration;
 import java.util.Collection;
@@ -41,6 +42,7 @@ public class UserServiceImpl implements UserService {
     private static final Duration ONLINE_THRESHOLD = Duration.ofMinutes(5);
 
     private final UserRepository userRepository;
+    private final AuthService authService;
     private final TagRepository tagRepository;
     private final UserInterestTagRepository userInterestTagRepository;
     private final FollowRepository followRepository;
@@ -141,6 +143,7 @@ public class UserServiceImpl implements UserService {
     public void withdraw(Long userId) {
         User user = getUser(userId);
         user.withdraw();
+        authService.revokeAll(userId);
     }
 
     @Override 

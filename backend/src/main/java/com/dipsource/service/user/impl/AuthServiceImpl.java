@@ -5,13 +5,23 @@ import com.dipsource.service.user.SocialProfile;
 import com.dipsource.entity.user.User;
 import com.dipsource.entity.user.enums.UserStatus;
 import com.dipsource.global.auth.JwtProvider;
+import com.dipsource.global.auth.RefreshTokenHasher;
 import com.dipsource.global.exception.BusinessException;
 import com.dipsource.global.exception.ErrorCode;
+import com.dipsource.repository.user.RefreshTokenRepository;
 import com.dipsource.repository.user.SocialAccountRepository;
 import com.dipsource.repository.user.UserRepository;
 import com.dipsource.service.user.AuthResult;
 import com.dipsource.service.user.AuthService;
+import com.dipsource.entity.user.RefreshToken;
 import lombok.RequiredArgsConstructor;
+
+import java.time.Instant;
+import java.time.Duration;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.util.UUID;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,6 +33,91 @@ public class AuthServiceImpl implements AuthService {
     private final UserRepository userRepository;
     private final SocialAccountRepository socialAccountRepository;
     private final JwtProvider jwtProvider;
+    private final RefreshTokenRepository refreshTokenRepository;
+
+    private static final ZoneId SEOUL = ZoneId.of("Asia/Seoul");
+    private static final Duration ROTATION_GRACE = Duration.ofSeconds(30);
+
+    private static LocalDateTime toSeoul(Instant instant) {
+        return LocalDateTime.ofInstant(instant, SEOUL);
+    }
+
+    /** 재사용 감지 후 401을 던져도 family 폐기는 커밋되어야 한다. */
+    @Override
+    @Transactional(noRollbackFor = BusinessException.class)
+    public IssuedTokens rotate(String refreshToken) {
+        if (refreshToken == null || !jwtProvider.isRefreshToken(refreshToken)) {
+            throw new BusinessException(ErrorCode.UNAUTHORIZED);
+        }
+
+        RefreshToken current = refreshTokenRepository
+                .findByTokenHash(RefreshTokenHasher.sha256(refreshToken))
+                .orElseThrow(() -> new BusinessException(ErrorCode.UNAUTHORIZED));
+        
+        Instant now = Instant.now();
+        LocalDateTime nowSeoul = toSeoul(now);
+
+        if (current.getRevokedAt() != null || current.getExpiresAt().isBefore(nowSeoul)) {
+            throw new BusinessException(ErrorCode.UNAUTHORIZED);
+        }
+
+        User user = userRepository.findById(current.getUserId())
+                .orElseThrow(() -> new BusinessException(ErrorCode.UNAUTHORIZED));
+        if (user.getStatus() != UserStatus.ACTIVE) {
+            throw new BusinessException(ErrorCode.UNAUTHORIZED);
+        }
+
+        //현역: 새 토큰 발급하고 옛 토큰에 rotated_at + 다음 jti 기록
+        if (current.getRotatedAt() == null) {
+            JwtProvider.IssuedRefreshToken next =
+                    jwtProvider.createRefreshToken(user.getId(), UUID.fromString(current.getFamilyId()));
+            current.markRotated(nowSeoul, next.jti());
+            refreshTokenRepository.save(RefreshToken.builder()
+                    .userId(user.getId())
+                    .jti(next.jti())
+                    .tokenHash(RefreshTokenHasher.sha256(next.token()))
+                    .familyId(current.getFamilyId())
+                    .issuedAt(toSeoul(next.issuedAt()))
+                    .expiresAt(toSeoul(next.expiresAt()))
+                    .build());
+            String access = jwtProvider.createAccessToken(user.getId(), user.getRole().name());
+            return new IssuedTokens(access, next.token());
+        }
+
+        //교체 후 30초 안: 이미 만든 다음 토큰을 다시 서명해서 돌려줌(탭 경합)
+        Duration age = Duration.between(
+            current.getRotatedAt().atZone(SEOUL).toInstant(),now);
+        if (age.compareTo(ROTATION_GRACE) <= 0) {
+            RefreshToken successor = refreshTokenRepository.findByJti(current.getReplacedByJti())
+                .orElseThrow(() -> new BusinessException(ErrorCode.UNAUTHORIZED));
+            String same = jwtProvider.recreateRefreshToken(
+                successor.getUserId(),
+                successor.getJti(),
+                successor.getIssuedAt().atZone(SEOUL).toInstant(),
+                successor.getExpiresAt().atZone(SEOUL).toInstant());
+            String access = jwtProvider.createAccessToken(user.getId(), user.getRole().name());
+            return new IssuedTokens(access, same);
+        }
+
+        refreshTokenRepository.revokeFamily(current.getFamilyId(), nowSeoul);
+        throw new BusinessException(ErrorCode.UNAUTHORIZED);
+    }
+
+    @Override
+    @Transactional
+    public void revokePresented(String refreshToken) {
+        if (refreshToken == null || !jwtProvider.isRefreshToken(refreshToken)) {
+            return;
+        }
+        refreshTokenRepository.findByTokenHash(RefreshTokenHasher.sha256(refreshToken))
+            .ifPresent(token -> refreshTokenRepository.revokeFamily(token.getFamilyId(), toSeoul(Instant.now())));
+    }
+
+    @Override
+    @Transactional
+    public void revokeAll(Long userId) {
+        refreshTokenRepository.revokeAllByUserId(userId, toSeoul(Instant.now()));
+    }
 
     @Override
     @Transactional
@@ -36,7 +131,7 @@ public class AuthServiceImpl implements AuthService {
                 })
                 .orElseGet(() -> createUser(profile));
     }
-
+    
     @Override 
     @Transactional(readOnly = true)
     public User findUserByRefreshToken(String refreshToken) {
@@ -45,12 +140,29 @@ public class AuthServiceImpl implements AuthService {
         }
         Long userId = jwtProvider.getUserId(refreshToken);
         User user = userRepository.findById(userId)
-                    .orElseThrow(() -> new BusinessException(ErrorCode.UNAUTHORIZED));
+        .orElseThrow(() -> new BusinessException(ErrorCode.UNAUTHORIZED));
         
         if (user.getStatus() != UserStatus.ACTIVE) {
             throw new BusinessException(ErrorCode.UNAUTHORIZED);
         }
         return user;
+    }
+
+    @Override
+    @Transactional
+    public IssuedTokens issueTokens(User user) {
+        JwtProvider.IssuedRefreshToken issued =
+                jwtProvider.createRefreshToken(user.getId(), UUID.randomUUID());
+        refreshTokenRepository.save(RefreshToken.builder()
+                .userId(user.getId())
+                .jti(issued.jti())
+                .tokenHash(RefreshTokenHasher.sha256(issued.token()))
+                .familyId(issued.familyId().toString())
+                .issuedAt(toSeoul(issued.issuedAt()))
+                .expiresAt(toSeoul(issued.expiresAt()))
+                .build());
+        String access = jwtProvider.createAccessToken(user.getId(), user.getRole().name());
+        return new IssuedTokens(access, issued.token());
     }
 
     private AuthResult createUser(SocialProfile profile) {
@@ -134,4 +246,8 @@ public class AuthServiceImpl implements AuthService {
             case GOOGLE -> profile.providerId() + "@noreply.dipsource";
         };
     }
+
+
+    
+
 }

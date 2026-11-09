@@ -1,9 +1,7 @@
 package com.dipsource.controller.user;
 
-import com.dipsource.entity.user.User;
 import com.dipsource.global.auth.AuthCookieNames;
 import com.dipsource.global.auth.AuthCookieWriter;
-import com.dipsource.global.auth.JwtProvider;
 import com.dipsource.global.exception.BusinessException;
 import com.dipsource.service.user.AuthService;
 
@@ -27,8 +25,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class AuthController {
 
     private final AuthCookieWriter authCookieWriter;
-    private final AuthService authService;            
-    private final JwtProvider jwtProvider;
+    private final AuthService authService;
 
     /**
      * 소셜 로그인을 시작한다.
@@ -42,7 +39,10 @@ public class AuthController {
 
     /** 로그아웃: JWT 쿠키를 지운다. */
     @PostMapping("/logout")
-    public ResponseEntity<Map<String, Object>> logout(HttpServletResponse response) {
+    public ResponseEntity<Map<String, Object>> logout(
+        @CookieValue(name = AuthCookieNames.REFRESH, required = false) String refreshToken, 
+        HttpServletResponse response) {
+        authService.revokePresented(refreshToken);
         authCookieWriter.clear(response);
         return ResponseEntity.ok(Map.of("data", Map.of("loggedOut", true)));
     }
@@ -58,10 +58,8 @@ public class AuthController {
         HttpServletResponse response
     ) {
         try {
-            User user = authService.findUserByRefreshToken(refreshToken);
-            String newAccess = jwtProvider.createAccessToken(user.getId(), user.getRole().name());
-            String newRefresh = jwtProvider.createRefreshToken(user.getId());
-            authCookieWriter.writeTokens(response, newAccess, newRefresh);
+            AuthService.IssuedTokens tokens = authService.rotate(refreshToken);
+            authCookieWriter.writeTokens(response, tokens.accessToken(), tokens.refreshToken());
             return ResponseEntity.noContent().build();
         } catch (BusinessException e) {
             authCookieWriter.clear(response);

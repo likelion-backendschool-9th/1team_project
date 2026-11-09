@@ -26,7 +26,6 @@ import org.springframework.stereotype.Component;
 public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
 
     private final AuthService authService;
-    private final JwtProvider jwtProvider;
     private final AuthCookieWriter authCookieWriter;
 
     /** 로그인 후 돌아갈 프론트 주소 */
@@ -61,14 +60,11 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
             String reason = status.name().toLowerCase();
             getRedirectStrategy().sendRedirect(request, response, frontendBaseUrl + "/login?error=" + reason);
             return;
-
         }
 
         // 우리 서비스용 JWT를 발급한다.
-        String accessToken = jwtProvider.createAccessToken(
-                result.user().getId(), result.user().getRole().name());
-        String refreshToken = jwtProvider.createRefreshToken(result.user().getId());
-        authCookieWriter.writeTokens(response, accessToken, refreshToken);
+        AuthService.IssuedTokens tokens = authService.issueTokens(result.user());
+        authCookieWriter.writeTokens(response, tokens.accessToken(), tokens.refreshToken());
 
         // 기술 스택이 비어 있으면 온보딩 미완료로 보고 온보딩으로 보낸다.
         String path = result.user().isOnboardingIncomplete() ? "/onboarding" : "/main";
