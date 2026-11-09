@@ -32,7 +32,7 @@ function ComposerField({ defaultValue, error }: FieldProps) {
         type="text"
         defaultValue={defaultValue}
         maxLength={MAX_FEED_LENGTH}
-        placeholder="무슨 소스를 개발 중인가요?"
+        placeholder="무슨 소스를 개발 중인가요? #태그를 달면 태그 피드에 모여요"
         autoComplete="off"
         aria-invalid={error ? true : undefined}
         aria-describedby={error ? "feed-content-error" : undefined}

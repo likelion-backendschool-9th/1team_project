@@ -7,6 +7,7 @@ import com.dipsource.dto.feed.FeedUpdateRequest;
 import com.dipsource.entity.feed.Feed;
 import com.dipsource.entity.feed.FeedStatus;
 import com.dipsource.entity.feed.FeedTag;
+import com.dipsource.entity.tag.Tag;
 import com.dipsource.global.exception.BusinessException;
 import com.dipsource.global.exception.ErrorCode;
 import com.dipsource.entity.user.User;
@@ -19,10 +20,15 @@ import com.dipsource.repository.follow.FollowRepository;
 import com.dipsource.repository.tag.TagRepository;
 import com.dipsource.repository.user.UserRepository;
 import com.dipsource.service.image.ImageService;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -83,6 +89,9 @@ public class FeedService {
                     .toList();
             feedTagRepository.saveAll(tags);
         }
+
+        // 본문에 쓴 #해시태그도 태그로 저장한다. (위에서 고른 태그와 겹치면 건너뜀)
+        saveHashtags(feed, request.content(), request.tagIds());
 
         User author = userRepository.findById(userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "사용자를 찾을 수 없습니다"));
@@ -238,5 +247,41 @@ public class FeedService {
             throw new BusinessException(ErrorCode.FORBIDDEN, "본인의 피드만 수정/삭제할 수 있습니다");
         }
         return feed;
+    }
+
+    /** 본문 해시태그. 단어 중간의 #(예: C#, a#b)이나 URL 조각(#section)은 태그로 보지 않는다 */
+    private static final Pattern HASHTAG =
+            Pattern.compile("(?<![\\p{L}\\p{N}_&/#])#([\\p{L}\\p{N}_][\\p{L}\\p{N}_.+-]{0,49})");
+
+    /** 피드 하나에 본문 해시태그로 붙일 수 있는 최대 개수 (요청의 tagIds 제한과 같다) */
+    private static final int MAX_HASHTAGS = 10;
+
+    /**
+     * 본문의 #해시태그를 tags·feed_tags에 저장한다. 처음 쓰는 태그는 새로 만든다.
+     * 태그 이름은 소문자로 맞춰 저장한다 (#Spring, #spring → spring).
+     */
+    private void saveHashtags(Feed feed, String content, @Nullable List<Long> selectedTagIds) {
+        Set<String> names = new LinkedHashSet<>();
+        Matcher matcher = HASHTAG.matcher(content);
+        while (matcher.find() && names.size() < MAX_HASHTAGS) {
+            String name = matcher.group(1).replaceAll("[.+-]+$", "").toLowerCase(Locale.ROOT);
+            if (!name.isEmpty()) {
+                names.add(name);
+            }
+        }
+        if (names.isEmpty()) {
+            return;
+        }
+
+        Set<Long> savedTagIds = new HashSet<>(selectedTagIds == null ? List.of() : selectedTagIds);
+        List<FeedTag> feedTags = new ArrayList<>();
+        for (String name : names) {
+            Tag tag = tagRepository.findByName(name)
+                    .orElseGet(() -> tagRepository.save(Tag.builder().name(name).build()));
+            if (savedTagIds.add(tag.getId())) {
+                feedTags.add(new FeedTag(feed, tag.getId()));
+            }
+        }
+        feedTagRepository.saveAll(feedTags);
     }
 }

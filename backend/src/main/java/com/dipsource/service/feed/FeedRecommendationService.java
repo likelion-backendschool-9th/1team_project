@@ -123,6 +123,14 @@ public class FeedRecommendationService {
         return toResponse(merged, null, size);
     }
 
+    /**
+     * 태그 필터 피드. 태그가 달린 글을 최신순으로 보여 준다. 비로그인(userId null)도 가능.
+     */
+    public FeedCursorResponse getTagFeeds(Long userId, String tagName, Long cursorId, int size) {
+        List<Feed> feeds = feedRepository.findByTagName(userId, tagName, cursorId, size);
+        return toResponse(feeds, userId, size);
+    }
+
     /** Feed 목록을 FeedCursorResponse로 변환. userId가 있으면 좋아요/북마크/팔로우 상태도 조회 */
     private FeedCursorResponse toResponse(List<Feed> feeds, Long userId, int size) {
         if (feeds.isEmpty()) {

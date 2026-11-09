@@ -107,6 +107,33 @@ public interface FeedRepository extends JpaRepository<Feed, Long> {
     );
 
     /**
+     * 태그가 달린 피드를 최신순으로 (커서 지원). 태그 이름은 대소문자를 가리지 않는다.
+     * userId가 있으면 차단 관계인 사람 글은 뺀다.
+     */
+    @Query(nativeQuery = true, value = """
+        SELECT f.*
+        FROM feeds f
+        JOIN feed_tags ft ON f.id = ft.feed_id
+        JOIN tags t ON t.id = ft.tag_id
+        WHERE f.status = 'ACTIVE'
+          AND LOWER(t.name) = LOWER(:tagName)
+          AND (:userId IS NULL OR f.user_id NOT IN (
+              SELECT blocked_id FROM blocks WHERE blocker_id = :userId
+              UNION
+              SELECT blocker_id FROM blocks WHERE blocked_id = :userId
+          ))
+          AND (:cursorId IS NULL OR f.id < :cursorId)
+        ORDER BY f.id DESC
+        LIMIT :size
+        """)
+    List<Feed> findByTagName(
+            @Param("userId") Long userId,
+            @Param("tagName") String tagName,
+            @Param("cursorId") Long cursorId,
+            @Param("size") int size
+    );
+
+    /**
      * 내가 쓴 피드 조회 (커서 지원).
      */
     @Query(nativeQuery = true, value = """

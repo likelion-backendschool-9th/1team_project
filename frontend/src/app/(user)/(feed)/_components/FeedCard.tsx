@@ -7,6 +7,7 @@ import { DemoThumb } from "./DemoThumb";
 import { FeedActions } from "./FeedActions";
 import { FeedMenu } from "./FeedMenu";
 import { FollowButton } from "./FollowButton";
+import { FeedText } from "./FeedText";
 import styles from "./FeedCard.module.css";
 
 type Props = {
@@ -50,7 +51,9 @@ export function FeedCard({ feed, myId, now }: Props) {
         />
       </header>
 
-      <p className={styles.content}>{feed.content}</p>
+      <p className={styles.content}>
+        <FeedText text={feed.content} />
+      </p>
 
       {demo && (
         <div className={styles.demo}>

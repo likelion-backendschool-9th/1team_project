@@ -26,6 +26,7 @@ public class FeedRecommendationController {
      * - type=recommended: 점수 기반 + 트렌딩 (로그인 필요)
      * - type=following: 팔로잉한 사람 글만 (로그인 필요)
      * - 비로그인: 트렌딩 + 최신
+     * - tag가 있으면: 그 태그가 달린 글만 최신순
      * <p>
      * 대상 사용자는 쿼리 userId가 아니라 JWT(쿠키)의 {@link UserPrincipal}에서만 결정한다.
      */
@@ -37,12 +38,16 @@ public class FeedRecommendationController {
             // size: 한 번에 가져올 피드 수. 기본값 20
             @RequestParam(defaultValue = "20") int size,
             // cursor: 마지막으로 본 피드 ID. 무한스크롤 시 이전 응답의 nextCursor 값을 넘김. 첫 요청이면 안 보냄
-            @RequestParam(required = false) Long cursor) {
+            @RequestParam(required = false) Long cursor,
+            // tag: 태그 이름. 있으면 type과 관계없이 그 태그가 달린 글만 최신순으로 (비로그인 가능)
+            @RequestParam(required = false) String tag) {
         Long userId = principal == null ? null : principal.getUserId();
         int safeSize = Math.min(Math.max(size, 1), MAX_SIZE);
         FeedCursorResponse response;
 
-        if (userId == null) {
+        if (tag != null && !tag.isBlank()) {
+            response = recommendationService.getTagFeeds(userId, tag.strip(), cursor, safeSize);
+        } else if (userId == null) {
             response = recommendationService.getGuestFeeds(cursor, safeSize);
         } else if ("following".equals(type)) {
             response = recommendationService.getFollowingFeeds(userId, cursor, safeSize);
