@@ -71,6 +71,8 @@ tasks.named('test') {
         excludeTags 'search-eval'
     }
     isolateSearchEnv(it)
+    // 테스트 JVM 기본 힙(512MB)으로는 서로 다른 @SpringBootTest 컨텍스트가 캐시에 쌓이면서 OutOfMemoryError가 난다
+    maxHeapSize = '2g'
 }
 
 // 검색 품질 평가. 결과는 docs/search-eval/results/에 남는다: ./gradlew searchEval
