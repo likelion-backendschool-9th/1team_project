@@ -16,6 +16,8 @@ const categories = [
   { value: "ai", label: "AI" },
   { value: "security", label: "보안" },
   { value: "game", label: "게임" },
+  // 백엔드가 어느 분야에도 안 맞는 뉴스를 "etc"로 보낸다 (NewsCategories.ETC).
+  { value: "etc", label: "기타" },
 ];
 
 function first(value: string | string[] | undefined) {
