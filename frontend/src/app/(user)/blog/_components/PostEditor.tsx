@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useRef, useState, useSyncExternalStore } from "react";
 import { FormMessage } from "@/app/_components/ui/FormMessage";
 import kit from "@/app/_components/ui/kit.module.css";
 import { initialFormState, type FormState } from "@/app/_lib/formState";
@@ -23,21 +23,146 @@ type Props = {
   demos: { id: number; title: string }[];
   initial?: Initial;
   submitLabel: string;
+  /** 임시저장 구분값. 새 글은 "new", 수정은 "edit-{글 ID}". 없으면 임시저장 버튼을 숨긴다 */
+  draftKey?: string;
 };
+
+type Draft = Omit<Initial, "paid"> & { paid: boolean; savedAt: number };
+
+// 임시저장은 아직 서버 API가 없어 이 브라우저(localStorage)에만 보관한다.
+const DRAFT_EVENT = "dipsource:post-draft";
+
+function readDraft(storageKey: string): string | null {
+  try {
+    return window.localStorage.getItem(storageKey);
+  } catch {
+    return null;
+  }
+}
+
+function parseDraft(raw: string | null): Draft | null {
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw) as Draft;
+  } catch {
+    return null;
+  }
+}
+
+function subscribeDraft(onChange: () => void) {
+  window.addEventListener("storage", onChange);
+  window.addEventListener(DRAFT_EVENT, onChange);
+  return () => {
+    window.removeEventListener("storage", onChange);
+    window.removeEventListener(DRAFT_EVENT, onChange);
+  };
+}
+
+// 이벤트 핸들러(임시저장 버튼)에서만 부르는 현재 시각.
+function currentTime(): number {
+  return Date.now();
+}
+
+function formatSavedAt(savedAt: number): string {
+  return new Date(savedAt).toLocaleString("ko-KR", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" });
+}
 
 const empty: Initial = { title: "", category: "", tags: "", content: "", demoId: "", price: "10", paid: false };
 
-export function PostEditor({ action, demos, initial = empty, submitLabel }: Props) {
+export function PostEditor({ action, demos, initial = empty, submitLabel, draftKey }: Props) {
   const [state, formAction, pending] = useActionState(action, initialFormState);
   const value = (key: keyof Initial) => state.values[key] ?? String(initial[key]);
   const [content, setContent] = useState(initial.content);
   const [preview, setPreview] = useState(false);
   const [paid, setPaid] = useState(initial.paid);
+  const formRef = useRef<HTMLFormElement>(null);
+  const storageKey = draftKey ? `dipsource:post-draft:${draftKey}` : null;
+  const savedRaw = useSyncExternalStore(
+    subscribeDraft,
+    () => (storageKey ? readDraft(storageKey) : null),
+    () => null,
+  );
+  const savedDraft = parseDraft(savedRaw);
+  const [draftMessage, setDraftMessage] = useState<string | null>(null);
+  const [restored, setRestored] = useState(false);
+  const [priceOverride, setPriceOverride] = useState<string | null>(null);
+
+  function writeDraft(next: Draft | null) {
+    if (!storageKey) return;
+    try {
+      if (next) window.localStorage.setItem(storageKey, JSON.stringify(next));
+      else window.localStorage.removeItem(storageKey);
+    } catch {
+      setDraftMessage("이 브라우저에서는 임시저장을 쓸 수 없어요.");
+      return;
+    }
+    window.dispatchEvent(new Event(DRAFT_EVENT));
+  }
+
+  function saveDraft() {
+    const form = formRef.current;
+    if (!form) return;
+    const data = new FormData(form);
+    const text = (key: string) => String(data.get(key) ?? "");
+    const savedAt = currentTime();
+    writeDraft({
+      title: text("title"),
+      category: text("category"),
+      tags: text("tags"),
+      content,
+      demoId: text("demoId"),
+      price: text("price") || "10",
+      paid,
+      savedAt,
+    });
+    setRestored(true);
+    setDraftMessage(`임시저장했어요 · ${formatSavedAt(savedAt)}`);
+  }
+
+  function restoreDraft() {
+    const form = formRef.current;
+    if (!form || !savedDraft) return;
+    for (const key of ["title", "category", "tags", "demoId"] as const) {
+      const field = form.elements.namedItem(key);
+      if (field instanceof HTMLInputElement || field instanceof HTMLSelectElement) field.value = savedDraft[key];
+    }
+    setContent(savedDraft.content);
+    setPaid(savedDraft.paid);
+    setPriceOverride(savedDraft.price);
+    setRestored(true);
+    setDraftMessage(`${formatSavedAt(savedDraft.savedAt)}에 임시저장한 글을 불러왔어요.`);
+  }
+
+  function discardDraft() {
+    writeDraft(null);
+    setRestored(true);
+    setDraftMessage("임시저장한 글을 지웠어요.");
+  }
+
   const invalid = (key: string) =>
     state.errors[key] ? { "aria-invalid": true as const, "aria-describedby": `post-${key}-error` } : {};
 
   return (
-    <form action={formAction} className={`${kit.card} ${kit.form}`}>
+    <form
+      ref={formRef}
+      action={formAction}
+      // 발행·수정 요청을 보내면 임시저장본은 지운다. (실패해도 작성 중인 내용은 화면에 남아 있다)
+      onSubmit={() => writeDraft(null)}
+      className={`${kit.card} ${kit.form}`}
+    >
+      {savedDraft && !restored && (
+        <div className={styles.draftBanner} role="status">
+          <span>{formatSavedAt(savedDraft.savedAt)}에 임시저장한 글이 있어요.</span>
+          <span className={kit.row}>
+            <button type="button" className={`${kit.btn} ${kit.sm}`} onClick={restoreDraft}>
+              불러오기
+            </button>
+            <button type="button" className={`${kit.btnGhost} ${kit.sm}`} onClick={discardDraft}>
+              지우기
+            </button>
+          </span>
+        </div>
+      )}
       <div className={kit.field}>
         <label htmlFor="post-title" className={kit.label}>
           제목
@@ -160,12 +285,13 @@ export function PostEditor({ action, demos, initial = empty, submitLabel }: Prop
                 열람 가격 (칩)
               </label>
               <input
+                key={priceOverride ?? "initial"}
                 id="post-price"
                 name="price"
                 type="number"
                 min={1}
                 max={100}
-                defaultValue={value("price")}
+                defaultValue={priceOverride ?? value("price")}
                 className={`${kit.input} ${styles.price}`}
                 {...invalid("price")}
               />
@@ -179,10 +305,24 @@ export function PostEditor({ action, demos, initial = empty, submitLabel }: Prop
       </div>
 
       <div className={kit.between}>
-        <FormMessage ok={state.ok} message={state.message} />
-        <button type="submit" className={kit.btnPrimary} disabled={pending}>
-          {pending ? "저장 중…" : submitLabel}
-        </button>
+        <div>
+          <FormMessage ok={state.ok} message={state.message} />
+          {draftMessage && (
+            <p className={kit.faint} role="status">
+              {draftMessage}
+            </p>
+          )}
+        </div>
+        <div className={kit.row}>
+          {storageKey && (
+            <button type="button" className={kit.btn} onClick={saveDraft} disabled={pending}>
+              임시저장
+            </button>
+          )}
+          <button type="submit" className={kit.btnPrimary} disabled={pending}>
+            {pending ? "저장 중…" : submitLabel}
+          </button>
+        </div>
       </div>
     </form>
   );
