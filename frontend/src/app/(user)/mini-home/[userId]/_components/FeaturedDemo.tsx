@@ -14,6 +14,7 @@ import {
 import { DemoArt } from "./DemoArt";
 import { FeaturedActions } from "./FeaturedActions";
 import { FeaturedBody } from "./FeaturedBody";
+import { FeaturedRunner } from "./FeaturedRunner";
 import { LaterButton } from "./LaterButton";
 import styles from "./FeaturedDemo.module.css";
 
@@ -41,22 +42,28 @@ export function FeaturedDemo({ demo, variant, postId, comments, me, now, isOwner
 
       {demo ? (
         <FeaturedBody
-          // 실행은 실제 데모 화면(샌드박스 iframe)에서 한다.
-          runHref={`/mini-home/${demo.author.id}/demos/${demo.id}`}
+          // 이 자리에서 바로 실행하고, "큰 화면으로 실행"은 실행 화면을 이 자리에서 크게 키운다.
           stage={
-            <>
-              {demo.thumbnail ? (
-                // 썸네일이 있는 데모는 그 그림을 크게 보여 준다. 장식이라 alt는 비운다.
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={demo.thumbnail} alt="" className={`${styles.canvas} ${styles.mascot}`} />
-              ) : (
-                <DemoArt variant={variant} caption={demo.engine} className={styles.canvas} />
-              )}
-              <span className={styles.badge}>
-                <span className={styles.badgeDot} aria-hidden="true" />
-                {demo.title}
-              </span>
-            </>
+            <FeaturedRunner
+              demoId={demo.id}
+              title={demo.title}
+              runUrl={demo.runUrl ?? null}
+              poster={
+                <>
+                  {demo.thumbnail ? (
+                    // 썸네일이 있는 데모는 그 그림을 크게 보여 준다. 장식이라 alt는 비운다.
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={demo.thumbnail} alt="" className={`${styles.canvas} ${styles.mascot}`} />
+                  ) : (
+                    <DemoArt variant={variant} caption={demo.engine} className={styles.canvas} />
+                  )}
+                  <span className={styles.badge}>
+                    <span className={styles.badgeDot} aria-hidden="true" />
+                    {demo.title}
+                  </span>
+                </>
+              }
+            />
           }
           summary={
             <div>
@@ -86,6 +93,10 @@ export function FeaturedDemo({ demo, variant, postId, comments, me, now, isOwner
             <>
               <div className={styles.links}>
                 <LaterButton title={demo.title} />
+                <Link href={`/mini-home/${demo.author.id}/demos/${demo.id}`} className={styles.making}>
+                  데모 상세
+                  <ArrowRightIcon />
+                </Link>
                 {postId ? (
                   <Link href={`/blog/posts/${postId}`} className={styles.making}>
                     제작기 글

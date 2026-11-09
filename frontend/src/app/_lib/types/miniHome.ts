@@ -55,6 +55,8 @@ export type GithubRepo = {
 
 export type MiniHomeDemo = DemoSummary & {
   engine: string;
+  /** 실행 주소. 공개 중이고 올린 파일이 있을 때만 온다 */
+  runUrl?: string | null;
   playCount: number;
   commentCount: number;
 };

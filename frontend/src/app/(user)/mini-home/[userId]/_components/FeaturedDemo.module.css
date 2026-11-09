@@ -382,3 +382,71 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* 미니홈피 메인에서 바로 실행 (FeaturedRunner) */
+.frame {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: #fff;
+}
+
+.playButton {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  padding: 12px 22px;
+  border-radius: 999px;
+  background: #ffc21a;
+  box-shadow: 0 8px 24px rgb(0 0 0 / 35%);
+  color: #1f1b17;
+  font-size: 15px;
+  font-weight: 800;
+  transform: translate(-50%, -50%);
+}
+
+.playButton:hover {
+  background: #ffd24d;
+}
+
+.playButton:focus-visible,
+.playButtonInline:focus-visible {
+  outline: 3px solid #fff;
+  outline-offset: 3px;
+}
+
+.playDisabled {
+  position: absolute;
+  right: 16px;
+  bottom: 16px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  background: rgb(20 18 14 / 80%);
+  color: #f5efe3;
+  font-size: 12px;
+}
+
+.frameOverlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 16px;
+  background: rgb(20 18 14 / 85%);
+  color: #f5efe3;
+  font-size: 14px;
+  text-align: center;
+}
+
+.playButtonInline {
+  padding: 8px 16px;
+  border-radius: 999px;
+  background: #ffc21a;
+  color: #1f1b17;
+  font-weight: 700;
+}
