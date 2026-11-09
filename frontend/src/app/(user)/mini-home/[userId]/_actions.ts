@@ -116,6 +116,9 @@ export async function deleteGuestbook(guestbookId: number) {
   return mutate(`/api/v1/mini-homes/guestbook/${guestbookId}`, "DELETE", undefined, "방명록을 삭제했어요.");
 }
 
+// 백엔드 MiniHomeServiceImpl.DOMAIN과 같은 규칙이다.
+const DOMAIN_PATTERN = /^(?=.{4,100}$)([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$/;
+
 export async function saveMiniHome(previous: FormState, formData: FormData): Promise<FormState> {
   const me = await getMe();
   if (!me) return { ok: false, message: "로그인이 필요해요.", errors: {}, values: {}, attempt: 0 };
@@ -130,6 +133,9 @@ export async function saveMiniHome(previous: FormState, formData: FormData): Pro
   if (!values.headline) errors.headline = "한 줄 소개를 입력해 주세요.";
   else if (values.headline.length > 30) errors.headline = "30자 이하로 입력해 주세요.";
   if (values.quote.length > 80) errors.quote = "80자 이하로 입력해 주세요.";
+  values.domain = values.domain.trim().toLowerCase().replace(/^https?:\/\//, "").replace(/\/+$/, "");
+  if (values.domain && !DOMAIN_PATTERN.test(values.domain))
+    errors.domain = "example.dev 같은 형식으로 입력해 주세요.";
   if (showcase.length > showcaseLimit(me.plus))
     errors.showcase = `공개할 데모는 ${showcaseLimit(me.plus)}개까지 고를 수 있어요.`;
   if (isId(featuredDemoId) && !showcase.includes(featuredDemoId))
