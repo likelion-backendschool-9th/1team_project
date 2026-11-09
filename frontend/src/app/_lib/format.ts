@@ -30,3 +30,10 @@ export function formatDateTime(iso: string): string {
 export function formatWon(value: number): string {
   return `${value.toLocaleString("ko-KR")}원`;
 }
+
+/** 파일 크기. 1MB 미만은 KB, 그 이상은 MB로 보여 준다 (예: 37.2KB, 4.8MB) */
+export function formatBytes(bytes: number): string {
+  if (bytes <= 0) return "0KB";
+  if (bytes < 1024 * 1024) return `${Math.max(bytes / 1024, 0.1).toFixed(1)}KB`;
+  return `${(bytes / 1024 / 1024).toFixed(1)}MB`;
+}

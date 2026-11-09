@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { ConfirmButton } from "@/app/_components/ui/ConfirmButton";
 import kit from "@/app/_components/ui/kit.module.css";
-import { formatDate } from "@/app/_lib/format";
+import { formatBytes, formatDate } from "@/app/_lib/format";
 import type { DemoVersion } from "@/app/_lib/types/demo";
 import { createVersionPreview, deleteDemoVersion, restoreDemoVersion } from "../../../_actions";
 
@@ -59,7 +59,7 @@ export function DemoVersions({ demoId, versions, currentVersionId }: Props) {
                 </p>
                 <p className={kit.faint}>
                   {formatDate(version.createdAt)} · 파일 {version.fileCount}개 ·{" "}
-                  {(version.totalBytes / 1024 / 1024).toFixed(2)}MB · {thumbnailLabels[version.thumbnailStatus]}
+                  {formatBytes(version.totalBytes)} · {thumbnailLabels[version.thumbnailStatus]}
                 </p>
                 {version.thumbnailStatus === "FAILED" && version.thumbnailError && (
                   <p className={kit.faint}>원인: {version.thumbnailError}</p>
