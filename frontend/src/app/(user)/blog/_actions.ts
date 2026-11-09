@@ -1,4 +1,4 @@
-"use server";
+'use server';
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -9,7 +9,7 @@ import { readValues, type FormState } from "@/app/_lib/formState";
 import type { PostComment } from "@/app/_lib/types/post";
 import { categories } from "./_lib/query";
 
-const POST_FIELDS = ["title", "category", "tags", "content", "demoId", "price"];
+const POST_FIELDS = ['title', 'category', 'tags', 'content', 'demoId', 'price'];
 
 function isId(value: number) {
   return Number.isSafeInteger(value) && value > 0;
@@ -17,20 +17,26 @@ function isId(value: number) {
 
 function validatePost(formData: FormData) {
   const values = readValues(formData, POST_FIELDS);
-  const paid = formData.get("paid") === "on";
-  values.paid = paid ? "on" : "";
+  const paid = formData.get('paid') === 'on';
+  values.paid = paid ? 'on' : '';
   const errors: Record<string, string> = {};
-  if (!values.title) errors.title = "제목을 입력해 주세요.";
-  else if (values.title.length > 80) errors.title = "80자 이하로 입력해 주세요.";
-  if (!categories.some((item) => item.value === values.category)) errors.category = "분류를 골라 주세요.";
-  if (values.content.length < 20) errors.content = "본문을 20자 이상 입력해 주세요.";
+  if (!values.title) errors.title = '제목을 입력해 주세요.';
+  else if (values.title.length > 80)
+    errors.title = '80자 이하로 입력해 주세요.';
+  if (!categories.some((item) => item.value === values.category))
+    errors.category = '분류를 골라 주세요.';
+  if (values.content.length < 20)
+    errors.content = '본문을 20자 이상 입력해 주세요.';
   const price = Number(values.price);
   if (paid && (!Number.isInteger(price) || price < 1 || price > 100))
-    errors.price = "1~100칩 사이로 입력해 주세요.";
+    errors.price = '1~100칩 사이로 입력해 주세요.';
   const body = {
     title: values.title,
     category: values.category,
-    tags: values.tags.split(",").map((tag) => tag.trim()).filter(Boolean),
+    tags: values.tags
+      .split(',')
+      .map((tag) => tag.trim())
+      .filter(Boolean),
     content: values.content,
     demoId: Number(values.demoId) || null,
     price: paid ? price : 0,
@@ -38,36 +44,70 @@ function validatePost(formData: FormData) {
   return { values, errors, body };
 }
 
-export async function createPost(previous: FormState, formData: FormData): Promise<FormState> {
+export async function createPost(
+  previous: FormState,
+  formData: FormData,
+): Promise<FormState> {
   const { values, errors, body } = validatePost(formData);
   const attempt = previous.attempt + 1;
   if (Object.keys(errors).length > 0)
-    return { ok: false, message: "입력값을 확인해 주세요.", errors, values, attempt };
+    return {
+      ok: false,
+      message: '입력값을 확인해 주세요.',
+      errors,
+      values,
+      attempt,
+    };
 
   // 글 CRUD는 백엔드에 있어서 MOCK_EXCEPT_DM이어도 실서버를 쓴다.
   if (!hasBackend)
-    return { ok: true, message: "글을 발행했어요. (백엔드 연결 전이라 실제로 저장되지는 않아요)", errors: {}, values, attempt };
+    return {
+      ok: true,
+      message: '글을 발행했어요. (백엔드 연결 전이라 실제로 저장되지는 않아요)',
+      errors: {},
+      values,
+      attempt,
+    };
 
   let postId: number;
   try {
-    const { data } = await apiFetch<ApiResponse<{ id: number }>>("/api/v1/posts", {
-      method: "POST",
-      body: JSON.stringify(body),
-    });
+    const { data } = await apiFetch<ApiResponse<{ id: number }>>(
+      '/api/v1/posts',
+      {
+        method: 'POST',
+        body: JSON.stringify(body),
+      },
+    );
     postId = data.id;
   } catch (error) {
     if (error instanceof ApiRequestError)
-      return { ok: false, message: error.error.message, errors: {}, values, attempt };
+      return {
+        ok: false,
+        message: error.error.message,
+        errors: {},
+        values,
+        attempt,
+      };
     throw error;
   }
-  revalidatePath("/blog");
+  revalidatePath('/blog');
   redirect(`/blog/posts/${postId}?created=1`);
 }
 
-export async function updatePost(postId: number, previous: FormState, formData: FormData): Promise<FormState> {
+export async function updatePost(
+  postId: number,
+  previous: FormState,
+  formData: FormData,
+): Promise<FormState> {
   const { values, errors, body } = validatePost(formData);
   const state = await runForm(previous, values, errors, () =>
-    mutate(`/api/v1/posts/${postId}`, "PUT", body, "글을 수정했어요.", !hasBackend),
+    mutate(
+      `/api/v1/posts/${postId}`,
+      'PUT',
+      body,
+      '글을 수정했어요.',
+      !hasBackend,
+    ),
   );
   if (!state.ok || !hasBackend) return state;
   revalidatePath(`/blog/posts/${postId}`);
@@ -75,29 +115,48 @@ export async function updatePost(postId: number, previous: FormState, formData: 
 }
 
 export async function deletePost(postId: number) {
-  if (!isId(postId)) return { ok: false, message: "잘못된 요청이에요." };
-  const result = await mutate(`/api/v1/posts/${postId}`, "DELETE", undefined, "글을 삭제했어요.", !hasBackend);
+  if (!isId(postId)) return { ok: false, message: '잘못된 요청이에요.' };
+  const result = await mutate(
+    `/api/v1/posts/${postId}`,
+    'DELETE',
+    undefined,
+    '글을 삭제했어요.',
+    !hasBackend,
+  );
   if (!result.ok || !hasBackend) return result;
   // 삭제한 글 화면에 남지 않도록 블로그 목록으로 보낸다.
-  revalidatePath("/blog");
-  redirect("/blog?deleted=1");
+  revalidatePath('/blog');
+  redirect('/blog?deleted=1');
 }
 
-export async function reportPost(postId: number) {
-  if (!isId(postId)) return { ok: false, message: "잘못된 요청이에요." };
-  return mutate(`/api/v1/posts/${postId}/report`, "POST", { reason: "기타" }, "신고를 접수했어요.");
+export async function reportPost(postId: number, reason: string) {
+  if (!isId(postId)) return { ok: false, message: '잘못된 요청이에요.' };
+  return mutate(
+    `/api/v1/posts/${postId}/report`,
+    'POST',
+    { reason },
+    '신고가 접수되었습니다.',
+  );
 }
 
 // 칩 사용 API는 아직 정해지지 않았다 (프론트엔드-청사진 11장).
 export async function unlockPost(postId: number) {
-  if (!isId(postId)) return { ok: false, message: "잘못된 요청이에요." };
-  if (!isMockMode) return { ok: false, message: "칩 사용 API 연결 전이에요." };
-  return { ok: true, message: "잠금을 해제했어요. (목업이라 본문은 그대로 잠겨 있어요)" };
+  if (!isId(postId)) return { ok: false, message: '잘못된 요청이에요.' };
+  if (!isMockMode) return { ok: false, message: '칩 사용 API 연결 전이에요.' };
+  return {
+    ok: true,
+    message: '잠금을 해제했어요. (목업이라 본문은 그대로 잠겨 있어요)',
+  };
 }
 
 export async function subscribeBlog(userId: number) {
-  if (!isId(userId)) return { ok: false, message: "잘못된 요청이에요." };
-  return mutate("/api/v1/subscriptions", "POST", { authorId: userId }, "구독했어요. 매달 같은 날 자동이체돼요.");
+  if (!isId(userId)) return { ok: false, message: '잘못된 요청이에요.' };
+  return mutate(
+    '/api/v1/subscriptions',
+    'POST',
+    { authorId: userId },
+    '구독했어요. 매달 같은 날 자동이체돼요.',
+  );
 }
 
 export async function createPostComment(
@@ -105,20 +164,30 @@ export async function createPostComment(
   previous: FormState,
   formData: FormData,
 ): Promise<FormState> {
-  const values = readValues(formData, ["content"]);
+  const values = readValues(formData, ['content']);
   const errors: Record<string, string> = {};
   if (!values.content) errors.content = "댓글을 입력해 주세요.";
   else if (values.content.length > 1000) errors.content = "1000자 이하로 입력해 주세요.";
   const state = await runForm(previous, values, errors, () =>
-    mutate(`/api/v1/posts/${postId}/comments`, "POST", values, "댓글을 남겼어요."),
+    mutate(
+      `/api/v1/posts/${postId}/comments`,
+      'POST',
+      values,
+      '댓글을 남겼어요.',
+    ),
   );
   if (state.ok) revalidatePath(`/blog/posts/${postId}`);
   return state.ok ? { ...state, values: {} } : state;
 }
 
 export async function togglePostBookmark(postId: number, bookmark: boolean) {
-  if (!isId(postId)) return { ok: false, message: "잘못된 요청이에요." };
-  return mutate(`/api/v1/posts/${postId}/bookmark`, bookmark ? "POST" : "DELETE", undefined, bookmark ? "북마크했어요." : "북마크를 해제했어요.");
+  if (!isId(postId)) return { ok: false, message: '잘못된 요청이에요.' };
+  return mutate(
+    `/api/v1/posts/${postId}/bookmark`,
+    bookmark ? 'POST' : 'DELETE',
+    undefined,
+    bookmark ? '북마크했어요.' : '북마크를 해제했어요.',
+  );
 }
 
 export async function updatePostComment(commentId: number, content: string) {
@@ -167,6 +236,11 @@ export async function loadMorePostComments(postId: number, cursor: string) {
 }
 
 export async function togglePostCommentLike(commentId: number, like: boolean) {
-  if (!isId(commentId)) return { ok: false, message: "잘못된 요청이에요." };
-  return mutate(`/api/v1/posts/comments/${commentId}/like`, like ? "POST" : "DELETE", undefined, "좋아요를 반영했어요.");
+  if (!isId(commentId)) return { ok: false, message: '잘못된 요청이에요.' };
+  return mutate(
+    `/api/v1/posts/comments/${commentId}/like`,
+    like ? 'POST' : 'DELETE',
+    undefined,
+    '좋아요를 반영했어요.',
+  );
 }
