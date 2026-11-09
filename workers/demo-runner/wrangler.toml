@@ -11,6 +11,6 @@ bucket_name = "dsp"
 
 [vars]
 # 데모 iframe을 띄울 수 있는 사이트 출처. 공백으로 구분한다
-ALLOWED_FRAME_ANCESTORS = "http://localhost:3000"
+ALLOWED_FRAME_ANCESTORS = "https://dipsource.newlecture.com http://localhost:3000"
 
 # 미리보기 서명 키는 시크릿으로 넣는다: npx wrangler secret put DEMO_SIGNING_SECRET
