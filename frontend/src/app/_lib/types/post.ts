@@ -48,7 +48,8 @@ export type ArticleRanking = Record<"views" | "likes" | "follows", ArticleRankEn
 export type SubscribedAuthor = {
   user: UserSummary;
   seriesLabel: string;
-  online: boolean;
+  /** 접속 중인지. 접속 상태를 모르면 생략한다(점을 그리지 않음) */
+  online?: boolean;
 };
 
 export type PostDetail = PostSummary & {

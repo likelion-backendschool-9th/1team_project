@@ -6,7 +6,7 @@ import { formatCount } from "@/app/_lib/format";
 import type { ArticleRanking } from "@/app/_lib/types/post";
 import styles from "./ArticleRanking.module.css";
 
-const tabs = [
+const allTabs = [
   { key: "views", label: "조회" },
   { key: "likes", label: "좋아요" },
   { key: "follows", label: "팔로우" },
@@ -19,7 +19,10 @@ type Props = {
 export function ArticleRankingTabs({ ranking }: Props) {
   const [selected, setSelected] = useState(0);
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
-  const active = tabs[selected];
+  // 순위 데이터가 있는 기준만 탭으로 보여 준다. (조회·팔로우 순위 API는 아직 없다)
+  const tabs = allTabs.filter((tab) => ranking[tab.key].length > 0);
+  const active = tabs[selected] ?? tabs[0];
+  if (!active) return <p className={styles.empty}>아직 순위를 매길 글이 없어요.</p>;
 
   function handleKeyDown(event: KeyboardEvent<HTMLDivElement>) {
     const offset = event.key === "ArrowRight" ? 1 : event.key === "ArrowLeft" ? -1 : 0;

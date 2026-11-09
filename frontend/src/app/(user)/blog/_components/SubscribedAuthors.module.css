@@ -74,3 +74,9 @@
 .online {
   background: var(--online);
 }
+
+.empty {
+  padding: 12px 0 4px;
+  color: var(--ink-faint);
+  font-size: 13px;
+}
