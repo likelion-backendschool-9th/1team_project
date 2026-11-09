@@ -8,6 +8,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.dipsource.entity.coin.InsufficientChipsException;
+import com.dipsource.entity.notification.NotificationType;
 import com.dipsource.entity.user.User;
 import com.dipsource.entity.user.enums.UserStatus;
 import com.dipsource.global.exception.BusinessException;
@@ -18,6 +19,7 @@ import com.dipsource.repository.coin.DonationRepository;
 import com.dipsource.repository.user.UserRepository;
 import com.dipsource.service.donation.impl.DonationServiceImpl;
 import com.dipsource.service.minihome.MiniHomeService;
+import com.dipsource.service.notification.NotificationService;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -39,12 +41,15 @@ class DonationServiceImplTest {
     @Mock private BlockRepository blockRepository;
     @Mock private DonationRepository donationRepository;
     @Mock private ChipTransactionRepository chipTransactionRepository;
+    @Mock private NotificationService notificationService;
 
     private DonationServiceImpl service;
 
     @BeforeEach
     void setUp() {
-        service = new DonationServiceImpl(userRepository, miniHomeService, blockRepository, donationRepository, chipTransactionRepository);
+        service = new DonationServiceImpl(
+                userRepository, miniHomeService, blockRepository, donationRepository, chipTransactionRepository,
+                notificationService);
     }
 
     private User activeUser(Long id, int balance) {
@@ -149,6 +154,7 @@ class DonationServiceImplTest {
                     .isInstanceOf(InsufficientChipsException.class);
 
             verify(donationRepository, never()).save(any());
+            verify(notificationService, never()).notify(any(), any(), any(), any(), any());
         }
 
         @Test
@@ -173,6 +179,8 @@ class DonationServiceImplTest {
                     org.mockito.ArgumentMatchers.argThat(tx -> tx.getAmount() == -20));
             verify(chipTransactionRepository).save(
                     org.mockito.ArgumentMatchers.argThat(tx -> tx.getAmount() == 20));
+            verify(notificationService).notify(RECEIVER_ID, SENDER_ID, NotificationType.SPONSOR,
+                    NotificationService.TARGET_MINI_HOME, RECEIVER_ID);
         }
     }
 }

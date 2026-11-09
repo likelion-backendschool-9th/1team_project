@@ -18,9 +18,14 @@ export default function DemosPage({ searchParams }: PageProps<"/demos">) {
           <h1 className={kit.pageTitle}>데모 탐색</h1>
           <p className={kit.pageDesc}>브라우저에서 바로 실행되는 개발자들의 소스를 찍먹해 보세요.</p>
         </div>
-        <Link href="/demos/upload" className={kit.btnPrimary}>
-          + 데모 올리기
-        </Link>
+        <div className={kit.row}>
+          <Link href="/demos/studio" className={kit.btnGhost}>
+            코드로 만들기
+          </Link>
+          <Link href="/demos/upload" className={kit.btnPrimary}>
+            + 데모 올리기
+          </Link>
+        </div>
       </header>
       <Suspense fallback={<p role="status" aria-busy="true">불러오는 중…</p>}>
         <DemoList searchParams={searchParams} />

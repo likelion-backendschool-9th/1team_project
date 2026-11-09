@@ -49,7 +49,7 @@ public class SecurityConfig {
                         // 조회성 API는 비로그인도 가능
                         .requestMatchers(HttpMethod.GET,
                                 "/tags",
-                                "/demos", "/demos/*",
+                                "/demos", "/demos/*", "/demos/*/comments", "/demo-templates", "/demo-templates/*",
                                 "/feeds", "/feeds/*", "/feeds/*/comments", "/feeds/comments/*/replies",
                                 "/posts", "/posts/list", "/posts/*", "/posts/*/comments",
                                 "/users/*/posts", "/users/*/subscription",

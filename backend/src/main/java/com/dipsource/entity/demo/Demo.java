@@ -55,7 +55,7 @@ public class Demo extends BaseEntity {
     @Column(name = "file_path", length = 500)
     private String filePath;
 
-    /** API 주소. API일 때 사용 */
+    /** 외부 백엔드 API Base URL. 실행 방식(demoType)과 무관하며 없으면 연결하지 않은 데모다 */
     @Column(name = "api_url", length = 500)
     private String apiUrl;
 
@@ -100,9 +100,18 @@ public class Demo extends BaseEntity {
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
 
+    /** 현재 공개 중인 버전(demo_versions.id). 공개한 적 없으면 null */
+    @Column(name = "current_version_id")
+    private Long currentVersionId;
+
+    /** 작성자가 직접 올린 썸네일이면 true. 자동 썸네일로 덮어쓰지 않는다 */
+    @Column(name = "thumbnail_manual", nullable = false, columnDefinition = "boolean default false not null")
+    private boolean thumbnailManual = false;
+
     @Builder
     private Demo(Long userId, String title, String description, DemoType demoType, String filePath,
-                 String apiUrl, String openapiJson, String scenarioJson, String externalUrl, String thumbnail) {
+                 String apiUrl, String openapiJson, String scenarioJson, String externalUrl, String thumbnail,
+                 DemoStatus status) {
         this.userId = userId;
         this.title = title;
         this.description = description;
@@ -113,6 +122,7 @@ public class Demo extends BaseEntity {
         this.scenarioJson = scenarioJson;
         this.externalUrl = externalUrl;
         this.thumbnail = thumbnail;
+        this.status = status == null ? DemoStatus.ACTIVE : status;
     }
 
     public void update(String title, String description, String thumbnail) {
@@ -125,6 +135,40 @@ public class Demo extends BaseEntity {
     public void reupload(String filePath) {
         this.filePath = filePath;
         this.version++;
+    }
+
+    /** 버전을 공개한다. Worker가 읽는 공개 포인터와 함께 바뀌어야 한다. */
+    public void publish(DemoVersion target) {
+        this.currentVersionId = target.getId();
+        this.filePath = target.getStoragePrefix();
+        this.version = target.getNumber();
+        this.status = DemoStatus.ACTIVE;
+    }
+
+    /** 자동 생성한 썸네일을 쓴다. 직접 올린 썸네일이 있으면 그대로 둔다. */
+    public void applyAutoThumbnail(String url) {
+        if (!this.thumbnailManual) {
+            this.thumbnail = url;
+        }
+    }
+
+    public void applyManualThumbnail(String url) {
+        this.thumbnail = url;
+        this.thumbnailManual = true;
+    }
+
+    public void connectBackend(String apiBaseUrl) {
+        this.apiUrl = apiBaseUrl;
+    }
+
+    public void disconnectBackend() {
+        this.apiUrl = null;
+    }
+
+    /** 공개를 내리고 초안으로 돌린다. 파일과 버전은 그대로 둔다. */
+    public void unpublish() {
+        this.currentVersionId = null;
+        this.status = DemoStatus.DRAFT;
     }
 
     public void hide() {

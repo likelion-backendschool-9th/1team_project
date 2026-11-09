@@ -6,7 +6,7 @@ import { CommentForm } from "@/app/_components/ui/CommentForm";
 import { ConfirmButton } from "@/app/_components/ui/ConfirmButton";
 import { ReportModal } from "@/app/_components/ui/ReportModal";
 import kit from "@/app/_components/ui/kit.module.css";
-import { formatCount, formatDate } from "@/app/_lib/format";
+import { formatCount, formatDate, formatDateTime } from "@/app/_lib/format";
 import type { DemoFeedbackType } from "@/app/_lib/types/demo";
 import { CommentList } from "@/app/(user)/_components/CommentList";
 import { DmOpenButton } from "@/app/(user)/_components/DmOpenButton";
@@ -21,12 +21,21 @@ import {
   updateDemoComment,
 } from "../_actions";
 import { getDemo, getDemoComments, getServerTime } from "@/app/(user)/(feed)/demos/_lib/api";
+import { DemoBackendPanel } from "./DemoBackendPanel";
 import { DemoStage } from "./DemoStage";
 import styles from "./DemoDetail.module.css";
 
 type Props = {
   params: Promise<{ userId: string; demoId: string }>;
 };
+
+function hostOf(url: string): string {
+  try {
+    return new URL(url).host;
+  } catch {
+    return url;
+  }
+}
 
 const feedbackLabels: Record<DemoFeedbackType, string> = {
   question: "❓ 질문",
@@ -58,6 +67,9 @@ export async function DemoDetailView({ params }: Props) {
           title={demo.title}
           seed={demo.id - 1}
           label={demo.runtime === "unity" ? "unity webgl" : demo.techTags[0]}
+          thumbnail={demo.thumbnail}
+          runUrl={demo.runUrl ?? null}
+          mine={mine}
           initialPlays={demo.playCount}
           initialLikes={demo.likeCount}
           liked={demo.liked}
@@ -67,6 +79,7 @@ export async function DemoDetailView({ params }: Props) {
           <h2 id="demo-title" className={styles.title}>
             {demo.title}
           </h2>
+          {demo.status === "DRAFT" && <p className={kit.pillWarn}>비공개 초안 · 나만 볼 수 있어요</p>}
           <p className={kit.muted}>{demo.description}</p>
           <ul className={kit.chips} aria-label="기술 태그">
             {demo.techTags.map((tag) => (
@@ -93,6 +106,15 @@ export async function DemoDetailView({ params }: Props) {
               <dd>{formatCount(comments.length)}</dd>
             </div>
           </dl>
+          {demo.backend?.apiBaseUrl && (
+            <DemoBackendPanel
+              demoId={demo.id}
+              host={hostOf(demo.backend.apiBaseUrl)}
+              status={demo.backend.status}
+              lastChecked={demo.backend.lastCheckedAt ? formatDateTime(demo.backend.lastCheckedAt) : null}
+              canCheck={Boolean(me) && demo.backend.healthCheckAvailable}
+            />
+          )}
           <div className={styles.author}>
             <Link href={`/mini-home/${demo.author.id}`} className={styles.authorLink}>
               <Avatar name={demo.author.nickname} size={40} />
@@ -108,7 +130,11 @@ export async function DemoDetailView({ params }: Props) {
             )}
           </div>
           {mine ? (
-            <ConfirmButton
+            <div className={kit.row}>
+              <Link href={`/demos/${demo.id}/manage`} className={`${kit.btnGhost} ${kit.sm}`}>
+                데모 관리
+              </Link>
+              <ConfirmButton
               label="데모 삭제"
               title="이 데모를 삭제할까요?"
               description="댓글과 좋아요도 함께 사라지고, 데모 인벤토리 1칸이 비어요."
@@ -116,7 +142,8 @@ export async function DemoDetailView({ params }: Props) {
               danger
               className={`${kit.btnDanger} ${kit.sm}`}
               onConfirm={deleteDemo.bind(null, demo.id)}
-            />
+              />
+            </div>
           ) : (
             <ReportModal
               label="신고하기"

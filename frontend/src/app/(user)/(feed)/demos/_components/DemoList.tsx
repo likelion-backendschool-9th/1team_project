@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { connection } from "next/server";
 import kit from "@/app/_components/ui/kit.module.css";
 import { LinkTabs } from "@/app/_components/ui/LinkTabs";
@@ -35,7 +36,7 @@ export async function DemoList({ searchParams }: Props) {
   const rawTag = first(params.tag);
   const tag = rawTag && tags.includes(rawTag) ? rawTag : undefined;
   const sort = sorts.find((item) => item.value === first(params.sort))?.value ?? "trending";
-  const demos = await getDemos(tag, sort);
+  const { items: demos, nextCursor } = await getDemos(tag, sort, first(params.cursor));
 
   return (
     <div className={kit.stack}>
@@ -68,6 +69,11 @@ export async function DemoList({ searchParams }: Props) {
             </li>
           ))}
         </ul>
+      )}
+      {nextCursor && (
+        <Link href={`${href(tag, sort)}${href(tag, sort).includes("?") ? "&" : "?"}cursor=${encodeURIComponent(nextCursor)}`} className={kit.more}>
+          다음 데모 보기 →
+        </Link>
       )}
     </div>
   );

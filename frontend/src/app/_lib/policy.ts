@@ -3,6 +3,9 @@
 /** 1칩 가격(원) */
 export const CHIP_PRICE_WON = 200;
 
+/** 창작자 정산 수수료율(%). 백엔드 SettlementService.FEE_PERCENT와 같다 */
+export const SETTLEMENT_FEE_PERCENT = 30;
+
 /** 기본 데모 인벤토리 칸 수 */
 export const DEMO_INVENTORY_BASE = 6;
 /** 인벤토리 1칸 추가 비용(칩) */

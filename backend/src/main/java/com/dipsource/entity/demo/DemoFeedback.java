@@ -3,6 +3,8 @@ package com.dipsource.entity.demo;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -51,6 +53,11 @@ public class DemoFeedback {
     @Column(nullable = false, length = 1000)
     private String content;
 
+    /** 피드백 종류. 이 컬럼이 생기기 전의 행은 null이고 칭찬으로 읽는다 */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "feedback_type", length = 20)
+    private DemoFeedbackType type;
+
     /** 좋아요 수 */
     @Column(name = "like_count", nullable = false)
     private int likeCount = 0;
@@ -69,11 +76,16 @@ public class DemoFeedback {
     private LocalDateTime deletedAt;
 
     @Builder
-    private DemoFeedback(Demo demo, Long userId, DemoFeedback parent, String content) {
+    private DemoFeedback(Demo demo, Long userId, DemoFeedback parent, String content, DemoFeedbackType type) {
         this.demo = demo;
         this.userId = userId;
         this.parent = parent;
         this.content = content;
+        this.type = type;
+    }
+
+    public DemoFeedbackType getType() {
+        return type == null ? DemoFeedbackType.PRAISE : type;
     }
 
     public void update(String content) {

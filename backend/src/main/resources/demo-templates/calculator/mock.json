@@ -1,0 +1,5 @@
+{
+  "endpoints": [
+    { "method": "GET", "path": "/rate", "status": 200, "dataKey": "rate" }
+  ]
+}
