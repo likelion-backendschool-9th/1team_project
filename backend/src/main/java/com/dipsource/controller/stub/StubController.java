@@ -44,12 +44,7 @@ public class StubController {
         return ok(List.of());
     }
 
-    // ── 북마크 ──
-
-    @GetMapping("/users/me/bookmarks")
-    public ResponseEntity<ApiResponse<Map<String, Object>>> bookmarks() {
-        return ok(EMPTY_PAGE);
-    }
+    // 북마크(GET /users/me/bookmarks)는 MyBookmarkController로 이관했다.
 
     // ── 검색 (인기 키워드) ──
 
