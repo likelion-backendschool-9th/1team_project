@@ -44,7 +44,7 @@ export function PostActions({
     }
     const previous = likeState;
     const next = !previous.active;
-    setLikeState({ active: next, count: previous.count + (next ? 1 : -1) });
+    setLikeState({ active: next, count: Math.max(0, previous.count + (next ? 1 : -1)) });
     setLikeError(null);
     startLikeTransition(async () => {
       const result = await togglePostLike(postId, next);
