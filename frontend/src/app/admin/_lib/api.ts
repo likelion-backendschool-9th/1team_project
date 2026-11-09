@@ -88,14 +88,26 @@ export async function getUser(userId: number) {
   }
 }
 
-export async function getContent(kind: ContentKind, q?: string): Promise<ContentRow[]> {
-  if (!isMockMode) {
-    const { data } = await apiFetch<ApiResponse<PageResponse<ContentRow>>>(
-      `/api/v1/admin/${kind}?${new URLSearchParams(q ? { q } : {})}`,
-    );
-    return data.content;
+export async function getContent(
+  kind: ContentKind,
+  query: { q?: string; page: number },
+): Promise<PageResponse<ContentRow>> {
+  if (hasBackend) {
+    const search = new URLSearchParams({ page: String(query.page - 1), size: String(PAGE_SIZE) });
+    if (query.q) search.set("q", query.q);
+    const { data } = await apiFetch<ApiResponse<PageResponse<ContentRow>>>(`/api/v1/admin/${kind}?${search}`);
+    return data;
   }
-  return mockContent[kind].filter((row) => !q || `${row.title} ${row.author}`.includes(q));
+  const filtered = mockContent[kind].filter(
+    (row) => !query.q || `${row.title} ${row.author}`.includes(query.q),
+  );
+  return {
+    content: filtered.slice((query.page - 1) * PAGE_SIZE, query.page * PAGE_SIZE),
+    page: query.page - 1,
+    size: PAGE_SIZE,
+    totalElements: filtered.length,
+    totalPages: Math.max(1, Math.ceil(filtered.length / PAGE_SIZE)),
+  };
 }
 
 export const REPORT_TYPES = [

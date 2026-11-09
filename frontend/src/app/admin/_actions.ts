@@ -44,7 +44,15 @@ export async function releaseUser(userId: number) {
 
 export async function deleteContent(kind: ContentKind, id: number) {
   if (!KINDS.includes(kind) || !isId(id)) return { ok: false, message: "잘못된 요청이에요." };
-  return mutate(`/api/v1/admin/${kind}/${id}`, "DELETE", undefined, "삭제했어요.");
+  const result = await mutate(
+    `/api/v1/admin/${kind}/${id}`,
+    "DELETE",
+    undefined,
+    "삭제했어요.",
+    !hasBackend,
+  );
+  if (result.ok) revalidatePath(`/admin/${kind}`);
+  return result;
 }
 
 export async function processReport(reportId: number, previous: FormState, formData: FormData): Promise<FormState> {

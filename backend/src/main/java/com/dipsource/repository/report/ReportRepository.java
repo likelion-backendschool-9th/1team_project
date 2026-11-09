@@ -22,4 +22,21 @@ public interface ReportRepository extends JpaRepository<Report, Long> {
     List<Object[]> countByTargetTypeAndTargetIds(
             @Param("targetType") String targetType,
             @Param("targetIds") Collection<Long> targetIds);
+
+    /** 대상별 신고 건수. targetIds가 비어 있으면 호출하지 않는다. */
+    @Query("""
+            SELECT r.targetId AS targetId, COUNT(r) AS cnt
+            FROM Report r
+            WHERE r.targetType = :targetType
+            AND r.targetId IN :targetIds
+            GROUP BY r.targetId
+            """)
+    List<TargetCount> countByTargets(
+            @Param("targetType") String targetType,
+            @Param("targetIds") Collection<Long> targetIds);
+
+    interface TargetCount {
+        Long getTargetId();
+        long getCnt();
+    }
 }

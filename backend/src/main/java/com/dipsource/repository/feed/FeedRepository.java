@@ -2,6 +2,7 @@ package com.dipsource.repository.feed;
 
 import com.dipsource.entity.feed.Feed;
 import java.util.List;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
@@ -209,4 +210,14 @@ public interface FeedRepository extends JpaRepository<Feed, Long> {
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("UPDATE Feed f SET f.repostCount = f.repostCount - 1 WHERE f.id = :feedId AND f.repostCount > 0")
     int decrementRepostCount(@Param("feedId") Long feedId);
+
+    /** 관리자 피드 목록. 삭제(DELETED)만 빼고, 제목(본문)·작성자 닉네임 검색. */
+    @Query("""
+            SELECT f FROM Feed f JOIN User u ON u.id = f.userId
+            WHERE f.status <> com.dipsource.entity.feed.FeedStatus.DELETED
+            AND (:q IS NULL OR LOWER(f.content) LIKE :q ESCAPE '\\'
+                OR LOWER(u.nickname) LIKE :q ESCAPE '\\')
+            ORDER BY f.createdAt DESC, f.id DESC
+            """)
+    Page<Feed> searchForAdmin(@Param("q") String q, Pageable pageable);
 }

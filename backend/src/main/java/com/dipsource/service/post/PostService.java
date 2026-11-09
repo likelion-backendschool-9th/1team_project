@@ -29,4 +29,7 @@ public interface PostService {
 
     /** 삭제·숨김되지 않은 이 회원의 글인지 확인한다. 미니홈피 대표 글 검증에 쓴다. */
     boolean isActivePostOf(Long postId, Long userId);
+
+    /** 관리자 삭제. 작성자 검사 없이 소프트 삭제만 한다. */
+    void deleteByAdmin(Long postId);
 }

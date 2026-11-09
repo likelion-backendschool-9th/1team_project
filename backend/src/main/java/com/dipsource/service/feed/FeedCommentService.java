@@ -199,6 +199,16 @@ public class FeedCommentService {
         tagWeightService.decreaseWeight(requireUser(userId), comment.getFeed().getId(), COMMENT_TAG_WEIGHT);
     }
 
+    /** 관리자 삭제. 작성자 검사 없이 소프트 삭제하고 피드 댓글 수를 맞춘다. */
+    @Transactional
+    public void deleteByAdmin(Long commentId) {
+        FeedComment comment = findComment(commentId);
+        comment.delete();
+        feedCommentRepository.decrementCommentCount(comment.getFeed().getId());
+        userRepository.findById(comment.getUserId()).ifPresent(author ->
+                tagWeightService.decreaseWeight(author, comment.getFeed().getId(), COMMENT_TAG_WEIGHT));
+    }
+
     private Feed findActiveFeed(Long feedId) {
         return feedRepository.findById(feedId)
                 .filter(f -> f.getStatus() == FeedStatus.ACTIVE)

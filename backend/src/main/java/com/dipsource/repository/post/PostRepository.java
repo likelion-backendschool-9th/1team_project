@@ -56,4 +56,15 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("UPDATE Post p SET p.viewCount = p.viewCount + 1 WHERE p.id = :postId")
     int incrementViewCount(@Param("postId") Long postId);
+
+    /** 관리자 글 목록. 삭제(DELETED)만 빼고, 제목·본문·작성자 닉네임 검색. */
+    @Query("""
+            SELECT p FROM Post p JOIN User u ON u.id = p.userId
+            WHERE p.status <> com.dipsource.entity.post.PostStatus.DELETED
+              AND (:q IS NULL OR LOWER(p.title) LIKE :q ESCAPE '\\'
+                  OR LOWER(p.content) LIKE :q ESCAPE '\\'
+                  OR LOWER(u.nickname) LIKE :q ESCAPE '\\')
+            ORDER BY p.createdAt DESC, p.id DESC
+            """)
+    Page<Post> searchForAdmin(@Param("q") String q, Pageable pageable);
 }
