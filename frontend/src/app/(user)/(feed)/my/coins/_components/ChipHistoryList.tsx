@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import kit from "@/app/_components/ui/kit.module.css";
 import { formatCount, formatDateTime } from "@/app/_lib/format";
 import type { ChipHistory } from "../../_lib/mock";
@@ -14,50 +14,29 @@ type Props = {
 
 const historyLabels = { charge: "충전", use: "사용", refund: "환불", revenue: "수익" } as const;
 
-// 첫 페이지는 서버에서 받아 오고, 맨 아래에 닿으면 다음 페이지를 이어 붙임
+// 첫 페이지는 서버에서 받아 오고, 이전·다음 버튼으로 페이지를 이동함
 export function ChipHistoryList({ initial }: Props) {
   const [items, setItems] = useState<ChipHistory[]>(initial.items);
   const [page, setPage] = useState(initial.page);
+  const [totalPages, setTotalPages] = useState(initial.totalPages);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
-  const loadingRef = useRef(false);
-  const moreRef = useRef<HTMLButtonElement>(null);
-  const hasMore = page < initial.totalPages;
 
-  const loadMore = useCallback(async () => {
-    if (loadingRef.current) return;
-    loadingRef.current = true;
+  async function goTo(target: number) {
+    if (loading) return;
     setLoading(true);
     setError(false);
     try {
-      const next = await loadHistoryPage(page + 1);
-      setItems((prev) => {
-        // 그 사이 내역이 추가돼도 중복 방지
-        const seen = new Set(prev.map((item) => item.id));
-        return [...prev, ...next.items.filter((item) => !seen.has(item.id))];
-      });
+      const next = await loadHistoryPage(target);
+      setItems(next.items);
       setPage(next.page);
+      setTotalPages(next.totalPages);
     } catch {
       setError(true);
     } finally {
-      loadingRef.current = false;
       setLoading(false);
     }
-  }, [page]);
-
-  // "더 보기" 버튼이 화면에 보이면 자동으로 누름. 키보드 사용자는 버튼을 직접 누를 수 있음
-  useEffect(() => {
-    const button = moreRef.current;
-    if (!button || !hasMore || error) return;
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) void loadMore();
-      },
-      { rootMargin: "200px 0px" },
-    );
-    observer.observe(button);
-    return () => observer.disconnect();
-  }, [hasMore, error, loadMore]);
+  }
 
   return (
     <div className={kit.tableWrap}>
@@ -90,9 +69,7 @@ export function ChipHistoryList({ initial }: Props) {
                 </span>
               </td>
               <td>{row.description}</td>
-              <td
-                className={`${kit.num} ${row.amount > 0 ? styles.plus : styles.minus}`}
-              >
+              <td className={`${kit.num} ${row.amount > 0 ? styles.plus : styles.minus}`}>
                 {row.amount > 0 ? "+" : ""}
                 {formatCount(row.amount)}
               </td>
@@ -101,34 +78,41 @@ export function ChipHistoryList({ initial }: Props) {
         </tbody>
       </table>
 
-      {/* 목록이 비어 있을 때 */}
       {items.length === 0 && (
         <p className={kit.empty}>아직 거래 내역이 없어요.</p>
       )}
 
-      {/* 페이지네이션 푸터 */}
-      <div className={styles.historyFooter}>
-        <p role="status" className={kit.faint}>
-          {loading
-            ? "불러오는 중…"
-            : error
-              ? "내역을 불러오지 못했어요."
-              : !hasMore && items.length > 0
-                ? `${formatCount(items.length)}건을 모두 불러왔어요.`
-                : ""}
+      {/* 에러 메시지 — totalPages와 무관하게 항상 표시 */}
+      {error && (
+        <p role="status" className={kit.faint} style={{ textAlign: "center", paddingTop: 12 }}>
+          내역을 불러오지 못했어요.
         </p>
-        {hasMore && (
+      )}
+
+      {/* 페이지 이동 */}
+      {totalPages > 1 && (
+        <div className={styles.historyFooter}>
           <button
-            ref={moreRef}
             type="button"
             className={`${kit.btnGhost} ${kit.sm}`}
-            onClick={loadMore}
-            disabled={loading}
+            onClick={() => goTo(page - 1)}
+            disabled={loading || page <= 1}
           >
-            {error ? "다시 시도" : "더 보기"}
+            이전
           </button>
-        )}
-      </div>
+          <span className={kit.faint} aria-live="polite">
+            {loading ? "불러오는 중…" : `${page} / ${totalPages}`}
+          </span>
+          <button
+            type="button"
+            className={`${kit.btnGhost} ${kit.sm}`}
+            onClick={() => goTo(page + 1)}
+            disabled={loading || page >= totalPages}
+          >
+            다음
+          </button>
+        </div>
+      )}
     </div>
   );
 }
