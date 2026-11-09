@@ -4,7 +4,10 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.util.Date;
+import java.util.UUID;
+
 import javax.crypto.SecretKey;
 import org.springframework.stereotype.Component;
 
@@ -28,11 +31,6 @@ public class JwtProvider {
     /** API 요청 인증에 쓰는 Access Token을 발급한다. */
     public String createAccessToken(Long userId, String role) {
         return createToken(userId, role, properties.accessTokenValidity(), TYPE_ACCESS);
-    }
-
-    /** Access Token 재발급에 쓰는 Refresh Token을 발급한다. */
-    public String createRefreshToken(Long userId) {
-        return createToken(userId, null, properties.refreshTokenValidity(), TYPE_REFRESH);
     }
 
     public boolean isAccessToken(String token) {
@@ -85,5 +83,38 @@ public class JwtProvider {
                 .build()
                 .parseSignedClaims(token)
                 .getPayload();
+    }
+
+    public record IssuedRefreshToken(
+        String token,
+        String jti,
+        UUID familyId,
+        Instant issuedAt,
+        Instant expiresAt
+    ) {}
+
+    
+    /** 로그인·갱신 때 호출. familyId는 로그인이면 새 UUID, 갱신이면 기존 값. */
+    public IssuedRefreshToken createRefreshToken(Long userId, UUID familyId) {
+        String jti = UUID.randomUUID().toString();
+        Instant issuedAt = Instant.now();
+        Instant expiresAt = issuedAt.plusSeconds(properties.refreshTokenValidity());
+        String token = buildRefreshToken(userId, jti, issuedAt, expiresAt);
+        return new IssuedRefreshToken(token, jti, familyId, issuedAt, expiresAt);
+    }
+
+    public String recreateRefreshToken(Long userId, String jti, Instant issuedAt, Instant expiresAt) {
+        return buildRefreshToken(userId, jti, issuedAt, expiresAt);
+    }
+
+    private String buildRefreshToken(Long userId, String jti, Instant issuedAt, Instant expiresAt) {
+        return Jwts.builder()
+                .id(jti)
+                .subject(String.valueOf(userId))
+                .claim(TYPE_CLAIM, TYPE_REFRESH)
+                .issuedAt(Date.from(issuedAt))
+                .expiration(Date.from(expiresAt))
+                .signWith(secretKey)
+                .compact();
     }
 }

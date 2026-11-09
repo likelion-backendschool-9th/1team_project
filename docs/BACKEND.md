@@ -219,14 +219,18 @@ private Long targetId;
 ```
 소셜 로그인 요청 → OAuth2 제공자 (GitHub/카카오/구글)
     → 백엔드 콜백에서 사용자 확인/생성
-    → Access Token + Refresh Token 발급
+    → Access Token + Refresh Token 발급, Refresh는 DB(해시)에 저장
     → httpOnly 쿠키로 응답
     → 이후 요청마다 쿠키 → JwtAuthenticationFilter → SecurityContext
+    → Access 만료 시 POST /auth/refresh 가 Refresh를 검증·교체(Rotation)
 ```
 
 ### 구현 규칙
 
 - Access Token은 짧은 만료 (15~30분), Refresh Token은 긴 만료 (7~14일).
+- Access는 stateless JWT다. Refresh는 `refresh_tokens`에 SHA-256 해시로 저장하고, 갱신마다 기존 토큰을 교체한다.
+- 로그아웃은 해당 로그인 줄(`family_id`)을 폐기한 뒤 쿠키를 지운다. 탈퇴는 그 회원의 Refresh를 모두 폐기한다.
+- 교체 후 30초 안 재요청은 탭 경합으로 보고 같은 다음 토큰을 다시 준다. 30초가 지난 재사용은 탈취로 보고 그 줄만 폐기한다.
 - 토큰은 httpOnly + Secure + SameSite=Lax 쿠키에 저장한다.
 - `JwtAuthenticationFilter`는 `OncePerRequestFilter`를 상속해 Security Filter Chain에 등록한다.
 - 권한 검사는 `@PreAuthorize` 또는 SecurityConfig에서 URL 패턴으로 설정한다.
