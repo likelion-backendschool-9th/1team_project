@@ -171,20 +171,22 @@ export async function saveMiniHome(previous: FormState, formData: FormData): Pro
   });
 }
 
-// 칩 사용 API는 기획 후 결정된다 (WBS 10.3). 정해지기 전까지는 목 응답만 준다.
 export async function sponsorChips(userId: number, previous: FormState, formData: FormData): Promise<FormState> {
-  const values = readValues(formData, ["amount", "message"]);
+  const values = readValues(formData, ["amount"]);
   const amount = Number(values.amount);
   const errors: Record<string, string> = {};
   if (!isId(userId)) errors.amount = "잘못된 요청이에요.";
   else if (!Number.isInteger(amount) || amount < 1) errors.amount = "1칩 이상 입력해 주세요.";
   else if (amount > 10_000) errors.amount = "한 번에 10,000칩까지 후원할 수 있어요.";
-  if (values.message.length > 50) errors.message = "50자 이하로 입력해 주세요.";
-  return runForm(previous, values, errors, async () =>
-    isMockMode
-      ? { ok: true, message: `${amount}칩을 후원했어요. (목업이라 실제로 차감되지는 않아요)` }
-      : { ok: false, message: "칩 사용 API 연결 전이에요." },
-  );
+
+  const state = await runForm(previous, values, errors, async () => {
+    if (isMockMode) return { ok: true, message: `${amount}칩을 후원했어요. (목업이라 실제로 차감되지는 않아요)` };
+    return mutate(`/api/v1/mini-homes/${userId}/donations`, "POST", { chips: amount }, `${amount}칩을 후원했어요.`);
+  });
+
+  // 후원 성공 시 내 칩 잔액이 변경되므로 미니홈피 페이지 캐시 갱신
+  if (state.ok && !isMockMode) revalidatePath(`/mini-home/${userId}`);
+  return state;
 }
 
 export async function expandInventory() {
