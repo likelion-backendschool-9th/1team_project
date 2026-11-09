@@ -48,6 +48,12 @@ public interface PostService {
      */
     void unlike(Long userId, Long postId);
 
+    /**
+     * 유료 글 단건 구매. 칩을 차감하고 글쓴이에게 판매 수익으로 넣는다.
+     * 이미 샀으면 칩을 다시 빼지 않는다 (멱등). 무료 글·내 글·구독 중인 블로그 글은 400, 잔액 부족은 400, 글쓴이가 정지·탈퇴했으면 404
+     */
+    void purchase(Long userId, Long postId);
+
     /** 북마크. 이미 했어도 오류 없이 넘어간다 (멱등). 공개 글만, 차단 관계인 글은 404 */
     void bookmark(Long userId, Long postId);
 

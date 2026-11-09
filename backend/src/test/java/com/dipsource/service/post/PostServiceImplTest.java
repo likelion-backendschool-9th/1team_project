@@ -28,6 +28,7 @@ import com.dipsource.repository.post.PostPurchaseRepository;
 import com.dipsource.repository.post.PostRepository;
 import com.dipsource.repository.post.PostTagRepository;
 import com.dipsource.repository.tag.TagRepository;
+import com.dipsource.service.coin.CoinService;
 import com.dipsource.service.post.impl.PostServiceImpl;
 import com.dipsource.service.post.impl.PostViewCounter;
 import com.dipsource.service.user.UserService;
@@ -63,6 +64,7 @@ class PostServiceImplTest {
     @Mock private TagRepository tagRepository;
     @Mock private UserService userService;
     @Mock private BlockRepository blockRepository;
+    @Mock private CoinService coinService;
 
     private PostServiceImpl service;
 
@@ -71,7 +73,7 @@ class PostServiceImplTest {
         service = new PostServiceImpl(postRepository, postLikeRepository, postBookmarkRepository, postTagRepository,
                 postPurchaseRepository, blogSubscriptionRepository, tagRepository, userService,
                 org.mockito.Mockito.mock(org.springframework.context.ApplicationEventPublisher.class),
-                blockRepository, new PostViewCounter());
+                blockRepository, new PostViewCounter(), coinService);
     }
 
     @Nested
@@ -316,6 +318,63 @@ class PostServiceImplTest {
 
     private static WritePostRequest request(String category, List<String> tags, int price) {
         return new WritePostRequest("제목", category, tags, BODY, null, price);
+    }
+
+    @Nested
+    class Purchase {
+
+        @Test
+        void purchaseSavesRecordAndPaysAuthor() {
+            when(postRepository.findById(10L)).thenReturn(Optional.of(post(AUTHOR, 30)));
+            when(postPurchaseRepository.insertIgnore(OTHER, 10L, 30)).thenReturn(1);
+
+            service.purchase(OTHER, 10L);
+
+            verify(coinService).payForPost(OTHER, AUTHOR, 10L, "제목", 30);
+        }
+
+        @Test
+        void alreadyPurchasedDoesNotChargeAgain() {
+            when(postRepository.findById(10L)).thenReturn(Optional.of(post(AUTHOR, 30)));
+            when(postPurchaseRepository.insertIgnore(OTHER, 10L, 30)).thenReturn(0);
+
+            service.purchase(OTHER, 10L);
+
+            verify(coinService, never()).payForPost(anyLong(), anyLong(), anyLong(), any(), org.mockito.ArgumentMatchers.anyInt());
+        }
+
+        @Test
+        void freePostOwnPostAndSubscriberCannotPurchase() {
+            when(postRepository.findById(10L)).thenReturn(Optional.of(post(AUTHOR, 0)));
+            assertBadRequest(() -> service.purchase(OTHER, 10L));
+
+            when(postRepository.findById(10L)).thenReturn(Optional.of(post(AUTHOR, 30)));
+            assertBadRequest(() -> service.purchase(AUTHOR, 10L));
+
+            when(blogSubscriptionRepository.existsBySubscriberIdAndBlogOwnerIdAndStatusAndExpiresAtAfter(
+                    eq(OTHER), eq(AUTHOR), eq(SubscriptionStatus.ACTIVE), any())).thenReturn(true);
+            assertBadRequest(() -> service.purchase(OTHER, 10L));
+
+            verify(postPurchaseRepository, never()).insertIgnore(anyLong(), anyLong(), org.mockito.ArgumentMatchers.anyInt());
+        }
+
+        @Test
+        void blockedAuthorsPostIsNotFound() {
+            when(postRepository.findById(10L)).thenReturn(Optional.of(post(AUTHOR, 30)));
+            when(blockRepository.existsBetween(OTHER, AUTHOR)).thenReturn(true);
+
+            assertThatThrownBy(() -> service.purchase(OTHER, 10L))
+                    .isInstanceOf(BusinessException.class)
+                    .extracting(e -> ((BusinessException) e).getErrorCode())
+                    .isEqualTo(ErrorCode.NOT_FOUND);
+        }
+
+        private void assertBadRequest(org.assertj.core.api.ThrowableAssert.ThrowingCallable call) {
+            assertThatThrownBy(call)
+                    .isInstanceOf(BusinessException.class)
+                    .extracting(e -> ((BusinessException) e).getErrorCode())
+                    .isEqualTo(ErrorCode.BAD_REQUEST);
+        }
     }
 
     private static Post post(Long userId, int price) {
