@@ -1,6 +1,7 @@
 package com.dipsource.repository.feed;
 
 import com.dipsource.entity.feed.FeedComment;
+import java.util.Collection;
 import java.util.List;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -103,4 +104,7 @@ public interface FeedCommentRepository extends JpaRepository<FeedComment, Long> 
                           OR LOWER(u.nickname) LIKE :q ESCAPE '\\')
                     """)
     Page<FeedComment> searchForAdmin(@Param("q") String q, Pageable pageable);
+
+    @Query("SELECT c FROM FeedComment c JOIN FETCH c.feed WHERE c.id IN :ids")
+    List<FeedComment> findAllWithFeedByIdIn(@Param("ids") Collection<Long> ids);
 }
