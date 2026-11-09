@@ -31,7 +31,7 @@ public class MiniHomeServiceImpl implements MiniHomeService {
             "cream", "midnight", "mint", "cherry", "sky", "lavender", "peach", "forest", "sunset");
     /** 프론트 BGM_TRACKS(_lib/bgm.ts)의 id와 같다. 곡을 추가하면 양쪽을 같이 바꾼다. */
     private static final Set<String> BGMS = Set.of(
-            "lofi-coding", "pixel-morning", "rainy-commit", "deploy-friday");
+            "lofi-coding", "rainy-commit", "deploy-friday");
     /** example.dev, blog.my-site.co.kr 같은 호스트 이름. 각 칸은 영문·숫자·하이픈 1~63자, 끝은 영문 2자 이상. */
     private static final Pattern DOMAIN = Pattern.compile(
             "^(?=.{4,100}$)([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?\\.)+[a-z]{2,63}$");
