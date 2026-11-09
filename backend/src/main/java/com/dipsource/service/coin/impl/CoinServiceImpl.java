@@ -7,6 +7,7 @@ import com.dipsource.entity.coin.ChipTransactionType;
 import com.dipsource.entity.coin.Payment;
 import com.dipsource.entity.coin.PaymentType;
 import com.dipsource.entity.user.User;
+import com.dipsource.entity.user.enums.UserStatus;
 import com.dipsource.global.common.PageResponse;
 import com.dipsource.global.exception.BusinessException;
 import com.dipsource.global.exception.ErrorCode;
@@ -67,6 +68,10 @@ public class CoinServiceImpl implements CoinService {
         // 비관적 잠금으로 잔액 갱신 — 동시에 여러 충전이 들어와도 순서대로 처리된다
         User user = userRepository.findByIdForUpdate(userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "회원을 찾을 수 없어요."));
+        // 정지·탈퇴 회원은 충전 불가. JWT가 살아있어도 거절한다
+        if (user.getStatus() != UserStatus.ACTIVE) {
+            throw new BusinessException(ErrorCode.FORBIDDEN, "충전할 수 없는 계정이에요.");
+        }
         user.addChips(chips);
 
         chipTransactionRepository.save(ChipTransaction.builder()
@@ -80,11 +85,18 @@ public class CoinServiceImpl implements CoinService {
                 .build());
     }
 
+    /** 거래 내역 한 번에 최대 조회 수 */
+    private static final int MAX_HISTORY_SIZE = 50;
+
     @Override
     @Transactional(readOnly = true)
     public PageResponse<ChipHistoryResponse> getHistory(Long userId, Pageable pageable) {
+        Pageable limited = org.springframework.data.domain.PageRequest.of(
+                pageable.getPageNumber(),
+                Math.min(pageable.getPageSize(), MAX_HISTORY_SIZE)
+        );
         return PageResponse.of(
-                chipTransactionRepository.findByUserIdOrderByCreatedAtDesc(userId, pageable),
+                chipTransactionRepository.findByUserIdOrderByCreatedAtDesc(userId, limited),
                 ChipHistoryResponse::of
         );
     }

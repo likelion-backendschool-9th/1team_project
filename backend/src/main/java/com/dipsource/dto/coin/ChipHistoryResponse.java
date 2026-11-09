@@ -20,7 +20,7 @@ public record ChipHistoryResponse(
     public static ChipHistoryResponse of(ChipTransaction tx) {
         return new ChipHistoryResponse(
                 tx.getId(),
-                toType(tx.getType(), tx.getAmount()),
+                toType(tx.getType()),
                 tx.getDescription(),
                 tx.getAmount(),
                 tx.getCreatedAt()
@@ -28,7 +28,7 @@ public record ChipHistoryResponse(
     }
 
     /** ChipTransactionType → 프론트 문자열 타입 변환 */
-    private static String toType(ChipTransactionType type, int amount) {
+    private static String toType(ChipTransactionType type) {
         return switch (type) {
             case CHARGE -> "charge";
             case REFUND, BLOG_INCOME, DONATION_INCOME -> "refund";
