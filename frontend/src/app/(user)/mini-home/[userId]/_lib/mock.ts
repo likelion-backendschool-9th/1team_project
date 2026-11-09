@@ -22,7 +22,7 @@ const siwooProfile: MiniHomeProfile = {
   extraInventorySlots: 0,
   headline: "Interactivity Explorer",
   domain: "siwoo.dev",
-  bgm: "pixel-morning",
+  bgm: "lofi-coding",
   quote: "“픽셀은 거짓말을 안 한다.\n프레임레이트는 감동이다.” ⚡",
   stackTags: ["WebGL", "ThreeJS", "TypeScript", "React", "GLSL"],
   featuredDemoId: 101,
