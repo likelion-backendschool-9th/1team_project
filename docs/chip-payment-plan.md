@@ -24,13 +24,14 @@
 - [x] `ChipTransaction` 엔티티 + `ChipTransactionRepository`
 - [x] `CoinService` — `charge(userId, packageId)` + `verifyPayment()` (현재는 no-op)
 - [x] `CoinController` — `POST /coins/purchases`, `GET /coins/history`
-- [ ] `백엔드-청사진.md` 상태 업데이트
+- [x] `백엔드-청사진.md` 상태 업데이트
 
 **프론트**
 - [x] `/my/coins` 페이지 — 잔액 표시 + 충전 버튼 (기존 UI 활용)
 - [x] 충전 금액 선택 UI (패키지 고정값)
 - [x] 거래 내역 목록 (실 API 연결)
 - [x] 충전 후 `revalidatePath` 추가
+- [x] 거래 내역 무한 스크롤 페이지네이션
 
 ---
 
