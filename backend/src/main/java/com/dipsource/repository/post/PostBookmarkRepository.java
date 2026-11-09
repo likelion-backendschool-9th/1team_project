@@ -23,4 +23,18 @@ public interface PostBookmarkRepository extends JpaRepository<PostBookmark, Post
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query(value = "DELETE FROM post_bookmarks WHERE user_id = :userId AND post_id = :postId", nativeQuery = true)
     int deleteByUserIdAndPostId(@Param("userId") Long userId, @Param("postId") Long postId);
+
+    /**
+     * 두 회원 사이의 북마크를 양쪽 모두 지운다 (A가 북마크한 B의 글, B가 북마크한 A의 글). 차단할 때 쓴다.
+     * @return 지운 북마크 수
+     */
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query(value = """
+            DELETE FROM post_bookmarks pb
+            USING posts p
+            WHERE pb.post_id = p.id
+              AND ((pb.user_id = :leftId AND p.user_id = :rightId)
+                OR (pb.user_id = :rightId AND p.user_id = :leftId))
+            """, nativeQuery = true)
+    int deleteBetween(@Param("leftId") Long leftId, @Param("rightId") Long rightId);
 }

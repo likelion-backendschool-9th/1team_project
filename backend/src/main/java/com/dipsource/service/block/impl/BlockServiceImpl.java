@@ -7,6 +7,7 @@ import com.dipsource.global.exception.BusinessException;
 import com.dipsource.global.exception.ErrorCode;
 import com.dipsource.repository.block.BlockRepository;
 import com.dipsource.repository.follow.FollowRepository;
+import com.dipsource.repository.post.PostBookmarkRepository;
 import com.dipsource.repository.user.UserRepository;
 import com.dipsource.service.block.BlockService;
 import com.dipsource.service.user.UserService;
@@ -25,6 +26,7 @@ public class BlockServiceImpl implements BlockService {
 
     private final BlockRepository blockRepository;
     private final FollowRepository followRepository;
+    private final PostBookmarkRepository postBookmarkRepository;
     private final UserRepository userRepository;
     private final UserService userService;
 
@@ -38,6 +40,9 @@ public class BlockServiceImpl implements BlockService {
         blockRepository.insertIgnore(blockerId, blockedId);
         followRepository.deleteByFollowerIdAndFollowingId(blockerId, blockedId);
         followRepository.deleteByFollowerIdAndFollowingId(blockedId, blockerId);
+        // 차단하면 서로의 글이 보이지 않으니 블로그 글 북마크도 양쪽 모두 지운다. 차단을 풀어도 되살리지 않는다.
+        // 차단당한 쪽에는 알리지 않는다 (차단 사실이 드러나지 않도록).
+        postBookmarkRepository.deleteBetween(blockerId, blockedId);
     }
 
     @Override

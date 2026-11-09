@@ -201,6 +201,7 @@ public class PostServiceImpl implements PostService {
     @Transactional
     public void unbookmark(Long userId, Long postId) {
         findActive(postId);
+        // 차단 관계여도 취소는 막지 않는다. 차단할 때 북마크를 이미 지우므로 보통은 지울 게 없고, 남아 있으면 정리되는 쪽이 낫다.
         postBookmarkRepository.deleteByUserIdAndPostId(userId, postId);
     }
 
