@@ -30,7 +30,7 @@ public class UserSettingService {
     public UserSettingsResponse update(Long userId, UpdateUserSettingsRequest request) {
         UserSetting setting = userSettingRepository.findById(userId)
                 .orElseGet(() -> userSettingRepository.save(UserSetting.defaults(userId)));
-        UpdateUserSettingsRequest.Notify notify = request.notify();
+        UpdateUserSettingsRequest.Notify notify = request.notifications();
         setting.update(notify.like(), notify.comment(), notify.follow(), notify.dm(), notify.guestbook(),
                 request.visibility(), request.allowDm());
         return UserSettingsResponse.from(setting);
