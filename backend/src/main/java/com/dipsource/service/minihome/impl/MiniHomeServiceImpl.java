@@ -43,11 +43,12 @@ public class MiniHomeServiceImpl implements MiniHomeService {
 
     @Override
     @Transactional
-    public MiniHomeResponse getOrCreate(Long userId, Long viewerId) {
+    public MiniHomeResponse get(Long userId, Long viewerId) {
         if (viewerId != null && !viewerId.equals(userId) && blockRepository.existsBetween(viewerId, userId)) {
             throw new BusinessException(ErrorCode.NOT_FOUND, "미니홈피를 찾을 수 없습니다");
         }
-        MiniHome home = miniHomeLoader.loadOrCreate(userId);
+        // 구경만 해서는 행을 만들지 않는다. 처음 저장(PUT)할 때 만들어진다.
+        MiniHome home = miniHomeLoader.loadOrDraft(userId);
         // 대표 글이 삭제·숨김됐으면 연결을 끊어서 깨진 링크를 내려주지 않는다.
         Long postId = home.getFeaturedPostId();
         if (postId != null && !postService.isActivePostOf(postId, userId)) {
@@ -112,10 +113,11 @@ public class MiniHomeServiceImpl implements MiniHomeService {
     @Override
     @Transactional
     public VisitorStatsResponse recordVisit(Long viewerId, Long ownerId) {
-        MiniHome home = miniHomeLoader.loadOrCreate(ownerId);
+        // 내 홈 방문은 세지 않으니 홈을 만들 필요도 없다.
         if (viewerId.equals(ownerId)) {
-            return stats(home);
+            return stats(miniHomeLoader.loadOrDraft(ownerId));
         }
+        miniHomeLoader.loadOrCreate(ownerId);
         miniHomeRepository.incrementVisitCounts(ownerId);
         return miniHomeRepository.findByUserId(ownerId)
                 .map(MiniHomeServiceImpl::stats)
