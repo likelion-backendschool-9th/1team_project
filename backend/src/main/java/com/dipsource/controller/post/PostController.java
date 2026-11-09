@@ -38,21 +38,25 @@ public class PostController {
     /** 전체 블로그 목록. ?category=&q=&sort=latest|popular (비로그인 가능) */
     @GetMapping("/posts")
     public ResponseEntity<ApiResponse<PageResponse<PostSummaryResponse>>> posts(
+            @AuthenticationPrincipal UserPrincipal principal,
             @RequestParam(required = false) String category,
             @RequestParam(required = false) String q,
             @RequestParam(defaultValue = "latest") String sort,
             @PageableDefault(size = 20) Pageable pageable
     ) {
-        return ResponseEntity.ok(ApiResponse.of(postService.getPosts(category, q, sort, pageable)));
+        Long viewerId = principal == null ? null : principal.getUserId();
+        return ResponseEntity.ok(ApiResponse.of(postService.getPosts(category, q, sort, viewerId, pageable)));
     }
 
     /** 한 회원의 블로그 글 목록 (비로그인 가능) */
     @GetMapping("/users/{userId}/posts")
     public ResponseEntity<ApiResponse<PageResponse<PostSummaryResponse>>> userPosts(
+            @AuthenticationPrincipal UserPrincipal principal,
             @PathVariable Long userId,
             @PageableDefault(size = 20) Pageable pageable
     ) {
-        return ResponseEntity.ok(ApiResponse.of(postService.getUserPosts(userId, pageable)));
+        Long viewerId = principal == null ? null : principal.getUserId();
+        return ResponseEntity.ok(ApiResponse.of(postService.getUserPosts(userId, viewerId, pageable)));
     }
 
     /** 글 상세 (비로그인 가능, 잠긴 유료 글은 앞부분만) */

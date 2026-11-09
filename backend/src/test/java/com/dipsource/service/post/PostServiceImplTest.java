@@ -21,6 +21,7 @@ import com.dipsource.entity.post.SubscriptionStatus;
 import com.dipsource.entity.tag.Tag;
 import com.dipsource.global.exception.BusinessException;
 import com.dipsource.global.exception.ErrorCode;
+import com.dipsource.repository.block.BlockRepository;
 import com.dipsource.repository.post.BlogSubscriptionRepository;
 import com.dipsource.repository.post.PostPurchaseRepository;
 import com.dipsource.repository.post.PostRepository;
@@ -57,13 +58,14 @@ class PostServiceImplTest {
     @Mock private BlogSubscriptionRepository blogSubscriptionRepository;
     @Mock private TagRepository tagRepository;
     @Mock private UserService userService;
+    @Mock private BlockRepository blockRepository;
 
     private PostServiceImpl service;
 
     @BeforeEach
     void setUp() {
         service = new PostServiceImpl(postRepository, postTagRepository, postPurchaseRepository,
-                blogSubscriptionRepository, tagRepository, userService);
+                blogSubscriptionRepository, tagRepository, userService, blockRepository);
     }
 
     @Nested
@@ -214,11 +216,11 @@ class PostServiceImplTest {
 
         @Test
         void categoryAndQueryAreTurnedIntoFilters() {
-            when(postRepository.findList(eq(PostStatus.ACTIVE), eq(EnumSet.of(PostCategory.GAME)), eq("%unity\\_3d%"), any(Pageable.class)))
+            when(postRepository.findList(eq(PostStatus.ACTIVE), eq(EnumSet.of(PostCategory.GAME)), eq("%unity\\_3d%"), eq(null), any(Pageable.class)))
                     .thenReturn(new PageImpl<>(List.of(post(AUTHOR, 0)), PageRequest.of(0, 20), 1));
             when(userService.getSummaries(List.of(AUTHOR))).thenReturn(Map.of(AUTHOR, author()));
 
-            var page = service.getPosts("game", " Unity_3D ", "latest", PageRequest.of(0, 20));
+            var page = service.getPosts("game", " Unity_3D ", "latest", null, PageRequest.of(0, 20));
 
             // 분류·검색어가 위 조건(GAME, "%unity\\_3d%")으로 넘어가야 결과가 나온다.
             assertThat(page.content()).hasSize(1);
@@ -228,11 +230,11 @@ class PostServiceImplTest {
 
         @Test
         void noCategoryMeansAllCategories() {
-            when(postRepository.findList(eq(PostStatus.ACTIVE), eq(EnumSet.allOf(PostCategory.class)), eq("%"), any(Pageable.class)))
+            when(postRepository.findList(eq(PostStatus.ACTIVE), eq(EnumSet.allOf(PostCategory.class)), eq("%"), eq(null), any(Pageable.class)))
                     .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 20), 0));
             when(userService.getSummaries(List.of())).thenReturn(Map.of());
 
-            assertThat(service.getPosts(null, null, "popular", PageRequest.of(0, 20)).content()).isEmpty();
+            assertThat(service.getPosts(null, null, "popular", null, PageRequest.of(0, 20)).content()).isEmpty();
         }
     }
 

@@ -1,5 +1,7 @@
 package com.dipsource.global.auth;
 
+import com.dipsource.entity.user.enums.UserStatus;
+import com.dipsource.repository.user.UserRepository;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.Cookie;
@@ -19,6 +21,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtProvider jwtProvider;
+    private final UserRepository userRepository;
 
     @Override
     protected void doFilterInternal(
@@ -31,12 +34,16 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         // 유효한 Access Token이 있으면 인증 정보를 세팅한다.
         if (accessToken != null && jwtProvider.isAccessToken(accessToken)) {
             Long userId = jwtProvider.getUserId(accessToken);
-            String role = jwtProvider.getRole(accessToken);
-            UserPrincipal principal = new UserPrincipal(userId, role == null ? "USER" : role);
-
-            var authentication = new UsernamePasswordAuthenticationToken(
-                    principal, null, principal.getAuthorities());
-            SecurityContextHolder.getContext().setAuthentication(authentication);
+            boolean active = userRepository.findById(userId)
+                    .map(user -> user.getStatus() == UserStatus.ACTIVE)
+                    .orElse(false);
+            if (active) {
+                String role = jwtProvider.getRole(accessToken);
+                UserPrincipal principal = new UserPrincipal(userId, role == null ? "USER" : role);
+                var authentication = new UsernamePasswordAuthenticationToken(
+                        principal, null, principal.getAuthorities());
+                SecurityContextHolder.getContext().setAuthentication(authentication);
+            }
         }
 
         filterChain.doFilter(request, response);

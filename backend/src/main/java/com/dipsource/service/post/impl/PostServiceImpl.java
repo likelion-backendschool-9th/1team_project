@@ -16,6 +16,7 @@ import com.dipsource.global.common.LikePattern;
 import com.dipsource.global.common.PageResponse;
 import com.dipsource.global.exception.BusinessException;
 import com.dipsource.global.exception.ErrorCode;
+import com.dipsource.repository.block.BlockRepository;
 import com.dipsource.repository.post.BlogSubscriptionRepository;
 import com.dipsource.repository.post.PostPurchaseRepository;
 import com.dipsource.repository.post.PostRepository;
@@ -59,22 +60,27 @@ public class PostServiceImpl implements PostService {
     private final BlogSubscriptionRepository blogSubscriptionRepository;
     private final TagRepository tagRepository;
     private final UserService userService;
+    private final BlockRepository blockRepository;
 
     @Override
     @Transactional(readOnly = true)
-    public PageResponse<PostSummaryResponse> getPosts(String category, String q, String sort, Pageable pageable) {
+    public PageResponse<PostSummaryResponse> getPosts(
+            String category, String q, String sort, Long viewerId, Pageable pageable) {
         Set<PostCategory> categories = (category == null || category.isBlank())
                 ? EnumSet.allOf(PostCategory.class)
                 : EnumSet.of(parseCategory(category));
         Sort order = "popular".equals(sort) ? POPULAR : LATEST;
         Page<Post> page = postRepository.findList(
-                PostStatus.ACTIVE, categories, pattern(q), limit(pageable, order));
+                PostStatus.ACTIVE, categories, pattern(q), viewerId, limit(pageable, order));
         return toSummaries(page);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public PageResponse<PostSummaryResponse> getUserPosts(Long userId, Pageable pageable) {
+    public PageResponse<PostSummaryResponse> getUserPosts(Long userId, Long viewerId, Pageable pageable) {
+        if (hiddenFrom(viewerId, userId)) {
+            return PageResponse.of(Page.empty(limit(pageable, LATEST)), List.of());
+        }
         return toSummaries(postRepository.findByUserIdAndStatus(userId, PostStatus.ACTIVE, limit(pageable, LATEST)));
     }
 
@@ -82,6 +88,9 @@ public class PostServiceImpl implements PostService {
     @Transactional
     public PostDetailResponse getPost(Long postId, Long viewerId) {
         Post post = findActive(postId);
+        if (hiddenFrom(viewerId, post.getUserId())) {
+            throw new BusinessException(ErrorCode.NOT_FOUND, "글을 찾을 수 없습니다");
+        }
         boolean mine = post.getUserId().equals(viewerId);
         if (!mine) {
             postRepository.incrementViewCount(postId);
@@ -175,6 +184,10 @@ public class PostServiceImpl implements PostService {
         List<Long> authorIds = page.getContent().stream().map(Post::getUserId).distinct().toList();
         Map<Long, UserSummaryResponse> authors = userService.getSummaries(authorIds);
         return PageResponse.of(page, post -> PostSummaryResponse.of(post, authors.get(post.getUserId())));
+    }
+
+    private boolean hiddenFrom(Long viewerId, Long authorId) {
+        return viewerId != null && !viewerId.equals(authorId) && blockRepository.existsBetween(viewerId, authorId);
     }
 
     private Post findActive(Long postId) {

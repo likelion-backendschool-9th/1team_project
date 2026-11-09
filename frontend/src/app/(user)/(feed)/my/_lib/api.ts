@@ -35,7 +35,22 @@ async function getPage<T>(path: `/api/v1/${string}`, mock: T[]): Promise<T[]> {
   return data.content;
 }
 
-export const getAccount = () => get<MyAccount>("/api/v1/users/me", mockAccount);
+export async function getAccount(): Promise<MyAccount> {
+  if (!hasBackend) return mockAccount;
+  const { data } = await apiFetch<ApiResponse<{
+    bio: string | null;
+    email: string;
+    githubUsername: string | null;
+  }>>("/api/v1/users/me");
+  return {
+    bio: data.bio ?? "",
+    githubUrl: data.githubUsername ? `https://github.com/${data.githubUsername}` : "",
+    email: data.email,
+    provider: mockAccount.provider,
+    joinedAt: mockAccount.joinedAt,
+  };
+}
+
 export const FOLLOW_PAGE_SIZE = 20;
 
 export type FollowPage = { users: FollowUser[]; page: number; totalPages: number; total: number };
@@ -66,7 +81,11 @@ export const getFollowings = (page = 1, size = FOLLOW_PAGE_SIZE, q = "") =>
 export const getFollowers = (page = 1, size = FOLLOW_PAGE_SIZE, q = "") =>
   getFollowPage("/api/v1/follows/followers", mockFollowers, page, size, q);
 export const getSettings = () => get<Settings>("/api/v1/users/me/settings", mockSettings);
-export const getBlocked = async (): Promise<BlockedUser[]> => mockBlocked;
+export async function getBlocked(): Promise<BlockedUser[]> {
+  if (!hasBackend) return mockBlocked;
+  const { data } = await apiFetch<ApiResponse<BlockedUser[]>>("/api/v1/blocks");
+  return data;
+}
 export const getPackages = async (): Promise<ChipPackage[]> => mockPackages;
 export const getChipHistory = () => getPage<ChipHistory>("/api/v1/coins/history", mockHistory);
 // 구독 목록 조회 API는 아직 정해지지 않았다 (프론트엔드-청사진 11장).
