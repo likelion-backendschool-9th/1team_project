@@ -31,4 +31,10 @@ public interface MiniHomeService {
 
     /** 모든 미니홈피의 오늘 방문자 수를 0으로 만든다. */
     void resetTodayCount();
+
+    /**
+     * 미니홈피 행이 없으면 기본값으로 생성 후 ID를 반환함.
+     * 후원 등 mini_homes.id가 필요한 도메인에서 사용함.
+     */
+    Long getOrCreateMiniHomeId(Long userId);
 }

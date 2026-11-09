@@ -1,5 +1,6 @@
 package com.dipsource.controller.minihome;
 
+import com.dipsource.dto.donation.DonationRequest;
 import com.dipsource.dto.minihome.FeaturedDemoRequest;
 import com.dipsource.dto.minihome.FeaturedPostRequest;
 import com.dipsource.dto.minihome.GuestbookRequest;
@@ -14,12 +15,15 @@ import com.dipsource.global.common.ApiResponse;
 import com.dipsource.global.common.PageResponse;
 import com.dipsource.global.exception.BusinessException;
 import com.dipsource.global.exception.ErrorCode;
+import com.dipsource.service.donation.DonationService;
 import com.dipsource.service.minihome.GuestbookService;
 import com.dipsource.service.minihome.MiniHomeCommentService;
 import com.dipsource.service.minihome.MiniHomeService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -32,7 +36,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-/** 미니홈피 조회·수정, 일촌평, 방명록. */
+/** 미니홈피 조회·수정, 일촌평, 방명록, 후원. */
 @RestController
 @RequestMapping("/mini-homes")
 @RequiredArgsConstructor
@@ -41,6 +45,7 @@ public class MiniHomeController {
     private final MiniHomeService miniHomeService;
     private final MiniHomeCommentService miniHomeCommentService;
     private final GuestbookService guestbookService;
+    private final DonationService donationService;
 
     @GetMapping("/random")
     public ApiResponse<RandomMiniHomeResponse> random(
@@ -148,6 +153,17 @@ public class MiniHomeController {
     ) {
         guestbookService.delete(requireUserId(principal), guestbookId);
         return ApiResponse.of(null);
+    }
+
+    /** 미니홈피 후원 (로그인 필수, 본인 불가) */
+    @PostMapping("/{userId}/donations")
+    public ResponseEntity<Void> donate(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @PathVariable Long userId,
+            @Valid @RequestBody DonationRequest request
+    ) {
+        donationService.donate(requireUserId(principal), userId, request.chips());
+        return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
     }
 
     private static Long requireUserId(UserPrincipal principal) {
