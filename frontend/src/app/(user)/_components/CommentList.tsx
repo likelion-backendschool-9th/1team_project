@@ -13,7 +13,7 @@ import styles from "./CommentList.module.css";
 type Comment = {
   id: number;
   author: UserSummary;
-  content: string;
+  content: string | null; // 삭제된 댓글은 null
   createdAt: string;
   likeCount: number;
   liked?: boolean;
@@ -22,28 +22,31 @@ type Comment = {
 };
 
 type Result = { ok: boolean; message: string };
+type ReplyResult = Result & { data?: Comment | null };
 
 type Actions = {
   updateComment?: (commentId: number, content: string) => Promise<Result>;
   deleteComment?: (commentId: number) => Promise<Result>;
   likeComment?: (commentId: number, like: boolean) => Promise<Result>;
-  replyComment?: (parentId: number, content: string) => Promise<Result>;
+  replyComment?: (parentId: number, content: string) => Promise<ReplyResult>;
 };
 
 type Props = Actions & {
   comments: Comment[];
   now: number;
   me?: UserSummary;
+  maxCommentLength?: number;
 };
 
-export function CommentList({ comments, now, me, ...actions }: Props) {
+export function CommentList({ comments, now, me, maxCommentLength = 300, ...actions }: Props) {
   if (comments.length === 0)
     return <p className={styles.empty}>아직 댓글이 없어요. 첫 댓글을 남겨 보세요.</p>;
 
   return (
     <ul className={styles.list}>
       {comments.map((comment) => (
-        <CommentThread key={comment.id} comment={comment} now={now} me={me} actions={actions} />
+        // replies.length를 key에 포함 — 서버 재렌더 후 새 대댓글이 오면 remount해 state 동기화
+        <CommentThread key={`${comment.id}-${(comment.replies ?? []).length}`} comment={comment} now={now} me={me} actions={actions} maxCommentLength={maxCommentLength} />
       ))}
     </ul>
   );
@@ -54,10 +57,11 @@ type ThreadProps = {
   now: number;
   me?: UserSummary;
   actions: Actions;
+  maxCommentLength: number;
 };
 
 // 댓글 하나와 그 아래 답글
-function CommentThread({ comment, now, me, actions }: ThreadProps) {
+function CommentThread({ comment, now, me, actions, maxCommentLength }: ThreadProps) {
   const [replies, setReplies] = useState(comment.replies ?? []);
   const [replyTo, setReplyTo] = useState<string | null>(null);
   const canReply = Boolean(me && actions.replyComment);
@@ -75,6 +79,7 @@ function CommentThread({ comment, now, me, actions }: ThreadProps) {
         me={me}
         actions={actions}
         onReply={canReply ? () => openReply() : undefined}
+        maxCommentLength={maxCommentLength}
       />
       {(replies.length > 0 || replyTo !== null) && (
         <ul className={styles.replies}>
@@ -86,6 +91,7 @@ function CommentThread({ comment, now, me, actions }: ThreadProps) {
                 me={me}
                 actions={actions}
                 onReply={canReply ? () => openReply(reply.author) : undefined}
+                maxCommentLength={maxCommentLength}
               />
             </li>
           ))}
@@ -94,14 +100,16 @@ function CommentThread({ comment, now, me, actions }: ThreadProps) {
               <ReplyForm
                 key={replyTo}
                 initial={replyTo}
+                maxLength={maxCommentLength}
                 onCancel={() => setReplyTo(null)}
                 onSubmit={async (content) => {
                   const result = await actions.replyComment!(comment.id, content);
                   if (result.ok) {
-                    // 목 모드에서는 서버에 남지 않으므로 바로 목록에 붙여 보여 준다.
                     setReplies((items) => [
                       ...items,
-                      {
+                      // 실서버: 응답 data의 실제 ID 사용 → 수정·삭제·좋아요 즉시 활성화
+                      // 목 모드: 서버에 남지 않으므로 임시 음수 ID로 표시만
+                      result.data ?? {
                         id: -Date.now(),
                         author: me,
                         content,
@@ -129,9 +137,10 @@ type RowProps = {
   me?: UserSummary;
   actions: Actions;
   onReply?: () => void;
+  maxCommentLength: number;
 };
 
-function CommentRow({ comment, now, me, actions, onReply }: RowProps) {
+function CommentRow({ comment, now, me, actions, onReply, maxCommentLength }: RowProps) {
   const mine = comment.author.id === me?.id;
   // 방금 단 답글은 아직 서버 id가 없어 수정·삭제·좋아요를 막는다.
   const saved = comment.id > 0;
@@ -149,10 +158,13 @@ function CommentRow({ comment, now, me, actions, onReply }: RowProps) {
           {comment.label}
           <time dateTime={comment.createdAt}>{formatRelativeTime(comment.createdAt, now)}</time>
         </p>
-        {mine && saved && actions.updateComment && actions.deleteComment ? (
+        {comment.content === null ? (
+          <p className={styles.deleted}>삭제한 댓글이에요.</p>
+        ) : mine && saved && actions.updateComment && actions.deleteComment ? (
           <CommentEditor
             commentId={comment.id}
             content={comment.content}
+            maxLength={maxCommentLength}
             updateComment={actions.updateComment}
             deleteComment={actions.deleteComment}
             onReply={onReply}
@@ -174,7 +186,8 @@ function CommentRow({ comment, now, me, actions, onReply }: RowProps) {
         commentId={comment.id}
         liked={comment.liked ?? false}
         likeCount={comment.likeCount}
-        likeComment={saved ? actions.likeComment : undefined}
+        // 삭제된 댓글(content=null)과 아직 저장 안 된 대댓글(id<0)은 좋아요 비활성화
+        likeComment={saved && comment.content !== null ? actions.likeComment : undefined}
       />
     </div>
   );
@@ -239,11 +252,12 @@ function LikeButton({ commentId, liked, likeCount, likeComment }: LikeProps) {
 
 type ReplyFormProps = {
   initial: string;
+  maxLength: number;
   onSubmit: (content: string) => Promise<Result>;
   onCancel: () => void;
 };
 
-function ReplyForm({ initial, onSubmit, onCancel }: ReplyFormProps) {
+function ReplyForm({ initial, maxLength, onSubmit, onCancel }: ReplyFormProps) {
   const id = useId();
   const [draft, setDraft] = useState(initial);
   const [error, setError] = useState<string | null>(null);
@@ -252,7 +266,7 @@ function ReplyForm({ initial, onSubmit, onCancel }: ReplyFormProps) {
   function submit() {
     const text = draft.trim();
     if (!text) return setError("답글을 입력해 주세요.");
-    if (text.length > 300) return setError("300자 이하로 입력해 주세요.");
+    if (text.length > maxLength) return setError(`${maxLength}자 이하로 입력해 주세요.`);
     setError(null);
     startTransition(async () => {
       const result = await onSubmit(text);
@@ -268,7 +282,7 @@ function ReplyForm({ initial, onSubmit, onCancel }: ReplyFormProps) {
       <textarea
         id={id}
         value={draft}
-        maxLength={300}
+        maxLength={maxLength}
         rows={2}
         autoFocus
         placeholder="답글을 남겨 주세요"
