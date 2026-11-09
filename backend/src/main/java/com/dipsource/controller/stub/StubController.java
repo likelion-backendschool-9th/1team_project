@@ -56,13 +56,6 @@ public class StubController {
         return ok(Map.of("count", 0));
     }
 
-    // ── 코인 ──
-
-    @GetMapping("/coins/history")
-    public ResponseEntity<ApiResponse<Map<String, Object>>> coinHistory() {
-        return ok(EMPTY_PAGE);
-    }
-
     // ── 북마크 ──
 
     @GetMapping("/users/me/bookmarks")

@@ -156,6 +156,25 @@ public class User extends BaseEntity {
         return status == UserStatus.DELETED;
     }
 
+    /**
+     * 칩을 더한다. chip_transactions와 같은 트랜잭션에서 호출해야 한다.
+     * @param chips 추가할 칩 수 (양수)
+     */
+    public void addChips(int chips) {
+        this.chipBalance += chips;
+    }
+
+    /**
+     * 칩을 차감한다. 잔액이 부족하면 false 반환.
+     * chip_transactions와 같은 트랜잭션에서 호출해야 한다.
+     * @param chips 차감할 칩 수 (양수)
+     */
+    public boolean deductChips(int chips) {
+        if (this.chipBalance < chips) return false;
+        this.chipBalance -= chips;
+        return true;
+    }
+
     /** 화면에 보여 줄 닉네임. 탈퇴한 회원이면 "삭제된 유저"다. */
     public String getDisplayNickname() {
         return isWithdrawn() ? WITHDRAWN_NICKNAME : nickname;

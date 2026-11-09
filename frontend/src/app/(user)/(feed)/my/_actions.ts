@@ -44,7 +44,13 @@ export async function unblockUser(userId: number) {
 
 export async function purchaseChips(packageId: number) {
   if (!isId(packageId)) return { ok: false, message: "잘못된 요청이에요." };
-  return mutate("/api/v1/coins/purchases", "POST", { packageId }, "칩을 충전했어요.");
+  const result = await mutate("/api/v1/coins/purchases", "POST", { packageId }, "칩을 충전했어요.");
+  if (result.ok) {
+    // 잔액·거래 내역 갱신
+    revalidatePath("/my/coins");
+    revalidatePath("/my");
+  }
+  return result;
 }
 
 export async function cancelSubscription(subscriptionId: number) {
