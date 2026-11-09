@@ -120,6 +120,16 @@ public class PostController {
         return ResponseEntity.noContent().build();
     }
 
+    /** 유료 글 구매 (로그인 필수). 이미 샀어도 204 (멱등) */
+    @PostMapping("/posts/{postId}/purchase")
+    public ResponseEntity<Void> purchase(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @PathVariable Long postId
+    ) {
+        postService.purchase(requireUserId(principal), postId);
+        return ResponseEntity.noContent().build();
+    }
+
     private static Long requireUserId(UserPrincipal principal) {
         if (principal == null) {
             throw new BusinessException(ErrorCode.UNAUTHORIZED, "로그인이 필요합니다");

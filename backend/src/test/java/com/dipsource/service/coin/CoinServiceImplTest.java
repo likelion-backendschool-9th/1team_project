@@ -133,4 +133,64 @@ class CoinServiceImplTest {
             assertThat(tx.getValue().getBalanceAfter()).isEqualTo(before + 50);
         }
     }
+
+    @Nested
+    class PayForPost {
+
+        private static final Long AUTHOR_ID = 2L;
+        private static final Long POST_ID = 30L;
+
+        private User userWithId(Long id, int balance) {
+            User user = User.builder().email(id + "@test.com").nickname("user" + id).build();
+            ReflectionTestUtils.setField(user, "id", id);
+            ReflectionTestUtils.setField(user, "chipBalance", balance);
+            return user;
+        }
+
+        @Test
+        void 구매자는_차감되고_글쓴이는_판매_수익을_받음() {
+            User buyer = userWithId(USER_ID, 100);
+            User author = userWithId(AUTHOR_ID, 5);
+            when(userRepository.findByIdForUpdate(USER_ID)).thenReturn(Optional.of(buyer));
+            when(userRepository.findByIdForUpdate(AUTHOR_ID)).thenReturn(Optional.of(author));
+
+            service.payForPost(USER_ID, AUTHOR_ID, POST_ID, "유료 글", 30);
+
+            assertThat(buyer.getChipBalance()).isEqualTo(70);
+            assertThat(author.getChipBalance()).isEqualTo(35);
+            ArgumentCaptor<ChipTransaction> tx = ArgumentCaptor.forClass(ChipTransaction.class);
+            verify(chipTransactionRepository, org.mockito.Mockito.times(2)).save(tx.capture());
+            assertThat(tx.getAllValues()).extracting(ChipTransaction::getUserId, ChipTransaction::getAmount,
+                            ChipTransaction::getBalanceAfter)
+                    .containsExactly(
+                            org.assertj.core.groups.Tuple.tuple(USER_ID, -30, 70),
+                            org.assertj.core.groups.Tuple.tuple(AUTHOR_ID, 30, 35));
+        }
+
+        @Test
+        void 잔액이_부족하면_예외이고_거래_내역을_남기지_않음() {
+            User buyer = userWithId(USER_ID, 10);
+            User author = userWithId(AUTHOR_ID, 0);
+            when(userRepository.findByIdForUpdate(USER_ID)).thenReturn(Optional.of(buyer));
+            when(userRepository.findByIdForUpdate(AUTHOR_ID)).thenReturn(Optional.of(author));
+
+            assertThatThrownBy(() -> service.payForPost(USER_ID, AUTHOR_ID, POST_ID, "유료 글", 30))
+                    .isInstanceOf(com.dipsource.entity.coin.InsufficientChipsException.class);
+            assertThat(author.getChipBalance()).isZero();
+            verify(chipTransactionRepository, never()).save(any());
+        }
+
+        @Test
+        void 정지된_회원은_칩을_쓸_수_없음() {
+            User buyer = userWithId(USER_ID, 100);
+            buyer.suspend();
+            when(userRepository.findByIdForUpdate(USER_ID)).thenReturn(Optional.of(buyer));
+            when(userRepository.findByIdForUpdate(AUTHOR_ID)).thenReturn(Optional.of(userWithId(AUTHOR_ID, 0)));
+
+            assertThatThrownBy(() -> service.payForPost(USER_ID, AUTHOR_ID, POST_ID, "유료 글", 30))
+                    .isInstanceOf(BusinessException.class)
+                    .extracting(e -> ((BusinessException) e).getErrorCode())
+                    .isEqualTo(ErrorCode.FORBIDDEN);
+        }
+    }
 }

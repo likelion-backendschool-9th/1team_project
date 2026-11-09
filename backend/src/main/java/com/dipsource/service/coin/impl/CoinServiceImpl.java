@@ -134,6 +134,50 @@ public class CoinServiceImpl implements CoinService {
         );
     }
 
+    @Override
+    @Transactional
+    public void payForPost(Long buyerId, Long authorId, Long postId, String postTitle, int chips) {
+        if (chips <= 0) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "결제할 칩이 없어요.");
+        }
+        // 두 회원을 항상 ID 순서로 잠근다 — 서로의 글을 동시에 사도 교착 상태가 생기지 않음
+        User first = lockUser(Math.min(buyerId, authorId));
+        User second = lockUser(Math.max(buyerId, authorId));
+        User buyer = first.getId().equals(buyerId) ? first : second;
+        User author = buyer == first ? second : first;
+
+        if (buyer.getStatus() != UserStatus.ACTIVE) {
+            throw new BusinessException(ErrorCode.FORBIDDEN, "칩을 사용할 수 없는 계정이에요.");
+        }
+
+        buyer.deductChips(chips);
+        author.addChips(chips);
+
+        chipTransactionRepository.save(ChipTransaction.builder()
+                .userId(buyer.getId())
+                .type(ChipTransactionType.BLOG_PURCHASE)
+                .amount(-chips)
+                .balanceAfter(buyer.getChipBalance())
+                .refType(ChipRefType.POST_PURCHASE)
+                .refId(postId)
+                .description("「" + postTitle + "」 잠금 해제")
+                .build());
+        chipTransactionRepository.save(ChipTransaction.builder()
+                .userId(author.getId())
+                .type(ChipTransactionType.BLOG_INCOME)
+                .amount(chips)
+                .balanceAfter(author.getChipBalance())
+                .refType(ChipRefType.POST_PURCHASE)
+                .refId(postId)
+                .description("「" + postTitle + "」 판매 수익")
+                .build());
+    }
+
+    private User lockUser(Long userId) {
+        return userRepository.findByIdForUpdate(userId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "회원을 찾을 수 없어요."));
+    }
+
     /**
      * PG 결제 검증.
      * PG 연동 전에는 아무것도 하지 않는다 (no-op).

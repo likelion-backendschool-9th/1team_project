@@ -25,6 +25,7 @@ import com.dipsource.repository.post.PostPurchaseRepository;
 import com.dipsource.repository.post.PostRepository;
 import com.dipsource.repository.post.PostTagRepository;
 import com.dipsource.repository.tag.TagRepository;
+import com.dipsource.service.coin.CoinService;
 import com.dipsource.service.post.PostService;
 import com.dipsource.service.user.UserService;
 import java.time.LocalDateTime;
@@ -69,6 +70,7 @@ public class PostServiceImpl implements PostService {
     private final ApplicationEventPublisher eventPublisher;
     private final BlockRepository blockRepository;
     private final PostViewCounter postViewCounter;
+    private final CoinService coinService;
 
     @Override
     @Transactional(readOnly = true)
@@ -183,6 +185,32 @@ public class PostServiceImpl implements PostService {
         }
     }
 
+    @Override
+    @Transactional
+    public void purchase(Long userId, Long postId) {
+        Post post = findActive(postId);
+        if (hiddenFrom(userId, post.getUserId())) {
+            throw new BusinessException(ErrorCode.NOT_FOUND, "글을 찾을 수 없어요.");
+        }
+        if (!post.isPaid() || post.getPriceChips() <= 0) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "무료 글이에요.");
+        }
+        if (post.getUserId().equals(userId)) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "내 글은 구매하지 않아도 읽을 수 있어요.");
+        }
+        // 구독자는 유료 글을 무료로 읽는다. 구독하지 않은 회원만 단건 구매한다 (테이블정의서 posts.is_paid)
+        if (isSubscriber(userId, post.getUserId())) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "구독 중이라 이미 읽을 수 있어요.");
+        }
+        // 구매 기록을 먼저 넣어 중복 결제를 막는다. 이미 샀으면 칩을 다시 빼지 않고 끝낸다 (멱등)
+        int inserted = postPurchaseRepository.insertIgnore(userId, postId, post.getPriceChips());
+        if (inserted == 0) {
+            return;
+        }
+        // 잔액이 부족하면 예외가 나서 위의 구매 기록도 함께 롤백된다
+        coinService.payForPost(userId, post.getUserId(), postId, post.getTitle(), post.getPriceChips());
+    }
+
     /** 유료 글 본문 전체를 볼 수 있는지: 무료 글, 작성자, 구매자, 구독자 */
     private boolean canReadAll(Post post, Long viewerId) {
         if (!post.isPaid()) {
@@ -193,8 +221,12 @@ public class PostServiceImpl implements PostService {
         }
         return post.getUserId().equals(viewerId)
                 || postPurchaseRepository.existsById(new PostUserId(viewerId, post.getId()))
-                || blogSubscriptionRepository.existsBySubscriberIdAndBlogOwnerIdAndStatusAndExpiresAtAfter(
-                        viewerId, post.getUserId(), SubscriptionStatus.ACTIVE, LocalDateTime.now());
+                || isSubscriber(viewerId, post.getUserId());
+    }
+
+    private boolean isSubscriber(Long userId, Long blogOwnerId) {
+        return blogSubscriptionRepository.existsBySubscriberIdAndBlogOwnerIdAndStatusAndExpiresAtAfter(
+                userId, blogOwnerId, SubscriptionStatus.ACTIVE, LocalDateTime.now());
     }
 
     /** 이름으로 태그를 찾고, 없으면 만든다. 이름은 소문자로 맞추고 중복은 하나로 친다. */

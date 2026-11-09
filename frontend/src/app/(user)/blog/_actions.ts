@@ -144,11 +144,19 @@ export async function reportPost(postId: number, reason: string) {
 // 칩 사용 API는 아직 정해지지 않았다 (프론트엔드-청사진 11장).
 export async function unlockPost(postId: number) {
   if (!isId(postId)) return { ok: false, message: '잘못된 요청이에요.' };
-  if (!isMockMode) return { ok: false, message: '칩 사용 API 연결 전이에요.' };
-  return {
-    ok: true,
-    message: '잠금을 해제했어요. (목업이라 본문은 그대로 잠겨 있어요)',
-  };
+  // 칩 사용 API는 백엔드에 있어서 MOCK_EXCEPT_DM이어도 실서버를 쓴다.
+  const result = await mutate(
+    `/api/v1/posts/${postId}/purchase`,
+    'POST',
+    undefined,
+    '잠금을 해제했어요.',
+    !hasBackend,
+  );
+  if (!result.ok || !hasBackend) return result;
+  // 본문 전체와 줄어든 칩 잔액이 바로 보이도록 다시 그린다.
+  revalidatePath(`/blog/posts/${postId}`);
+  revalidatePath('/my/coins');
+  return result;
 }
 
 export async function subscribeBlog(userId: number) {
