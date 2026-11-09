@@ -19,6 +19,16 @@ public interface CoinService {
     void charge(Long userId, int packageId, String idempotencyKey);
 
     /**
+     * 블로그 구독료 결제(현금). 칩은 쓰지 않고 payments에 BLOG_SUBSCRIPTION으로 남긴다.
+     * PG 연동 전에는 충전처럼 즉시 PAID 처리한다.
+     *
+     * @param userId         구독하는 회원
+     * @param subscriptionId blog_subscriptions.id
+     * @param amountKrw      구독료(원)
+     */
+    void payBlogSubscription(Long userId, Long subscriptionId, int amountKrw);
+
+    /**
      * 한 회원의 칩 거래 내역을 최신순으로 반환한다.
      *
      * @param userId   조회 대상 회원

@@ -17,7 +17,6 @@ import com.dipsource.entity.post.Post;
 import com.dipsource.entity.post.PostCategory;
 import com.dipsource.entity.post.PostStatus;
 import com.dipsource.entity.post.PostTag;
-import com.dipsource.entity.post.SubscriptionStatus;
 import com.dipsource.entity.tag.Tag;
 import com.dipsource.global.exception.BusinessException;
 import com.dipsource.global.exception.ErrorCode;
@@ -190,8 +189,7 @@ class PostServiceImplTest {
         @Test
         void paidPostIsOpenForSubscriber() {
             stubDetail(post(AUTHOR, 30));
-            when(blogSubscriptionRepository.existsBySubscriberIdAndBlogOwnerIdAndStatusAndExpiresAtAfter(
-                    eq(OTHER), eq(AUTHOR), eq(SubscriptionStatus.ACTIVE), any())).thenReturn(true);
+            when(blogSubscriptionRepository.existsReadable(eq(OTHER), eq(AUTHOR), any())).thenReturn(true);
 
             PostDetailResponse detail = service.getPost(10L, OTHER);
 

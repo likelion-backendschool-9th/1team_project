@@ -153,12 +153,20 @@ export async function unlockPost(postId: number) {
 
 export async function subscribeBlog(userId: number) {
   if (!isId(userId)) return { ok: false, message: '잘못된 요청이에요.' };
-  return mutate(
+  // 구독 API는 백엔드에 있어서 MOCK_EXCEPT_DM이어도 실서버를 쓴다.
+  const result = await mutate(
     '/api/v1/subscriptions',
     'POST',
     { authorId: userId },
     '구독했어요. 매달 같은 날 자동이체돼요.',
+    !hasBackend,
   );
+  if (!result.ok || !hasBackend) return result;
+  // 구독 버튼·유료 글 잠금이 바로 바뀌도록 다시 그린다.
+  revalidatePath(`/blog/${userId}`);
+  revalidatePath('/blog/posts/[postId]', 'page');
+  revalidatePath('/my/subscription');
+  return result;
 }
 
 export async function createPostComment(

@@ -107,23 +107,26 @@ export async function getUserPosts(userId: number): Promise<PostSummary[]> {
   return data.content;
 }
 
-// 블로그 주인: 회원 정보는 프로필(GET users/{userId})로 받는다.
-// 소개·구독자 수·총 조회수·구독료·구독 여부는 구독 기능 전이라 비워 둔다 (블로그 구독 단계에서 채운다).
+// 블로그 주인: 회원 정보는 프로필(GET users/{userId}), 구독료·구독 여부·구독자 수는 GET users/{userId}/subscription으로 받는다.
+// 소개·총 조회수는 아직 API가 없어 비워 둔다.
 export async function getBlogOwner(userId: number): Promise<BlogOwner | null> {
   if (!hasBackend) return findMockBlogOwner(userId);
   try {
-    const [{ data: user }, { data: posts }] = await Promise.all([
+    const [{ data: user }, { data: posts }, { data: subscription }] = await Promise.all([
       apiFetch<ApiResponse<UserSummary>>(`/api/v1/users/${userId}`),
       apiFetch<ApiResponse<PageResponse<PostSummary>>>(`/api/v1/users/${userId}/posts?size=1`),
+      apiFetch<ApiResponse<{ price: number; subscribed: boolean; subscriberCount: number }>>(
+        `/api/v1/users/${userId}/subscription`,
+      ),
     ]);
     return {
       user: { id: user.id, nickname: user.nickname, profileImage: user.profileImage, techStacks: user.techStacks },
       bio: "",
-      subscriberCount: 0,
+      subscriberCount: subscription.subscriberCount,
       postCount: posts.totalElements,
       totalViews: 0,
-      subscriptionPrice: 0,
-      subscribed: false,
+      subscriptionPrice: subscription.price,
+      subscribed: subscription.subscribed,
     };
   } catch (error) {
     if (error instanceof ApiRequestError && error.status === 404) return null;

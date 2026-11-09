@@ -61,7 +61,7 @@ export async function AuthorBlog({ params }: Props) {
             </Link>
           ) : owner.subscribed ? (
             <span className={kit.pillSuccess}>✓ 구독 중</span>
-          ) : (
+          ) : owner.subscriptionPrice <= 0 ? null : (
             <ConfirmButton
               label={`구독하기 · 월 ${formatWon(owner.subscriptionPrice)}`}
               title={`${owner.user.nickname}님의 블로그를 구독할까요?`}

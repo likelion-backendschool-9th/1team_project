@@ -122,6 +122,24 @@ public class CoinServiceImpl implements CoinService {
     }
 
     @Override
+    @Transactional
+    public void payBlogSubscription(Long userId, Long subscriptionId, int amountKrw) {
+        if (amountKrw <= 0) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "결제할 금액이 없어요.");
+        }
+        Payment payment = paymentRepository.save(Payment.builder()
+                .userId(userId)
+                .paymentType(PaymentType.BLOG_SUBSCRIPTION)
+                .subscriptionId(subscriptionId)
+                .amountKrw(amountKrw)
+                .pgOrderId(generateOrderId())
+                .build());
+        // 충전과 같은 PG 검증 자리. 지금은 no-op이라 바로 PAID 처리한다
+        verifyPayment(payment);
+        payment.markPaid();
+    }
+
+    @Override
     @Transactional(readOnly = true)
     public PageResponse<ChipHistoryResponse> getHistory(Long userId, Pageable pageable) {
         Pageable limited = org.springframework.data.domain.PageRequest.of(

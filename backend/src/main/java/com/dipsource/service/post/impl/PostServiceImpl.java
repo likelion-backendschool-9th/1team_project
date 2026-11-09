@@ -12,7 +12,6 @@ import com.dipsource.entity.post.PostCategory;
 import com.dipsource.entity.post.PostStatus;
 import com.dipsource.entity.post.PostTag;
 import com.dipsource.entity.post.PostUserId;
-import com.dipsource.entity.post.SubscriptionStatus;
 import com.dipsource.entity.tag.Tag;
 import com.dipsource.global.common.LikePattern;
 import com.dipsource.global.common.PageResponse;
@@ -215,8 +214,8 @@ public class PostServiceImpl implements PostService {
         }
         return post.getUserId().equals(viewerId)
                 || postPurchaseRepository.existsById(new PostUserId(viewerId, post.getId()))
-                || blogSubscriptionRepository.existsBySubscriberIdAndBlogOwnerIdAndStatusAndExpiresAtAfter(
-                        viewerId, post.getUserId(), SubscriptionStatus.ACTIVE, LocalDateTime.now());
+                // 해지(CANCELED)한 구독도 만료일까지는 읽을 수 있다
+                || blogSubscriptionRepository.existsReadable(viewerId, post.getUserId(), LocalDateTime.now());
     }
 
     /** 이름으로 태그를 찾고, 없으면 만든다. 이름은 소문자로 맞추고 중복은 하나로 친다. */

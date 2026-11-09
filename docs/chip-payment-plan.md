@@ -55,19 +55,21 @@
 ### 3단계 — 블로그 구독
 
 > 브랜치: `feature/blog-subscription`
-> 현재 `subscribeBlog` 액션은 연동되어 있음 — 백엔드 실 구현 필요
+> 결제 수단: 칩이 아니라 **현금(원)**으로 정했다 (팀 결정). 테이블정의서(`payments.payment_type = BLOG_SUBSCRIPTION`, 구독료 `blog_subscription_price` 원)와 화면 문구("칩은 차감되지 않아요")에 맞춘 것이다.
 
 **백엔드**
-- [ ] `BlogSubscription` 엔티티 확인
-- [ ] `SubscriptionService.subscribe(subscriberId, blogOwnerId)` — 칩 차감 + 구독 레코드 생성
-- [ ] `SubscriptionService.unsubscribe(subscriberId)` — 구독 취소 (CANCELED 상태로)
-- [ ] `POST /subscriptions`, `DELETE /subscriptions/me`
-- [ ] 만료된 구독 자동 처리 (스케줄러 or 조회 시 체크)
-- [ ] `백엔드-청사진.md` 상태 업데이트
+- [x] `BlogSubscription` 엔티티 확인
+- [x] `BlogSubscriptionService.subscribe(subscriberId, blogOwnerId)` — 구독 레코드 생성(한 달) + `CoinService.payBlogSubscription()`으로 `payments`에 기록(PG no-op 즉시 PAID) + 블로그 주인에게 SUBSCRIBE 알림. 이미 구독 중이면 그대로, 해지했지만 만료 전이면 결제 없이 다시 이어 줌
+- [x] `BlogSubscriptionService.cancel(subscriberId, subscriptionId)` — CANCELED로. 만료일까지는 유료 글 열람 가능
+- [x] `POST /subscriptions`, `DELETE /subscriptions/me`, `GET /subscriptions/me`(내 목록), `GET /users/{userId}/subscription`(블로그 화면용)
+- [x] 만료된 구독 처리 — 조회 시 체크(`expires_at > now`). EXPIRED로 바꾸는 배치는 아직 없음
+- [ ] 자동 갱신(매달 결제) — PG 연동 후
+- [ ] 구독료 설정 API — 아직 없음 (시드 데이터의 `blog_subscription_price`로 확인)
+- [x] `백엔드-청사진.md` 상태 업데이트
 
 **프론트**
-- [ ] 구독 버튼 → 실 API 연동
-- [ ] `/my/subscription` 페이지 — 현재 구독 상태 + 해지 버튼
+- [x] 구독 버튼 → 실 API 연동, 구독료가 0인 블로그는 버튼 숨김
+- [x] `/my/subscription` 페이지 — 현재 구독 상태 + 해지 버튼 (딥소스 플러스 영역은 아직 목업)
 
 ---
 
