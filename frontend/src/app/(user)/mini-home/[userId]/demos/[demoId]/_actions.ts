@@ -2,13 +2,23 @@
 
 import { revalidatePath } from 'next/cache';
 import { runForm } from '@/app/_lib/api/formAction';
+import { redirect } from 'next/navigation';
+import { hasBackend } from '@/app/_lib/api/client';
 import { mutate } from '@/app/_lib/api/mutate';
 import { readValues, type FormState } from '@/app/_lib/formState';
 
 const TYPES = ['question', 'bug', 'praise'];
 
+// 데모 API는 백엔드가 있으므로 MOCK_EXCEPT_DM이어도 실서버를 쓴다.
+const send = (
+  path: `/api/v1/${string}`,
+  method: 'POST' | 'PUT' | 'DELETE',
+  body: unknown,
+  message: string,
+) => mutate(path, method, body, message, !hasBackend);
+
 export async function playDemo(demoId: number) {
-  return mutate(
+  return send(
     `/api/v1/demos/${demoId}/play`,
     'POST',
     undefined,
@@ -16,8 +26,20 @@ export async function playDemo(demoId: number) {
   );
 }
 
+/** 서버가 최소 간격과 동시 실행 수를 지키고, 한도에 걸리면 마지막 상태를 그대로 돌려준다. */
+export async function checkDemoBackendHealth(demoId: number) {
+  const result = await send(
+    `/api/v1/demos/${demoId}/backend/health-check`,
+    'POST',
+    undefined,
+    '상태를 확인했어요.',
+  );
+  if (result.ok) revalidatePath('/mini-home/[userId]/demos/[demoId]', 'page');
+  return result;
+}
+
 export async function toggleDemoLike(demoId: number, like: boolean) {
-  return mutate(
+  return send(
     `/api/v1/demos/${demoId}/like`,
     like ? 'POST' : 'DELETE',
     undefined,
@@ -26,7 +48,7 @@ export async function toggleDemoLike(demoId: number, like: boolean) {
 }
 
 export async function reportDemo(demoId: number, reason: string) {
-  return mutate(
+  return send(
     `/api/v1/demos/${demoId}/report`,
     'POST',
     { reason },
@@ -47,7 +69,7 @@ export async function createDemoComment(
   if (!TYPES.includes(values.type)) errors.type = '피드백 종류를 골라 주세요.';
 
   const state = await runForm(previous, values, errors, () =>
-    mutate(
+    send(
       `/api/v1/demos/${demoId}/comments`,
       'POST',
       values,
@@ -59,7 +81,7 @@ export async function createDemoComment(
 }
 
 export async function toggleDemoBookmark(demoId: number, bookmark: boolean) {
-  return mutate(
+  return send(
     `/api/v1/demos/${demoId}/bookmark`,
     bookmark ? 'POST' : 'DELETE',
     undefined,
@@ -68,19 +90,21 @@ export async function toggleDemoBookmark(demoId: number, bookmark: boolean) {
 }
 
 export async function deleteDemo(demoId: number) {
-  return mutate(
+  const result = await send(
     `/api/v1/demos/${demoId}`,
     'DELETE',
     undefined,
     '데모를 삭제했어요. 인벤토리 1칸이 비었어요.',
   );
+  if (result.ok && hasBackend) redirect('/demos');
+  return result;
 }
 
 export async function updateDemoComment(commentId: number, content: string) {
   const text = content.trim();
   if (!text || text.length > 300)
     return { ok: false, message: '1~300자로 입력해 주세요.' };
-  return mutate(
+  return send(
     `/api/v1/demos/comments/${commentId}`,
     'PUT',
     { content: text },
@@ -89,7 +113,7 @@ export async function updateDemoComment(commentId: number, content: string) {
 }
 
 export async function deleteDemoComment(commentId: number) {
-  return mutate(
+  return send(
     `/api/v1/demos/comments/${commentId}`,
     'DELETE',
     undefined,
@@ -105,7 +129,7 @@ export async function replyDemoComment(
   const text = content.trim();
   if (!text || text.length > 300)
     return { ok: false, message: '1~300자로 입력해 주세요.' };
-  return mutate(
+  return send(
     `/api/v1/demos/${demoId}/comments`,
     'POST',
     { content: text, parentId, type: 'praise' },
@@ -114,7 +138,7 @@ export async function replyDemoComment(
 }
 
 export async function toggleDemoCommentLike(commentId: number, like: boolean) {
-  return mutate(
+  return send(
     `/api/v1/demos/comments/${commentId}/like`,
     like ? 'POST' : 'DELETE',
     undefined,

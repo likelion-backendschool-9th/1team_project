@@ -3,6 +3,7 @@ import { cache } from "react";
 import {
   ApiRequestError,
   apiFetch,
+  hasBackend,
   isMockMode,
   type ApiResponse,
   type PageResponse,
@@ -111,8 +112,8 @@ export async function getRepos(userId: number): Promise<GithubRepo[]> {
 }
 
 export async function getDemos(userId: number, size = 3): Promise<MiniHomeDemo[]> {
-  if (isMockMode) return findMockDemos(userId).slice(0, size);
-  const { data } = await apiFetch<ApiResponse<PageResponse<MiniHomeDemo>>>(
+  if (!hasBackend) return findMockDemos(userId).slice(0, size);
+  const { data } = await apiFetch<ApiResponse<{ content: MiniHomeDemo[] }>>(
     `/api/v1/demos?userId=${userId}&size=${size}`,
   );
   return data.content;

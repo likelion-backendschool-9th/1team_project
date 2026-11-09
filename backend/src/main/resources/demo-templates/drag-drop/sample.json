@@ -1,0 +1,7 @@
+{
+  "tasks": [
+    { "id": 1, "title": "기획서 읽기", "status": "todo" },
+    { "id": 2, "title": "화면 그리기", "status": "todo" },
+    { "id": 3, "title": "저장소 만들기", "status": "done" }
+  ]
+}

@@ -11,6 +11,12 @@ spring:
     username: ${SPRING_DATASOURCE_USERNAME:dipsource}
     password: ${SPRING_DATASOURCE_PASSWORD:dipsource}
 
+  servlet:
+    multipart:
+      # 데모 ZIP 10MB + 여유. 정확한 제한은 demo.limits에서 검사한다
+      max-file-size: 11MB
+      max-request-size: 12MB
+
   sql:
     init:
       # schema.sql로 PostgreSQL 확장(pg_trgm, fuzzystrmatch)을 만든다. 내장 DB가 아니어도 실행하려면 always가 필요하다
@@ -83,6 +89,35 @@ r2:
   secret-key: ${R2_SECRET_KEY:placeholder}
   bucket: ${R2_BUCKET:placeholder}
   public-url: ${R2_PUBLIC_URL:https://placeholder.example.com}
+
+# 데모 플랫폼. 파일은 비공개 버킷에 두고 Worker만 읽는다 (docs/데모-플랫폼-배포.md)
+demo:
+  bucket: ${R2_DEMO_BUCKET:dipsource-demos}
+  worker-base-url: ${DEMO_WORKER_BASE_URL:http://localhost:8787}
+  signing-secret: ${DEMO_SIGNING_SECRET:}
+  limits:
+    max-zip-bytes: 10485760
+    max-total-bytes: 31457280
+    max-file-bytes: 10485760
+    max-files: 200
+  quota:
+    max-demos: ${DEMO_QUOTA_MAX_DEMOS:20}
+    max-storage-bytes: ${DEMO_QUOTA_MAX_STORAGE_BYTES:209715200}
+    max-versions-per-demo: ${DEMO_QUOTA_MAX_VERSIONS:10}
+  preview:
+    ttl-minutes: ${DEMO_PREVIEW_TTL_MINUTES:30}
+    max-active-per-user: 3
+  thumbnail:
+    enabled: ${DEMO_THUMBNAIL_ENABLED:false}
+    account-id: ${CLOUDFLARE_ACCOUNT_ID:}
+    api-token: ${CLOUDFLARE_BROWSER_API_TOKEN:}
+  # 외부 백엔드 상태 확인. 켜면 서버가 업로더가 입력한 도메인으로 요청을 보내므로 기본은 끈다 (docs/데모-플랫폼-배포.md)
+  backend:
+    health-check-enabled: ${DEMO_BACKEND_HEALTH_ENABLED:false}
+    health-cooldown-seconds: 60
+    health-fresh-minutes: 30
+    health-max-concurrent: 4
+    health-timeout-ms: 5000
 
 management:
   endpoints:
