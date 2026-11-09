@@ -7,6 +7,7 @@ import com.dipsource.entity.demo.DemoStatus;
 import com.dipsource.entity.feed.Feed;
 import com.dipsource.entity.feed.FeedComment;
 import com.dipsource.entity.post.Post;
+import com.dipsource.entity.post.PostComment;
 import com.dipsource.entity.user.User;
 import com.dipsource.global.common.PageResponse;
 import com.dipsource.global.exception.BusinessException;
@@ -15,12 +16,14 @@ import com.dipsource.repository.admin.AdminActionLogRepository;
 import com.dipsource.repository.demo.DemoRepository;
 import com.dipsource.repository.feed.FeedCommentRepository;
 import com.dipsource.repository.feed.FeedRepository;
+import com.dipsource.repository.post.PostCommentRepository;
 import com.dipsource.repository.post.PostRepository;
 import com.dipsource.repository.report.ReportRepository;
 import com.dipsource.repository.user.UserRepository;
 import com.dipsource.service.admin.AdminContentService;
 import com.dipsource.service.feed.FeedCommentService;
 import com.dipsource.service.feed.FeedService;
+import com.dipsource.service.post.PostCommentService;
 import com.dipsource.service.post.PostService;
 import java.util.List;
 import java.util.Locale;
@@ -42,12 +45,14 @@ public class AdminContentServiceImpl implements AdminContentService {
     private final FeedRepository feedRepository;
     private final PostRepository postRepository;
     private final FeedCommentRepository feedCommentRepository;
+    private final PostCommentRepository postCommentRepository;
     private final DemoRepository demoRepository;
     private final UserRepository userRepository;
     private final ReportRepository reportRepository;
     private final FeedService feedService;
     private final PostService postService;
     private final FeedCommentService feedCommentService;
+    private final PostCommentService postCommentService;
     private final AdminActionLogRepository adminActionLogRepository;
 
     @Override
@@ -106,6 +111,27 @@ public class AdminContentServiceImpl implements AdminContentService {
     public void deleteComment(Long adminId, Long commentId) {
         feedCommentService.deleteByAdmin(commentId);
         logDelete(adminId, "FEED_COMMENT", commentId);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public PageResponse<AdminContentResponse> listPostComments(String q, Pageable pageable) {
+        Page<PostComment> page = postCommentRepository.searchForAdmin(likePattern(q), limited(pageable));
+        Map<Long, String> nicknames = nicknamesOf(page.getContent().stream().map(PostComment::getUserId).toList());
+        // 블로그 댓글 신고는 아직 없어서 0이지만, 신고가 생기면 이 타입으로 센다.
+        Map<Long, Integer> reported = reportedOf(
+                "POST_COMMENT", page.getContent().stream().map(PostComment::getId).toList());
+        return PageResponse.of(page, comment -> AdminContentResponse.ofPostComment(
+                comment,
+                nicknames.getOrDefault(comment.getUserId(), "삭제된 유저"),
+                reported.getOrDefault(comment.getId(), 0)));
+    }
+
+    @Override
+    @Transactional
+    public void deletePostComment(Long adminId, Long commentId) {
+        postCommentService.deleteByAdmin(commentId);
+        logDelete(adminId, "POST_COMMENT", commentId);
     }
 
     @Override

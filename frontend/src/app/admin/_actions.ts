@@ -13,7 +13,7 @@ function isId(value: number) {
   return Number.isSafeInteger(value) && value > 0;
 }
 
-const KINDS: ContentKind[] = ["demos", "posts", "feeds", "comments"];
+const KINDS: ContentKind[] = ["demos", "posts", "feeds", "comments", "post-comments"];
 const PERIODS = ["1일", "7일", "30일", "영구"];
 const DECISIONS = ["hide", "sanction", "reject"];
 

@@ -9,6 +9,7 @@ import com.dipsource.entity.feed.Feed;
 import com.dipsource.entity.feed.FeedComment;
 import com.dipsource.entity.feed.FeedStatus;
 import com.dipsource.entity.post.Post;
+import com.dipsource.entity.post.PostComment;
 import com.dipsource.entity.post.PostStatus;
 
 public record AdminContentResponse(
@@ -49,6 +50,17 @@ public record AdminContentResponse(
                 author,
                 format(comment.getCreatedAt()),
                 "피드 #" + comment.getFeed().getId(),
+                reported,
+                "visible");
+    }
+
+    public static AdminContentResponse ofPostComment(PostComment comment, String author, int reported) {
+        return new AdminContentResponse(
+                comment.getId(),
+                clip(comment.getContent()),
+                author,
+                format(comment.getCreatedAt()),
+                "글 #" + comment.getPost().getId(),
                 reported,
                 "visible");
     }
