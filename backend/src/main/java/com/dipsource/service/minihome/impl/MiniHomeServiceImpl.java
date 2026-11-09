@@ -27,6 +27,9 @@ public class MiniHomeServiceImpl implements MiniHomeService {
     /** 프론트 MiniHomeSkin과 같은 9종. 스킨을 추가하면 양쪽을 같이 바꾼다. */
     private static final Set<String> SKINS = Set.of(
             "cream", "midnight", "mint", "cherry", "sky", "lavender", "peach", "forest", "sunset");
+    /** 프론트 BGM_TRACKS(_lib/bgm.ts)의 id와 같다. 곡을 추가하면 양쪽을 같이 바꾼다. */
+    private static final Set<String> BGMS = Set.of(
+            "lofi-coding", "pixel-morning", "rainy-commit", "deploy-friday");
 
     private final MiniHomeLoader miniHomeLoader;
     private final MiniHomeRepository miniHomeRepository;
@@ -55,7 +58,7 @@ public class MiniHomeServiceImpl implements MiniHomeService {
         String headline = requireHeadline(request.headline());
         String quote = optional(request.quote(), 80, "오늘의 한마디는 80자 이하로 입력해 주세요.");
         String domain = optional(request.domain(), 100, "개인 도메인은 100자 이하로 입력해 주세요.");
-        String bgm = optional(request.bgm(), 50, "배경음악 값이 너무 길어요.");
+        String bgm = normalizeBgm(request.bgm());
         List<Long> ordered = arrange(request.showcaseDemoIds(), parseFeatured(request.featuredDemoId()));
         home.update(headline, quote, domain, bgm);
         home.changeStackTags(parseStackTags(request.stackTags()));
@@ -184,6 +187,18 @@ public class MiniHomeServiceImpl implements MiniHomeService {
         return value;
     }
 
+    /** 비어 있으면 BGM 없음(null). 목록에 없는 곡 id는 거절한다. */
+    private static String normalizeBgm(String bgm) {
+        if (bgm == null || bgm.isBlank()) {
+            return null;
+        }
+        String value = bgm.trim();
+        if (!BGMS.contains(value)) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "목록에 있는 곡만 고를 수 있어요.");
+        }
+        return value;
+    }
+
     private static Long parseFeatured(String raw) {
         if (raw == null || raw.isBlank()) {
             return null;
@@ -242,7 +257,7 @@ public class MiniHomeServiceImpl implements MiniHomeService {
                 home.getIntro(),
                 displaySkin(home.getSkinTheme()),
                 home.getDomain(),
-                home.getBgm(),
+                displayBgm(home.getBgm()),
                 showcaseIds(home),
                 home.getShowcaseDemo1Id(),
                 home.getStackTags() == null ? List.of() : List.copyOf(home.getStackTags()),
@@ -266,6 +281,11 @@ public class MiniHomeServiceImpl implements MiniHomeService {
 
     private static VisitorStatsResponse stats(MiniHome home) {
         return new VisitorStatsResponse(home.getTodayCount(), home.getTotalCount());
+    }
+
+    /** 예전에 저장된 목록에 없는 곡 id는 BGM 없음으로 보여 준다. */
+    private static String displayBgm(String bgm) {
+        return bgm != null && BGMS.contains(bgm) ? bgm : null;
     }
 
     /** 예전에 저장된 "default"나 목록에 없는 값은 cream으로 보여 준다. */

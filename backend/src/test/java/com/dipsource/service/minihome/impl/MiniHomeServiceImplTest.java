@@ -182,6 +182,47 @@ class MiniHomeServiceImplTest {
     }
 
     @Test
+    void savesKnownBgm() {
+        MiniHome home = home();
+        when(repository.findByUserId(1L)).thenReturn(Optional.of(home));
+
+        assertThat(service.update(1L, requestWithBgm(" rainy-commit ")).bgm()).isEqualTo("rainy-commit");
+        assertThat(home.getBgm()).isEqualTo("rainy-commit");
+    }
+
+    @Test
+    void savesBlankBgmAsNone() {
+        MiniHome home = home();
+        when(repository.findByUserId(1L)).thenReturn(Optional.of(home));
+
+        service.update(1L, requestWithBgm(""));
+        assertThat(home.getBgm()).isNull();
+
+        service.update(1L, requestWithBgm(null));
+        assertThat(home.getBgm()).isNull();
+    }
+
+    @Test
+    void rejectsUnknownBgm() {
+        MiniHome home = home();
+        when(repository.findByUserId(1L)).thenReturn(Optional.of(home));
+
+        assertThatThrownBy(() -> service.update(1L, requestWithBgm("track")))
+                .isInstanceOf(BusinessException.class)
+                .extracting(ex -> ((BusinessException) ex).getErrorCode())
+                .isEqualTo(ErrorCode.BAD_REQUEST);
+    }
+
+    @Test
+    void readsStoredUnknownBgmAsNone() {
+        MiniHome home = home();
+        home.update("한 줄", "한마디", "example.dev", "old-track");
+        when(repository.findByUserId(1L)).thenReturn(Optional.of(home));
+
+        assertThat(service.getOrCreate(1L, null).bgm()).isNull();
+    }
+
+    @Test
     void rejectsMoreThanThreeDemos() {
         when(repository.findByUserId(1L)).thenReturn(Optional.of(home()));
 
@@ -260,7 +301,12 @@ class MiniHomeServiceImplTest {
 
     private static UpdateMiniHomeRequest requestWithSkin(String skin) {
         return new UpdateMiniHomeRequest(
-                "한 줄", "한마디", skin, "example.dev", "track", "React", List.of(), "");
+                "한 줄", "한마디", skin, "example.dev", "lofi-coding", "React", List.of(), "");
+    }
+
+    private static UpdateMiniHomeRequest requestWithBgm(String bgm) {
+        return new UpdateMiniHomeRequest(
+                "한 줄", "한마디", "cream", "example.dev", bgm, "React", List.of(), "");
     }
 
     private static UpdateMiniHomeRequest request(List<Long> showcase, String featured) {
@@ -269,6 +315,6 @@ class MiniHomeServiceImplTest {
 
     private static UpdateMiniHomeRequest request(List<Long> showcase, String featured, String stackTags) {
         return new UpdateMiniHomeRequest(
-                "한 줄", "한마디", "mint", "example.dev", "track", stackTags, showcase, featured);
+                "한 줄", "한마디", "mint", "example.dev", "lofi-coding", stackTags, showcase, featured);
     }
 }
