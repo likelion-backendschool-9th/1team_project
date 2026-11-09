@@ -23,6 +23,7 @@ import com.dipsource.global.exception.BusinessException;
 import com.dipsource.global.exception.ErrorCode;
 import com.dipsource.repository.block.BlockRepository;
 import com.dipsource.repository.post.BlogSubscriptionRepository;
+import com.dipsource.repository.post.PostBookmarkRepository;
 import com.dipsource.repository.post.PostPurchaseRepository;
 import com.dipsource.repository.post.PostRepository;
 import com.dipsource.repository.post.PostTagRepository;
@@ -54,6 +55,7 @@ class PostServiceImplTest {
 
     @Mock private PostRepository postRepository;
     @Mock private com.dipsource.repository.post.PostLikeRepository postLikeRepository;
+    @Mock private PostBookmarkRepository postBookmarkRepository;
     @Mock private PostTagRepository postTagRepository;
     @Mock private PostPurchaseRepository postPurchaseRepository;
     @Mock private BlogSubscriptionRepository blogSubscriptionRepository;
@@ -65,7 +67,7 @@ class PostServiceImplTest {
 
     @BeforeEach
     void setUp() {
-        service = new PostServiceImpl(postRepository, postLikeRepository, postTagRepository,
+        service = new PostServiceImpl(postRepository, postLikeRepository, postBookmarkRepository, postTagRepository,
                 postPurchaseRepository, blogSubscriptionRepository, tagRepository, userService,
                 org.mockito.Mockito.mock(org.springframework.context.ApplicationEventPublisher.class),
                 blockRepository);
@@ -238,6 +240,56 @@ class PostServiceImplTest {
             when(userService.getSummaries(List.of())).thenReturn(Map.of());
 
             assertThat(service.getPosts(null, null, "popular", null, PageRequest.of(0, 20)).content()).isEmpty();
+        }
+    }
+
+    @Nested
+    class Bookmark {
+
+        @Test
+        void bookmarkAndUnbookmarkUseIdempotentQueries() {
+            when(postRepository.findById(10L)).thenReturn(Optional.of(post(AUTHOR, 0)));
+
+            service.bookmark(OTHER, 10L);
+            service.unbookmark(OTHER, 10L);
+
+            verify(postBookmarkRepository).insertIgnore(OTHER, 10L);
+            verify(postBookmarkRepository).deleteByUserIdAndPostId(OTHER, 10L);
+        }
+
+        @Test
+        void deletedPostCannotBeBookmarked() {
+            Post post = post(AUTHOR, 0);
+            post.delete();
+            when(postRepository.findById(10L)).thenReturn(Optional.of(post));
+
+            assertThatThrownBy(() -> service.bookmark(OTHER, 10L))
+                    .isInstanceOf(BusinessException.class)
+                    .extracting(e -> ((BusinessException) e).getErrorCode())
+                    .isEqualTo(ErrorCode.NOT_FOUND);
+            verify(postBookmarkRepository, never()).insertIgnore(anyLong(), anyLong());
+        }
+
+        @Test
+        void blockedAuthorsPostCannotBeBookmarked() {
+            when(postRepository.findById(10L)).thenReturn(Optional.of(post(AUTHOR, 0)));
+            when(blockRepository.existsBetween(OTHER, AUTHOR)).thenReturn(true);
+
+            assertThatThrownBy(() -> service.bookmark(OTHER, 10L))
+                    .isInstanceOf(BusinessException.class)
+                    .extracting(e -> ((BusinessException) e).getErrorCode())
+                    .isEqualTo(ErrorCode.NOT_FOUND);
+            verify(postBookmarkRepository, never()).insertIgnore(anyLong(), anyLong());
+        }
+
+        @Test
+        void detailShowsMyBookmark() {
+            when(postRepository.findById(10L)).thenReturn(Optional.of(post(AUTHOR, 0)));
+            when(userService.getSummaries(List.of(AUTHOR))).thenReturn(Map.of(AUTHOR, author()));
+            when(postTagRepository.findTagNames(10L)).thenReturn(List.of());
+            when(postBookmarkRepository.existsById(any())).thenReturn(true);
+
+            assertThat(service.getPost(10L, OTHER).bookmarked()).isTrue();
         }
     }
 
