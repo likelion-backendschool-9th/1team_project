@@ -135,11 +135,11 @@ export const mockAdminSubscriptions: AdminSubscription[] = [
 
 export type Settlement = { id: number; creator: string; gross: number; fee: number; status: "pending" | "done"; period: string };
 export const mockSettlements: Settlement[] = [
-  { id: 1, creator: "차재인", gross: 845_000, fee: 169_000, status: "pending", period: "2026-10" },
-  { id: 2, creator: "윤세진", gross: 512_000, fee: 102_400, status: "pending", period: "2026-10" },
-  { id: 3, creator: "정시우", gross: 388_000, fee: 77_600, status: "pending", period: "2026-10" },
-  { id: 4, creator: "김승조", gross: 126_000, fee: 25_200, status: "done", period: "2026-10" },
-  { id: 5, creator: "차재인", gross: 790_000, fee: 158_000, status: "done", period: "2026-09" },
+  { id: 1, creator: "차재인", gross: 845_000, fee: 253_500, status: "pending", period: "2026-10" },
+  { id: 2, creator: "윤세진", gross: 512_000, fee: 153_600, status: "pending", period: "2026-10" },
+  { id: 3, creator: "정시우", gross: 388_000, fee: 116_400, status: "pending", period: "2026-10" },
+  { id: 4, creator: "김승조", gross: 126_000, fee: 37_800, status: "done", period: "2026-10" },
+  { id: 5, creator: "차재인", gross: 790_000, fee: 237_000, status: "done", period: "2026-09" },
 ];
 
 export type CoinTx = { id: number; user: string; type: "charge" | "refund-request" | "refunded"; chips: number; createdAt: string; memo: string };

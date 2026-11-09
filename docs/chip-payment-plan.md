@@ -98,7 +98,7 @@
 - [ ] `PUT /admin/coins/purchases/{purchaseId}/refund` — 환불 처리
 - [ ] `GET /admin/subscriptions` — 구독 목록
 - [ ] `GET /admin/revenue?from=&to=` — 수익 현황
-- [ ] `GET /admin/settlements`, `PUT /admin/settlements/{id}/confirm` — 정산
+- [x] `GET /admin/settlements`, `POST /admin/settlements`(만들기), `PUT /admin/settlements/{id}/confirm` — 정산 (②). 확정 시 작가 칩을 SETTLEMENT로 차감
 - [ ] `GET /admin/coins/suspicious` — 이상 거래 탐지
 - [ ] `백엔드-청사진.md` 상태 업데이트
 
@@ -106,7 +106,7 @@
 - [ ] `/admin/coins` 페이지 — 충전 내역 + 환불 버튼
 - [ ] `/admin/subscriptions` 페이지
 - [ ] `/admin/revenue` 페이지
-- [ ] `/admin/settlements` 페이지
+- [x] `/admin/settlements` 페이지 (②) — "지난달 정산 만들기" 버튼, 확정 버튼
 
 ---
 

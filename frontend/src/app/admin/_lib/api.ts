@@ -174,7 +174,14 @@ export async function getRevenue(from?: string, to?: string) {
   }
   return mockRevenue.filter((row) => (!from || row.month >= from) && (!to || row.month <= to));
 }
-export const getSettlements = () => get("/api/v1/admin/settlements", mockSettlements);
+export async function getSettlements(): Promise<typeof mockSettlements> {
+  if (!hasBackend) return mockSettlements;
+  // 정산 API는 백엔드에 있어서 MOCK_EXCEPT_DM이어도 실서버를 쓴다. 최근 100건만 보여 준다.
+  const { data } = await apiFetch<ApiResponse<PageResponse<(typeof mockSettlements)[number]>>>(
+    "/api/v1/admin/settlements?size=100",
+  );
+  return data.content;
+}
 export const getCoinTx = () => get("/api/v1/admin/coins/purchases", mockCoinTx);
 export const getSuspicious = () => get("/api/v1/admin/coins/suspicious", mockSuspicious);
 

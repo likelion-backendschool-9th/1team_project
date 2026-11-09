@@ -1,9 +1,9 @@
 "use server";
 
-import { hasBackend } from "@/app/_lib/api/client";
+import { apiFetch, ApiRequestError, hasBackend, type ApiResponse } from "@/app/_lib/api/client";
 import { revalidatePath } from "next/cache";
 import { runForm } from "@/app/_lib/api/formAction";
-import { mutate } from "@/app/_lib/api/mutate";
+import { mutate, type MutationResult } from "@/app/_lib/api/mutate";
 import { readValues, type FormState } from "@/app/_lib/formState";
 import type { ContentKind } from "./_lib/mock";
 
@@ -70,9 +70,39 @@ export async function processReport(reportId: number, previous: FormState, formD
   return state;
 }
 
+// 정산 API는 백엔드에 있어서 MOCK_EXCEPT_DM이어도 실서버를 쓴다.
+export async function createSettlements(): Promise<MutationResult> {
+  if (!hasBackend) return { ok: true, message: "지난달 정산을 만들었어요. (백엔드 연결 전이라 실제로 저장되지는 않아요)" };
+  try {
+    // 만든 건수를 보여 주려고 응답 본문이 필요해서 mutate 대신 직접 부른다. month를 비우면 지난달이다.
+    const { data } = await apiFetch<ApiResponse<{ period: string; created: number; skipped: number }>>(
+      "/api/v1/admin/settlements",
+      { method: "POST", body: JSON.stringify({}) },
+    );
+    revalidatePath("/admin/settlements");
+    return {
+      ok: true,
+      message: data.created > 0
+        ? `${data.period} 정산 ${data.created}건을 만들었어요.`
+        : `${data.period}에 새로 정산할 수익이 없어요.`,
+    };
+  } catch (error) {
+    if (error instanceof ApiRequestError) return { ok: false, message: error.error.message };
+    throw error;
+  }
+}
+
 export async function confirmSettlement(settlementId: number) {
   if (!isId(settlementId)) return { ok: false, message: "잘못된 요청이에요." };
-  return mutate(`/api/v1/admin/settlements/${settlementId}/confirm`, "PUT", undefined, "정산을 확정했어요.");
+  const result = await mutate(
+    `/api/v1/admin/settlements/${settlementId}/confirm`,
+    "PUT",
+    undefined,
+    "정산을 확정했어요.",
+    !hasBackend,
+  );
+  if (result.ok && hasBackend) revalidatePath("/admin/settlements");
+  return result;
 }
 
 export async function approveRefund(txId: number) {

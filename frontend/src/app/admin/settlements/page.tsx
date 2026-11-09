@@ -1,19 +1,15 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { ConfirmButton } from "@/app/_components/ui/ConfirmButton";
-import { ComingSoon } from "@/app/_components/ui/ComingSoon";
 import kit from "@/app/_components/ui/kit.module.css";
-import { isMockMode } from "@/app/_lib/api/client";
 import { formatWon } from "@/app/_lib/format";
-import { confirmSettlement } from "../_actions";
+import { confirmSettlement, createSettlements } from "../_actions";
 import { StatusPill } from "../_components/StatusPill";
 import { getSettlements } from "../_lib/api";
 
 export const metadata: Metadata = { title: "정산 관리" };
 
 async function SettlementsContent() {
-  if (!isMockMode) return <ComingSoon feature="정산 관리" />;
-
   const rows = await getSettlements();
   const pending = rows.filter((row) => row.status === "pending");
 
@@ -22,7 +18,17 @@ async function SettlementsContent() {
       <div className={kit.grid3}>
         <div className={`${kit.card} ${kit.stat}`}><span className={kit.statLabel}>정산 대기</span><span className={kit.statValue}>{pending.length}건</span></div>
         <div className={`${kit.card} ${kit.stat}`}><span className={kit.statLabel}>지급 예정액</span><span className={kit.statValue}>{formatWon(pending.reduce((s, r) => s + r.gross - r.fee, 0))}</span></div>
-        <div className={`${kit.card} ${kit.stat}`}><span className={kit.statLabel}>수수료율</span><span className={kit.statValue}>20%</span></div>
+        <div className={`${kit.card} ${kit.stat}`}><span className={kit.statLabel}>수수료율</span><span className={kit.statValue}>30%</span></div>
+      </div>
+      <div className={kit.row} style={{ justifyContent: "flex-end" }}>
+        <ConfirmButton
+          label="지난달 정산 만들기"
+          title="지난달 정산을 만들까요?"
+          description="지난달 판매·후원 수익 칩을 작가별로 모아 정산 대기로 올려요. 이미 만든 작가는 건너뛰어요."
+          confirmLabel="만들기"
+          className={kit.btnPrimary}
+          onConfirm={createSettlements}
+        />
       </div>
       <section className={kit.card}>
         <div className={kit.tableWrap}>
@@ -48,7 +54,7 @@ async function SettlementsContent() {
                       <ConfirmButton
                         label="정산 확정"
                         title={`${row.creator}님 ${row.period} 정산을 확정할까요?`}
-                        description={`${formatWon(row.gross - row.fee)}이 지급 대기열에 올라가요.`}
+                        description={`${formatWon(row.gross - row.fee)}이 지급 대기열에 올라가고, 작가의 칩이 그만큼 빠져요.`}
                         confirmLabel="확정"
                         className={`${kit.btnPrimary} ${kit.sm}`}
                         onConfirm={confirmSettlement.bind(null, row.id)}
