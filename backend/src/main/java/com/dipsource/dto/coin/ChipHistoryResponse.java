@@ -7,7 +7,7 @@ import java.time.LocalDateTime;
 /**
  * 칩 거래 내역 한 건 (프론트 ChipHistory).
  *
- * @param type "charge"(충전) / "use"(사용) / "refund"(환불·수입)
+ * @param type "charge"(충전) / "use"(사용) / "refund"(환불) / "revenue"(수익)
  */
 public record ChipHistoryResponse(
         Long id,

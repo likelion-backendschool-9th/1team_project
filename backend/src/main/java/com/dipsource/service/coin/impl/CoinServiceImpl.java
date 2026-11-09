@@ -5,6 +5,7 @@ import com.dipsource.entity.coin.ChipRefType;
 import com.dipsource.entity.coin.ChipTransaction;
 import com.dipsource.entity.coin.ChipTransactionType;
 import com.dipsource.entity.coin.Payment;
+import com.dipsource.entity.coin.PaymentStatus;
 import com.dipsource.entity.coin.PaymentType;
 import com.dipsource.entity.user.User;
 import com.dipsource.entity.user.enums.UserStatus;
@@ -42,6 +43,12 @@ public class CoinServiceImpl implements CoinService {
     /** 칩 1개 금액(원). 프론트 policy.ts의 CHIP_PRICE_WON과 동일 */
     private static final int CHIP_PRICE_WON = 200;
 
+    /** 같은 유저의 연속 충전 최소 간격(초). 연타 방지용 */
+    private static final int CHARGE_COOLDOWN_SECONDS = 10;
+
+    /** 거래 내역 한 번에 최대 조회 수 */
+    private static final int MAX_HISTORY_SIZE = 50;
+
     private final UserRepository userRepository;
     private final PaymentRepository paymentRepository;
     private final ChipTransactionRepository chipTransactionRepository;
@@ -52,7 +59,7 @@ public class CoinServiceImpl implements CoinService {
         // [B] 멱등 키 체크 — 같은 키로 이미 처리된 결제가 있으면 중복 처리 없이 반환
         if (idempotencyKey != null && !idempotencyKey.isBlank()) {
             boolean alreadyPaid = paymentRepository.findByPgOrderId(idempotencyKey)
-                    .map(p -> p.getStatus() == com.dipsource.entity.coin.PaymentStatus.PAID)
+                    .map(p -> p.getStatus() == PaymentStatus.PAID)
                     .orElse(false);
             if (alreadyPaid) return;
         }
@@ -104,12 +111,6 @@ public class CoinServiceImpl implements CoinService {
                 .description("칩 " + chips + "개 충전")
                 .build());
     }
-
-    /** 같은 유저의 연속 충전 최소 간격(초). 연타 방지용 */
-    private static final int CHARGE_COOLDOWN_SECONDS = 10;
-
-    /** 거래 내역 한 번에 최대 조회 수 */
-    private static final int MAX_HISTORY_SIZE = 50;
 
     @Override
     @Transactional(readOnly = true)
