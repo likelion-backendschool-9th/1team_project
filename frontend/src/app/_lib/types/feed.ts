@@ -14,6 +14,10 @@ export type Feed = {
   reposted: boolean;
   bookmarked: boolean;
   following: boolean;
+  /** 첨부 이미지 URL (최대 5장). 없으면 null */
+  imageUrls?: string[] | null;
+  /** 첨부 링크 URL. 없으면 null */
+  linkUrl?: string | null;
 };
 
 export type Tag = {

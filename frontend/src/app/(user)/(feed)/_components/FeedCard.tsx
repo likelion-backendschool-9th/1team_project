@@ -55,6 +55,26 @@ export function FeedCard({ feed, myId, now }: Props) {
         <FeedText text={feed.content} />
       </p>
 
+      {feed.imageUrls && feed.imageUrls.length > 0 && (
+        <ul className={`${styles.images} ${feed.imageUrls.length === 1 ? styles.imagesSingle : ""}`} aria-label="첨부 이미지">
+          {feed.imageUrls.map((url, index) => (
+            <li key={url}>
+              <a href={url} target="_blank" rel="noopener noreferrer" className={styles.imageLink}>
+                {/* 업로드 이미지(R2) 크기를 미리 알 수 없어 next/image 대신 img를 쓴다. */}
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={url} alt={`첨부 이미지 ${index + 1}`} loading="lazy" className={styles.image} />
+              </a>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {feed.linkUrl && (
+        <a href={feed.linkUrl} target="_blank" rel="noopener noreferrer nofollow" className={styles.link}>
+          🔗 {feed.linkUrl}
+        </a>
+      )}
+
       {demo && (
         <div className={styles.demo}>
           <DemoThumb seed={demo.id - 1} thumbnail={demo.thumbnail} className={styles.demoThumb} />
