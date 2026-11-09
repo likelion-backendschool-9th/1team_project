@@ -165,14 +165,16 @@ public class User extends BaseEntity {
     }
 
     /**
-     * 칩을 차감한다. 잔액이 부족하면 false 반환.
-     * chip_transactions와 같은 트랜잭션에서 호출해야 한다.
+     * 칩을 차감함. 잔액 부족이면 {@link com.dipsource.entity.coin.InsufficientChipsException} 던짐.
+     * chip_transactions와 같은 트랜잭션에서 호출해야 함
+     *
      * @param chips 차감할 칩 수 (양수)
      */
-    public boolean deductChips(int chips) {
-        if (this.chipBalance < chips) return false;
+    public void deductChips(int chips) {
+        if (this.chipBalance < chips) {
+            throw new com.dipsource.entity.coin.InsufficientChipsException(chips, this.chipBalance);
+        }
         this.chipBalance -= chips;
-        return true;
     }
 
     /** 화면에 보여 줄 닉네임. 탈퇴한 회원이면 "삭제된 유저"다. */

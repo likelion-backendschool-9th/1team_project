@@ -46,7 +46,7 @@ public class CoinServiceImpl implements CoinService {
     /** 같은 유저의 연속 충전 최소 간격(초). 연타 방지용 */
     private static final int CHARGE_COOLDOWN_SECONDS = 10;
 
-    /** 거래 내역 한 번에 최대 조회 수 */
+    /** 거래 내역 한 번에 최대 조회 수. 프론트 HISTORY_PAGE_SIZE(20)보다 크게 유지할 것 */
     private static final int MAX_HISTORY_SIZE = 50;
 
     private final UserRepository userRepository;
@@ -56,14 +56,6 @@ public class CoinServiceImpl implements CoinService {
     @Override
     @Transactional
     public void charge(Long userId, int packageId, String idempotencyKey) {
-        // [B] 멱등 키 체크 — 같은 키로 이미 처리된 결제가 있으면 중복 처리 없이 반환
-        if (idempotencyKey != null && !idempotencyKey.isBlank()) {
-            boolean alreadyPaid = paymentRepository.findByPgOrderId(idempotencyKey)
-                    .map(p -> p.getStatus() == PaymentStatus.PAID)
-                    .orElse(false);
-            if (alreadyPaid) return;
-        }
-
         // [A] Cooldown 체크 — 10초 안에 같은 유저가 재요청하면 429
         boolean tooSoon = paymentRepository.existsByUserIdAndPaymentTypeAndCreatedAtAfter(
                 userId, PaymentType.CHIP_CHARGE,
@@ -71,6 +63,15 @@ public class CoinServiceImpl implements CoinService {
         if (tooSoon) {
             throw new BusinessException(ErrorCode.TOO_MANY_REQUESTS,
                     "잠시 후 다시 시도해 주세요. (" + CHARGE_COOLDOWN_SECONDS + "초 간격)");
+        }
+
+        // [B] 멱등 키 체크 — PG가 발급한 주문 번호로 중복 결제 방지
+        // 쿨다운을 통과한 요청 중 이미 PAID 처리된 주문이면 조용히 반환
+        if (idempotencyKey != null && !idempotencyKey.isBlank()) {
+            boolean alreadyPaid = paymentRepository.findByPgOrderId(idempotencyKey)
+                    .map(p -> p.getStatus() == PaymentStatus.PAID)
+                    .orElse(false);
+            if (alreadyPaid) return;
         }
 
         int chips = resolvePackage(packageId);
