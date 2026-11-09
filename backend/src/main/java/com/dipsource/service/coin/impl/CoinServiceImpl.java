@@ -17,6 +17,7 @@ import com.dipsource.repository.coin.PaymentRepository;
 import com.dipsource.repository.user.UserRepository;
 import com.dipsource.service.coin.CoinService;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Map;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -53,13 +54,27 @@ public class CoinServiceImpl implements CoinService {
     private final PaymentRepository paymentRepository;
     private final ChipTransactionRepository chipTransactionRepository;
 
+    /** 서울 타임존. BaseEntity.createdAt 비교 기준을 명시적으로 맞춤 */
+    private static final ZoneId KST = ZoneId.of("Asia/Seoul");
+
     @Override
     @Transactional
     public void charge(Long userId, int packageId, String idempotencyKey) {
-        // [A] Cooldown 체크 — 10초 안에 같은 유저가 재요청하면 429
+        // 유저 행을 먼저 잠근다 — 동시 요청이 들어와도 이 줄부터 직렬화됨
+        // 쿨다운·멱등 체크를 락 안에서 해야 이중 충전을 막을 수 있음
+        User user = userRepository.findByIdForUpdate(userId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "회원을 찾을 수 없어요."));
+
+        // 정지·탈퇴 회원은 충전 불가. JWT가 살아있어도 거절함
+        if (user.getStatus() != UserStatus.ACTIVE) {
+            throw new BusinessException(ErrorCode.FORBIDDEN, "충전할 수 없는 계정이에요.");
+        }
+
+        // [A] Cooldown 체크 — 락 안에서 체크해야 동시 요청 모두 차단됨
+        // LocalDateTime.now(KST)로 BaseEntity.createdAt 기준(서울)과 타임존을 맞춤
         boolean tooSoon = paymentRepository.existsByUserIdAndPaymentTypeAndCreatedAtAfter(
                 userId, PaymentType.CHIP_CHARGE,
-                LocalDateTime.now().minusSeconds(CHARGE_COOLDOWN_SECONDS));
+                LocalDateTime.now(KST).minusSeconds(CHARGE_COOLDOWN_SECONDS));
         if (tooSoon) {
             throw new BusinessException(ErrorCode.TOO_MANY_REQUESTS,
                     "잠시 후 다시 시도해 주세요. (" + CHARGE_COOLDOWN_SECONDS + "초 간격)");
@@ -93,13 +108,6 @@ public class CoinServiceImpl implements CoinService {
 
         payment.markPaid();
 
-        // 비관적 잠금으로 잔액 갱신 — 동시에 여러 충전이 들어와도 순서대로 처리된다
-        User user = userRepository.findByIdForUpdate(userId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "회원을 찾을 수 없어요."));
-        // 정지·탈퇴 회원은 충전 불가. JWT가 살아있어도 거절한다
-        if (user.getStatus() != UserStatus.ACTIVE) {
-            throw new BusinessException(ErrorCode.FORBIDDEN, "충전할 수 없는 계정이에요.");
-        }
         user.addChips(chips);
 
         chipTransactionRepository.save(ChipTransaction.builder()
