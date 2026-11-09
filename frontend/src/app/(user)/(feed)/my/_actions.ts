@@ -1,5 +1,6 @@
 "use server";
 
+import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { hasBackend } from "@/app/_lib/api/client";
 import { runForm } from "@/app/_lib/api/formAction";
@@ -83,7 +84,8 @@ export async function logout() {
 }
 
 export async function withdraw() {
-  const result = await mutate("/api/v1/users/me", "DELETE", undefined, "탈퇴 요청을 접수했어요.", !hasBackend);
-  if (result.ok) await endSession();
-  return result;
+  const result = await mutate("/api/v1/users/me", "DELETE", undefined, "회원탈퇴가 완료되었습니다. 그동안 서비스를 이용해주셔서 감사드립니다.", !hasBackend);
+  if (!result.ok) return result;
+  await endSession();
+  redirect("/goodbye");
 }
