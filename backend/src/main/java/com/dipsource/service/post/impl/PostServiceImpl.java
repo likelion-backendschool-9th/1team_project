@@ -12,7 +12,6 @@ import com.dipsource.entity.post.PostCategory;
 import com.dipsource.entity.post.PostStatus;
 import com.dipsource.entity.post.PostTag;
 import com.dipsource.entity.post.PostUserId;
-import com.dipsource.entity.post.SubscriptionStatus;
 import com.dipsource.entity.tag.Tag;
 import com.dipsource.global.common.LikePattern;
 import com.dipsource.global.common.PageResponse;
@@ -251,9 +250,9 @@ public class PostServiceImpl implements PostService {
                 || isSubscriber(viewerId, post.getUserId());
     }
 
+    /** 유료 글을 읽을 수 있는 구독자인지. 해지(CANCELED)한 구독도 만료일까지는 읽을 수 있다 */
     private boolean isSubscriber(Long userId, Long blogOwnerId) {
-        return blogSubscriptionRepository.existsBySubscriberIdAndBlogOwnerIdAndStatusAndExpiresAtAfter(
-                userId, blogOwnerId, SubscriptionStatus.ACTIVE, LocalDateTime.now());
+        return blogSubscriptionRepository.existsReadable(userId, blogOwnerId, LocalDateTime.now());
     }
 
     /** 이름으로 태그를 찾고, 없으면 만든다. 이름은 소문자로 맞추고 중복은 하나로 친다. */

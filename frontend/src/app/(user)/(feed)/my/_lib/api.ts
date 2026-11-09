@@ -113,8 +113,12 @@ export async function getChipHistory(page = 1, size = HISTORY_PAGE_SIZE): Promis
   const { data } = await apiFetch<ApiResponse<PageResponse<ChipHistory>>>(`/api/v1/coins/history?${query}`);
   return { items: data.content, page, totalPages: data.totalPages, total: data.totalElements };
 }
-// 구독 목록 조회 API는 아직 정해지지 않았다 (프론트엔드-청사진 11장).
-export const getSubscriptions = async (): Promise<Subscription[]> => mockSubscriptions;
+export async function getSubscriptions(): Promise<Subscription[]> {
+  if (!hasBackend) return mockSubscriptions;
+  // 구독 API는 백엔드에 있어서 MOCK_EXCEPT_DM이어도 실서버를 쓴다.
+  const { data } = await apiFetch<ApiResponse<Subscription[]>>("/api/v1/subscriptions/me");
+  return data;
+}
 // 딥소스 플러스 구독 조회 API는 아직 정해지지 않았다 (프론트엔드-청사진 11장).
 export const getPlus = async (): Promise<PlusMembership> => mockPlus;
 
