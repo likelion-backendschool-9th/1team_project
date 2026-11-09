@@ -137,6 +137,12 @@ public class MiniHomeServiceImpl implements MiniHomeService {
         miniHomeRepository.resetTodayCount();
     }
 
+    @Override
+    @Transactional
+    public Long getOrCreateMiniHomeId(Long userId) {
+        return miniHomeLoader.loadOrCreate(userId).getId();
+    }
+
     private static String requireHeadline(String headline) {
         if (headline == null || headline.isBlank()) {
             throw new BusinessException(ErrorCode.BAD_REQUEST, "한 줄 소개를 입력해 주세요.");

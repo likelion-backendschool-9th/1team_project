@@ -8,16 +8,16 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.dipsource.entity.coin.InsufficientChipsException;
-import com.dipsource.entity.minihome.MiniHome;
 import com.dipsource.entity.user.User;
 import com.dipsource.entity.user.enums.UserStatus;
 import com.dipsource.global.exception.BusinessException;
 import com.dipsource.global.exception.ErrorCode;
+import com.dipsource.repository.block.BlockRepository;
 import com.dipsource.repository.coin.ChipTransactionRepository;
 import com.dipsource.repository.coin.DonationRepository;
-import com.dipsource.repository.minihome.MiniHomeRepository;
 import com.dipsource.repository.user.UserRepository;
 import com.dipsource.service.donation.impl.DonationServiceImpl;
+import com.dipsource.service.minihome.MiniHomeService;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -32,9 +32,11 @@ class DonationServiceImplTest {
 
     private static final Long SENDER_ID = 1L;
     private static final Long RECEIVER_ID = 2L;
+    private static final Long MINI_HOME_ID = 10L;
 
     @Mock private UserRepository userRepository;
-    @Mock private MiniHomeRepository miniHomeRepository;
+    @Mock private MiniHomeService miniHomeService;
+    @Mock private BlockRepository blockRepository;
     @Mock private DonationRepository donationRepository;
     @Mock private ChipTransactionRepository chipTransactionRepository;
 
@@ -42,7 +44,7 @@ class DonationServiceImplTest {
 
     @BeforeEach
     void setUp() {
-        service = new DonationServiceImpl(userRepository, miniHomeRepository, donationRepository, chipTransactionRepository);
+        service = new DonationServiceImpl(userRepository, miniHomeService, blockRepository, donationRepository, chipTransactionRepository);
     }
 
     private User activeUser(Long id, int balance) {
@@ -58,12 +60,6 @@ class DonationServiceImplTest {
         return user;
     }
 
-    private MiniHome miniHome(Long id, Long userId) {
-        MiniHome mh = MiniHome.builder().userId(userId).build();
-        ReflectionTestUtils.setField(mh, "id", id);
-        return mh;
-    }
-
     @Nested
     class Donate {
 
@@ -73,6 +69,18 @@ class DonationServiceImplTest {
                     .isInstanceOf(BusinessException.class)
                     .satisfies(e -> assertThat(((BusinessException) e).getErrorCode())
                             .isEqualTo(ErrorCode.BAD_REQUEST));
+
+            verify(userRepository, never()).findByIdForUpdate(any());
+        }
+
+        @Test
+        void 차단_관계면_404() {
+            when(blockRepository.existsBetween(SENDER_ID, RECEIVER_ID)).thenReturn(true);
+
+            assertThatThrownBy(() -> service.donate(SENDER_ID, RECEIVER_ID, 10))
+                    .isInstanceOf(BusinessException.class)
+                    .satisfies(e -> assertThat(((BusinessException) e).getErrorCode())
+                            .isEqualTo(ErrorCode.NOT_FOUND));
 
             verify(userRepository, never()).findByIdForUpdate(any());
         }
@@ -132,11 +140,10 @@ class DonationServiceImplTest {
         void 잔액_부족하면_예외() {
             User sender = activeUser(SENDER_ID, 5);
             User receiver = activeUser(RECEIVER_ID, 0);
-            MiniHome mh = miniHome(10L, RECEIVER_ID);
 
             when(userRepository.findByIdForUpdate(SENDER_ID)).thenReturn(Optional.of(sender));
             when(userRepository.findByIdForUpdate(RECEIVER_ID)).thenReturn(Optional.of(receiver));
-            when(miniHomeRepository.findByUserId(RECEIVER_ID)).thenReturn(Optional.of(mh));
+            when(miniHomeService.getOrCreateMiniHomeId(RECEIVER_ID)).thenReturn(MINI_HOME_ID);
 
             assertThatThrownBy(() -> service.donate(SENDER_ID, RECEIVER_ID, 10))
                     .isInstanceOf(InsufficientChipsException.class);
@@ -148,11 +155,10 @@ class DonationServiceImplTest {
         void 후원_성공하면_잔액_이동() {
             User sender = activeUser(SENDER_ID, 50);
             User receiver = activeUser(RECEIVER_ID, 10);
-            MiniHome mh = miniHome(10L, RECEIVER_ID);
 
             when(userRepository.findByIdForUpdate(SENDER_ID)).thenReturn(Optional.of(sender));
             when(userRepository.findByIdForUpdate(RECEIVER_ID)).thenReturn(Optional.of(receiver));
-            when(miniHomeRepository.findByUserId(RECEIVER_ID)).thenReturn(Optional.of(mh));
+            when(miniHomeService.getOrCreateMiniHomeId(RECEIVER_ID)).thenReturn(MINI_HOME_ID);
             when(donationRepository.save(any())).thenAnswer(inv -> {
                 var d = inv.getArgument(0, com.dipsource.entity.coin.Donation.class);
                 ReflectionTestUtils.setField(d, "id", 99L);
