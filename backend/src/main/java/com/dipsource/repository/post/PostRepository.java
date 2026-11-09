@@ -4,6 +4,7 @@ import com.dipsource.entity.post.Post;
 import com.dipsource.entity.post.PostCategory;
 import com.dipsource.entity.post.PostStatus;
 import java.util.Collection;
+import java.util.List;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -37,6 +38,17 @@ public interface PostRepository extends JpaRepository<Post, Long> {
 
     /** 한 회원의 블로그 글 목록 */
     Page<Post> findByUserIdAndStatus(Long userId, PostStatus status, Pageable pageable);
+
+    long countByUserIdAndStatus(Long userId, PostStatus status);
+
+    @Query("""
+            SELECT p.userId, COUNT(p) FROM Post p
+            WHERE p.status = :status AND p.userId IN :userIds
+            GROUP BY p.userId
+            """)
+    List<Object[]> countByUserIdsAndStatus(
+            @Param("userIds") Collection<Long> userIds,
+            @Param("status") PostStatus status);
 
     boolean existsByIdAndUserIdAndStatus(Long id, Long userId, PostStatus status);
 

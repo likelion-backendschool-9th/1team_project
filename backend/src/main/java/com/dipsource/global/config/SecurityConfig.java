@@ -62,6 +62,8 @@ public class SecurityConfig {
                                 "/users/me/bookmarks", "/users/*").permitAll()
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/error").permitAll()
+                        // 관리자 API는 ADMIN 역할만. JWT의 role이 ADMIN이어야 한다.
+                        .requestMatchers("/admin/**").hasRole("ADMIN")
                         // 그 외 API는 인증 필요 (이후 공개 API는 여기서 풀면 된다)
                         .anyRequest().authenticated()
                 )
