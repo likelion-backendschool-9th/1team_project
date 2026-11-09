@@ -88,8 +88,25 @@ export async function getBlocked(): Promise<BlockedUser[]> {
 }
 // 패키지 목록은 백엔드 API 없이 프론트에서 고정값 사용 (백엔드 PACKAGES 상수와 동기화)
 export const getPackages = async (): Promise<ChipPackage[]> => mockPackages;
-// 거래 내역은 백엔드가 없을 때만 목업 반환
-export const getChipHistory = () => getPage<ChipHistory>("/api/v1/coins/history", mockHistory);
+
+export const HISTORY_PAGE_SIZE = 20;
+
+export type HistoryPage = {
+  items: ChipHistory[];
+  page: number;
+  totalPages: number;
+  total: number;
+};
+
+/** 거래 내역을 페이지 단위로 조회함. page는 1-based */
+export async function getChipHistory(page = 1, size = HISTORY_PAGE_SIZE): Promise<HistoryPage> {
+  if (isMockMode) {
+    return { items: mockHistory, page: 1, totalPages: 1, total: mockHistory.length };
+  }
+  const query = new URLSearchParams({ page: String(page - 1), size: String(size) });
+  const { data } = await apiFetch<ApiResponse<PageResponse<ChipHistory>>>(`/api/v1/coins/history?${query}`);
+  return { items: data.content, page, totalPages: data.totalPages, total: data.totalElements };
+}
 // 구독 목록 조회 API는 아직 정해지지 않았다 (프론트엔드-청사진 11장).
 export const getSubscriptions = async (): Promise<Subscription[]> => mockSubscriptions;
 // 딥소스 플러스 구독 조회 API는 아직 정해지지 않았다 (프론트엔드-청사진 11장).
