@@ -49,8 +49,34 @@ jobs:
           push: true
           tags: ${{ env.IMAGE_PREFIX }}-frontend:${{ github.sha }}
 
+  build-elasticsearch:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # 캐시로 같은 이미지를 유지해서 배포마다 Elasticsearch가 재시작되지 않게 한다
+      - uses: docker/build-push-action@v6
+        with:
+          context: ./docker/elasticsearch
+          push: true
+          provenance: false
+          tags: ${{ env.IMAGE_PREFIX }}-elasticsearch:8.15.5
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
   deploy:
-    needs: [build-backend, build-frontend]
+    needs: [build-backend, build-frontend, build-elasticsearch]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -66,9 +92,31 @@ jobs:
 
             export IMAGE_BACKEND=${{ env.IMAGE_PREFIX }}-backend:${{ github.sha }}
             export IMAGE_FRONTEND=${{ env.IMAGE_PREFIX }}-frontend:${{ github.sha }}
+            export IMAGE_ELASTICSEARCH=${{ env.IMAGE_PREFIX }}-elasticsearch:8.15.5
+            export COMPOSE_PROFILES=search
+            export ELASTIC_PASSWORD='${{ secrets.ELASTIC_PASSWORD }}'
+            export SEARCH_ES_ENABLED=true
+            export SEARCH_ENGINE=elasticsearch
 
             echo ${{ secrets.GHCR_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
             docker compose -f docker-compose.prod.yml pull
+            docker compose -f docker-compose.prod.yml up -d elasticsearch
+
+            # 백엔드는 기동할 때 한 번만 인덱스를 준비하므로 Elasticsearch가 응답한 뒤에 올린다
+            ready=false
+            for i in $(seq 1 40); do
+              if docker exec dipsource-elasticsearch sh -c 'printf "user = elastic:%s\n" "$ELASTIC_PASSWORD" | curl -fs -K - -o /dev/null "http://localhost:9200/_cluster/health?wait_for_status=yellow&timeout=2s"'; then
+                ready=true
+                break
+              fi
+              sleep 3
+            done
+            if [ "$ready" != true ]; then
+              echo "Elasticsearch가 준비되지 않아 배포를 중단합니다"
+              docker compose -f docker-compose.prod.yml logs --tail=50 elasticsearch
+              exit 1
+            fi
+
             docker compose -f docker-compose.prod.yml up -d --remove-orphans
             docker image prune -f
