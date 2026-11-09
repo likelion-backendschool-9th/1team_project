@@ -48,6 +48,8 @@ services:
       GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET}
       # 미니홈피 잔디(GitHub GraphQL)용 토큰. 없으면 잔디가 비어 보인다. (로그인 OAuth와 별개)
       GITHUB_TOKEN: ${GITHUB_TOKEN:-}
+      # 최고 관리자(MASTER)로 지정할 회원 이메일. 이 이메일로 가입한 뒤 서버를 다시 띄우면 적용된다
+      MASTER_EMAIL: ${MASTER_EMAIL:-}
       FRONTEND_BASE_URL: ${FRONTEND_BASE_URL}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-not-configured}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-not-configured}

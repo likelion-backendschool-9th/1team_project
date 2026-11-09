@@ -1,6 +1,7 @@
 package com.dipsource.repository.user;
 
 import com.dipsource.entity.user.User;
+import com.dipsource.entity.user.enums.UserRole;
 import com.dipsource.entity.user.enums.UserStatus;
 import jakarta.persistence.LockModeType;
 import java.time.LocalDateTime;
@@ -45,6 +46,27 @@ public interface UserRepository extends JpaRepository<User, Long> {
         """)
     Page<User> searchForAdmin(
         @Param("status") UserStatus status,
+        @Param("q") String q,
+        Pageable pageable);
+
+    /**
+     * 권한 관리 화면용 회원 목록. 탈퇴 회원은 빼고, 마스터·관리자를 먼저 보여 준다.
+     * q는 소문자 LIKE 패턴(%...%, \\로 이스케이프)이고 null이면 거르지 않는다.
+     */
+    @Query("""
+        SELECT u FROM User u
+        WHERE u.status <> com.dipsource.entity.user.enums.UserStatus.DELETED
+        AND u.role IN :roles
+        AND (:q IS NULL OR LOWER(u.nickname) LIKE :q ESCAPE '\\'
+            OR LOWER(u.email) LIKE :q ESCAPE '\\')
+        ORDER BY CASE u.role
+            WHEN com.dipsource.entity.user.enums.UserRole.MASTER THEN 0
+            WHEN com.dipsource.entity.user.enums.UserRole.ADMIN THEN 1
+            ELSE 2 END,
+            u.id ASC
+        """)
+    Page<User> searchForRoles(
+        @Param("roles") List<UserRole> roles,
         @Param("q") String q,
         Pageable pageable);
 

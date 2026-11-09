@@ -59,14 +59,16 @@ public class SecurityConfig {
                                 "/follows/**",
                                 "/users/*").permitAll()
                         // 재색인 등 검색 운영은 관리자만
-                        .requestMatchers("/admin/search/**").hasRole("ADMIN")
+                        .requestMatchers("/admin/search/**").hasAnyRole("ADMIN", "MASTER")
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/error").permitAll()
                         // 측정값 조회. metrics는 기본으로 닫혀 있다(application.yml). nginx가 /api/v1/actuator도 넘기므로 운영에서 열면 외부에 공개된다
                         .requestMatchers(HttpMethod.GET, "/actuator/health", "/actuator/metrics", "/actuator/metrics/**")
                         .permitAll()
-                        // 관리자 API는 ADMIN 역할만. JWT의 role이 ADMIN이어야 한다.
-                        .requestMatchers("/admin/**").hasRole("ADMIN")
+                        // 권한 부여(관리자 지정·강등)는 최고 관리자(MASTER)만
+                        .requestMatchers("/admin/roles/**").hasRole("MASTER")
+                        // 관리자 API는 ADMIN·MASTER 역할만. JWT의 role로 판단한다.
+                        .requestMatchers("/admin/**").hasAnyRole("ADMIN", "MASTER")
                         // 그 외 API는 인증 필요 (이후 공개 API는 여기서 풀면 된다)
                         .anyRequest().authenticated()
                 )

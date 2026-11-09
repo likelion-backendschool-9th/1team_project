@@ -5,7 +5,6 @@ import com.dipsource.dto.admin.AdminUserDetailResponse;
 import com.dipsource.dto.admin.AdminUserResponse;
 import com.dipsource.dto.admin.BanUserRequest;
 import com.dipsource.entity.post.PostStatus;
-import com.dipsource.entity.user.enums.UserRole;
 import com.dipsource.entity.user.User;
 import com.dipsource.entity.user.UserSanction;
 import com.dipsource.entity.user.enums.UserStatus;
@@ -101,7 +100,7 @@ public class AdminUserServiceImpl implements AdminUserService {
         if (user.getStatus() == UserStatus.SUSPENDED) {
             throw new BusinessException(ErrorCode.BAD_REQUEST, "이미 제재 중인 회원입니다.");
         }
-        if (user.getRole() == UserRole.ADMIN) {
+        if (user.getRole().isAdmin()) {
             throw new BusinessException(ErrorCode.BAD_REQUEST, "관리자는 제재할 수 없습니다.");
         }
         LocalDateTime startsAt = LocalDateTime.now();
