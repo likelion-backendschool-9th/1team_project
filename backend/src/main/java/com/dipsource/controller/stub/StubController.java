@@ -25,13 +25,6 @@ public class StubController {
             "totalPages", 0
     );
 
-    // ── 블로그(포스트) ──
-
-    @GetMapping("/posts/{postId}/comments")
-    public ResponseEntity<ApiResponse<Map<String, Object>>> postComments(@PathVariable Long postId) {
-        return ok(EMPTY_PAGE);
-    }
-
     // ── 이벤트 ──
 
     @GetMapping("/events")

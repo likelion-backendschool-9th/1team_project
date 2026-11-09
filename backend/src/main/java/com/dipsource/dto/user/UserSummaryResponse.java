@@ -19,6 +19,10 @@ public record UserSummaryResponse(
 ) {
 
     public static UserSummaryResponse from(User user) {
+        // DB에서 유저 레코드가 없을 때(하드 삭제 등) null이 넘어올 수 있으므로 방어 처리
+        if (user == null) {
+            return new UserSummaryResponse(null, "삭제된 유저", null, List.of());
+        }
         return new UserSummaryResponse(
                 user.getId(),
                 user.getDisplayNickname(),
