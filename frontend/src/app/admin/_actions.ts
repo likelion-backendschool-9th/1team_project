@@ -75,9 +75,18 @@ export async function confirmSettlement(settlementId: number) {
   return mutate(`/api/v1/admin/settlements/${settlementId}/confirm`, "PUT", undefined, "정산을 확정했어요.");
 }
 
+// 칩 충전 환불: 충전한 칩을 회수하고 결제를 환불됨으로 바꾼다. 환불 API는 백엔드에 있어서 MOCK_EXCEPT_DM이어도 실서버를 쓴다.
 export async function approveRefund(txId: number) {
   if (!isId(txId)) return { ok: false, message: "잘못된 요청이에요." };
-  return mutate(`/api/v1/admin/coins/purchases/${txId}/refund`, "PUT", undefined, "환불을 승인했어요.");
+  const result = await mutate(
+    `/api/v1/admin/coins/purchases/${txId}/refund`,
+    "PUT",
+    undefined,
+    "환불했어요.",
+    !hasBackend,
+  );
+  if (result.ok && hasBackend) revalidatePath("/admin/coins");
+  return result;
 }
 
 // 부정 사용 계정은 회원 제재 API로 막는다.
