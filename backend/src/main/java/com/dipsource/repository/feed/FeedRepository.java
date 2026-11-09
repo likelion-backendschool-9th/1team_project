@@ -2,6 +2,7 @@ package com.dipsource.repository.feed;
 
 import com.dipsource.entity.feed.Feed;
 import java.util.List;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
@@ -38,6 +39,8 @@ public interface FeedRepository extends JpaRepository<Feed, Long> {
           AND f.user_id != :userId
           AND f.user_id NOT IN (
               SELECT blocked_id FROM blocks WHERE blocker_id = :userId
+              UNION
+              SELECT blocker_id FROM blocks WHERE blocked_id = :userId
           )
           AND (:cursorId IS NULL OR f.id < :cursorId)
         ORDER BY score DESC, f.id DESC
@@ -50,47 +53,26 @@ public interface FeedRepository extends JpaRepository<Feed, Long> {
             @Param("size") int size
     );
 
-    /**
-     * 트렌딩 피드 조회 (커서 지원).
-     */
-    @Query(nativeQuery = true, value = """
-        SELECT f.*,
-            (
-                (SELECT COUNT(*) FROM feed_likes fl
-                 WHERE fl.feed_id = f.id
-                 AND fl.created_at > NOW() - INTERVAL '1 hour') * 10
-              + (SELECT COUNT(*) FROM feed_likes fl
-                 WHERE fl.feed_id = f.id
-                 AND fl.created_at > NOW() - INTERVAL '6 hours') * 3
-              + (SELECT COUNT(*) FROM feed_likes fl
-                 WHERE fl.feed_id = f.id
-                 AND fl.created_at > NOW() - INTERVAL '24 hours') * 1
-            ) AS trending_score
-        FROM feeds f
-        WHERE f.status = 'ACTIVE'
-          AND f.created_at > NOW() - INTERVAL '7 days'
-          AND (:cursorId IS NULL OR f.id < :cursorId)
-        ORDER BY trending_score DESC, f.id DESC
-        LIMIT :size
-        """)
-    List<Feed> findTrendingFeeds(
-            @Param("cursorId") Long cursorId,
-            @Param("size") int size
-    );
 
     /**
      * 팔로잉 피드 조회 (커서 지원).
      */
     @Query(nativeQuery = true, value = """
-        SELECT f.*
-        FROM feeds f
-        WHERE f.status = 'ACTIVE'
-          AND f.user_id = ANY(:followingIds)
-          AND (:cursorId IS NULL OR f.id < :cursorId)
-        ORDER BY f.id DESC
-        LIMIT :size
-        """)
+    SELECT f.*
+    FROM feeds f
+    WHERE f.status = 'ACTIVE'
+      AND f.user_id = ANY(:followingIds)
+      AND (:userId IS NULL OR f.user_id NOT IN (
+          SELECT blocked_id FROM blocks WHERE blocker_id = :userId
+          UNION
+          SELECT blocker_id FROM blocks WHERE blocked_id = :userId
+      ))
+      AND (:cursorId IS NULL OR f.id < :cursorId)
+    ORDER BY f.id DESC
+    LIMIT :size
+    """)
     List<Feed> findFollowingFeeds(
+            @Param("userId") Long userId,
             @Param("followingIds") Long[] followingIds,
             @Param("cursorId") Long cursorId,
             @Param("size") int size
@@ -107,7 +89,12 @@ public interface FeedRepository extends JpaRepository<Feed, Long> {
         WHERE f.status = 'ACTIVE'
           AND ft.tag_id = ANY(:interestTagIds)
           AND f.user_id != :userId
-          AND (:cursorId IS NULL OR f.id < :cursorId)
+          AND f.user_id NOT IN (
+            SELECT blocked_id FROM blocks WHERE blocker_id = :userId
+            UNION
+            SELECT blocker_id FROM blocks WHERE blocked_id = :userId
+          )
+        AND (:cursorId IS NULL OR f.id < :cursorId)
         GROUP BY f.id
         ORDER BY f.id DESC
         LIMIT :size
@@ -157,11 +144,52 @@ public interface FeedRepository extends JpaRepository<Feed, Long> {
             @Param("size") int size
     );
 
+        @Query(nativeQuery = true, value = """
+        SELECT f.*,
+            (
+                (SELECT COUNT(*) FROM feed_likes fl
+                WHERE fl.feed_id = f.id
+                AND fl.created_at > NOW() - INTERVAL '1 hour') * 10
+            + (SELECT COUNT(*) FROM feed_likes fl
+                WHERE fl.feed_id = f.id
+                AND fl.created_at > NOW() - INTERVAL '6 hours') * 3
+            + (SELECT COUNT(*) FROM feed_likes fl
+                WHERE fl.feed_id = f.id
+                AND fl.created_at > NOW() - INTERVAL '24 hours') * 1
+            ) AS trending_score
+        FROM feeds f
+        WHERE f.status = 'ACTIVE'
+        AND f.created_at > NOW() - INTERVAL '7 days'
+        AND (:userId IS NULL OR f.user_id NOT IN (
+            SELECT blocked_id FROM blocks WHERE blocker_id = :userId
+            UNION
+            SELECT blocker_id FROM blocks WHERE blocked_id = :userId
+        ))
+        AND (:cursorId IS NULL OR f.id < :cursorId)
+        ORDER BY trending_score DESC, f.id DESC
+        LIMIT :size
+        """)
+    List<Feed> findTrendingFeeds(
+            @Param("userId") Long userId,
+            @Param("cursorId") Long cursorId,
+            @Param("size") int size
+    );
+
     /**
      * 최신 피드 조회 (비로그인 사용자용).
      */
-    @Query("SELECT f FROM Feed f WHERE f.status = 'ACTIVE' ORDER BY f.id DESC")
-    List<Feed> findLatestFeeds(Pageable pageable);
+    @Query(nativeQuery = true, value = """
+    SELECT f.*
+    FROM feeds f
+    WHERE f.status = 'ACTIVE'
+      AND (:userId IS NULL OR f.user_id NOT IN (
+          SELECT blocked_id FROM blocks WHERE blocker_id = :userId
+          UNION
+          SELECT blocker_id FROM blocks WHERE blocked_id = :userId
+      ))
+    ORDER BY f.id DESC
+    """)
+    List<Feed> findLatestFeeds(@Param("userId") Long userId, Pageable pageable);
 
     /** 좋아요 수 +1. 엔티티 필드 갱신 대신 DB UPDATE로 동시성 처리. */
     @Modifying(clearAutomatically = true, flushAutomatically = true)
@@ -182,4 +210,14 @@ public interface FeedRepository extends JpaRepository<Feed, Long> {
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("UPDATE Feed f SET f.repostCount = f.repostCount - 1 WHERE f.id = :feedId AND f.repostCount > 0")
     int decrementRepostCount(@Param("feedId") Long feedId);
+
+    /** 관리자 피드 목록. 삭제(DELETED)만 빼고, 제목(본문)·작성자 닉네임 검색. */
+    @Query("""
+            SELECT f FROM Feed f JOIN User u ON u.id = f.userId
+            WHERE f.status <> com.dipsource.entity.feed.FeedStatus.DELETED
+            AND (:q IS NULL OR LOWER(f.content) LIKE :q ESCAPE '\\'
+                OR LOWER(u.nickname) LIKE :q ESCAPE '\\')
+            ORDER BY f.createdAt DESC, f.id DESC
+            """)
+    Page<Feed> searchForAdmin(@Param("q") String q, Pageable pageable);
 }

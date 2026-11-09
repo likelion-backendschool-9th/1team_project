@@ -64,8 +64,12 @@ public class MiniHomeController {
     }
 
     @GetMapping("/{userId}")
-    public ApiResponse<MiniHomeResponse> get(@PathVariable Long userId) {
-        return ApiResponse.of(miniHomeService.getOrCreate(userId));
+    public ApiResponse<MiniHomeResponse> get(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @PathVariable Long userId
+    ) {
+        Long viewerId = principal == null ? null : principal.getUserId();
+        return ApiResponse.of(miniHomeService.getOrCreate(userId, viewerId));
     }
 
     @PutMapping("/me")

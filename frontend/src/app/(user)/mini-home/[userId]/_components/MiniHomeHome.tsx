@@ -67,6 +67,7 @@ export async function MiniHomeHome({ params }: Props) {
           comments={comments.items.slice(0, 3)}
           total={comments.total}
           now={now}
+          me={me ?? undefined}
         />
       </div>
     </>

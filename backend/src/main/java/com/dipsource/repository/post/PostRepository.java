@@ -4,6 +4,7 @@ import com.dipsource.entity.post.Post;
 import com.dipsource.entity.post.PostCategory;
 import com.dipsource.entity.post.PostStatus;
 import java.util.Collection;
+import java.util.List;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -24,15 +25,30 @@ public interface PostRepository extends JpaRepository<Post, Long> {
               AND p.category IN :categories
               AND (LOWER(p.title) LIKE :pattern ESCAPE '\\'
                    OR (p.paid = false AND LOWER(p.content) LIKE :pattern ESCAPE '\\'))
+              AND (:viewerId IS NULL OR (
+                    p.userId NOT IN (SELECT b.id.blockedId FROM Block b WHERE b.id.blockerId = :viewerId)
+                AND p.userId NOT IN (SELECT b.id.blockerId FROM Block b WHERE b.id.blockedId = :viewerId)))
             """)
     Page<Post> findList(
             @Param("status") PostStatus status,
             @Param("categories") Collection<PostCategory> categories,
             @Param("pattern") String pattern,
+            @Param("viewerId") Long viewerId,
             Pageable pageable);
 
     /** 한 회원의 블로그 글 목록 */
     Page<Post> findByUserIdAndStatus(Long userId, PostStatus status, Pageable pageable);
+
+    long countByUserIdAndStatus(Long userId, PostStatus status);
+
+    @Query("""
+            SELECT p.userId, COUNT(p) FROM Post p
+            WHERE p.status = :status AND p.userId IN :userIds
+            GROUP BY p.userId
+            """)
+    List<Object[]> countByUserIdsAndStatus(
+            @Param("userIds") Collection<Long> userIds,
+            @Param("status") PostStatus status);
 
     boolean existsByIdAndUserIdAndStatus(Long id, Long userId, PostStatus status);
 
@@ -40,4 +56,15 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("UPDATE Post p SET p.viewCount = p.viewCount + 1 WHERE p.id = :postId")
     int incrementViewCount(@Param("postId") Long postId);
+
+    /** 관리자 글 목록. 삭제(DELETED)만 빼고, 제목·본문·작성자 닉네임 검색. */
+    @Query("""
+            SELECT p FROM Post p JOIN User u ON u.id = p.userId
+            WHERE p.status <> com.dipsource.entity.post.PostStatus.DELETED
+              AND (:q IS NULL OR LOWER(p.title) LIKE :q ESCAPE '\\'
+                  OR LOWER(p.content) LIKE :q ESCAPE '\\'
+                  OR LOWER(u.nickname) LIKE :q ESCAPE '\\')
+            ORDER BY p.createdAt DESC, p.id DESC
+            """)
+    Page<Post> searchForAdmin(@Param("q") String q, Pageable pageable);
 }

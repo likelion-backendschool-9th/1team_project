@@ -53,11 +53,20 @@ async function ReportDetail({ params }: { params: Promise<{ reportId: string }> 
             { value: "reject", label: "기각" },
           ]}
           reasonName="memo"
-          reasonLabel="처리 사유 (신고자에게 안내돼요)"
+          reasonLabel="처리 사유 (관리자 기록용)"
           submitLabel="처리 완료"
         />
       ) : (
-        <p className={`${kit.card} ${kit.empty}`}>이미 처리된 신고예요.</p>
+        <section className={kit.card} aria-labelledby="report-handled">
+          <h2 id="report-handled" className={kit.cardTitle}>
+            처리 이력
+          </h2>
+          <dl className={styles.detail}>
+            <div><dt>처리자</dt><dd>{report.handledBy ?? "-"}</dd></div>
+            <div><dt>처리 시각</dt><dd>{report.handledAt ? formatDate(report.handledAt) : "-"}</dd></div>
+            <div><dt>메모</dt><dd>{report.adminNote || "-"}</dd></div>
+          </dl>
+        </section>
       )}
     </>
   );

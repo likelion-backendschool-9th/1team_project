@@ -1,6 +1,7 @@
 import { connection } from "next/server";
 import { ConfirmButton } from "@/app/_components/ui/ConfirmButton";
 import kit from "@/app/_components/ui/kit.module.css";
+import { Pagination } from "@/app/_components/ui/Pagination";
 import { formatDate } from "@/app/_lib/format";
 import { deleteContent } from "../_actions";
 import { getContent } from "../_lib/api";
@@ -14,11 +15,22 @@ type Props = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
 
+
 export async function ContentTable({ kind, noun, searchParams }: Props) {
   await connection();
-  const raw = (await searchParams).q;
+  const params = await searchParams;
+  const raw = params.q;
   const q = (Array.isArray(raw) ? raw[0] : raw)?.trim().slice(0, 30) || undefined;
-  const rows = await getContent(kind, q);
+  const pageRaw = params.page;
+  const page = Math.max(1, Number(Array.isArray(pageRaw) ? pageRaw[0] : pageRaw) || 1);
+  const result = await getContent(kind, { q, page });
+  const hrefFor = (target: number) => {
+    const query = new URLSearchParams();
+    if (q) query.set("q", q);
+    if (target > 1) query.set("page", String(target));
+    const search = query.toString();
+    return search ? `/admin/${kind}?${search}` : `/admin/${kind}`;
+};
 
   return (
     <section className={kit.card}>
@@ -34,7 +46,7 @@ export async function ContentTable({ kind, noun, searchParams }: Props) {
         </button>
       </form>
       <p className={kit.faint} role="status" style={{ margin: "16px 0 8px" }}>
-        {noun} {rows.length}개 · 신고가 많은 항목은 빨간색으로 표시돼요.
+        {noun} {result.totalElements}개 · 신고가 많은 항목은 빨간색으로 표시돼요.
       </p>
       <div className={kit.tableWrap}>
         <table className={kit.table}>
@@ -51,7 +63,7 @@ export async function ContentTable({ kind, noun, searchParams }: Props) {
             </tr>
           </thead>
           <tbody>
-            {rows.map((row) => (
+            {result.content.map((row) => (
               <tr key={row.id}>
                 <td>{row.id}</td>
                 <td className={kit.strong}>{row.title}</td>
@@ -68,7 +80,7 @@ export async function ContentTable({ kind, noun, searchParams }: Props) {
                   <ConfirmButton
                     label="삭제"
                     title={`이 ${noun}을(를) 삭제할까요?`}
-                    description={`「${row.title}」 · 작성자에게 삭제 알림이 가요.`}
+                    description={`「${row.title}」 · 목록에서 숨기고 관리자 기록에 남깁니다.`}
                     confirmLabel="삭제"
                     danger
                     className={`${kit.btnGhost} ${kit.sm}`}
@@ -80,7 +92,8 @@ export async function ContentTable({ kind, noun, searchParams }: Props) {
           </tbody>
         </table>
       </div>
-      {rows.length === 0 && <p className={kit.empty}>조건에 맞는 {noun}이(가) 없어요.</p>}
+      {result.content.length === 0 && <p className={kit.empty}>조건에 맞는 {noun}이(가) 없어요.</p>}
+      <Pagination page={page} totalPages={result.totalPages} hrefFor={hrefFor} />
     </section>
   );
 }

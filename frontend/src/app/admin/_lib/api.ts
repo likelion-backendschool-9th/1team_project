@@ -1,6 +1,6 @@
 import "server-only";
 import { mockEvents } from "@/app/_lib/mockEvents";
-import { apiFetch, isMockMode, type ApiResponse, type PageResponse } from "@/app/_lib/api/client";
+import { apiFetch, ApiRequestError, hasBackend, isMockMode, type ApiResponse, type PageResponse } from "@/app/_lib/api/client";
 import {
   mockAdminSubscriptions,
   mockAdminUsers,
@@ -16,6 +16,7 @@ import {
   type ContentKind,
   type ContentRow,
   type Report,
+  type Sanction,
 } from "./mock";
 
 export const PAGE_SIZE = 10;
@@ -35,20 +36,24 @@ export type Dashboard = {
   signups: number[];
 };
 
-export function getDashboard(): Promise<Dashboard> {
+export async function getDashboard(): Promise<Dashboard> {
+  if (hasBackend) {
+    const { data } = await apiFetch<ApiResponse<Dashboard>>("/api/v1/admin/dashboard");
+    return data;
+  }
   const latest = mockRevenue.at(-2)!;
-  return get("/api/v1/admin/dashboard", {
+  return {
     userCount: 4_812,
     newUsersToday: mockSignups.at(-1)!,
     demoUploadsWeek: 186,
     pendingReports: mockReports.filter((report) => report.status === "pending").length,
     revenueMonth: latest.subscription + latest.plus + latest.chips,
     signups: mockSignups,
-  });
+  };
 }
 
 export async function getUsers(query: { q?: string; status?: string; page: number }): Promise<PageResponse<AdminUser>> {
-  if (!isMockMode) {
+  if (hasBackend) {
     const search = new URLSearchParams({ page: String(query.page - 1), size: String(PAGE_SIZE) });
     if (query.q) search.set("q", query.q);
     if (query.status) search.set("status", query.status);
@@ -70,21 +75,43 @@ export async function getUsers(query: { q?: string; status?: string; page: numbe
 }
 
 export async function getUser(userId: number) {
-  const user = await get<AdminUser | null>(
-    `/api/v1/admin/users/${userId}`,
-    mockAdminUsers.find((item) => item.id === userId) ?? null,
-  );
-  return user ? { user, sanctions: user.status === "suspended" ? mockSanctions : mockSanctions.slice(0, 1) } : null;
+  if (!hasBackend) {
+    const user = mockAdminUsers.find((item) => item.id === userId) ?? null;
+    return user
+      ? { user, sanctions: user.status === "suspended" ? mockSanctions : mockSanctions.slice(0, 1) }
+      : null;
+  }
+  try {
+    const { data } = await apiFetch<ApiResponse<{ user: AdminUser; sanctions: Sanction[] }>>(
+      `/api/v1/admin/users/${userId}`,
+    );
+    return data;
+  } catch (error) {
+    if (error instanceof ApiRequestError && error.status === 404) return null;
+    throw error;
+  }
 }
 
-export async function getContent(kind: ContentKind, q?: string): Promise<ContentRow[]> {
-  if (!isMockMode) {
-    const { data } = await apiFetch<ApiResponse<PageResponse<ContentRow>>>(
-      `/api/v1/admin/${kind}?${new URLSearchParams(q ? { q } : {})}`,
-    );
-    return data.content;
+export async function getContent(
+  kind: ContentKind,
+  query: { q?: string; page: number },
+): Promise<PageResponse<ContentRow>> {
+  if (hasBackend) {
+    const search = new URLSearchParams({ page: String(query.page - 1), size: String(PAGE_SIZE) });
+    if (query.q) search.set("q", query.q);
+    const { data } = await apiFetch<ApiResponse<PageResponse<ContentRow>>>(`/api/v1/admin/${kind}?${search}`);
+    return data;
   }
-  return mockContent[kind].filter((row) => !q || `${row.title} ${row.author}`.includes(q));
+  const filtered = mockContent[kind].filter(
+    (row) => !query.q || `${row.title} ${row.author}`.includes(query.q),
+  );
+  return {
+    content: filtered.slice((query.page - 1) * PAGE_SIZE, query.page * PAGE_SIZE),
+    page: query.page - 1,
+    size: PAGE_SIZE,
+    totalElements: filtered.length,
+    totalPages: Math.max(1, Math.ceil(filtered.length / PAGE_SIZE)),
+  };
 }
 
 export const REPORT_TYPES = [
@@ -93,22 +120,46 @@ export const REPORT_TYPES = [
   { value: "feeds", label: "피드" },
   { value: "comments", label: "댓글" },
   { value: "guestbooks", label: "방명록" },
+  { value: "users", label: "회원" },
 ] as const;
 
-export async function getReports(status?: string, type?: string): Promise<Report[]> {
-  const query = new URLSearchParams();
-  if (status) query.set("status", status);
-  if (type) query.set("type", type);
-  const reports = await get(`/api/v1/admin/reports?${query}`, mockReports);
-  const typeLabel = REPORT_TYPES.find((item) => item.value === type)?.label;
+export async function getReports(query: {
+  status?: string;
+  type?: string;
+  page: number;
+}): Promise<PageResponse<Report>> {
+  if (hasBackend) {
+    const search = new URLSearchParams({ page: String(query.page - 1), size: String(PAGE_SIZE) });
+    if (query.status) search.set("status", query.status);
+    if (query.type) search.set("type", query.type);
+    const { data } = await apiFetch<ApiResponse<PageResponse<Report>>>(`/api/v1/admin/reports?${search}`);
+    return data;
+  }
+  const typeLabel = REPORT_TYPES.find((item) => item.value === query.type)?.label;
   const order = { pending: 0, resolved: 1, rejected: 2 };
-  return reports
-    .filter((report) => (!status || report.status === status) && (!typeLabel || report.targetType === typeLabel))
+  const filtered = mockReports
+    .filter((report) => (!query.status || report.status === query.status) && (!typeLabel || report.targetType === typeLabel))
     .sort((a, b) => order[a.status] - order[b.status] || b.createdAt.localeCompare(a.createdAt));
+  return {
+    content: filtered.slice((query.page - 1) * PAGE_SIZE, query.page * PAGE_SIZE),
+    page: query.page - 1,
+    size: PAGE_SIZE,
+    totalElements: filtered.length,
+    totalPages: Math.max(1, Math.ceil(filtered.length / PAGE_SIZE)),
+  };
 }
 
 export async function getReport(reportId: number): Promise<Report | null> {
-  return (await getReports()).find((report) => report.id === reportId) ?? null;
+  if (hasBackend) {
+    try {
+      const { data } = await apiFetch<ApiResponse<Report>>(`/api/v1/admin/reports/${reportId}`);
+      return data;
+    } catch (error) {
+      if (error instanceof ApiRequestError && error.status === 404) return null;
+      throw error;
+    }
+  }
+  return mockReports.find((report) => report.id === reportId) ?? null;
 }
 
 export const getSubscriptions = () => get("/api/v1/admin/subscriptions", mockAdminSubscriptions);

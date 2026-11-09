@@ -152,6 +152,15 @@ public class FeedService {
         feed.delete();
     }
 
+    /** 관리자 삭제. 작성자 검사 없이 소프트 삭제만 한다. 이미지는 증거·복구를 위해 남긴다. */
+    @Transactional
+    public void deleteByAdmin(Long feedId) {
+        Feed feed = feedRepository.findById(feedId)
+                .filter(f -> f.getStatus() != FeedStatus.DELETED)
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "피드를 찾을 수 없습니다"));
+        feed.delete();
+    }
+
     /**
      * 내가 쓴 피드 목록 조회 (커서 페이지네이션)
      */

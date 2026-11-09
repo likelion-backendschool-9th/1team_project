@@ -28,7 +28,7 @@ import org.hibernate.type.SqlTypes;
  * 회원. 테이블: users
  * 탈퇴해도 행은 지우지 않는다(작성한 글·댓글이 남아야 하므로). 대신 개인정보를 비우고 소셜 연결을 끊는다.
  */
-@Getter
+@Getter 
 @Entity
 @Table(name = "users")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -99,7 +99,7 @@ public class User extends BaseEntity {
 
     @Builder
     private User(String email, String nickname, String profileImage, String bio,
-                 List<String> techStacks, String githubUsername) {
+                List<String> techStacks, String githubUsername) {
         this.email = email;
         this.nickname = nickname;
         this.profileImage = profileImage;
@@ -109,7 +109,7 @@ public class User extends BaseEntity {
     }
 
     public void updateProfile(String nickname, String profileImage, String bio,
-                              List<String> techStacks, String githubUsername) {
+                            List<String> techStacks, String githubUsername) {
         this.nickname = nickname;
         this.profileImage = profileImage;
         this.bio = bio;
@@ -147,6 +147,10 @@ public class User extends BaseEntity {
     public void suspend() {
         this.status = UserStatus.SUSPENDED;
     }
+    
+    public void unsuspend() {
+        this.status = UserStatus.ACTIVE;
+    }
 
     public boolean isWithdrawn() {
         return status == UserStatus.DELETED;
@@ -174,4 +178,5 @@ public class User extends BaseEntity {
         this.lastActiveAt = null;
         this.socialAccounts.clear();
     }
+
 }

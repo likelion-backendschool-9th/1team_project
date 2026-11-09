@@ -2,6 +2,7 @@ package com.dipsource.service.user.impl;
 
 import com.dipsource.dto.user.CompleteProfileRequest;
 import com.dipsource.dto.user.NicknameAvailableResponse;
+import com.dipsource.dto.user.UpdateProfileRequest;
 import com.dipsource.dto.user.UserMeResponse;
 import com.dipsource.dto.user.UserProfileResponse;
 import com.dipsource.dto.user.UserSummaryResponse;
@@ -105,12 +106,41 @@ public class UserServiceImpl implements UserService {
         return toMeResponse(user);
     }
 
-    /** 내 정보 응답. 팔로워·팔로잉 수는 팔로우 목록과 같은 기준(활동 중인 회원만)으로 센다. */
-    private UserMeResponse toMeResponse(User user) {
-        return UserMeResponse.from(
-                user,
-                followRepository.countFollowers(user.getId(), UserStatus.ACTIVE),
-                followRepository.countFollowings(user.getId(), UserStatus.ACTIVE));
+    @Override
+    @Transactional
+    public UserMeResponse updateMe(Long userId, UpdateProfileRequest request) {
+        User user = getUser(userId);
+        String nickname = request.nickname().trim();
+        validateNickname(nickname);
+        if (!nickname.equals(user.getNickname()) && userRepository.existsByNickname(nickname)) {
+            throw new BusinessException(ErrorCode.NICKNAME_TAKEN);
+        }
+
+        String bio = request.bio() == null ? null : request.bio().trim();
+        if (bio != null && bio.isEmpty()) {
+            bio = null;
+        }
+
+        List<String> techStacks = parseTechStacks(request.techStacks());
+        if (techStacks.size() < 2) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "기술 스택을 2개 이상 골라 주세요.");
+        }
+
+        user.updateProfile(
+            nickname, 
+            user.getProfileImage(), 
+            bio, 
+            techStacks, 
+            parseGithubUsername(request.githubUrl()));
+        
+        return toMeResponse(user);
+    }
+
+    @Override 
+    @Transactional 
+    public void withdraw(Long userId) {
+        User user = getUser(userId);
+        user.withdraw();
     }
 
     @Override 
@@ -153,6 +183,47 @@ public class UserServiceImpl implements UserService {
             unique.add(slug);
         }
         return List.copyOf(unique);
+    }
+
+    private List<String> parseTechStacks(String raw) {
+        if (raw == null || raw.isBlank()) {
+            return List.of();
+        }
+        LinkedHashSet<String> unique = new LinkedHashSet<>();
+        for (String item : raw.split(",")) {
+            String stack = item.trim();
+            if (!stack.isEmpty()) {
+                unique.add(stack);
+            }
+        }
+        return List.copyOf(unique);
+    }
+
+    private String parseGithubUsername(String githubUrl) {
+        if (githubUrl == null || githubUrl.isBlank()) {
+            return null;
+        }
+        String trimmed = githubUrl.trim();
+        if (trimmed.endsWith("/")) {
+            trimmed = trimmed.substring(0, trimmed.length() - 1);
+        }
+        String prefix = "https://github.com/";
+        if (!trimmed.startsWith(prefix) || trimmed.substring(prefix.length()).contains("/")) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "https://github.com/아이디 형식으로 입력해 주세요.");
+        }
+        String username = trimmed.substring(prefix.length());
+        if (username.isBlank()) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "https://github.com/아이디 형식으로 입력해 주세요.");
+        }
+        return username;
+    }
+
+    /** 내 정보 응답. 팔로워·팔로잉 수는 팔로우 목록과 같은 기준(활동 중인 회원만)으로 센다. */
+    private UserMeResponse toMeResponse(User user) {
+        return UserMeResponse.from(
+                user,
+                followRepository.countFollowers(user.getId(), UserStatus.ACTIVE),
+                followRepository.countFollowings(user.getId(), UserStatus.ACTIVE));
     }
 
     @Override

@@ -10,13 +10,14 @@ type Result = { ok: boolean; message: string };
 type Props = {
   commentId: number;
   content: string;
+  maxLength?: number;
   updateComment: (commentId: number, content: string) => Promise<Result>;
   deleteComment: (commentId: number) => Promise<Result>;
   onReply?: () => void;
 };
 
 // 내가 쓴 댓글의 본문 자리. 수정·삭제를 그 자리에서 처리한다.
-export function CommentEditor({ commentId, content, updateComment, deleteComment, onReply }: Props) {
+export function CommentEditor({ commentId, content, maxLength = 300, updateComment, deleteComment, onReply }: Props) {
   const [text, setText] = useState(content);
   const [draft, setDraft] = useState(content);
   const [editing, setEditing] = useState(false);
@@ -47,7 +48,7 @@ export function CommentEditor({ commentId, content, updateComment, deleteComment
           <textarea
             id={`comment-edit-${commentId}`}
             value={draft}
-            maxLength={300}
+            maxLength={maxLength}
             rows={2}
             className={kit.textarea}
             style={{ minHeight: 64 }}

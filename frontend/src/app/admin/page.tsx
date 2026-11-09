@@ -11,8 +11,8 @@ export const metadata: Metadata = { title: { absolute: "대시보드 | 찍먹 �
 const days = ["월", "화", "수", "목", "금", "토", "일"];
 
 async function DashboardContent() {
-  const [stats, reports] = await Promise.all([getDashboard(), getReports("pending")]);
-  const max = Math.max(...stats.signups);
+  const [stats, reports] = await Promise.all([getDashboard(), getReports({ status: "pending", page: 1 })]);
+  const max = Math.max(1, ...stats.signups);
   const cards = [
     { label: "전체 회원", value: `${formatCount(stats.userCount)}명`, delta: `오늘 +${stats.newUsersToday}` },
     { label: "이번 주 데모 업로드", value: `${formatCount(stats.demoUploadsWeek)}개`, delta: "지난주 대비 +12%" },
@@ -60,7 +60,7 @@ async function DashboardContent() {
             </Link>
           </div>
           <ul className={kit.list}>
-            {reports.map((report) => (
+            {reports.content.map((report) => (
               <li key={report.id}>
                 <Link href={`/admin/reports/${report.id}`} className={kit.listItem}>
                   <span className={kit.pillDanger}>{report.reason}</span>

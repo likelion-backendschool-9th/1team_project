@@ -2,10 +2,11 @@ import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { Avatar } from "@/app/_components/ui/Avatar";
 import { ConfirmButton } from "@/app/_components/ui/ConfirmButton";
+import { ReportModal } from "@/app/_components/ui/ReportModal";
 import kit from "@/app/_components/ui/kit.module.css";
 import { formatRelativeTime } from "@/app/_lib/format";
 import { getMe } from "@/app/(user)/_lib/api";
-import { deleteGuestbook } from "../../_actions";
+import { deleteGuestbook, reportGuestbook } from "../../_actions";
 import { getGuestbook, getProfile, getServerTime } from "../../_lib/api";
 import { parseUserId } from "../../_lib/parse";
 import { GuestbookWriteForm } from "./GuestbookWriteForm";
@@ -62,6 +63,15 @@ export async function GuestbookContent({ params }: Props) {
                     danger
                     className={`${kit.btnGhost} ${kit.sm}`}
                     onConfirm={deleteGuestbook.bind(null, entry.id)}
+                  />
+                )}
+                {/* 내 글이 아니고 삭제 권한도 없을 때 — 즉 타인의 방명록일 때만 신고 가능 */}
+                {me && !canDelete && (
+                  <ReportModal
+                    label="신고"
+                    title="방명록 신고"
+                    className={`${kit.btnGhost} ${kit.sm}`}
+                    onConfirm={reportGuestbook.bind(null, userId, entry.id)}
                   />
                 )}
               </li>

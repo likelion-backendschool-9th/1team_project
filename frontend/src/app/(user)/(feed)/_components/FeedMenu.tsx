@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useId, useRef, useState } from "react";
 import { ConfirmButton } from "@/app/_components/ui/ConfirmButton";
+import { ReportModal } from "@/app/_components/ui/ReportModal";
 import { MoreIcon } from "@/app/_components/ui/Icons";
 import { blockUser, deleteFeed, reportFeed } from "../_actions";
 import styles from "./FeedMenu.module.css";
@@ -86,14 +87,11 @@ export function FeedMenu({ feedId, authorId, authorName, mine }: Props) {
           </>
         ) : (
           <>
-            <ConfirmButton
+            <ReportModal
               label="🚨 신고"
               title="이 피드를 신고할까요?"
-              description="운영진이 확인 후 조치해요."
-              confirmLabel="신고"
-              danger
               className={styles.item}
-              onConfirm={reportFeed.bind(null, feedId)}
+              onConfirm={(reason) => reportFeed(feedId, reason)}
               onDone={done}
             />
             <ConfirmButton

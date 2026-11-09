@@ -9,6 +9,7 @@ import static org.mockito.Mockito.when;
 import com.dipsource.entity.minihome.MiniHome;
 import com.dipsource.global.exception.BusinessException;
 import com.dipsource.global.exception.ErrorCode;
+import com.dipsource.repository.block.BlockRepository;
 import com.dipsource.repository.minihome.MiniHomeRepository;
 import com.dipsource.service.post.PostService;
 import com.dipsource.service.user.UserService;
@@ -31,11 +32,14 @@ class MiniHomeVisitServiceTest {
     @Mock
     private PostService postService;
 
+    @Mock
+    private BlockRepository blockRepository;
+
     private MiniHomeServiceImpl service;
 
     @BeforeEach
     void setUp() {
-        service = new MiniHomeServiceImpl(new MiniHomeLoader(repository, userService), repository, postService);
+        service = new MiniHomeServiceImpl(new MiniHomeLoader(repository, userService), repository, postService, blockRepository);
     }
 
     @Test

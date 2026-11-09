@@ -11,6 +11,7 @@ import {
   createComment,
   deleteFeedComment,
   replyFeedComment,
+  reportFeedComment,
   toggleFeedCommentLike,
   updateFeed,
   updateFeedComment,
@@ -64,6 +65,7 @@ export async function FeedDetail({ params, searchParams }: Props) {
           deleteComment={deleteFeedComment}
           likeComment={toggleFeedCommentLike}
           replyComment={replyFeedComment.bind(null, feedId)}
+          reportComment={reportFeedComment}
         />
       </section>
     </div>

@@ -9,6 +9,7 @@ import com.dipsource.entity.feed.FeedStatus;
 import com.dipsource.entity.user.User;
 import com.dipsource.global.exception.BusinessException;
 import com.dipsource.global.exception.ErrorCode;
+import com.dipsource.repository.block.BlockRepository;
 import com.dipsource.repository.feed.FeedCommentLikeRepository;
 import com.dipsource.repository.feed.FeedCommentRepository;
 import com.dipsource.repository.feed.FeedRepository;
@@ -34,6 +35,7 @@ public class FeedCommentService {
     private final FeedRepository feedRepository;
     private final UserRepository userRepository;
     private final TagWeightService tagWeightService;
+    private final BlockRepository blockRepository;
 
     private static final int COMMENT_TAG_WEIGHT = 1;
 
@@ -47,6 +49,7 @@ public class FeedCommentService {
         if (comments.isEmpty()) {
             return CommentCursorResponse.of(List.of(), size);
         }
+        Set<Long> hidden = hiddenUserIds(userId);
 
         // 대댓글 배치 조회
         List<Long> commentIds = comments.stream().map(FeedComment::getId).toList();
@@ -78,7 +81,12 @@ public class FeedCommentService {
         // 삭제됐고 대댓글도 없는 댓글은 제외
         List<CommentResponse> responses = new ArrayList<>();
         for (FeedComment c : comments) {
-            List<FeedComment> replies = replyMap.getOrDefault(c.getId(), List.of());
+            if (hidden.contains(c.getUserId())) {
+                continue;
+            }
+            List<FeedComment> replies = replyMap.getOrDefault(c.getId(), List.of()).stream()
+                    .filter(r -> !hidden.contains(r.getUserId()))
+                    .toList();
             if (c.getDeletedAt() != null && replies.isEmpty()) {
                 continue;
             }
@@ -96,7 +104,13 @@ public class FeedCommentService {
     public List<CommentResponse> getReplies(Long commentId, Long userId) {
         FeedComment parent = findCommentIncludeDeleted(commentId);
 
-        List<FeedComment> replies = feedCommentRepository.findReplies(parent.getId());
+        Set<Long> hidden = hiddenUserIds(userId);
+        if (hidden.contains(parent.getUserId())) {
+            return List.of();
+        }
+        List<FeedComment> replies = feedCommentRepository.findReplies(parent.getId()).stream()
+                .filter(r -> !hidden.contains(r.getUserId()))
+                .toList();
         if (replies.isEmpty()) {
             return List.of();
         }
@@ -185,6 +199,16 @@ public class FeedCommentService {
         tagWeightService.decreaseWeight(requireUser(userId), comment.getFeed().getId(), COMMENT_TAG_WEIGHT);
     }
 
+    /** 관리자 삭제. 작성자 검사 없이 소프트 삭제하고 피드 댓글 수를 맞춘다. */
+    @Transactional
+    public void deleteByAdmin(Long commentId) {
+        FeedComment comment = findComment(commentId);
+        comment.delete();
+        feedCommentRepository.decrementCommentCount(comment.getFeed().getId());
+        userRepository.findById(comment.getUserId()).ifPresent(author ->
+                tagWeightService.decreaseWeight(author, comment.getFeed().getId(), COMMENT_TAG_WEIGHT));
+    }
+
     private Feed findActiveFeed(Long feedId) {
         return feedRepository.findById(feedId)
                 .filter(f -> f.getStatus() == FeedStatus.ACTIVE)
@@ -214,5 +238,12 @@ public class FeedCommentService {
     private User requireUser(Long userId) {
         return userRepository.findById(userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "사용자를 찾을 수 없습니다"));
+    }
+
+    private Set<Long> hiddenUserIds(Long userId) {
+        if (userId == null) {
+            return Set.of();
+        }
+        return new HashSet<>(blockRepository.findHiddenUserIds(userId));
     }
 }
