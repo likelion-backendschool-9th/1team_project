@@ -80,11 +80,17 @@ public class NewsRssParser {
         return abbreviate(clean(description));
     }
 
+    private static final Pattern BLOCK_TAG = Pattern.compile(
+            "(?is)</?(p|div|br|hr|li|ul|ol|h[1-6]|blockquote|pre|table|tr|td|th|section|article)\\b[^>]*>");
+    private static final Pattern INLINE_TAG = Pattern.compile("(?s)<[^>]*>");
+
     static String clean(String raw) {
         if (raw == null) {
             return "";
         }
-        String text = decodeEntities(raw.replaceAll("(?s)<[^>]*>", " "));
+        // 문단·목록 같은 블록 태그는 띄어 쓰고, <b>·<code> 같은 인라인 태그는 붙여서 지운다.
+        // 그래야 "<strong>운영 자동화</strong>를"이 "운영 자동화 를"로 벌어지지 않는다.
+        String text = decodeEntities(INLINE_TAG.matcher(BLOCK_TAG.matcher(raw).replaceAll(" ")).replaceAll(""));
         return text.replaceAll("\\s+", " ").trim();
     }
 
