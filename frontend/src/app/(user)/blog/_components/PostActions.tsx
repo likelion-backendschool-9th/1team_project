@@ -18,6 +18,8 @@ type Props = {
   commentCount: number;
   repostCount: number;
   liked: boolean;
+  /** 목록 카드에서는 알 수 없어 생략한다 (기본 false) */
+  bookmarked?: boolean;
   readMinutes: number;
   loggedIn?: boolean;
 };
@@ -28,39 +30,48 @@ export function PostActions({
   commentCount,
   repostCount,
   liked,
+  bookmarked: initialBookmarked = false,
   readMinutes,
   loggedIn = false,
 }: Props) {
   const [likeState, setLikeState] = useState({ active: liked, count: likeCount });
-  const [likeError, setLikeError] = useState<string | null>(null);
-  const [bookmarked, setBookmarked] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [bookmarked, setBookmarked] = useState(initialBookmarked);
   const [likePending, startLikeTransition] = useTransition();
   const [, startBookmarkTransition] = useTransition();
 
   function handleLike() {
     if (!loggedIn) {
-      setLikeError("로그인 후 좋아요를 누를 수 있어요.");
+      setError("로그인 후 좋아요를 누를 수 있어요.");
       return;
     }
     const previous = likeState;
     const next = !previous.active;
     setLikeState({ active: next, count: Math.max(0, previous.count + (next ? 1 : -1)) });
-    setLikeError(null);
+    setError(null);
     startLikeTransition(async () => {
       const result = await togglePostLike(postId, next);
       if (!result.ok) {
         setLikeState(previous);
-        setLikeError(result.message);
+        setError(result.message);
       }
     });
   }
 
   function handleBookmark() {
+    if (!loggedIn) {
+      setError("로그인 후 북마크할 수 있어요.");
+      return;
+    }
     const next = !bookmarked;
     setBookmarked(next);
+    setError(null);
     startBookmarkTransition(async () => {
       const result = await togglePostBookmark(postId, next);
-      if (!result.ok) setBookmarked(!next);
+      if (!result.ok) {
+        setBookmarked(!next);
+        setError(result.message);
+      }
     });
   }
 
@@ -95,9 +106,9 @@ export function PostActions({
       >
         <BookmarkIcon filled={bookmarked} />
       </button>
-      {likeError && (
+      {error && (
         <p role="alert" className={kit.error} style={{ width: "100%" }}>
-          {likeError}
+          {error}
         </p>
       )}
     </div>

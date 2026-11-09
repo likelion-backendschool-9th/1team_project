@@ -120,6 +120,26 @@ public class PostController {
         return ResponseEntity.noContent().build();
     }
 
+    /** 북마크 (로그인 필수). 이미 했어도 204 (멱등) */
+    @PostMapping("/posts/{postId}/bookmark")
+    public ResponseEntity<Void> bookmark(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @PathVariable Long postId
+    ) {
+        postService.bookmark(requireUserId(principal), postId);
+        return ResponseEntity.noContent().build();
+    }
+
+    /** 북마크 취소 (로그인 필수). 안 했어도 204 (멱등) */
+    @DeleteMapping("/posts/{postId}/bookmark")
+    public ResponseEntity<Void> unbookmark(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @PathVariable Long postId
+    ) {
+        postService.unbookmark(requireUserId(principal), postId);
+        return ResponseEntity.noContent().build();
+    }
+
     private static Long requireUserId(UserPrincipal principal) {
         if (principal == null) {
             throw new BusinessException(ErrorCode.UNAUTHORIZED, "로그인이 필요합니다");

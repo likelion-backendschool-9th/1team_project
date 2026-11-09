@@ -47,4 +47,10 @@ public interface PostService {
      * DELETE 결과로 실제 삭제 여부를 판단해 race condition 방지.
      */
     void unlike(Long userId, Long postId);
+
+    /** 북마크. 이미 했어도 오류 없이 넘어간다 (멱등). 공개 글만, 차단 관계인 글은 404 */
+    void bookmark(Long userId, Long postId);
+
+    /** 북마크 취소. 안 했어도 오류 없이 넘어간다 (멱등). 공개 글만, 차단 관계여도 취소는 허용 */
+    void unbookmark(Long userId, Long postId);
 }
