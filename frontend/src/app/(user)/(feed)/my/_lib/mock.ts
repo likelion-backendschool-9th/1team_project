@@ -122,10 +122,11 @@ export const mockSubscriptions: Subscription[] = [
   { id: 3, author: mockUsers.seungjo, blogTitle: "김승조의 개발 블로그", pricePerMonth: 3000, nextBillingAt: "2026-11-15T09:00:00+09:00", status: "canceled" },
 ];
 
+// 딥소스 플러스는 아직 준비 중이라(백엔드가 plan: plus 요청을 거절) 구독하지 않은 상태로 둔다.
 export const mockPlus: PlusMembership = {
-  active: true,
-  since: "2026-08-01T09:00:00+09:00",
-  nextBillingAt: "2026-12-01T09:00:00+09:00",
+  active: false,
+  since: null,
+  nextBillingAt: null,
 };
 
 export type BookmarkType = "feed" | "post" | "demo";
