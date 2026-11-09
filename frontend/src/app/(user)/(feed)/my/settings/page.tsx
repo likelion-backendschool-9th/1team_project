@@ -2,7 +2,9 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { Avatar } from "@/app/_components/ui/Avatar";
 import { ConfirmButton } from "@/app/_components/ui/ConfirmButton";
+import { ComingSoon } from "@/app/_components/ui/ComingSoon";
 import kit from "@/app/_components/ui/kit.module.css";
+import { isMockMode } from "@/app/_lib/api/client";
 import { formatDate } from "@/app/_lib/format";
 import { unblockUser } from "../_actions";
 import { getBlocked, getSettings } from "../_lib/api";
@@ -11,11 +13,12 @@ import { SettingsForm } from "./_components/SettingsForm";
 export const metadata: Metadata = { title: "설정", robots: { index: false } };
 
 async function SettingsContent() {
-  const [settings, blocked] = await Promise.all([getSettings(), getBlocked()]);
+  // 설정 API는 아직 없어서 실서버에서는 호출하지 않는다. 차단 목록은 실제 API다.
+  const [settings, blocked] = await Promise.all([isMockMode ? getSettings() : null, getBlocked()]);
 
   return (
     <>
-      <SettingsForm settings={settings} />
+      {settings ? <SettingsForm settings={settings} /> : <ComingSoon feature="알림·공개 설정" />}
       <section className={kit.card} aria-labelledby="blocked-title">
         <h2 id="blocked-title" className={kit.cardTitle}>
           차단한 사용자

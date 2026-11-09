@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import { connection } from "next/server";
 import { Suspense } from "react";
+import { ComingSoon } from "@/app/_components/ui/ComingSoon";
 import kit from "@/app/_components/ui/kit.module.css";
+import { isMockMode } from "@/app/_lib/api/client";
 import { formatWon } from "@/app/_lib/format";
 import { getRevenue } from "../_lib/api";
 import styles from "../_components/Admin.module.css";
@@ -17,6 +19,8 @@ function parseMonth(value: string | string[] | undefined) {
 
 async function RevenueContent({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   await connection();
+  if (!isMockMode) return <ComingSoon feature="매출 통계" />;
+
   const params = await searchParams;
   const from = parseMonth(params.from);
   const to = parseMonth(params.to);
