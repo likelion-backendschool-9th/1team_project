@@ -11,6 +11,10 @@ import com.dipsource.entity.report.Report;
 import com.dipsource.entity.user.User;
 import com.dipsource.global.auth.UserPrincipal;
 import jakarta.persistence.EntityManager;
+import java.sql.Timestamp;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -72,7 +76,9 @@ class AdminDashboardControllerTest {
                 .targetId(admin.getId())
                 .reason("이미 처리된 신고")
                 .build());
+        persist(User.builder().email("gone@test.local").nickname("탈퇴회원").techStacks(List.of()).build());
         jdbc.update("UPDATE reports SET status = 'RESOLVED' WHERE reason = '이미 처리된 신고'");
+        jdbc.update("UPDATE users SET status = 'DELETED' WHERE email = 'gone@test.local'");
     }
 
     @Test
@@ -99,6 +105,33 @@ class AdminDashboardControllerTest {
                 .andExpect(jsonPath("$.data.pendingReports").value(1))
                 .andExpect(jsonPath("$.data.revenueMonth").value(0))
                 .andExpect(jsonPath("$.data.signups.length()").value(7));
+    }
+
+    @Test
+    @DisplayName("서울 자정 직전 가입은 오늘 가입에 넣지 않는다")
+    void seoulMidnightBoundary() throws Exception {
+        LocalDate today = LocalDate.now(ZoneId.of("Asia/Seoul"));
+        LocalDateTime beforeMidnight = today.atStartOfDay().minusSeconds(1);
+        LocalDateTime atMidnight = today.atStartOfDay();
+        User before = persist(User.builder()
+                .email("before-midnight@test.local")
+                .nickname("어제가입")
+                .techStacks(List.of())
+                .build());
+        User after = persist(User.builder()
+                .email("after-midnight@test.local")
+                .nickname("오늘가입")
+                .techStacks(List.of())
+                .build());
+        jdbc.update("UPDATE users SET created_at = ? WHERE id = ?", Timestamp.valueOf(beforeMidnight), before.getId());
+        jdbc.update("UPDATE users SET created_at = ? WHERE id = ?", Timestamp.valueOf(atMidnight), after.getId());
+
+        int todayIndex = today.getDayOfWeek().getValue() - 1;
+        mockMvc.perform(get("/admin/dashboard").with(authentication(auth(admin, "ADMIN"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.userCount").value(4))
+                .andExpect(jsonPath("$.data.newUsersToday").value(3))
+                .andExpect(jsonPath("$.data.signups[" + todayIndex + "]").value(3));
     }
 
     private Authentication auth(User user, String role) {

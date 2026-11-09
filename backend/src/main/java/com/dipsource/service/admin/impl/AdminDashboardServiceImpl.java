@@ -2,6 +2,7 @@ package com.dipsource.service.admin.impl;
 
 import com.dipsource.dto.admin.AdminDashboardResponse;
 import com.dipsource.entity.report.ReportStatus;
+import com.dipsource.entity.user.enums.UserStatus;
 import com.dipsource.repository.demo.DemoRepository;
 import com.dipsource.repository.report.ReportRepository;
 import com.dipsource.repository.user.UserRepository;
@@ -34,6 +35,7 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
     public AdminDashboardResponse get() {
         LocalDate today = LocalDate.now(ZONE);
         LocalDate monday = today.with(DayOfWeek.MONDAY);
+        // created_at은 서울 벽시계 timestamp라, 서울 자정 LocalDateTime과 그대로 비교한다.
         LocalDateTime weekStart = monday.atStartOfDay();
         LocalDateTime weekEnd = monday.plusWeeks(1).atStartOfDay();
         LocalDateTime todayStart = today.atStartOfDay();
@@ -52,8 +54,8 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
         }
 
         return new AdminDashboardResponse(
-                userRepository.count(),
-                userRepository.countByCreatedAtGreaterThanEqual(todayStart),
+                userRepository.countByStatusNot(UserStatus.DELETED),
+                userRepository.countByStatusNotAndCreatedAtGreaterThanEqual(UserStatus.DELETED, todayStart),
                 demoRepository.countByDeletedAtIsNullAndCreatedAtGreaterThanEqualAndCreatedAtLessThan(
                         weekStart, weekEnd),
                 reportRepository.countByStatus(ReportStatus.PENDING),
