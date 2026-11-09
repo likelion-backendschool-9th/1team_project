@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { Avatar } from "@/app/_components/ui/Avatar";
-import { ChevronRightIcon } from "@/app/_components/ui/Icons";
+import { ChatIcon, ChevronRightIcon } from "@/app/_components/ui/Icons";
 import type { Following } from "@/app/_lib/types/user";
+import { DmOpenButton } from "./DmOpenButton";
 import { UserBadges } from "./UserBadges";
 import styles from "./FollowingList.module.css";
 
@@ -23,7 +24,7 @@ export function FollowingList({ followings }: Props) {
       </div>
       <ul className={styles.list} aria-label={`팔로잉 ${followings.length}명`} tabIndex={0}>
         {followings.map((user) => (
-          <li key={user.id}>
+          <li key={user.id} className={styles.item}>
             <Link href={`/mini-home/${user.id}`} className={styles.row}>
               <Avatar name={user.nickname} size={32} tone="light" />
               <div className={styles.info}>
@@ -36,6 +37,9 @@ export function FollowingList({ followings }: Props) {
                 aria-label={user.online ? "접속 중" : "오프라인"}
               />
             </Link>
+            <DmOpenButton user={user} className={styles.dm} aria-label={`@${user.nickname}에게 DM 보내기`}>
+              <ChatIcon aria-hidden="true" />
+            </DmOpenButton>
           </li>
         ))}
       </ul>
