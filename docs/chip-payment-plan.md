@@ -40,15 +40,15 @@
 > 브랜치: `feature/post-purchase`
 
 **백엔드**
-- [ ] `PostPurchase` 엔티티 확인 (이미 있음)
-- [ ] `CoinService.useForPostPurchase(userId, postId, chips)` — 잔액 체크 → 차감 → `post_purchases` 저장
-- [ ] `POST /posts/{postId}/purchase` 엔드포인트
-- [ ] `백엔드-청사진.md` 상태 업데이트
+- [x] `PostPurchase` 엔티티 확인 (이미 있음) — `PostPurchaseRepository.insertIgnore()`로 중복 구매 방지
+- [x] `CoinService.payForPost(buyerId, authorId, postId, title, chips)` — 두 회원을 ID 순서로 잠금 → 구매자 차감(BLOG_PURCHASE) → 글쓴이 수익(BLOG_INCOME). 수수료는 정산(5단계)에서 뗀다
+- [x] `POST /posts/{postId}/purchase` 엔드포인트 — `PostService.purchase()`가 글 검사 후 `post_purchases` 저장 → `payForPost()` 호출
+- [x] `백엔드-청사진.md` 상태 업데이트
 
 **프론트**
-- [ ] `unlockPost` Server Action 실 연동 (현재 목업)
-- [ ] 구매 후 본문 전체 표시 (revalidatePath)
-- [ ] 잔액 부족 시 에러 처리
+- [x] `unlockPost` Server Action 실 연동
+- [x] 구매 후 본문 전체 표시 (revalidatePath)
+- [x] 잔액 부족 시 에러 처리 (백엔드 메시지 "칩이 부족해요. 필요: N개, 보유: M개"를 그대로 보여 줌)
 
 ---
 

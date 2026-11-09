@@ -117,11 +117,19 @@ class NewsRssParserTest {
 
         assertThat(items).hasSize(1);
         assertThat(items.get(0).url()).isEqualTo("https://news.hada.io/topic?id=5&utm_source=geeknews");
-        assertThat(items.get(0).summary()).startsWith("운영 자동화 를 다룬 글 & 사례 나");
+        assertThat(items.get(0).summary()).startsWith("운영 자동화를 다룬 글 & 사례 나");
         assertThat(items.get(0).summary()).hasSize(NewsRssParser.SUMMARY_LENGTH);
         assertThat(items.get(0).summary()).doesNotContain("<", ">");
         assertThat(items.get(0).category()).isEqualTo("ai");
         assertThat(items.get(0).publishedAt()).isEqualTo(OffsetDateTime.parse("2026-11-03T15:32:47+09:00"));
+    }
+
+    @Test
+    void joinsInlineTagsAndSpacesBlockTags() {
+        assertThat(NewsRssParser.clean("<p>Next<code>.js</code> 16 출시</p><p><a href='x'>링크</a>에서 확인</p>"))
+                .isEqualTo("Next.js 16 출시 링크에서 확인");
+        assertThat(NewsRssParser.clean("첫 줄<br/>둘째 줄<li>항목</li>"))
+                .isEqualTo("첫 줄 둘째 줄 항목");
     }
 
     @Test

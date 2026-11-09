@@ -26,10 +26,23 @@ class MiniHomeLoader {
             throw new BusinessException(ErrorCode.NOT_FOUND, "회원을 찾을 수 없습니다");
         }
         return miniHomeRepository.findByUserId(userId)
-                .orElseGet(() -> miniHomeRepository.save(MiniHome.builder()
-                        .userId(userId)
-                        .title(nickname(userId))
-                        .build()));
+                .orElseGet(() -> miniHomeRepository.save(draft(userId)));
+    }
+
+    private MiniHome draft(Long userId) {
+        return MiniHome.builder()
+                .userId(userId)
+                .title(nickname(userId))
+                .build();
+    }
+
+    /** 있으면 반환하고, 없으면 저장하지 않은 기본값을 돌려준다. 조회(GET)에서 행을 만들지 않으려고 쓴다. */
+    MiniHome loadOrDraft(Long userId) {
+        if (!userService.isActiveUser(userId)) {
+            throw new BusinessException(ErrorCode.NOT_FOUND, "회원을 찾을 수 없습니다");
+        }
+        return miniHomeRepository.findByUserId(userId)
+                .orElseGet(() -> draft(userId));
     }
 
     /** 있으면 반환한다. 없으면 비어 있다. 활동 중인 회원이 아니면 예외. */

@@ -4,6 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.dipsource.dto.minihome.UpdateMiniHomeRequest;
@@ -43,10 +45,12 @@ class MiniHomeServiceImplTest {
     }
 
     @Test
-    void createsHomeWithNicknameAndCreamSkin() {
+    void showsDefaultHomeWithoutSavingIt() {
         when(repository.findByUserId(1L)).thenReturn(Optional.empty());
 
-        var response = service.getOrCreate(1L, null);
+        var response = service.get(1L, null);
+
+        verify(repository, never()).save(any());
 
         assertThat(response.headline()).isEqualTo("닉네임");
         assertThat(response.skin()).isEqualTo("cream");
@@ -62,7 +66,7 @@ class MiniHomeServiceImplTest {
         home.changeSkin("default", null);
         when(repository.findByUserId(1L)).thenReturn(Optional.of(home));
 
-        assertThat(service.getOrCreate(1L, null).skin()).isEqualTo("cream");
+        assertThat(service.get(1L, null).skin()).isEqualTo("cream");
     }
 
     @Test
@@ -130,7 +134,7 @@ class MiniHomeServiceImplTest {
         when(repository.findByUserId(1L)).thenReturn(Optional.of(home));
         when(postService.isActivePostOf(302L, 1L)).thenReturn(false);
 
-        assertThat(service.getOrCreate(1L, null).featuredPostId()).isNull();
+        assertThat(service.get(1L, null).featuredPostId()).isNull();
     }
 
     @Test
@@ -168,7 +172,7 @@ class MiniHomeServiceImplTest {
         home.changeSkin("abc", null);
         when(repository.findByUserId(1L)).thenReturn(Optional.of(home));
 
-        assertThat(service.getOrCreate(1L, null).skin()).isEqualTo("cream");
+        assertThat(service.get(1L, null).skin()).isEqualTo("cream");
     }
 
     @Test
@@ -245,7 +249,7 @@ class MiniHomeServiceImplTest {
         home.update("한 줄", "한마디", "example.dev", "old-track");
         when(repository.findByUserId(1L)).thenReturn(Optional.of(home));
 
-        assertThat(service.getOrCreate(1L, null).bgm()).isNull();
+        assertThat(service.get(1L, null).bgm()).isNull();
     }
 
     @Test
@@ -312,10 +316,35 @@ class MiniHomeServiceImplTest {
     }
 
     @Test
+    void ownVisitDoesNotCreateHome() {
+        when(repository.findByUserId(1L)).thenReturn(Optional.empty());
+
+        var stats = service.recordVisit(1L, 1L);
+
+        assertThat(stats.today()).isZero();
+        verify(repository, never()).save(any());
+    }
+
+    @Test
+    void otherVisitCreatesHomeAndCounts() {
+        MiniHome saved = home();
+        when(userService.isActiveUser(2L)).thenReturn(true);
+        when(userService.getSummaries(List.of(2L))).thenReturn(Map.of(
+                2L, new UserSummaryResponse(2L, "주인", null, List.of())
+        ));
+        when(repository.findByUserId(2L)).thenReturn(Optional.empty(), Optional.of(saved));
+
+        service.recordVisit(1L, 2L);
+
+        verify(repository).save(any());
+        verify(repository).incrementVisitCounts(2L);
+    }
+
+    @Test
     void missingUserIsNotFound() {
         when(userService.isActiveUser(9L)).thenReturn(false);
 
-        assertThatThrownBy(() -> service.getOrCreate(9L, null))
+        assertThatThrownBy(() -> service.get(9L, null))
                 .isInstanceOf(BusinessException.class)
                 .extracting(ex -> ((BusinessException) ex).getErrorCode())
                 .isEqualTo(ErrorCode.NOT_FOUND);
