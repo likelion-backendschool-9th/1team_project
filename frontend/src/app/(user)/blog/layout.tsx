@@ -11,7 +11,7 @@ export default function BlogLayout({ children }: { children: ReactNode }) {
   return (
     <div className={styles.shell}>
       <aside className={styles.nav} aria-label="사이드바">
-        <Brand caps />
+        <Brand />
         <NavLinks />
         <section className={styles.ranking} aria-labelledby="article-ranking-title">
           <Suspense fallback={<p className={styles.loading}>불러오는 중…</p>}>
