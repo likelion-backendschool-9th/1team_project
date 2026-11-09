@@ -11,10 +11,12 @@ import com.dipsource.repository.block.BlockRepository;
 import com.dipsource.repository.notification.NotificationRepository;
 import com.dipsource.service.notification.NotificationService;
 import com.dipsource.service.user.UserService;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -27,6 +29,11 @@ import org.springframework.transaction.annotation.Transactional;
 public class NotificationServiceImpl implements NotificationService {
 
     private static final UserSummaryResponse SYSTEM = new UserSummaryResponse(null, "딥소스", null, List.of());
+
+    /** 같은 사람이 짧은 시간에 여러 번 남기면 알림이 쌓이는 종류. 안 읽은 알림이 있으면 새로 만들지 않는다 */
+    private static final Set<NotificationType> GROUPED = Set.of(NotificationType.GUESTBOOK);
+    /** 묶는 시간(분) */
+    static final int GROUP_MINUTES = 10;
 
     private final NotificationRepository notificationRepository;
     private final UserService userService;
@@ -66,6 +73,12 @@ public class NotificationServiceImpl implements NotificationService {
             return;
         }
         if (actorId != null && blockRepository.existsBetween(actorId, receiverId)) {
+            return;
+        }
+        // 방명록 도배 방지: 같은 사람의 안 읽은 방명록 알림이 10분 안에 있으면 하나로 본다
+        if (actorId != null && GROUPED.contains(type)
+                && notificationRepository.existsByReceiverIdAndActorIdAndTypeAndReadFalseAndCreatedAtAfter(
+                        receiverId, actorId, type, LocalDateTime.now().minusMinutes(GROUP_MINUTES))) {
             return;
         }
         notificationRepository.save(Notification.builder()

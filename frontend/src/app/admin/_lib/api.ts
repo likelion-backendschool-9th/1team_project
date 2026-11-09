@@ -163,9 +163,16 @@ export async function getReport(reportId: number): Promise<Report | null> {
   return mockReports.find((report) => report.id === reportId) ?? null;
 }
 
-export const getSubscriptions = () => get("/api/v1/admin/subscriptions", mockAdminSubscriptions);
+// 결제 조회 API는 백엔드에 있어서 MOCK_EXCEPT_DM이어도 실서버를 쓴다. 목록은 최근 100건만 보여 준다.
+export async function getSubscriptions(): Promise<typeof mockAdminSubscriptions> {
+  if (!hasBackend) return mockAdminSubscriptions;
+  const { data } = await apiFetch<ApiResponse<PageResponse<(typeof mockAdminSubscriptions)[number]>>>(
+    "/api/v1/admin/subscriptions?size=100",
+  );
+  return data.content;
+}
 export async function getRevenue(from?: string, to?: string) {
-  if (!isMockMode) {
+  if (hasBackend) {
     const query = new URLSearchParams();
     if (from) query.set("from", from);
     if (to) query.set("to", to);
@@ -175,7 +182,13 @@ export async function getRevenue(from?: string, to?: string) {
   return mockRevenue.filter((row) => (!from || row.month >= from) && (!to || row.month <= to));
 }
 export const getSettlements = () => get("/api/v1/admin/settlements", mockSettlements);
-export const getCoinTx = () => get("/api/v1/admin/coins/purchases", mockCoinTx);
+export async function getCoinTx(): Promise<typeof mockCoinTx> {
+  if (!hasBackend) return mockCoinTx;
+  const { data } = await apiFetch<ApiResponse<PageResponse<(typeof mockCoinTx)[number]>>>(
+    "/api/v1/admin/coins/purchases?size=100",
+  );
+  return data.content;
+}
 export async function getSuspicious(): Promise<typeof mockSuspicious> {
   if (!hasBackend) return mockSuspicious;
   // 이상 거래 API는 백엔드에 있어서 MOCK_EXCEPT_DM이어도 실서버를 쓴다.

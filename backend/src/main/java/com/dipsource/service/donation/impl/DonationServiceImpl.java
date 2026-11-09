@@ -4,6 +4,7 @@ import com.dipsource.entity.coin.ChipRefType;
 import com.dipsource.entity.coin.ChipTransaction;
 import com.dipsource.entity.coin.ChipTransactionType;
 import com.dipsource.entity.coin.Donation;
+import com.dipsource.entity.notification.NotificationType;
 import com.dipsource.entity.user.User;
 import com.dipsource.entity.user.enums.UserStatus;
 import com.dipsource.global.exception.BusinessException;
@@ -14,6 +15,7 @@ import com.dipsource.repository.coin.DonationRepository;
 import com.dipsource.repository.user.UserRepository;
 import com.dipsource.service.donation.DonationService;
 import com.dipsource.service.minihome.MiniHomeService;
+import com.dipsource.service.notification.NotificationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,6 +30,7 @@ public class DonationServiceImpl implements DonationService {
     private final BlockRepository blockRepository;
     private final DonationRepository donationRepository;
     private final ChipTransactionRepository chipTransactionRepository;
+    private final NotificationService notificationService;
 
     @Override
     @Transactional
@@ -98,5 +101,9 @@ public class DonationServiceImpl implements DonationService {
                 .refId(donation.getId())
                 .description(sender.getNickname() + "님에게 칩 " + chips + "개 후원받음")
                 .build());
+
+        // 칩 이동과 내역 저장이 모두 끝난 뒤 알린다. 중간에 실패하면 여기까지 오지 않는다.
+        notificationService.notify(targetUserId, senderId, NotificationType.SPONSOR,
+                NotificationService.TARGET_MINI_HOME, targetUserId);
     }
 }

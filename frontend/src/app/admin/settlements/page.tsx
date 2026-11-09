@@ -1,19 +1,26 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
+import { connection } from "next/server";
 import { ConfirmButton } from "@/app/_components/ui/ConfirmButton";
-import { ComingSoon } from "@/app/_components/ui/ComingSoon";
 import kit from "@/app/_components/ui/kit.module.css";
-import { isMockMode } from "@/app/_lib/api/client";
 import { formatWon } from "@/app/_lib/format";
+import { SETTLEMENT_FEE_PERCENT } from "@/app/_lib/policy";
 import { confirmSettlement } from "../_actions";
+import { SettlementGenerateForm } from "../_components/SettlementGenerateForm";
 import { StatusPill } from "../_components/StatusPill";
 import { getSettlements } from "../_lib/api";
+
+/** 서울 기준 "YYYY-MM". offset 0이면 이번 달, -1이면 지난달 */
+function seoulMonth(offset: number) {
+  const now = new Date(Date.now() + 9 * 60 * 60 * 1000);
+  const date = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + offset, 1));
+  return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}`;
+}
 
 export const metadata: Metadata = { title: "정산 관리" };
 
 async function SettlementsContent() {
-  if (!isMockMode) return <ComingSoon feature="정산 관리" />;
-
+  await connection();
   const rows = await getSettlements();
   const pending = rows.filter((row) => row.status === "pending");
 
@@ -22,8 +29,10 @@ async function SettlementsContent() {
       <div className={kit.grid3}>
         <div className={`${kit.card} ${kit.stat}`}><span className={kit.statLabel}>정산 대기</span><span className={kit.statValue}>{pending.length}건</span></div>
         <div className={`${kit.card} ${kit.stat}`}><span className={kit.statLabel}>지급 예정액</span><span className={kit.statValue}>{formatWon(pending.reduce((s, r) => s + r.gross - r.fee, 0))}</span></div>
-        <div className={`${kit.card} ${kit.stat}`}><span className={kit.statLabel}>수수료율</span><span className={kit.statValue}>20%</span></div>
+        <div className={`${kit.card} ${kit.stat}`}><span className={kit.statLabel}>수수료율</span><span className={kit.statValue}>{SETTLEMENT_FEE_PERCENT}%</span></div>
       </div>
+      <SettlementGenerateForm defaultPeriod={seoulMonth(-1)} maxPeriod={seoulMonth(0)} />
+      {rows.length === 0 && <p className={kit.empty}>아직 만든 정산이 없어요. 달을 골라 정산을 만들어 보세요.</p>}
       <section className={kit.card}>
         <div className={kit.tableWrap}>
           <table className={kit.table}>

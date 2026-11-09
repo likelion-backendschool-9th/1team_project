@@ -72,7 +72,33 @@ export async function processReport(reportId: number, previous: FormState, formD
 
 export async function confirmSettlement(settlementId: number) {
   if (!isId(settlementId)) return { ok: false, message: "잘못된 요청이에요." };
-  return mutate(`/api/v1/admin/settlements/${settlementId}/confirm`, "PUT", undefined, "정산을 확정했어요.");
+  const result = await mutate(
+    `/api/v1/admin/settlements/${settlementId}/confirm`,
+    "PUT",
+    undefined,
+    "정산을 확정했어요.",
+    !hasBackend,
+  );
+  if (result.ok) revalidatePath("/admin/settlements");
+  return result;
+}
+
+// 한 달 치 정산 만들기. period는 <input type="month"> 값(2026-10).
+export async function generateSettlements(previous: FormState, formData: FormData): Promise<FormState> {
+  const values = readValues(formData, ["period"]);
+  const errors: Record<string, string> = {};
+  if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(values.period)) errors.period = "정산할 달을 골라 주세요.";
+  const state = await runForm(previous, values, errors, () =>
+    mutate(
+      `/api/v1/admin/settlements?period=${values.period}`,
+      "POST",
+      undefined,
+      `${values.period} 정산을 만들었어요. 이미 있던 회원은 건너뛰어요.`,
+      !hasBackend,
+    ),
+  );
+  if (state.ok) revalidatePath("/admin/settlements");
+  return state;
 }
 
 // 칩 충전 환불: 충전한 칩을 회수하고 결제를 환불됨으로 바꾼다. 환불 API는 백엔드에 있어서 MOCK_EXCEPT_DM이어도 실서버를 쓴다.

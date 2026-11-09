@@ -1,9 +1,7 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { ConfirmButton } from "@/app/_components/ui/ConfirmButton";
-import { ComingSoon } from "@/app/_components/ui/ComingSoon";
 import kit from "@/app/_components/ui/kit.module.css";
-import { isMockMode } from "@/app/_lib/api/client";
 import { formatCount, formatDate, formatWon } from "@/app/_lib/format";
 import { CHIP_PRICE_WON, chipsToWon } from "@/app/_lib/policy";
 import { approveRefund } from "../_actions";
@@ -13,8 +11,6 @@ import { getCoinTx } from "../_lib/api";
 export const metadata: Metadata = { title: "충전·환불" };
 
 async function CoinsContent() {
-  if (!isMockMode) return <ComingSoon feature="충전·환불" />;
-
   const rows = await getCoinTx();
   // 회원 환불 요청 기능은 없어서, 관리자가 충전 건에서 바로 환불한다.
   const refunded = rows.filter((row) => row.type === "refunded");
