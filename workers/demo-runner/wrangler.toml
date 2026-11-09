@@ -7,7 +7,7 @@ workers_dev = true
 
 [[r2_buckets]]
 binding = "DEMO_BUCKET"
-bucket_name = "dipsource-demos"
+bucket_name = "dsp"
 
 [vars]
 # 데모 iframe을 띄울 수 있는 사이트 출처. 공백으로 구분한다
