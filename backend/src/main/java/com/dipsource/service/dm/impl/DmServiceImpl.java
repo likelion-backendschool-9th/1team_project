@@ -11,6 +11,7 @@ import com.dipsource.entity.dm.DmRoomMember;
 import com.dipsource.global.common.PageResponse;
 import com.dipsource.global.exception.BusinessException;
 import com.dipsource.global.exception.ErrorCode;
+import com.dipsource.repository.block.BlockRepository;
 import com.dipsource.repository.dm.DmMessageRepository;
 import com.dipsource.repository.dm.DmRoomMemberRepository;
 import com.dipsource.repository.dm.DmRoomRepository;
@@ -19,6 +20,7 @@ import com.dipsource.service.user.UserService;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -43,6 +45,7 @@ public class DmServiceImpl implements DmService {
     private final DmRoomMemberRepository dmRoomMemberRepository;
     private final DmMessageRepository dmMessageRepository;
     private final UserService userService;
+    private final BlockRepository blockRepository;
 
     @Override
     @Transactional
@@ -55,7 +58,8 @@ public class DmServiceImpl implements DmService {
         if (receiverId == null || receiverId.equals(senderId)) {
             throw new BusinessException(ErrorCode.BAD_REQUEST, "받는 사람을 확인해 주세요.");
         }
-        if (!userService.isActiveUser(receiverId)) {
+        // 차단 여부가 드러나지 않도록 없는 회원과 같은 응답을 준다.
+        if (!userService.isActiveUser(receiverId) || blockRepository.existsBetween(senderId, receiverId)) {
             throw new BusinessException(ErrorCode.NOT_FOUND, "메시지를 보낼 수 없는 회원이에요.");
         }
 
@@ -85,13 +89,14 @@ public class DmServiceImpl implements DmService {
     public List<DmRoomResponse> getRooms(Long userId) {
         userService.markActive(userId);
 
+        Set<Long> hidden = new HashSet<>(blockRepository.findHiddenUserIds(userId));
         List<RoomSummary> rooms = new ArrayList<>();
         for (DmRoomMember me : dmRoomMemberRepository.findByIdUserIdAndLeftAtIsNull(userId)) {
             Long roomId = me.getId().getRoomId();
             Optional<Long> partnerId = findPartnerId(roomId, userId);
             Optional<DmMessage> last = dmMessageRepository.findFirstByRoomIdAndDeletedAtIsNullOrderByIdDesc(roomId);
-            // 상대가 없거나 메시지가 하나도 없는 방은 목록에 보이지 않는다.
-            if (partnerId.isEmpty() || last.isEmpty()) {
+            // 상대가 없거나 메시지가 하나도 없거나 차단 관계인 방은 목록에 보이지 않는다.
+            if (partnerId.isEmpty() || last.isEmpty() || hidden.contains(partnerId.get())) {
                 continue;
             }
             long unread = dmMessageRepository.countByRoomIdAndSenderIdNotAndIdGreaterThanAndDeletedAtIsNull(
@@ -125,7 +130,9 @@ public class DmServiceImpl implements DmService {
         userService.markActive(userId);
 
         int size = Math.min(pageable.getPageSize(), MAX_PAGE_SIZE);
-        Optional<DmRoom> room = dmRoomRepository.findSharedRooms(userId, partnerId).stream().findFirst();
+        Optional<DmRoom> room = blockRepository.existsBetween(userId, partnerId)
+                ? Optional.empty()
+                : dmRoomRepository.findSharedRooms(userId, partnerId).stream().findFirst();
         if (room.isEmpty()) {
             return new PageResponse<>(List.of(), pageable.getPageNumber(), size, 0, 0);
         }

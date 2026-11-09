@@ -9,6 +9,7 @@ import com.dipsource.entity.post.PostStatus;
 import com.dipsource.entity.user.User;
 import com.dipsource.global.exception.BusinessException;
 import com.dipsource.global.exception.ErrorCode;
+import com.dipsource.repository.block.BlockRepository;
 import com.dipsource.repository.post.PostCommentLikeRepository;
 import com.dipsource.repository.post.PostCommentRepository;
 import com.dipsource.repository.post.PostRepository;
@@ -34,15 +35,21 @@ public class PostCommentService {
     private final PostCommentLikeRepository postCommentLikeRepository;
     private final PostRepository postRepository;
     private final UserRepository userRepository;
+    private final BlockRepository blockRepository;
 
     /** 댓글 목록 조회 (최상위 댓글 + 대댓글 포함, 커서 페이지네이션) */
     @Transactional(readOnly = true)
     public PostCommentCursorResponse getComments(Long postId, Long userId, Long cursor, int size) {
-        findActivePost(postId);
+        Post post = findActivePost(postId);
+        Set<Long> hidden = hiddenUserIds(userId);
+        if (hidden.contains(post.getUserId())) {
+            return PostCommentCursorResponse.of(List.of(), false);
+        }
         int safeSize = Math.min(Math.max(size, 1), MAX_SIZE);
 
         // size+1개 조회 — 초과 여부로 hasNext 판단 (DB에서 이미 visible 필터 적용)
-        List<PostComment> fetched = postCommentRepository.findTopLevelCommentsVisible(postId, cursor, safeSize + 1);
+        List<PostComment> fetched = postCommentRepository.findTopLevelCommentsVisible(
+                postId, cursor, hidden.toArray(Long[]::new), safeSize + 1);
         boolean hasNext = fetched.size() > safeSize;
         List<PostComment> comments = hasNext ? fetched.subList(0, safeSize) : fetched;
 
@@ -52,7 +59,9 @@ public class PostCommentService {
 
         // 대댓글 배치 조회
         List<Long> commentIds = comments.stream().map(PostComment::getId).toList();
-        List<PostComment> allReplies = postCommentRepository.findRepliesByParentIds(commentIds);
+        List<PostComment> allReplies = postCommentRepository.findRepliesByParentIds(commentIds).stream()
+                .filter(r -> !hidden.contains(r.getUserId()))
+                .toList();
 
         // 모든 댓글 ID — 좋아요 상태 조회용
         List<Long> allCommentIds = Stream.concat(
@@ -93,11 +102,13 @@ public class PostCommentService {
     @Transactional
     public PostCommentResponse create(Long userId, Long postId, PostCommentCreateRequest request) {
         Post post = findActivePost(postId);
+        requireNotBlocked(userId, post.getUserId(), "글을 찾을 수 없습니다");
         User author = requireUser(userId);
 
         PostComment parent = null;
         if (request.parentId() != null) {
             parent = findComment(request.parentId());
+            requireNotBlocked(userId, parent.getUserId(), "댓글을 찾을 수 없습니다");
             if (!parent.getPost().getId().equals(postId)) {
                 throw new BusinessException(ErrorCode.BAD_REQUEST, "다른 글의 댓글에는 답글을 달 수 없습니다");
             }
@@ -144,7 +155,8 @@ public class PostCommentService {
     /** 댓글 좋아요. 이미 눌렀으면 no-op (멱등) */
     @Transactional
     public void likeComment(Long userId, Long commentId) {
-        findComment(commentId);
+        PostComment comment = findComment(commentId);
+        requireNotBlocked(userId, comment.getUserId(), "댓글을 찾을 수 없습니다");
         int inserted = postCommentLikeRepository.insertIgnore(userId, commentId);
         if (inserted > 0) {
             postCommentRepository.incrementCommentLikeCount(commentId);
@@ -158,6 +170,17 @@ public class PostCommentService {
         int deleted = postCommentLikeRepository.deleteByUserIdAndCommentId(userId, commentId);
         if (deleted > 0) {
             postCommentRepository.decrementCommentLikeCount(commentId);
+        }
+    }
+
+    private Set<Long> hiddenUserIds(Long userId) {
+        return userId == null ? Set.of() : new HashSet<>(blockRepository.findHiddenUserIds(userId));
+    }
+
+    /** 차단 여부가 드러나지 않도록 없는 대상과 같은 응답을 준다 */
+    private void requireNotBlocked(Long userId, Long targetUserId, String notFoundMessage) {
+        if (blockRepository.existsBetween(userId, targetUserId)) {
+            throw new BusinessException(ErrorCode.NOT_FOUND, notFoundMessage);
         }
     }
 
