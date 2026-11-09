@@ -189,7 +189,12 @@ export async function getCoinTx(): Promise<typeof mockCoinTx> {
   );
   return data.content;
 }
-export const getSuspicious = () => get("/api/v1/admin/coins/suspicious", mockSuspicious);
+export async function getSuspicious(): Promise<typeof mockSuspicious> {
+  if (!hasBackend) return mockSuspicious;
+  // 이상 거래 API는 백엔드에 있어서 MOCK_EXCEPT_DM이어도 실서버를 쓴다.
+  const { data } = await apiFetch<ApiResponse<typeof mockSuspicious>>("/api/v1/admin/coins/suspicious");
+  return data;
+}
 
 export async function getAdminEvents(): Promise<DevEvent[]> {
   if (isMockMode) return mockEvents;

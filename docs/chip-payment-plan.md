@@ -101,11 +101,11 @@
 
 **백엔드**
 - [x] `GET /admin/coins/purchases?userId=&type=` — 충전 내역 조회 (①)
-- [ ] `PUT /admin/coins/purchases/{purchaseId}/refund` — 환불 처리
+- [x] `PUT /admin/coins/purchases/{purchaseId}/refund` — 환불 처리 (③). 칩 충전만, 칩 회수 후 REFUNDED. 실제 송금은 PG 연동 후
 - [x] `GET /admin/subscriptions` — 구독 목록 (①)
 - [x] `GET /admin/revenue?from=&to=` — 수익 현황 (①). 대시보드 `revenueMonth`(지난달 매출)도 채움
 - [ ] `GET /admin/settlements`, `PUT /admin/settlements/{id}/confirm` — 정산
-- [ ] `GET /admin/coins/suspicious` — 이상 거래 탐지
+- [x] `GET /admin/coins/suspicious` — 이상 거래 탐지 (③). 규칙 3개를 조회할 때 계산
 - [ ] `백엔드-청사진.md` 상태 업데이트
 
 **프론트**

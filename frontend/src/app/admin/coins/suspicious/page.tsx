@@ -2,9 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 import { ConfirmButton } from "@/app/_components/ui/ConfirmButton";
-import { ComingSoon } from "@/app/_components/ui/ComingSoon";
 import kit from "@/app/_components/ui/kit.module.css";
-import { isMockMode } from "@/app/_lib/api/client";
 import { formatDate, formatWon } from "@/app/_lib/format";
 import { suspendForFraud } from "../../_actions";
 import { StatusPill } from "../../_components/StatusPill";
@@ -13,9 +11,14 @@ import { getSuspicious } from "../../_lib/api";
 export const metadata: Metadata = { title: "부정 사용 확인" };
 
 async function SuspiciousContent() {
-  if (!isMockMode) return <ComingSoon feature="부정 사용 확인" />;
-
   const rows = await getSuspicious();
+  if (rows.length === 0) {
+    return (
+      <p className={kit.empty}>
+        지금 감지된 이상 거래가 없어요. (24시간 안 충전 5회 이상, 30일 안 환불 2회 이상, 7일 안 같은 사람에게 후원 5회 이상)
+      </p>
+    );
+  }
 
   return (
     <ul className={kit.stack}>

@@ -12,12 +12,13 @@ export const metadata: Metadata = { title: "충전·환불" };
 
 async function CoinsContent() {
   const rows = await getCoinTx();
-  const requests = rows.filter((row) => row.type === "refund-request");
+  // 회원 환불 요청 기능은 없어서, 관리자가 충전 건에서 바로 환불한다.
+  const refunded = rows.filter((row) => row.type === "refunded");
 
   return (
     <>
       <div className={kit.grid3}>
-        <div className={`${kit.card} ${kit.stat}`}><span className={kit.statLabel}>환불 요청</span><span className={kit.statValue}>{requests.length}건</span></div>
+        <div className={`${kit.card} ${kit.stat}`}><span className={kit.statLabel}>환불 완료</span><span className={kit.statValue}>{refunded.length}건</span></div>
         <div className={`${kit.card} ${kit.stat}`}><span className={kit.statLabel}>최근 충전액</span><span className={kit.statValue}>{formatWon(rows.filter((r) => r.type === "charge").reduce((s, r) => s + chipsToWon(r.chips), 0))}</span></div>
         <div className={`${kit.card} ${kit.stat}`}><span className={kit.statLabel}>칩 단가</span><span className={kit.statValue}>{formatWon(CHIP_PRICE_WON)}</span></div>
       </div>
@@ -41,12 +42,12 @@ async function CoinsContent() {
                   <td className={kit.num}>{formatWon(chipsToWon(row.chips))}</td>
                   <td>{row.memo}</td>
                   <td>
-                    {row.type === "refund-request" && (
+                    {row.type === "charge" && (
                       <ConfirmButton
-                        label="환불 승인"
-                        title={`${row.user}님 환불을 승인할까요?`}
-                        description={`${formatCount(row.chips)}칩 회수 후 ${formatWon(chipsToWon(row.chips))}을 환불해요.`}
-                        confirmLabel="승인"
+                        label="환불"
+                        title={`${row.user}님 충전을 환불할까요?`}
+                        description={`${formatCount(row.chips)}칩을 회수하고 환불됨으로 바꿔요. 회원이 칩을 이미 썼으면 환불되지 않아요. (실제 ${formatWon(chipsToWon(row.chips))} 송금은 PG 연동 후)`}
+                        confirmLabel="환불"
                         className={`${kit.btnPrimary} ${kit.sm}`}
                         onConfirm={approveRefund.bind(null, row.id)}
                       />
