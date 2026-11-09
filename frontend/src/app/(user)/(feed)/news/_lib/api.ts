@@ -19,6 +19,7 @@ const items: Omit<NewsItem, "id">[] = [
   { title: "Next.js 16.4, Partial Prefetching 안정화", summary: "부분 프리페치가 정식 기능이 되면서 내비게이션 체감 속도가 개선됐다.", source: "개발자신문", category: "frontend", publishedAt: "2026-10-31T11:00:00+09:00", url: "https://example.com/news/5" },
   { title: "PostgreSQL 18 베타, 비동기 I/O로 읽기 성능 2배", summary: "새 I/O 서브시스템이 순차 스캔과 VACUUM 성능을 크게 끌어올렸다.", source: "DB월간", category: "backend", publishedAt: "2026-10-30T09:40:00+09:00", url: "https://example.com/news/6" },
   { title: "Unity 6.2, WebGPU 백엔드 정식 지원", summary: "브라우저 게임 개발자들이 기다리던 WebGPU 렌더러가 프리뷰 딱지를 뗐다.", source: "게임개발뉴스", category: "game", publishedAt: "2026-10-29T16:15:00+09:00", url: "https://example.com/news/7" },
+  { title: "주니어 개발자 이직 시장, 포트폴리오보다 코드 리뷰 경험 본다", summary: "채용 담당자 설문에서 협업 경험과 리뷰 참여 이력이 주요 평가 요소로 꼽혔다.", source: "테크리포트", category: "etc", publishedAt: "2026-10-28T10:00:00+09:00", url: "https://example.com/news/8" },
 ];
 
 export async function getNews(q: string | undefined, category: string | undefined): Promise<NewsItem[]> {
