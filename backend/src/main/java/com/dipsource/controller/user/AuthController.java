@@ -5,6 +5,7 @@ import com.dipsource.global.auth.AuthCookieWriter;
 import com.dipsource.global.exception.BusinessException;
 import com.dipsource.service.user.AuthService;
 
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.Map;
@@ -32,9 +33,9 @@ public class AuthController {
      * 예: GET /auth/login/github → GitHub 인가 화면으로 이동
      */
     @GetMapping("/login/{provider}")
-    public void login(@PathVariable String provider, HttpServletResponse response) throws IOException {
+    public void login(@PathVariable String provider, HttpServletRequest request ,HttpServletResponse response) throws IOException {
         // Spring Security OAuth2 기본 시작 URL로 보낸다.
-        response.sendRedirect("/oauth2/authorization/" + provider);
+        response.sendRedirect(request.getContextPath() + "/oauth2/authorization/" + provider);
     }
 
     /** 로그아웃: JWT 쿠키를 지운다. */
