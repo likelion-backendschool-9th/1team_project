@@ -15,6 +15,7 @@ import com.dipsource.repository.coin.ChipTransactionRepository;
 import com.dipsource.repository.coin.PaymentRepository;
 import com.dipsource.repository.user.UserRepository;
 import com.dipsource.service.coin.CoinService;
+import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -47,17 +48,36 @@ public class CoinServiceImpl implements CoinService {
 
     @Override
     @Transactional
-    public void charge(Long userId, int packageId) {
+    public void charge(Long userId, int packageId, String idempotencyKey) {
+        // [B] 멱등 키 체크 — 같은 키로 이미 처리된 결제가 있으면 중복 처리 없이 반환
+        if (idempotencyKey != null && !idempotencyKey.isBlank()) {
+            boolean alreadyPaid = paymentRepository.findByPgOrderId(idempotencyKey)
+                    .map(p -> p.getStatus() == com.dipsource.entity.coin.PaymentStatus.PAID)
+                    .orElse(false);
+            if (alreadyPaid) return;
+        }
+
+        // [A] Cooldown 체크 — 10초 안에 같은 유저가 재요청하면 429
+        boolean tooSoon = paymentRepository.existsByUserIdAndPaymentTypeAndCreatedAtAfter(
+                userId, PaymentType.CHIP_CHARGE,
+                LocalDateTime.now().minusSeconds(CHARGE_COOLDOWN_SECONDS));
+        if (tooSoon) {
+            throw new BusinessException(ErrorCode.TOO_MANY_REQUESTS,
+                    "잠시 후 다시 시도해 주세요. (" + CHARGE_COOLDOWN_SECONDS + "초 간격)");
+        }
+
         int chips = resolvePackage(packageId);
         int amountKrw = chips * CHIP_PRICE_WON;
 
+        // idempotencyKey가 있으면 pgOrderId로 쓴다. 없으면 임시 UUID 생성
         // PG 연동 전 즉시 PAID 처리 — 나중에 여기를 prepare/confirm으로 분리한다
         Payment payment = paymentRepository.save(Payment.builder()
                 .userId(userId)
                 .paymentType(PaymentType.CHIP_CHARGE)
                 .amountKrw(amountKrw)
                 .chips(chips)
-                .pgOrderId(generateOrderId())
+                .pgOrderId(idempotencyKey != null && !idempotencyKey.isBlank()
+                        ? idempotencyKey : generateOrderId())
                 .build());
 
         // PG 검증 단계 — 현재는 no-op. 외부 PG 연동 시 여기서 PG API를 호출한다
@@ -84,6 +104,9 @@ public class CoinServiceImpl implements CoinService {
                 .description("칩 " + chips + "개 충전")
                 .build());
     }
+
+    /** 같은 유저의 연속 충전 최소 간격(초). 연타 방지용 */
+    private static final int CHARGE_COOLDOWN_SECONDS = 10;
 
     /** 거래 내역 한 번에 최대 조회 수 */
     private static final int MAX_HISTORY_SIZE = 50;

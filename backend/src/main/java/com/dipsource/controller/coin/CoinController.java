@@ -35,7 +35,7 @@ public class CoinController {
             @AuthenticationPrincipal UserPrincipal principal,
             @Valid @RequestBody ChipChargeRequest request
     ) {
-        coinService.charge(requireUserId(principal), request.packageId());
+        coinService.charge(requireUserId(principal), request.packageId(), request.idempotencyKey());
         return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
     }
 
