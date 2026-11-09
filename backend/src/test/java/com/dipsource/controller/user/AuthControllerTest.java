@@ -8,6 +8,7 @@ import com.dipsource.entity.user.User;
 import com.dipsource.global.auth.AuthCookieNames;
 import com.dipsource.global.auth.RefreshTokenHasher;
 import com.dipsource.repository.user.RefreshTokenRepository;
+import com.dipsource.global.exception.BusinessException;
 import com.dipsource.service.user.AuthService;
 import com.dipsource.service.user.AuthService.IssuedTokens;
 import jakarta.persistence.EntityManager;
@@ -15,6 +16,11 @@ import jakarta.servlet.http.Cookie;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -107,6 +113,78 @@ class AuthControllerTest {
     }
 
     @Test
+    @DisplayName("A→B→C 교체 후 A로 요청하면 쿠키에 B가 아니라 C를 준다")
+    void graceReturnsLatestInChain() throws Exception {
+        IssuedTokens issued = authService.issueTokens(me);
+        String tokenA = issued.refreshToken();
+        String tokenB = refreshCookie(tokenA);
+        String tokenC = refreshCookie(tokenB);
+
+        String againFromA = refreshCookie(tokenA);
+
+        assertThat(againFromA).isEqualTo(tokenC);
+        assertThat(againFromA).isNotEqualTo(tokenB);
+    }
+
+    @Test
+    @DisplayName("유예 초과 폐기와 현역 갱신이 동시에 끝나도 현역 토큰이 남지 않는다")
+    void concurrentRevokeAndRotateLeavesNoLiveToken() throws Exception {
+        IssuedTokens issued = authService.issueTokens(me);
+        String tokenA = issued.refreshToken();
+        String tokenB = authService.rotate(tokenA).refreshToken();
+        jdbc.update(
+                "UPDATE refresh_tokens SET rotated_at = ? WHERE token_hash = ?",
+                LocalDateTime.now(SEOUL).minusSeconds(31),
+                RefreshTokenHasher.sha256(tokenA));
+
+        String familyId = jdbc.queryForObject(
+                "SELECT family_id FROM refresh_tokens WHERE token_hash = ?",
+                String.class,
+                RefreshTokenHasher.sha256(tokenA));
+
+        ExecutorService pool = Executors.newFixedThreadPool(2);
+        CountDownLatch start = new CountDownLatch(1);
+        CountDownLatch done = new CountDownLatch(2);
+        AtomicInteger unauthorized = new AtomicInteger();
+        try {
+            pool.submit(() -> {
+                await(start);
+                try {
+                    authService.rotate(tokenA);
+                } catch (BusinessException ignored) {
+                    unauthorized.incrementAndGet();
+                } finally {
+                    done.countDown();
+                }
+            });
+            pool.submit(() -> {
+                await(start);
+                try {
+                    authService.rotate(tokenB);
+                } catch (BusinessException ignored) {
+                    unauthorized.incrementAndGet();
+                } finally {
+                    done.countDown();
+                }
+            });
+            start.countDown();
+            assertThat(done.await(10, TimeUnit.SECONDS)).isTrue();
+        } finally {
+            pool.shutdownNow();
+        }
+
+        assertThat(unauthorized.get()).isGreaterThanOrEqualTo(1);
+        Integer live = jdbc.queryForObject(
+                """
+                SELECT COUNT(*) FROM refresh_tokens
+                WHERE family_id = ? AND revoked_at IS NULL AND rotated_at IS NULL
+                """,
+                Integer.class,
+                familyId);
+        assertThat(live).isZero();
+    }
+
+    @Test
     @DisplayName("유예가 지난 옛 토큰 재사용은 401이고 그 로그인 줄을 폐기한다")
     void reuseAfterGraceRevokesFamily() throws Exception {
         IssuedTokens issued = authService.issueTokens(me);
@@ -154,6 +232,15 @@ class AuthControllerTest {
         mockMvc.perform(post("/auth/refresh")
                         .cookie(new Cookie(AuthCookieNames.REFRESH, issued.refreshToken())))
                 .andExpect(status().isUnauthorized());
+    }
+
+    private static void await(CountDownLatch latch) {
+        try {
+            latch.await();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException(e);
+        }
     }
 
     private String refreshCookie(String refreshToken) throws Exception {

@@ -50,10 +50,13 @@ public class AuthServiceImpl implements AuthService {
             throw new BusinessException(ErrorCode.UNAUTHORIZED);
         }
 
-        RefreshToken current = refreshTokenRepository
-                .findByTokenHash(RefreshTokenHasher.sha256(refreshToken))
+        String tokenHash = RefreshTokenHasher.sha256(refreshToken);
+        RefreshToken current = refreshTokenRepository.findByTokenHash(tokenHash)
                 .orElseThrow(() -> new BusinessException(ErrorCode.UNAUTHORIZED));
-        
+        refreshTokenRepository.lockFamily(current.getFamilyId());
+        current = refreshTokenRepository.findByTokenHash(tokenHash)
+                .orElseThrow(() -> new BusinessException(ErrorCode.UNAUTHORIZED));
+
         Instant now = Instant.now();
         LocalDateTime nowSeoul = toSeoul(now);
 
@@ -84,23 +87,41 @@ public class AuthServiceImpl implements AuthService {
             return new IssuedTokens(access, next.token());
         }
 
-        //교체 후 30초 안: 이미 만든 다음 토큰을 다시 서명해서 돌려줌(탭 경합)
+        // 교체 후 30초 안: 체인 끝(아직 교체되지 않은 토큰)을 돌려준다. A→B→C면 A 재요청은 C.
         Duration age = Duration.between(
-            current.getRotatedAt().atZone(SEOUL).toInstant(),now);
+                current.getRotatedAt().atZone(SEOUL).toInstant(), now);
         if (age.compareTo(ROTATION_GRACE) <= 0) {
-            RefreshToken successor = refreshTokenRepository.findByJti(current.getReplacedByJti())
-                .orElseThrow(() -> new BusinessException(ErrorCode.UNAUTHORIZED));
+            RefreshToken latest = latestUnrotated(current);
             String same = jwtProvider.recreateRefreshToken(
-                successor.getUserId(),
-                successor.getJti(),
-                successor.getIssuedAt().atZone(SEOUL).toInstant(),
-                successor.getExpiresAt().atZone(SEOUL).toInstant());
+                    latest.getUserId(),
+                    latest.getJti(),
+                    latest.getIssuedAt().atZone(SEOUL).toInstant(),
+                    latest.getExpiresAt().atZone(SEOUL).toInstant());
             String access = jwtProvider.createAccessToken(user.getId(), user.getRole().name());
             return new IssuedTokens(access, same);
         }
 
         refreshTokenRepository.revokeFamily(current.getFamilyId(), nowSeoul);
         throw new BusinessException(ErrorCode.UNAUTHORIZED);
+    }
+
+    /** A→B→C처럼 이어진 교체에서, 아직 현역인 마지막 토큰을 찾는다. */
+    private RefreshToken latestUnrotated(RefreshToken start) {
+        RefreshToken cursor = start;
+        for (int hops = 0; hops < 32 && cursor.getRotatedAt() != null; hops++) {
+            if (cursor.getReplacedByJti() == null) {
+                throw new BusinessException(ErrorCode.UNAUTHORIZED);
+            }
+            cursor = refreshTokenRepository.findByJti(cursor.getReplacedByJti())
+                    .orElseThrow(() -> new BusinessException(ErrorCode.UNAUTHORIZED));
+            if (cursor.getRevokedAt() != null) {
+                throw new BusinessException(ErrorCode.UNAUTHORIZED);
+            }
+        }
+        if (cursor.getRotatedAt() != null) {
+            throw new BusinessException(ErrorCode.UNAUTHORIZED);
+        }
+        return cursor;
     }
 
     @Override
@@ -110,12 +131,18 @@ public class AuthServiceImpl implements AuthService {
             return;
         }
         refreshTokenRepository.findByTokenHash(RefreshTokenHasher.sha256(refreshToken))
-            .ifPresent(token -> refreshTokenRepository.revokeFamily(token.getFamilyId(), toSeoul(Instant.now())));
+                .ifPresent(token -> {
+                    refreshTokenRepository.lockFamily(token.getFamilyId());
+                    refreshTokenRepository.revokeFamily(token.getFamilyId(), toSeoul(Instant.now()));
+                });
     }
 
     @Override
     @Transactional
     public void revokeAll(Long userId) {
+        refreshTokenRepository.findDistinctFamilyIdsByUserId(userId).stream()
+                .sorted()
+                .forEach(refreshTokenRepository::lockFamily);
         refreshTokenRepository.revokeAllByUserId(userId, toSeoul(Instant.now()));
     }
 

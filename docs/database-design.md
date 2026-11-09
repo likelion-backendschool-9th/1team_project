@@ -92,7 +92,7 @@ PK, UNIQUE, FK 인덱스 외에 추가로 필요한 인덱스다.
 | 방문자 카운트 | 하루 1회 제한은 서비스 레이어에서 캐시(Redis) 또는 별도 방문 기록 테이블로 처리한다. `today_count`와 `total_count`는 원자적으로 증가시킨다. |
 | 구독 | 구독 생성 시 `subscriptions` INSERT + `coin_transactions` INSERT + `users.coin_balance` 차감을 한 트랜잭션으로 처리한다. |
 | 신고 처리 | 관리자가 신고를 처리할 때 `reports.status`를 변경한다. 두 관리자가 동시에 같은 신고를 처리하는 것을 막으려면 `status='PENDING'` 조건 UPDATE를 사용한다. |
-| Refresh Token 갱신 | `token_hash` 행을 `SELECT ... FOR UPDATE`로 잠근다. 첫 요청이 교체하고, 30초 안 재요청은 이미 발급한 다음 토큰을 다시 준다. 30초가 지난 재사용은 그 `family_id`만 폐기한다. |
+| Refresh Token 갱신 | `family_id`에 `pg_advisory_xact_lock`을 걸어 같은 로그인 줄의 갱신·폐기를 직렬화한다. 첫 요청이 교체하고, 30초 안 재요청은 체인 끝(현역 토큰)을 다시 준다. 30초가 지난 재사용은 그 `family_id`만 폐기한다. |
 
 ---
 
