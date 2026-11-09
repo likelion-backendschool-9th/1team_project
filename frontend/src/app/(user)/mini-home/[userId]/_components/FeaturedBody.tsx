@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import styles from "./FeaturedDemo.module.css";
 
@@ -9,10 +10,12 @@ type Props = {
   actions: ReactNode;
   description: ReactNode;
   extra: ReactNode;
+  /** 있으면 "큰 화면으로 실행"이 이 자리에서 키우는 대신 실제 데모 실행 화면으로 이동한다. */
+  runHref?: string;
 };
 
 // 대표 데모는 새 창 없이 이 자리에서 크게 키워 실행한다. 좋아요·댓글은 키운 화면 아래에 그대로 둔다.
-export function FeaturedBody({ stage, summary, actions, description, extra }: Props) {
+export function FeaturedBody({ stage, summary, actions, description, extra, runHref }: Props) {
   const [expanded, setExpanded] = useState(false);
   const bodyRef = useRef<HTMLDivElement>(null);
 
@@ -32,14 +35,20 @@ export function FeaturedBody({ stage, summary, actions, description, extra }: Pr
       <div className={styles.info}>
         <div className={styles.summary}>
           {summary}
-          <button
-            type="button"
-            className={styles.run}
-            aria-pressed={expanded}
-            onClick={() => setExpanded((value) => !value)}
-          >
-            {expanded ? "↙ 작은 화면으로" : "▸ 큰 화면으로 실행"}
-          </button>
+          {runHref ? (
+            <Link href={runHref} className={styles.run}>
+              ▸ 큰 화면으로 실행
+            </Link>
+          ) : (
+            <button
+              type="button"
+              className={styles.run}
+              aria-pressed={expanded}
+              onClick={() => setExpanded((value) => !value)}
+            >
+              {expanded ? "↙ 작은 화면으로" : "▸ 큰 화면으로 실행"}
+            </button>
+          )}
         </div>
         {actions}
         {description}

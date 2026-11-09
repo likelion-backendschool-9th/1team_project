@@ -20,6 +20,7 @@ export function SubscribedAuthors({ authors }: Props) {
           <ChevronRightIcon />
         </Link>
       </div>
+      {authors.length === 0 && <p className={styles.empty}>아직 구독 중인 작가가 없어요.</p>}
       <ul className={styles.list}>
         {authors.map(({ user, seriesLabel, online }) => (
           <li key={user.id}>
@@ -29,11 +30,13 @@ export function SubscribedAuthors({ authors }: Props) {
                 <span className={styles.name}>@{user.nickname}</span>
                 <span className={styles.series}>{seriesLabel}</span>
               </span>
-              <span
-                className={`${styles.dot} ${online ? styles.online : ""}`}
-                role="img"
-                aria-label={online ? "접속 중" : "오프라인"}
-              />
+              {online !== undefined && (
+                <span
+                  className={`${styles.dot} ${online ? styles.online : ""}`}
+                  role="img"
+                  aria-label={online ? "접속 중" : "오프라인"}
+                />
+              )}
             </Link>
           </li>
         ))}

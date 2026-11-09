@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { Suspense } from "react";
@@ -49,14 +50,19 @@ async function DemosContent({ params }: { params: Promise<{ userId: string }> })
           </p>
         </div>
         {isOwner && (
-          <ConfirmButton
-            label={`+1칸 늘리기 (${INVENTORY_SLOT_CHIPS}칩)`}
-            title="데모 인벤토리를 1칸 늘릴까요?"
-            description={`${INVENTORY_SLOT_CHIPS}칩(${formatWon(chipsToWon(INVENTORY_SLOT_CHIPS))})이 차감돼요.`}
-            confirmLabel="늘리기"
-            className={kit.btnPrimary}
-            onConfirm={expandInventory}
-          />
+          <div className={kit.row}>
+            <Link href="/demos/upload" className={kit.btnPrimary}>
+              + 데모 올리기
+            </Link>
+            <ConfirmButton
+              label={`+1칸 늘리기 (${INVENTORY_SLOT_CHIPS}칩)`}
+              title="데모 인벤토리를 1칸 늘릴까요?"
+              description={`${INVENTORY_SLOT_CHIPS}칩(${formatWon(chipsToWon(INVENTORY_SLOT_CHIPS))})이 차감돼요.`}
+              confirmLabel="늘리기"
+              className={kit.btn}
+              onConfirm={expandInventory}
+            />
+          </div>
         )}
       </section>
       <PublicDemos

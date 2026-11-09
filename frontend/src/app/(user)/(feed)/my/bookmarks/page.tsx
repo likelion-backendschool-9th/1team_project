@@ -43,7 +43,8 @@ async function BookmarksContent({ searchParams }: { searchParams: Promise<Record
         ) : (
           <ul className={kit.list}>
             {bookmarks.map((item) => (
-              <li key={item.id}>
+              // 종류가 다르면 ID가 겹칠 수 있어 종류와 함께 key로 쓴다.
+              <li key={`${item.type}-${item.id}`}>
                 <Link href={item.href} className={kit.listItem}>
                   <span aria-hidden="true">{icon(item.type)}</span>
                   <span className={kit.grow}>

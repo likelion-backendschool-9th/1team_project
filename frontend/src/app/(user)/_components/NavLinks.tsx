@@ -10,6 +10,7 @@ import {
   TicketIcon,
   UserIcon,
 } from "@/app/_components/ui/Icons";
+import { ChipIcon } from "@/app/_components/ui/ChipIcon";
 import styles from "./NavLinks.module.css";
 
 const items = [
@@ -18,6 +19,7 @@ const items = [
   { href: "/blog", label: "블로그", Icon: BookIcon },
   { href: "/news", label: "개발자 뉴스", Icon: NewsIcon },
   { href: "/events", label: "이벤트", Icon: TicketIcon },
+  { href: "/my/coins", label: "칩 충전하기", Icon: ChipIcon },
 ] as const;
 
 function NavList({ pathname }: { pathname: string | null }) {

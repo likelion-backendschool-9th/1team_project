@@ -19,6 +19,7 @@ import type {
   SubscribedAuthor,
 } from "@/app/_lib/types/post";
 import type { UserSummary } from "@/app/_lib/types/user";
+import { getMe } from "@/app/(user)/_lib/api";
 import {
   createMockPostComments,
   createMockPostDetail,
@@ -60,18 +61,45 @@ export async function getPosts({ category, sort, q }: PostQuery): Promise<PostSu
   return data.content;
 }
 
-// 아래 조회는 아직 API가 정해지지 않아 목 데이터만 돌려준다 (프론트엔드-청사진 11장).
-
+// 연재 시리즈는 백엔드에 아직 없다. 백엔드가 연결되면 목업을 섞지 않고 비워 둔다(섹션이 숨겨진다).
 export async function getPopularSeries(): Promise<PostSeries[]> {
+  if (hasBackend) return [];
   return mockSeries;
 }
 
+// 랭킹 API(GET rankings)는 아직 빈 목록을 돌려주는 스텁이다.
+// 그래서 좋아요 순위만 인기순 글 목록(GET posts?sort=popular)으로 채우고, 조회·팔로우 순위는 비워 둔다(탭이 숨겨진다).
 export async function getArticleRanking(): Promise<ArticleRanking> {
-  return mockArticleRanking;
+  if (!hasBackend) return mockArticleRanking;
+  const { data } = await apiFetch<ApiResponse<PageResponse<PostSummary>>>("/api/v1/posts?sort=popular&size=5");
+  return {
+    views: [],
+    likes: data.content.map((post, index) => ({ rank: index + 1, postId: post.id, title: post.title, score: post.likeCount })),
+    follows: [],
+  };
 }
 
+type MySubscription = {
+  id: number;
+  author: UserSummary;
+  blogTitle: string;
+  nextBillingAt: string;
+  status: "active" | "canceled";
+};
+
+// 구독 중인 작가는 내 구독 목록(GET subscriptions/me)으로 채운다. 접속 상태 API는 없어 점은 표시하지 않는다.
 export async function getSubscribedAuthors(): Promise<SubscribedAuthor[]> {
-  return mockSubscribedAuthors;
+  if (!hasBackend) return mockSubscribedAuthors;
+  try {
+    const { data } = await apiFetch<ApiResponse<MySubscription[]>>("/api/v1/subscriptions/me");
+    return data.map((subscription) => ({
+      user: subscription.author,
+      seriesLabel: subscription.status === "canceled" ? `${subscription.blogTitle} · 해지 예정` : subscription.blogTitle,
+    }));
+  } catch (error) {
+    if (error instanceof ApiRequestError && (error.status === 401 || error.status === 403)) return [];
+    throw error;
+  }
 }
 
 export async function getPost(postId: number): Promise<PostDetail | null> {
@@ -134,6 +162,13 @@ export async function getBlogOwner(userId: number): Promise<BlogOwner | null> {
   }
 }
 
+// 글에 연결할 데모 후보는 내 데모 목록(GET demos?userId=)에서 고른다.
 export async function getDemoOptions(): Promise<{ id: number; title: string }[]> {
-  return mockDemoOptions;
+  if (!hasBackend) return mockDemoOptions;
+  const me = await getMe();
+  if (!me) return [];
+  const { data } = await apiFetch<ApiResponse<{ content: { id: number; title: string }[] }>>(
+    `/api/v1/demos?userId=${me.id}&sort=latest&size=50`,
+  );
+  return data.content.map(({ id, title }) => ({ id, title }));
 }

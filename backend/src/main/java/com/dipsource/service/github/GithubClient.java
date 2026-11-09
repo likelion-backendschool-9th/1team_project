@@ -44,12 +44,15 @@ public class GithubClient {
     private final RestClient apiClient;
     private final RestClient graphqlClient;
     private final ObjectMapper objectMapper;
+    /** GitHub GraphQL(잔디)은 토큰이 없으면 호출 자체가 거절된다. */
+    private final boolean hasToken;
 
     public GithubClient(
             ObjectMapper objectMapper,
             @Value("${app.github.token:}") String token
     ) {
         this.objectMapper = objectMapper;
+        this.hasToken = token != null && !token.isBlank();
         this.apiClient = buildClient(token);
         this.graphqlClient = buildClient(token);
     }
@@ -99,6 +102,11 @@ public class GithubClient {
 
     /** GraphQL contribution calendar. 없으면 null. */
     public JsonNode fetchContributionCalendar(String login) {
+        if (!hasToken) {
+            // GraphQL API는 인증이 필수라 토큰 없이는 항상 401이다. 서버 .env의 GITHUB_TOKEN을 확인한다.
+            log.warn("GITHUB_TOKEN이 없어 잔디를 불러오지 않습니다 login={}", login);
+            return null;
+        }
         try {
             ObjectNode variables = objectMapper.createObjectNode();
             variables.put("login", login);

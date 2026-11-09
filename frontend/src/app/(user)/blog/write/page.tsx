@@ -9,7 +9,7 @@ export const metadata: Metadata = { title: "글쓰기", robots: { index: false }
 
 async function WriteForm() {
   const demos = await getDemoOptions();
-  return <PostEditor action={createPost} demos={demos} submitLabel="발행하기" />;
+  return <PostEditor action={createPost} demos={demos} submitLabel="발행하기" draftKey="new" />;
 }
 
 export default function WritePage() {

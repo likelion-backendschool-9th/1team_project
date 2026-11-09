@@ -51,10 +51,13 @@ public class AuthServiceImpl implements AuthService {
         }
 
         String tokenHash = RefreshTokenHasher.sha256(refreshToken);
-        RefreshToken current = refreshTokenRepository.findByTokenHash(tokenHash)
+        // 잠금 전에 엔티티를 읽으면 잠금 뒤 재조회도 1차 캐시의 낡은 값(폐기 전 상태)을 돌려준다.
+        // 그러면 다른 트랜잭션이 family를 폐기한 직후에도 현역으로 보고 새 토큰을 발급해 버린다.
+        // 그래서 잠금 전에는 family ID만 읽고, 엔티티는 잠금을 잡은 뒤 처음 읽는다.
+        String familyId = refreshTokenRepository.findFamilyIdByTokenHash(tokenHash)
                 .orElseThrow(() -> new BusinessException(ErrorCode.UNAUTHORIZED));
-        refreshTokenRepository.lockFamily(current.getFamilyId());
-        current = refreshTokenRepository.findByTokenHash(tokenHash)
+        refreshTokenRepository.lockFamily(familyId);
+        RefreshToken current = refreshTokenRepository.findByTokenHash(tokenHash)
                 .orElseThrow(() -> new BusinessException(ErrorCode.UNAUTHORIZED));
 
         Instant now = Instant.now();

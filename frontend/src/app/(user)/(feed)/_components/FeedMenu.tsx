@@ -5,6 +5,7 @@ import { useEffect, useId, useRef, useState } from "react";
 import { ConfirmButton } from "@/app/_components/ui/ConfirmButton";
 import { ReportModal } from "@/app/_components/ui/ReportModal";
 import { MoreIcon } from "@/app/_components/ui/Icons";
+import { DmOpenButton } from "@/app/(user)/_components/DmOpenButton";
 import { blockUser, deleteFeed, reportFeed } from "../_actions";
 import styles from "./FeedMenu.module.css";
 
@@ -15,7 +16,7 @@ type Props = {
   mine: boolean;
 };
 
-// 피드 카드 ⋮ 메뉴: 내 글이면 수정·삭제, 남의 글이면 신고·차단
+// 피드 카드 ⋮ 메뉴: 내 글이면 수정·삭제, 남의 글이면 DM·신고·차단
 export function FeedMenu({ feedId, authorId, authorName, mine }: Props) {
   const [open, setOpen] = useState(false);
   const [message, setMessage] = useState<{ ok: boolean; message: string } | null>(null);
@@ -87,6 +88,12 @@ export function FeedMenu({ feedId, authorId, authorName, mine }: Props) {
           </>
         ) : (
           <>
+            <DmOpenButton
+              user={{ id: authorId, nickname: authorName, profileImage: null, techStacks: [] }}
+              className={styles.item}
+            >
+              💬 DM 보내기
+            </DmOpenButton>
             <ReportModal
               label="🚨 신고"
               title="이 피드를 신고할까요?"

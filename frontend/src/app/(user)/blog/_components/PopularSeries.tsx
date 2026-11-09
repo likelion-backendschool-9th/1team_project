@@ -9,6 +9,8 @@ type Props = {
 };
 
 export function PopularSeries({ series }: Props) {
+  // 연재 데이터가 없으면(백엔드 미구현) 섹션을 통째로 숨긴다.
+  if (series.length === 0) return null;
   return (
     <section aria-labelledby="series-title">
       <div className={styles.header}>

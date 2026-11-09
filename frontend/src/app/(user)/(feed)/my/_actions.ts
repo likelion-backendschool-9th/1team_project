@@ -32,7 +32,7 @@ export async function saveSettings(previous: FormState, formData: FormData): Pro
   const values = readValues(formData, ["visibility"]);
   const body = { notify, visibility: values.visibility, allowDm: formData.get("allowDm") === "on" };
   return runForm(previous, values, {}, () =>
-    mutate("/api/v1/users/me/settings", "PUT", body, "설정을 저장했어요."),
+    mutate("/api/v1/users/me/settings", "PUT", body, "설정을 저장했어요.", !hasBackend),
   );
 }
 

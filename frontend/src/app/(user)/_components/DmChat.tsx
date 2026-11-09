@@ -23,7 +23,7 @@ type Props = {
 const MAX_LENGTH = 1000;
 
 const statusLabels: Record<DmSocketStatus, string> = {
-  mock: "실시간 연결됨 (목업)",
+  mock: "실시간 연결 꺼짐 (NEXT_PUBLIC_WS_URL 미설정 · 보낸 메시지는 이 화면에만 보여요)",
   connecting: "연결 중…",
   connected: "실시간 연결됨",
   disconnected: "연결이 끊겼어요. 다시 연결하는 중…",

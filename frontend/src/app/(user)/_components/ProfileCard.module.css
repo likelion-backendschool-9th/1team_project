@@ -88,3 +88,24 @@
   white-space: nowrap;
 }
 
+
+/* 숫자 링크가 칸 전체를 덮어 팔로워·팔로잉·칩 칸 어디를 눌러도 해당 화면으로 간다. */
+.stats > div {
+  position: relative;
+}
+
+.statLink {
+  color: inherit;
+}
+
+.statLink::after {
+  position: absolute;
+  inset: 0;
+  content: "";
+}
+
+.stats > div:has(.statLink:hover) dt,
+.stats > div:has(.statLink:hover) dd,
+.statLink:focus-visible {
+  text-decoration: underline;
+}

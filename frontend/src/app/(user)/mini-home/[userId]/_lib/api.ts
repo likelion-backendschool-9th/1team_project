@@ -74,7 +74,8 @@ export const getProfile = cache(async (userId: number): Promise<MiniHomeProfile 
     bgm: home.bgm,
     showcaseDemoIds: home.showcaseDemoIds,
     featuredDemoId: home.featuredDemoId,
-    stackTags: home.stackTags ?? [],
+    // 홈피에서 따로 정하지 않았으면 온보딩에서 고른 기술 스택을 보여 준다.
+    stackTags: home.stackTags?.length ? home.stackTags : (user.techStacks ?? []),
     featuredPostId: home.featuredPostId ?? null,
   };
 });

@@ -23,12 +23,6 @@ import {
   type Subscription,
 } from "./mock";
 
-async function get<T>(path: `/api/v1/${string}`, mock: T): Promise<T> {
-  if (isMockMode) return mock;
-  const { data } = await apiFetch<ApiResponse<T>>(path);
-  return data;
-}
-
 async function getPage<T>(path: `/api/v1/${string}`, mock: T[]): Promise<T[]> {
   if (isMockMode) return mock;
   const { data } = await apiFetch<ApiResponse<PageResponse<T>>>(path);
@@ -80,7 +74,12 @@ export const getFollowings = (page = 1, size = FOLLOW_PAGE_SIZE, q = "") =>
   getFollowPage("/api/v1/follows/followings", mockFollowings, page, size, q);
 export const getFollowers = (page = 1, size = FOLLOW_PAGE_SIZE, q = "") =>
   getFollowPage("/api/v1/follows/followers", mockFollowers, page, size, q);
-export const getSettings = () => get<Settings>("/api/v1/users/me/settings", mockSettings);
+// 설정은 백엔드(GET users/me/settings)에 있어서, 백엔드가 연결돼 있으면 MOCK_EXCEPT_DM이어도 실서버를 쓴다.
+export async function getSettings(): Promise<Settings> {
+  if (!hasBackend) return mockSettings;
+  const { data } = await apiFetch<ApiResponse<Settings>>("/api/v1/users/me/settings");
+  return data;
+}
 export async function getBlocked(): Promise<BlockedUser[]> {
   if (!hasBackend) return mockBlocked;
   const { data } = await apiFetch<ApiResponse<BlockedUser[]>>("/api/v1/blocks");

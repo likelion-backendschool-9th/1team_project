@@ -33,6 +33,7 @@ async function EditForm({ params }: { params: Promise<{ postId: string }> }) {
       action={updatePost.bind(null, post.id)}
       demos={demos}
       submitLabel="수정 완료"
+      draftKey={`edit-${post.id}`}
       initial={{
         title: post.title,
         category: post.category,
