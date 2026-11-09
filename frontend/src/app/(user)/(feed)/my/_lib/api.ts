@@ -100,7 +100,7 @@ export type HistoryPage = {
 
 /** 거래 내역을 페이지 단위로 조회함. page는 1-based */
 export async function getChipHistory(page = 1, size = HISTORY_PAGE_SIZE): Promise<HistoryPage> {
-  if (isMockMode) {
+  if (!hasBackend) {
     // 목 모드에서도 페이지네이션이 실제처럼 동작하도록 slice 처리
     const total = mockHistory.length;
     const totalPages = Math.max(1, Math.ceil(total / size));
