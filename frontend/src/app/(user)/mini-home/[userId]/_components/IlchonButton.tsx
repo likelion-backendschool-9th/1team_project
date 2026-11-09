@@ -10,6 +10,7 @@ type Props = {
   following: boolean;
 };
 
+// 미니홈피 주인 팔로우 버튼. (예전 "일촌 맺기" — 관계는 팔로우로 통일했다)
 export function IlchonButton({ userId, nickname, following }: Props) {
   const [active, setActive] = useState(following);
   const [error, setError] = useState<string | null>(null);
@@ -34,11 +35,11 @@ export function IlchonButton({ userId, nickname, following }: Props) {
         type="button"
         className={styles.button}
         aria-pressed={active}
-        aria-label={`${nickname}님과 일촌 맺기`}
+        aria-label={active ? `${nickname}님 팔로우 취소` : `${nickname}님 팔로우`}
         disabled={pending}
         onClick={handleClick}
       >
-        {active ? "✓ 일촌(동료)" : "+ 일촌(동료) 맺기"}
+        {active ? "✓ 팔로잉" : "+ 팔로우"}
       </button>
       <span role="alert" className="sr-only">
         {error}

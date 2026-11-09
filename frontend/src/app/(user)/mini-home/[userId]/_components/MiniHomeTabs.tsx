@@ -9,16 +9,17 @@ type Props = {
   myId?: number;
 };
 
-// "홈"은 파도타기로 남의 홈피를 구경하다가도 내 홈피로 돌아오는 탭이다. 나머지 탭은 지금 보는 홈피 기준.
+// 모든 탭은 지금 보고 있는 홈피 기준이다. "스킨"(꾸미기)은 내 홈피에서만 보인다.
 export function MiniHomeTabs({ userId, myId }: Props) {
   const pathname = usePathname();
   const base = `/mini-home/${userId}`;
+  const isOwner = myId !== undefined && myId === userId;
   const tabs = [
-    { href: `/mini-home/${myId}`, label: "홈" },
+    { href: base, label: "홈" },
     { href: `${base}/demos`, label: "데모" },
     { href: `/blog/${userId}`, label: "블로그" },
     { href: `${base}/guestbook`, label: "방명록" },
-    { href: `${base}/edit`, label: "스킨" },
+    ...(isOwner ? [{ href: `${base}/edit`, label: "스킨" }] : []),
   ];
 
   return (

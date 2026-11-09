@@ -26,7 +26,7 @@ function isId(value: number) {
 
 export async function toggleIlchon(userId: number, follow: boolean): Promise<ActionResult> {
   if (!isId(userId)) return { ok: false, message: "잘못된 요청이에요." };
-  // 일촌 맺기 = 팔로우. 팔로우 API는 백엔드에 있어서 MOCK_EXCEPT_DM이어도 실서버를 쓴다.
+  // 미니홈피 팔로우 버튼. 팔로우 API는 백엔드에 있어서 MOCK_EXCEPT_DM이어도 실서버를 쓴다.
   if (!hasBackend) return { ok: true };
 
   try {
