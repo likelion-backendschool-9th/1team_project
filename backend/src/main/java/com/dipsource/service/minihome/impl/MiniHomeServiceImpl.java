@@ -13,7 +13,9 @@ import com.dipsource.service.minihome.MiniHomeService;
 import com.dipsource.service.post.PostService;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
+import java.util.regex.Pattern;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,6 +32,9 @@ public class MiniHomeServiceImpl implements MiniHomeService {
     /** 프론트 BGM_TRACKS(_lib/bgm.ts)의 id와 같다. 곡을 추가하면 양쪽을 같이 바꾼다. */
     private static final Set<String> BGMS = Set.of(
             "lofi-coding", "pixel-morning", "rainy-commit", "deploy-friday");
+    /** example.dev, blog.my-site.co.kr 같은 호스트 이름. 각 칸은 영문·숫자·하이픈 1~63자, 끝은 영문 2자 이상. */
+    private static final Pattern DOMAIN = Pattern.compile(
+            "^(?=.{4,100}$)([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?\\.)+[a-z]{2,63}$");
 
     private final MiniHomeLoader miniHomeLoader;
     private final MiniHomeRepository miniHomeRepository;
@@ -57,7 +62,7 @@ public class MiniHomeServiceImpl implements MiniHomeService {
         MiniHome home = miniHomeLoader.loadOrCreate(userId);
         String headline = requireHeadline(request.headline());
         String quote = optional(request.quote(), 80, "오늘의 한마디는 80자 이하로 입력해 주세요.");
-        String domain = optional(request.domain(), 100, "개인 도메인은 100자 이하로 입력해 주세요.");
+        String domain = normalizeDomain(request.domain());
         String bgm = normalizeBgm(request.bgm());
         List<Long> ordered = arrange(request.showcaseDemoIds(), parseFeatured(request.featuredDemoId()));
         home.update(headline, quote, domain, bgm);
@@ -183,6 +188,20 @@ public class MiniHomeServiceImpl implements MiniHomeService {
         String value = skin.trim();
         if (!SKINS.contains(value)) {
             throw new BusinessException(ErrorCode.BAD_REQUEST, "목록에 있는 스킨만 고를 수 있어요.");
+        }
+        return value;
+    }
+
+    /** 비어 있으면 도메인 없음(null). https://나 끝의 /는 떼고 소문자로 저장한다. */
+    private static String normalizeDomain(String domain) {
+        if (domain == null || domain.isBlank()) {
+            return null;
+        }
+        String value = domain.trim().toLowerCase(Locale.ROOT)
+                .replaceFirst("^https?://", "")
+                .replaceFirst("/+$", "");
+        if (!DOMAIN.matcher(value).matches()) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "도메인은 example.dev 같은 형식으로 입력해 주세요.");
         }
         return value;
     }

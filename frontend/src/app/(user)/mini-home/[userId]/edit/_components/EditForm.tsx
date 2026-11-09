@@ -173,8 +173,13 @@ export function EditForm({ profile, demos, posts }: Props) {
             name="domain"
             defaultValue={value("domain", profile.domain ?? "")}
             placeholder="example.dev"
+            maxLength={100}
             className={kit.input}
+            {...fieldError("domain")}
           />
+          <p id="edit-domain-error" className={kit.error}>
+            {state.errors.domain}
+          </p>
         </div>
       </div>
 

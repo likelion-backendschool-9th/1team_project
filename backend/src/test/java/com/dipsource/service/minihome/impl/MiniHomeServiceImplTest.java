@@ -182,6 +182,32 @@ class MiniHomeServiceImplTest {
     }
 
     @Test
+    void savesDomainWithoutSchemeInLowerCase() {
+        MiniHome home = home();
+        when(repository.findByUserId(1L)).thenReturn(Optional.of(home));
+
+        service.update(1L, requestWithDomain(" https://Blog.My-Site.co.kr/ "));
+        assertThat(home.getDomain()).isEqualTo("blog.my-site.co.kr");
+
+        service.update(1L, requestWithDomain(""));
+        assertThat(home.getDomain()).isNull();
+    }
+
+    @Test
+    void rejectsMalformedDomain() {
+        MiniHome home = home();
+        when(repository.findByUserId(1L)).thenReturn(Optional.of(home));
+
+        for (String domain : List.of("abc", "-bad.com", "ex ample.dev", "javascript:alert(1)")) {
+            assertThatThrownBy(() -> service.update(1L, requestWithDomain(domain)))
+                    .as(domain)
+                    .isInstanceOf(BusinessException.class)
+                    .extracting(ex -> ((BusinessException) ex).getErrorCode())
+                    .isEqualTo(ErrorCode.BAD_REQUEST);
+        }
+    }
+
+    @Test
     void savesKnownBgm() {
         MiniHome home = home();
         when(repository.findByUserId(1L)).thenReturn(Optional.of(home));
@@ -302,6 +328,11 @@ class MiniHomeServiceImplTest {
     private static UpdateMiniHomeRequest requestWithSkin(String skin) {
         return new UpdateMiniHomeRequest(
                 "한 줄", "한마디", skin, "example.dev", "lofi-coding", "React", List.of(), "");
+    }
+
+    private static UpdateMiniHomeRequest requestWithDomain(String domain) {
+        return new UpdateMiniHomeRequest(
+                "한 줄", "한마디", "cream", domain, "lofi-coding", "React", List.of(), "");
     }
 
     private static UpdateMiniHomeRequest requestWithBgm(String bgm) {
