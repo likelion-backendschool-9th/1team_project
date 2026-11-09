@@ -159,6 +159,7 @@ export async function PostView({ params }: Props) {
           repostCount={post.repostCount}
           liked={post.liked}
           readMinutes={post.readMinutes}
+          loggedIn={me !== null}
         />
       </article>
 

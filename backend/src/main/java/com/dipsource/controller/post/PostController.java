@@ -100,6 +100,26 @@ public class PostController {
         return ResponseEntity.noContent().build();
     }
 
+    /** 좋아요 (로그인 필수) */
+    @PostMapping("/posts/{postId}/like")
+    public ResponseEntity<Void> like(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @PathVariable Long postId
+    ) {
+        postService.like(requireUserId(principal), postId);
+        return ResponseEntity.noContent().build();
+    }
+
+    /** 좋아요 취소 (로그인 필수) */
+    @DeleteMapping("/posts/{postId}/like")
+    public ResponseEntity<Void> unlike(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @PathVariable Long postId
+    ) {
+        postService.unlike(requireUserId(principal), postId);
+        return ResponseEntity.noContent().build();
+    }
+
     private static Long requireUserId(UserPrincipal principal) {
         if (principal == null) {
             throw new BusinessException(ErrorCode.UNAUTHORIZED, "로그인이 필요합니다");

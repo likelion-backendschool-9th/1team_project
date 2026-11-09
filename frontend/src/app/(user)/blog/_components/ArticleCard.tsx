@@ -9,9 +9,10 @@ import styles from "./ArticleCard.module.css";
 type Props = {
   post: PostSummary;
   now: number;
+  loggedIn?: boolean;
 };
 
-export function ArticleCard({ post, now }: Props) {
+export function ArticleCard({ post, now, loggedIn }: Props) {
   const { author, demo } = post;
 
   return (
@@ -72,6 +73,7 @@ export function ArticleCard({ post, now }: Props) {
         repostCount={post.repostCount}
         liked={post.liked}
         readMinutes={post.readMinutes}
+        loggedIn={loggedIn}
       />
     </article>
   );

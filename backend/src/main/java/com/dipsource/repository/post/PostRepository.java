@@ -57,6 +57,16 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     @Query("UPDATE Post p SET p.viewCount = p.viewCount + 1 WHERE p.id = :postId")
     int incrementViewCount(@Param("postId") Long postId);
 
+    /** 좋아요 수 +1 (race-safe atomic UPDATE) */
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("UPDATE Post p SET p.likeCount = p.likeCount + 1 WHERE p.id = :postId")
+    int incrementLikeCount(@Param("postId") Long postId);
+
+    /** 좋아요 수 -1. 0 미만으로 내려가지 않음 */
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("UPDATE Post p SET p.likeCount = p.likeCount - 1 WHERE p.id = :postId AND p.likeCount > 0")
+    int decrementLikeCount(@Param("postId") Long postId);
+
     /** 관리자 글 목록. 삭제(DELETED)만 빼고, 제목·본문·작성자 닉네임 검색. */
     @Query("""
             SELECT p FROM Post p JOIN User u ON u.id = p.userId

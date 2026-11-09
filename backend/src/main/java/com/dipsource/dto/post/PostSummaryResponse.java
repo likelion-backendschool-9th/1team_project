@@ -32,6 +32,10 @@ public record PostSummaryResponse(
 ) {
 
     public static PostSummaryResponse of(Post post, UserSummaryResponse author) {
+        return of(post, author, false);
+    }
+
+    public static PostSummaryResponse of(Post post, UserSummaryResponse author, boolean liked) {
         return new PostSummaryResponse(
                 post.getId(),
                 author,
@@ -46,7 +50,7 @@ public record PostSummaryResponse(
                 post.getLikeCount(),
                 post.getCommentCount(),
                 0,
-                false
+                liked
         );
     }
 }

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { connection } from "next/server";
+import { getMe } from "@/app/(user)/_lib/api";
 import { getPopularSeries, getPosts, getServerTime } from "../_lib/api";
 import { blogHref, parseCategory, parseKeyword, parseSort, sorts } from "../_lib/query";
 import { ArticleCard } from "./ArticleCard";
@@ -19,7 +20,8 @@ export async function BlogContent({ searchParams }: Props) {
     sort: parseSort(params.sort),
     q: parseKeyword(params.q),
   };
-  const [series, posts, now] = await Promise.all([
+  const [me, series, posts, now] = await Promise.all([
+    getMe(),
     getPopularSeries(),
     getPosts(query),
     getServerTime(),
@@ -56,7 +58,7 @@ export async function BlogContent({ searchParams }: Props) {
           <ul className={styles.list}>
             {posts.map((post) => (
               <li key={post.id}>
-                <ArticleCard post={post} now={now} />
+                <ArticleCard post={post} now={now} loggedIn={me !== null} />
               </li>
             ))}
           </ul>

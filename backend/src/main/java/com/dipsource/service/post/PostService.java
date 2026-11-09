@@ -32,4 +32,16 @@ public interface PostService {
 
     /** 관리자 삭제. 작성자 검사 없이 소프트 삭제만 한다. */
     void deleteByAdmin(Long postId);
+
+    /**
+     * 좋아요. 이미 눌렀으면 no-op (멱등).
+     * INSERT ON CONFLICT DO NOTHING으로 동시 중복을 막는다.
+     */
+    void like(Long userId, Long postId);
+
+    /**
+     * 좋아요 취소. 없으면 no-op (멱등).
+     * DELETE 결과로 실제 삭제 여부를 판단해 race condition 방지.
+     */
+    void unlike(Long userId, Long postId);
 }

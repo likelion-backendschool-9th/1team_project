@@ -109,7 +109,7 @@ export async function AuthorBlog({ params }: Props) {
           <ul className={kit.stack}>
             {posts.map((post) => (
               <li key={post.id}>
-                <ArticleCard post={post} now={now} />
+                <ArticleCard post={post} now={now} loggedIn={me !== null} />
               </li>
             ))}
           </ul>

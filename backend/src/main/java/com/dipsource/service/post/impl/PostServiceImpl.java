@@ -20,6 +20,7 @@ import com.dipsource.global.exception.BusinessException;
 import com.dipsource.global.exception.ErrorCode;
 import com.dipsource.repository.block.BlockRepository;
 import com.dipsource.repository.post.BlogSubscriptionRepository;
+import com.dipsource.repository.post.PostLikeRepository;
 import com.dipsource.repository.post.PostPurchaseRepository;
 import com.dipsource.repository.post.PostRepository;
 import com.dipsource.repository.post.PostTagRepository;
@@ -27,6 +28,7 @@ import com.dipsource.repository.tag.TagRepository;
 import com.dipsource.service.post.PostService;
 import com.dipsource.service.user.UserService;
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -58,6 +60,7 @@ public class PostServiceImpl implements PostService {
             Sort.Order.desc("likeCount"), Sort.Order.desc("viewCount"), Sort.Order.desc("createdAt"), Sort.Order.desc("id"));
 
     private final PostRepository postRepository;
+    private final PostLikeRepository postLikeRepository;
     private final PostTagRepository postTagRepository;
     private final PostPurchaseRepository postPurchaseRepository;
     private final BlogSubscriptionRepository blogSubscriptionRepository;
@@ -76,7 +79,7 @@ public class PostServiceImpl implements PostService {
         Sort order = "popular".equals(sort) ? POPULAR : LATEST;
         Page<Post> page = postRepository.findList(
                 PostStatus.ACTIVE, categories, pattern(q), viewerId, limit(pageable, order));
-        return toSummaries(page);
+        return toSummaries(page, viewerId);
     }
 
     @Override
@@ -85,7 +88,7 @@ public class PostServiceImpl implements PostService {
         if (hiddenFrom(viewerId, userId)) {
             return PageResponse.of(Page.empty(limit(pageable, LATEST)), List.of());
         }
-        return toSummaries(postRepository.findByUserIdAndStatus(userId, PostStatus.ACTIVE, limit(pageable, LATEST)));
+        return toSummaries(postRepository.findByUserIdAndStatus(userId, PostStatus.ACTIVE, limit(pageable, LATEST)), viewerId);
     }
 
     @Override
@@ -102,7 +105,8 @@ public class PostServiceImpl implements PostService {
         }
         UserSummaryResponse author = userService.getSummaries(List.of(post.getUserId())).get(post.getUserId());
         List<String> tags = postTagRepository.findTagNames(postId);
-        return PostDetailResponse.of(post, author, tags, canReadAll(post, viewerId));
+        boolean liked = viewerId != null && !postLikeRepository.findLikedPostIds(viewerId, List.of(postId)).isEmpty();
+        return PostDetailResponse.of(post, author, tags, canReadAll(post, viewerId), liked);
     }
 
     @Override
@@ -154,6 +158,29 @@ public class PostServiceImpl implements PostService {
         post.delete();
     }
 
+    @Override
+    @Transactional
+    public void like(Long userId, Long postId) {
+        Post post = findActive(postId);
+        if (post.getUserId().equals(userId)) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "본인 글에는 좋아요할 수 없어요.");
+        }
+        int inserted = postLikeRepository.insertIgnore(userId, postId);
+        if (inserted > 0) {
+            postRepository.incrementLikeCount(postId);
+        }
+    }
+
+    @Override
+    @Transactional
+    public void unlike(Long userId, Long postId) {
+        findActive(postId);
+        int deleted = postLikeRepository.deleteByUserIdAndPostId(userId, postId);
+        if (deleted > 0) {
+            postRepository.decrementLikeCount(postId);
+        }
+    }
+
     /** 유료 글 본문 전체를 볼 수 있는지: 무료 글, 작성자, 구매자, 구독자 */
     private boolean canReadAll(Post post, Long viewerId) {
         if (!post.isPaid()) {
@@ -195,10 +222,14 @@ public class PostServiceImpl implements PostService {
         return postRepository.existsByIdAndUserIdAndStatus(postId, userId, PostStatus.ACTIVE);
     }
 
-    private PageResponse<PostSummaryResponse> toSummaries(Page<Post> page) {
+    private PageResponse<PostSummaryResponse> toSummaries(Page<Post> page, Long viewerId) {
         List<Long> authorIds = page.getContent().stream().map(Post::getUserId).distinct().toList();
         Map<Long, UserSummaryResponse> authors = userService.getSummaries(authorIds);
-        return PageResponse.of(page, post -> PostSummaryResponse.of(post, authors.get(post.getUserId())));
+        List<Long> postIds = page.getContent().stream().map(Post::getId).toList();
+        Set<Long> likedIds = viewerId != null && !postIds.isEmpty()
+                ? new java.util.HashSet<>(postLikeRepository.findLikedPostIds(viewerId, postIds))
+                : Collections.emptySet();
+        return PageResponse.of(page, post -> PostSummaryResponse.of(post, authors.get(post.getUserId()), likedIds.contains(post.getId())));
     }
 
     private boolean hiddenFrom(Long viewerId, Long authorId) {

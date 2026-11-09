@@ -8,7 +8,8 @@ import {
   HeartIcon,
   RepostIcon,
 } from "@/app/_components/ui/Icons";
-import { togglePostBookmark } from "../_actions";
+import kit from "@/app/_components/ui/kit.module.css";
+import { togglePostBookmark, togglePostLike } from "../_actions";
 import styles from "./PostActions.module.css";
 
 type Props = {
@@ -18,9 +19,9 @@ type Props = {
   repostCount: number;
   liked: boolean;
   readMinutes: number;
+  loggedIn?: boolean;
 };
 
-// 글 좋아요 API는 아직 없어 화면 상태만 바꾼다. 북마크는 posts/{postId}/bookmark로 보낸다.
 export function PostActions({
   postId,
   likeCount,
@@ -28,15 +29,36 @@ export function PostActions({
   repostCount,
   liked,
   readMinutes,
+  loggedIn = false,
 }: Props) {
-  const [like, setLike] = useState(liked);
+  const [likeState, setLikeState] = useState({ active: liked, count: likeCount });
+  const [likeError, setLikeError] = useState<string | null>(null);
   const [bookmarked, setBookmarked] = useState(false);
-  const [, startTransition] = useTransition();
+  const [likePending, startLikeTransition] = useTransition();
+  const [, startBookmarkTransition] = useTransition();
+
+  function handleLike() {
+    if (!loggedIn) {
+      setLikeError("로그인 후 좋아요를 누를 수 있어요.");
+      return;
+    }
+    const previous = likeState;
+    const next = !previous.active;
+    setLikeState({ active: next, count: Math.max(0, previous.count + (next ? 1 : -1)) });
+    setLikeError(null);
+    startLikeTransition(async () => {
+      const result = await togglePostLike(postId, next);
+      if (!result.ok) {
+        setLikeState(previous);
+        setLikeError(result.message);
+      }
+    });
+  }
 
   function handleBookmark() {
     const next = !bookmarked;
     setBookmarked(next);
-    startTransition(async () => {
+    startBookmarkTransition(async () => {
       const result = await togglePostBookmark(postId, next);
       if (!result.ok) setBookmarked(!next);
     });
@@ -46,13 +68,14 @@ export function PostActions({
     <div className={styles.actions}>
       <button
         type="button"
-        className={`${styles.action} ${like ? styles.liked : ""}`}
-        aria-pressed={like}
-        onClick={() => setLike((value) => !value)}
+        className={`${styles.action} ${likeState.active ? styles.liked : ""}`}
+        aria-pressed={likeState.active}
+        disabled={likePending}
+        onClick={handleLike}
       >
-        <HeartIcon filled={like} />
+        <HeartIcon filled={likeState.active} />
         <span className="sr-only">좋아요</span>
-        {likeCount - (liked ? 1 : 0) + (like ? 1 : 0)}
+        {likeState.count}
       </button>
       <Link href={`/blog/posts/${postId}#comments`} className={styles.action}>
         <CommentIcon />
@@ -72,6 +95,11 @@ export function PostActions({
       >
         <BookmarkIcon filled={bookmarked} />
       </button>
+      {likeError && (
+        <p role="alert" className={kit.error} style={{ width: "100%" }}>
+          {likeError}
+        </p>
+      )}
     </div>
   );
 }
