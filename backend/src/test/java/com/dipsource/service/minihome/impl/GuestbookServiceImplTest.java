@@ -10,10 +10,12 @@ import static org.mockito.Mockito.when;
 import com.dipsource.dto.user.UserSummaryResponse;
 import com.dipsource.entity.minihome.Guestbook;
 import com.dipsource.entity.minihome.MiniHome;
+import com.dipsource.entity.notification.NotificationType;
 import com.dipsource.global.exception.BusinessException;
 import com.dipsource.global.exception.ErrorCode;
 import com.dipsource.repository.block.BlockRepository;
 import com.dipsource.repository.minihome.GuestbookRepository;
+import com.dipsource.service.notification.NotificationService;
 import com.dipsource.service.user.UserService;
 import java.util.List;
 import java.util.Map;
@@ -42,11 +44,15 @@ class GuestbookServiceImplTest {
     @Mock
     private BlockRepository blockRepository;
 
+    @Mock
+    private NotificationService notificationService;
+
     private GuestbookServiceImpl service;
 
     @BeforeEach
     void setUp() {
-        service = new GuestbookServiceImpl(miniHomeLoader, guestbookRepository, userService, blockRepository);
+        service = new GuestbookServiceImpl(
+                miniHomeLoader, guestbookRepository, userService, blockRepository, notificationService);
     }
 
     @Test
@@ -97,6 +103,20 @@ class GuestbookServiceImplTest {
 
         service.delete(1L, 7L);
         assertThat(entry.getDeletedAt()).isNotNull();
+    }
+
+    @Test
+    void writingSendsNotificationToOwner() {
+        when(miniHomeLoader.loadOrCreate(1L)).thenReturn(home(1L));
+        when(guestbookRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        when(userService.getSummaries(List.of(2L))).thenReturn(Map.of(
+                2L, new UserSummaryResponse(2L, "글쓴이", null, List.of())
+        ));
+
+        service.write(2L, 1L, "놀러 왔어요", false);
+
+        verify(notificationService).notify(1L, 2L, NotificationType.GUESTBOOK,
+                NotificationService.TARGET_MINI_HOME, 1L);
     }
 
     private static MiniHome home(Long userId) {

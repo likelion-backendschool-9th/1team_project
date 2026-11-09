@@ -16,7 +16,9 @@ import com.dipsource.global.exception.BusinessException;
 import com.dipsource.global.exception.ErrorCode;
 import com.dipsource.repository.block.BlockRepository;
 import com.dipsource.repository.follow.FollowRepository;
+import com.dipsource.entity.notification.NotificationType;
 import com.dipsource.service.follow.impl.FollowServiceImpl;
+import com.dipsource.service.notification.NotificationService;
 import com.dipsource.service.user.UserService;
 import java.util.List;
 import java.util.Map;
@@ -43,11 +45,14 @@ class FollowServiceImplTest {
     @Mock
     private BlockRepository blockRepository;
 
+    @Mock
+    private NotificationService notificationService;
+
     private FollowServiceImpl service;
 
     @BeforeEach
     void setUp() {
-        service = new FollowServiceImpl(repository, userService, blockRepository);
+        service = new FollowServiceImpl(repository, userService, blockRepository, notificationService);
     }
 
     @Nested
@@ -60,6 +65,26 @@ class FollowServiceImplTest {
             service.follow(1L, 2L);
 
             verify(repository).insertIgnore(1L, 2L);
+        }
+
+        @Test
+        void newFollowSendsNotification() {
+            when(userService.isActiveUser(2L)).thenReturn(true);
+            when(repository.insertIgnore(1L, 2L)).thenReturn(1);
+
+            service.follow(1L, 2L);
+
+            verify(notificationService).notify(2L, 1L, NotificationType.FOLLOW, null, null);
+        }
+
+        @Test
+        void alreadyFollowingSendsNoNotification() {
+            when(userService.isActiveUser(2L)).thenReturn(true);
+            when(repository.insertIgnore(1L, 2L)).thenReturn(0);
+
+            service.follow(1L, 2L);
+
+            verifyNoInteractions(notificationService);
         }
 
         @Test

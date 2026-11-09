@@ -3,6 +3,7 @@ package com.dipsource.service.follow.impl;
 import com.dipsource.dto.follow.FollowPresenceResponse;
 import com.dipsource.dto.follow.FollowUserResponse;
 import com.dipsource.dto.user.UserSummaryResponse;
+import com.dipsource.entity.notification.NotificationType;
 import com.dipsource.entity.user.enums.UserStatus;
 import com.dipsource.global.common.PageResponse;
 import com.dipsource.global.exception.BusinessException;
@@ -10,6 +11,7 @@ import com.dipsource.global.exception.ErrorCode;
 import com.dipsource.repository.block.BlockRepository;
 import com.dipsource.repository.follow.FollowRepository;
 import com.dipsource.service.follow.FollowService;
+import com.dipsource.service.notification.NotificationService;
 import com.dipsource.service.user.UserService;
 import java.util.HashSet;
 import java.util.List;
@@ -38,6 +40,7 @@ public class FollowServiceImpl implements FollowService {
     private final FollowRepository followRepository;
     private final UserService userService;
     private final BlockRepository blockRepository;
+    private final NotificationService notificationService;
 
     @Override
     @Transactional
@@ -48,7 +51,10 @@ public class FollowServiceImpl implements FollowService {
             throw new BusinessException(ErrorCode.NOT_FOUND, "팔로우할 수 없는 회원이에요.");
         }
         // 동시에 두 번 눌러도 한 줄만 남도록 DB의 중복 무시(ON CONFLICT)에 맡긴다.
-        followRepository.insertIgnore(followerId, targetId);
+        // 새로 팔로우했을 때만 알림을 보낸다. 이미 팔로우 중이면(0줄) 보내지 않는다.
+        if (followRepository.insertIgnore(followerId, targetId) > 0) {
+            notificationService.notify(targetId, followerId, NotificationType.FOLLOW, null, null);
+        }
     }
 
     @Override
