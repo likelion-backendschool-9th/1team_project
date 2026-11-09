@@ -96,7 +96,7 @@
 - [ ] `PUT /admin/coins/purchases/{purchaseId}/refund` — 환불 처리
 - [ ] `GET /admin/subscriptions` — 구독 목록
 - [ ] `GET /admin/revenue?from=&to=` — 수익 현황
-- [ ] `GET /admin/settlements`, `PUT /admin/settlements/{id}/confirm` — 정산
+- [x] `GET /admin/settlements`, `POST /admin/settlements?period=YYYY-MM`(한 달 치 생성), `PUT /admin/settlements/{id}/confirm` — 정산. 월별 수익 칩(BLOG_INCOME·DONATION_INCOME) 합계 × 200원, 수수료 30%. 확정 시 회원 칩 차감(SETTLEMENT) + 관리자 기록
 - [ ] `GET /admin/coins/suspicious` — 이상 거래 탐지
 - [ ] `백엔드-청사진.md` 상태 업데이트
 
@@ -104,7 +104,7 @@
 - [ ] `/admin/coins` 페이지 — 충전 내역 + 환불 버튼
 - [ ] `/admin/subscriptions` 페이지
 - [ ] `/admin/revenue` 페이지
-- [ ] `/admin/settlements` 페이지
+- [x] `/admin/settlements` 페이지 — 정산 만들기(월 선택) + 확정 버튼
 
 ---
 
