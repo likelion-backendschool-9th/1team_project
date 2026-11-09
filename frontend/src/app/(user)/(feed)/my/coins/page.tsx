@@ -4,22 +4,22 @@ import { Suspense } from "react";
 import { ConfirmButton } from "@/app/_components/ui/ConfirmButton";
 import { ChipIcon, ChipPack } from "@/app/_components/ui/ChipIcon";
 import kit from "@/app/_components/ui/kit.module.css";
-import { formatCount, formatDateTime, formatWon } from "@/app/_lib/format";
+import { formatCount, formatWon } from "@/app/_lib/format";
 import { CHIP_PRICE_WON, chipsToWon } from "@/app/_lib/policy";
 import { getMe } from "@/app/(user)/_lib/api";
 import { purchaseChips } from "../_actions";
 import { getChipHistory, getPackages } from "../_lib/api";
 import styles from "../_components/My.module.css";
+import { ChipHistoryList } from "./_components/ChipHistoryList";
 
 export const metadata: Metadata = { title: "칩 충전", robots: { index: false } };
-
-const historyLabels = { charge: "충전", use: "사용", refund: "환불" };
 
 async function CoinsContent() {
   const me = await getMe();
   if (!me) redirect("/login?redirect=/my/coins");
 
-  const [packages, history] = await Promise.all([getPackages(), getChipHistory()]);
+  // 첫 페이지만 서버에서 가져옴. 이후 페이지는 ChipHistoryList 클라이언트에서 이어 받음
+  const [packages, initialHistory] = await Promise.all([getPackages(), getChipHistory(1)]);
 
   return (
     <>
@@ -64,35 +64,7 @@ async function CoinsContent() {
         <h2 id="history-title" className={kit.cardTitle}>
           충전·사용 내역
         </h2>
-        <div className={kit.tableWrap}>
-          <table className={kit.table}>
-            <thead>
-              <tr>
-                <th scope="col">일시</th>
-                <th scope="col">구분</th>
-                <th scope="col">내용</th>
-                <th scope="col" className={kit.num}>칩</th>
-              </tr>
-            </thead>
-            <tbody>
-              {history.map((row) => (
-                <tr key={row.id}>
-                  <td>{formatDateTime(row.createdAt)}</td>
-                  <td>
-                    <span className={row.type === "use" ? kit.pill : row.type === "charge" ? kit.pillAccent : kit.pillSuccess}>
-                      {historyLabels[row.type]}
-                    </span>
-                  </td>
-                  <td>{row.description}</td>
-                  <td className={`${kit.num} ${row.amount > 0 ? styles.plus : styles.minus}`}>
-                    {row.amount > 0 ? "+" : ""}
-                    {formatCount(row.amount)}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <ChipHistoryList initial={initialHistory} />
       </section>
     </>
   );

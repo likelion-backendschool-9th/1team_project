@@ -23,7 +23,7 @@ export type ChipPackage = { id: number; chips: number };
 
 export type ChipHistory = {
   id: number;
-  type: "charge" | "use" | "refund";
+  type: "charge" | "use" | "refund" | "revenue";
   description: string;
   amount: number;
   createdAt: string;
@@ -87,11 +87,33 @@ export const mockPackages: ChipPackage[] = [
 ];
 
 export const mockHistory: ChipHistory[] = [
-  { id: 1, type: "use", description: "「10만 동시접속 채팅 서버」 잠금 해제", amount: -20, createdAt: "2026-11-01T21:14:00+09:00" },
-  { id: 2, type: "use", description: "정시우 미니홈피 칩 후원", amount: -30, createdAt: "2026-11-01T09:00:00+09:00" },
-  { id: 3, type: "charge", description: "칩 300개 충전", amount: 300, createdAt: "2026-10-28T19:40:00+09:00" },
-  { id: 4, type: "use", description: "데모 인벤토리 +1칸", amount: -10, createdAt: "2026-10-25T11:20:00+09:00" },
-  { id: 5, type: "refund", description: "품질 보장제 환불 「Kafka 실습 3화」", amount: 10, createdAt: "2026-10-20T15:02:00+09:00" },
+  // 1페이지 (최신순 1~20)
+  { id: 25, type: "use",     description: "「10만 동시접속 채팅 서버」 잠금 해제",   amount: -20,  createdAt: "2026-11-09T10:00:00+09:00" },
+  { id: 24, type: "charge",  description: "칩 300개 충전",                            amount: 300,  createdAt: "2026-11-08T18:30:00+09:00" },
+  { id: 23, type: "revenue", description: "「Spring WebSocket」 판매 수익",           amount: 50,   createdAt: "2026-11-08T14:20:00+09:00" },
+  { id: 22, type: "use",     description: "정시우 미니홈피 칩 후원",                  amount: -30,  createdAt: "2026-11-07T21:00:00+09:00" },
+  { id: 21, type: "refund",  description: "품질 보장제 환불 「Kafka 실습 3화」",      amount: 10,   createdAt: "2026-11-07T09:15:00+09:00" },
+  { id: 20, type: "use",     description: "데모 인벤토리 +1칸",                       amount: -10,  createdAt: "2026-11-06T16:40:00+09:00" },
+  { id: 19, type: "revenue", description: "「Redis 캐싱 전략」 판매 수익",            amount: 20,   createdAt: "2026-11-06T11:00:00+09:00" },
+  { id: 18, type: "charge",  description: "칩 100개 충전",                            amount: 100,  createdAt: "2026-11-05T20:00:00+09:00" },
+  { id: 17, type: "use",     description: "「Three.js 태양계 데모」 잠금 해제",       amount: -15,  createdAt: "2026-11-05T13:30:00+09:00" },
+  { id: 16, type: "use",     description: "차재인 미니홈피 칩 후원",                  amount: -50,  createdAt: "2026-11-04T22:10:00+09:00" },
+  { id: 15, type: "revenue", description: "「JPA N+1 완전 정복」 판매 수익",          amount: 30,   createdAt: "2026-11-04T10:00:00+09:00" },
+  { id: 14, type: "refund",  description: "품질 보장제 환불 「Docker 실습」",         amount: 20,   createdAt: "2026-11-03T15:00:00+09:00" },
+  { id: 13, type: "use",     description: "「사운드 시퀀서 데모」 잠금 해제",         amount: -10,  createdAt: "2026-11-03T09:00:00+09:00" },
+  { id: 12, type: "charge",  description: "칩 50개 충전",                             amount: 50,   createdAt: "2026-11-02T19:00:00+09:00" },
+  { id: 11, type: "use",     description: "데모 인벤토리 +1칸",                       amount: -10,  createdAt: "2026-11-02T14:00:00+09:00" },
+  { id: 10, type: "revenue", description: "「GitHub Actions CI/CD」 판매 수익",       amount: 40,   createdAt: "2026-11-01T21:00:00+09:00" },
+  { id: 9,  type: "use",     description: "「웹 워커 60fps 파티클」 잠금 해제",       amount: -20,  createdAt: "2026-11-01T18:00:00+09:00" },
+  { id: 8,  type: "charge",  description: "칩 10개 충전",                             amount: 10,   createdAt: "2026-10-31T12:00:00+09:00" },
+  { id: 7,  type: "use",     description: "윤세진 미니홈피 칩 후원",                  amount: -5,   createdAt: "2026-10-30T20:00:00+09:00" },
+  { id: 6,  type: "revenue", description: "「Spring Batch 모니터」 판매 수익",        amount: 60,   createdAt: "2026-10-30T10:00:00+09:00" },
+  // 2페이지 (21~25)
+  { id: 5,  type: "refund",  description: "품질 보장제 환불 「Kafka 실습 3화」",      amount: 10,   createdAt: "2026-10-29T15:00:00+09:00" },
+  { id: 4,  type: "use",     description: "데모 인벤토리 +1칸",                       amount: -10,  createdAt: "2026-10-28T11:00:00+09:00" },
+  { id: 3,  type: "charge",  description: "칩 300개 충전",                            amount: 300,  createdAt: "2026-10-27T19:40:00+09:00" },
+  { id: 2,  type: "use",     description: "정시우 미니홈피 칩 후원",                  amount: -30,  createdAt: "2026-10-26T09:00:00+09:00" },
+  { id: 1,  type: "use",     description: "「10만 동시접속 채팅 서버」 잠금 해제",   amount: -20,  createdAt: "2026-10-25T21:14:00+09:00" },
 ];
 
 export const mockSubscriptions: Subscription[] = [
