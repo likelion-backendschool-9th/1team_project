@@ -29,16 +29,26 @@ export function BlogProfileCard({ me, unreadCount, notifications, now }: Props) 
       <dl className={styles.stats}>
         <div>
           <dt>팔로워</dt>
-          <dd>{formatCount(me.followerCount)}</dd>
+          <dd>
+            <Link href="/my/follows?tab=followers" className={styles.statLink} aria-label={`팔로워 ${formatCount(me.followerCount)}명 목록 보기`}>
+              {formatCount(me.followerCount)}
+            </Link>
+          </dd>
         </div>
         <div>
           <dt>팔로잉</dt>
-          <dd>{formatCount(me.followingCount)}</dd>
+          <dd>
+            <Link href="/my/follows" className={styles.statLink} aria-label={`팔로잉 ${formatCount(me.followingCount)}명 목록 보기`}>
+              {formatCount(me.followingCount)}
+            </Link>
+          </dd>
         </div>
         <div className={styles.chip}>
           <dt>보유 칩</dt>
           <dd>
-            <ChipIcon size={16} /> {formatCount(me.chipBalance)}
+            <Link href="/my/coins" className={styles.statLink} aria-label={`보유 칩 ${formatCount(me.chipBalance)}개, 충전·사용 내역 보기`}>
+              <ChipIcon size={16} /> {formatCount(me.chipBalance)}
+            </Link>
           </dd>
         </div>
       </dl>
