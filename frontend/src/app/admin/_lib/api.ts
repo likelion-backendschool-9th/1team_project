@@ -36,16 +36,20 @@ export type Dashboard = {
   signups: number[];
 };
 
-export function getDashboard(): Promise<Dashboard> {
+export async function getDashboard(): Promise<Dashboard> {
+  if (hasBackend) {
+    const { data } = await apiFetch<ApiResponse<Dashboard>>("/api/v1/admin/dashboard");
+    return data;
+  }
   const latest = mockRevenue.at(-2)!;
-  return get("/api/v1/admin/dashboard", {
+  return {
     userCount: 4_812,
     newUsersToday: mockSignups.at(-1)!,
     demoUploadsWeek: 186,
     pendingReports: mockReports.filter((report) => report.status === "pending").length,
     revenueMonth: latest.subscription + latest.plus + latest.chips,
     signups: mockSignups,
-  });
+  };
 }
 
 export async function getUsers(query: { q?: string; status?: string; page: number }): Promise<PageResponse<AdminUser>> {
