@@ -1,5 +1,6 @@
 package com.dipsource.global.exception;
 
+import com.dipsource.entity.coin.InsufficientChipsException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -21,6 +22,13 @@ public class GlobalExceptionHandler {
                 ErrorCode code = ex.getErrorCode();
                 return ResponseEntity.status(code.getStatus())
                                 .body(ErrorResponse.of(code.getCode(), ex.getMessage()));
+        }
+
+        /** 칩 잔액 부족 → 400 */
+        @ExceptionHandler(InsufficientChipsException.class)
+        public ResponseEntity<ErrorResponse> handleInsufficientChips(InsufficientChipsException ex) {
+                return ResponseEntity.badRequest()
+                                .body(ErrorResponse.of(ErrorCode.BAD_REQUEST.getCode(), ex.getMessage()));
         }
 
         @ExceptionHandler(MethodArgumentNotValidException.class)

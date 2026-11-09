@@ -86,8 +86,33 @@ export async function getBlocked(): Promise<BlockedUser[]> {
   const { data } = await apiFetch<ApiResponse<BlockedUser[]>>("/api/v1/blocks");
   return data;
 }
+// 패키지 목록은 백엔드 API 없이 프론트에서 고정값 사용 (백엔드 PACKAGES 상수와 동기화)
 export const getPackages = async (): Promise<ChipPackage[]> => mockPackages;
-export const getChipHistory = () => getPage<ChipHistory>("/api/v1/coins/history", mockHistory);
+
+export const HISTORY_PAGE_SIZE = 20;
+
+export type HistoryPage = {
+  items: ChipHistory[];
+  page: number;
+  totalPages: number;
+  total: number;
+};
+
+/** 거래 내역을 페이지 단위로 조회함. page는 1-based */
+export async function getChipHistory(page = 1, size = HISTORY_PAGE_SIZE): Promise<HistoryPage> {
+  if (isMockMode) {
+    // 목 모드에서도 페이지네이션이 실제처럼 동작하도록 slice 처리
+    const total = mockHistory.length;
+    const totalPages = Math.max(1, Math.ceil(total / size));
+    const safePage = Math.min(Math.max(1, page), totalPages);
+    const start = (safePage - 1) * size;
+    const items = mockHistory.slice(start, start + size);
+    return { items, page: safePage, totalPages, total };
+  }
+  const query = new URLSearchParams({ page: String(page - 1), size: String(size) });
+  const { data } = await apiFetch<ApiResponse<PageResponse<ChipHistory>>>(`/api/v1/coins/history?${query}`);
+  return { items: data.content, page, totalPages: data.totalPages, total: data.totalElements };
+}
 // 구독 목록 조회 API는 아직 정해지지 않았다 (프론트엔드-청사진 11장).
 export const getSubscriptions = async (): Promise<Subscription[]> => mockSubscriptions;
 // 딥소스 플러스 구독 조회 API는 아직 정해지지 않았다 (프론트엔드-청사진 11장).

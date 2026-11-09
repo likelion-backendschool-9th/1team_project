@@ -94,7 +94,7 @@ export async function PostView({ params }: Props) {
                 label="신고"
                 title="이 글을 신고할까요?"
                 className={styles.report}
-                onConfirm={(reason) => reportPost(post.id, reason)}
+                onConfirm={reportPost.bind(null, post.id)}
               />
             )}
           </div>
