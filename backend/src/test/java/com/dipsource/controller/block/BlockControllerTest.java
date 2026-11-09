@@ -90,6 +90,17 @@ class BlockControllerTest {
     }
 
     @Test
+    @DisplayName("차단 관계면 양쪽 다 상대를 다시 팔로우할 수 없다")
+    void cannotFollowWhileBlocked() throws Exception {
+        block(me, other);
+
+        mockMvc.perform(post("/follows/{id}", me.getId()).with(authentication(auth(other))))
+                .andExpect(status().isNotFound());
+        mockMvc.perform(post("/follows/{id}", other.getId()).with(authentication(auth(me))))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
     @DisplayName("차단 관계면 양쪽 다 DM을 보낼 수 없고 대화방과 내역이 숨겨진다. 해제하면 다시 보인다")
     void dmHiddenWhileBlocked() throws Exception {
         dmService.send(me.getId(), new DmSendRequest(other.getId(), "안녕"));
