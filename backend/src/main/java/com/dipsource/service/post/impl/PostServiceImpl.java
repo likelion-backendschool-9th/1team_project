@@ -161,7 +161,10 @@ public class PostServiceImpl implements PostService {
     @Override
     @Transactional
     public void like(Long userId, Long postId) {
-        findActive(postId);
+        Post post = findActive(postId);
+        if (post.getUserId().equals(userId)) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "본인 글에는 좋아요할 수 없어요.");
+        }
         int inserted = postLikeRepository.insertIgnore(userId, postId);
         if (inserted > 0) {
             postRepository.incrementLikeCount(postId);
