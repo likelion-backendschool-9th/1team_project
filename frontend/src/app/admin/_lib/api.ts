@@ -201,3 +201,44 @@ export async function getAdminEvents(): Promise<DevEvent[]> {
   const { data } = await apiFetch<ApiResponse<PageResponse<DevEvent>>>("/api/v1/events");
   return data.content;
 }
+
+// ── 권한 관리 (최고 관리자 전용) ──
+
+export type RoleUser = {
+  id: number;
+  nickname: string;
+  email: string;
+  profileImage: string | null;
+  role: "USER" | "ADMIN" | "MASTER";
+};
+
+export type RoleFilter = "ADMIN" | "USER" | undefined;
+
+const mockRoleUsers: RoleUser[] = [
+  { id: 1, nickname: "찍먹마스터", email: "master@dipsource.dev", profileImage: null, role: "MASTER" },
+  { id: 2, nickname: "운영자김", email: "admin1@dipsource.dev", profileImage: null, role: "ADMIN" },
+  { id: 3, nickname: "코딩하는곰돌이", email: "user1@test.com", profileImage: null, role: "USER" },
+  { id: 4, nickname: "리액트장인", email: "user2@test.com", profileImage: null, role: "USER" },
+];
+
+export async function getRoleUsers(query: { q?: string; role: RoleFilter; page: number }): Promise<PageResponse<RoleUser>> {
+  if (hasBackend) {
+    const search = new URLSearchParams({ page: String(query.page - 1), size: String(PAGE_SIZE) });
+    if (query.q) search.set("q", query.q);
+    if (query.role) search.set("role", query.role);
+    const { data } = await apiFetch<ApiResponse<PageResponse<RoleUser>>>(`/api/v1/admin/roles/users?${search}`);
+    return data;
+  }
+  const filtered = mockRoleUsers.filter(
+    (user) =>
+      (!query.q || `${user.nickname} ${user.email}`.includes(query.q)) &&
+      (!query.role || (query.role === "ADMIN" ? user.role !== "USER" : user.role === "USER")),
+  );
+  return {
+    content: filtered.slice((query.page - 1) * PAGE_SIZE, query.page * PAGE_SIZE),
+    page: query.page - 1,
+    size: PAGE_SIZE,
+    totalElements: filtered.length,
+    totalPages: Math.max(1, Math.ceil(filtered.length / PAGE_SIZE)),
+  };
+}

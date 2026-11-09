@@ -6,14 +6,15 @@ import { getAdminAccess } from "../_lib/access";
 import styles from "./AdminGate.module.css";
 
 type Props = {
-  children: ReactNode;
+  /** 관리자 화면. master가 true면 최고 관리자(권한 관리 메뉴를 보여 준다) */
+  children: (master: boolean) => ReactNode;
 };
 
-// 관리자(ADMIN)가 아니면 관리 메뉴·화면 대신 차단 안내만 보여 준다.
+// 관리자(ADMIN·MASTER)가 아니면 관리 메뉴·화면 대신 차단 안내만 보여 준다.
 export async function AdminGate({ children }: Props) {
   await connection();
   const access = await getAdminAccess();
-  if (access === "admin") return children;
+  if (access === "admin" || access === "master") return children(access === "master");
 
   const guest = access === "guest";
   return (
