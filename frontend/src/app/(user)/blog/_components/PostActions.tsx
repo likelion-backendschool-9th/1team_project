@@ -8,6 +8,7 @@ import {
   HeartIcon,
   RepostIcon,
 } from "@/app/_components/ui/Icons";
+import kit from "@/app/_components/ui/kit.module.css";
 import { togglePostBookmark, togglePostLike } from "../_actions";
 import styles from "./PostActions.module.css";
 
@@ -18,6 +19,7 @@ type Props = {
   repostCount: number;
   liked: boolean;
   readMinutes: number;
+  loggedIn?: boolean;
 };
 
 export function PostActions({
@@ -27,19 +29,29 @@ export function PostActions({
   repostCount,
   liked,
   readMinutes,
+  loggedIn = false,
 }: Props) {
   const [likeState, setLikeState] = useState({ active: liked, count: likeCount });
+  const [likeError, setLikeError] = useState<string | null>(null);
   const [bookmarked, setBookmarked] = useState(false);
   const [likePending, startLikeTransition] = useTransition();
   const [, startBookmarkTransition] = useTransition();
 
   function handleLike() {
+    if (!loggedIn) {
+      setLikeError("로그인 후 좋아요를 누를 수 있어요.");
+      return;
+    }
     const previous = likeState;
     const next = !previous.active;
     setLikeState({ active: next, count: previous.count + (next ? 1 : -1) });
+    setLikeError(null);
     startLikeTransition(async () => {
       const result = await togglePostLike(postId, next);
-      if (!result.ok) setLikeState(previous);
+      if (!result.ok) {
+        setLikeState(previous);
+        setLikeError(result.message);
+      }
     });
   }
 
@@ -83,6 +95,11 @@ export function PostActions({
       >
         <BookmarkIcon filled={bookmarked} />
       </button>
+      {likeError && (
+        <p role="alert" className={kit.error} style={{ width: "100%" }}>
+          {likeError}
+        </p>
+      )}
     </div>
   );
 }
