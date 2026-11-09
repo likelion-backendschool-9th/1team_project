@@ -53,6 +53,7 @@ class PostServiceImplTest {
     private static final String BODY = "첫 문단입니다.\n\n둘째 문단입니다.\n\n셋째 문단입니다.\n\n넷째 문단은 잠겨야 합니다.";
 
     @Mock private PostRepository postRepository;
+    @Mock private com.dipsource.repository.post.PostLikeRepository postLikeRepository;
     @Mock private PostTagRepository postTagRepository;
     @Mock private PostPurchaseRepository postPurchaseRepository;
     @Mock private BlogSubscriptionRepository blogSubscriptionRepository;
@@ -64,8 +65,8 @@ class PostServiceImplTest {
 
     @BeforeEach
     void setUp() {
-        service = new PostServiceImpl(postRepository, postTagRepository, postPurchaseRepository,
-                blogSubscriptionRepository, tagRepository, userService,
+        service = new PostServiceImpl(postRepository, postLikeRepository, postTagRepository,
+                postPurchaseRepository, blogSubscriptionRepository, tagRepository, userService,
                 org.mockito.Mockito.mock(org.springframework.context.ApplicationEventPublisher.class),
                 blockRepository);
     }
