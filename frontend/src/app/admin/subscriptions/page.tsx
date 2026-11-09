@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
+import { ComingSoon } from "@/app/_components/ui/ComingSoon";
 import kit from "@/app/_components/ui/kit.module.css";
+import { isMockMode } from "@/app/_lib/api/client";
 import { formatDate, formatWon } from "@/app/_lib/format";
 import { StatusPill } from "../_components/StatusPill";
 import { getSubscriptions } from "../_lib/api";
@@ -8,6 +10,8 @@ import { getSubscriptions } from "../_lib/api";
 export const metadata: Metadata = { title: "구독 현황" };
 
 async function SubscriptionsContent() {
+  if (!isMockMode) return <ComingSoon feature="구독 현황" />;
+
   const rows = await getSubscriptions();
   const active = rows.filter((row) => row.status === "active");
   const monthly = active.reduce((sum, row) => sum + row.price, 0);

@@ -12,8 +12,9 @@ export async function proxy(request: NextRequest) {
   const hasAccess = request.cookies.has(ACCESS);
   const refreshToken = request.cookies.get(REFRESH)?.value;
 
-  // 목 모드이거나, 갱신이 필요 없으면 그대로 통과
-  if (!API_ORIGIN || hasAccess || !refreshToken) return NextResponse.next();
+  // 목 모드이거나, 이미 로그인 상태면 그대로 통과
+  if (!API_ORIGIN || hasAccess) return NextResponse.next();
+  if (!refreshToken) return guestResponse(request);
 
   const res = await fetch(`${API_ORIGIN}/api/v1/auth/refresh`, {
     method: "POST",
@@ -22,7 +23,7 @@ export async function proxy(request: NextRequest) {
 
   // 갱신 실패: 남은 refresh 쿠키를 지워 로그아웃 상태로 만든다
   if (!res.ok) {
-    const response = NextResponse.next();
+    const response = guestResponse(request);
     response.cookies.delete(REFRESH);
     return response;
   }
@@ -53,6 +54,14 @@ export async function proxy(request: NextRequest) {
   // ② 다음 요청부터: 브라우저에 새 쿠키를 저장시킨다 (Secure·HttpOnly 속성 그대로)
   for (const header of setCookies) response.headers.append("set-cookie", header);
   return response;
+}
+
+/** 미니홈피는 회원 전용이라 비로그인은 화면을 그리기 전에 로그인으로 보낸다. */
+function guestResponse(request: NextRequest) {
+  if (!request.nextUrl.pathname.startsWith("/mini-home")) return NextResponse.next();
+  const login = new URL("/login", request.url);
+  login.searchParams.set("redirect", request.nextUrl.pathname);
+  return NextResponse.redirect(login);
 }
 
 export const config = {

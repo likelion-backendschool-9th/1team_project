@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { ConfirmButton } from "@/app/_components/ui/ConfirmButton";
+import { ComingSoon } from "@/app/_components/ui/ComingSoon";
 import kit from "@/app/_components/ui/kit.module.css";
+import { isMockMode } from "@/app/_lib/api/client";
 import { formatWon } from "@/app/_lib/format";
 import { confirmSettlement } from "../_actions";
 import { StatusPill } from "../_components/StatusPill";
@@ -10,6 +12,8 @@ import { getSettlements } from "../_lib/api";
 export const metadata: Metadata = { title: "정산 관리" };
 
 async function SettlementsContent() {
+  if (!isMockMode) return <ComingSoon feature="정산 관리" />;
+
   const rows = await getSettlements();
   const pending = rows.filter((row) => row.status === "pending");
 

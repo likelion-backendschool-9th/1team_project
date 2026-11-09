@@ -2,7 +2,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 import { ConfirmButton } from "@/app/_components/ui/ConfirmButton";
+import { ComingSoon } from "@/app/_components/ui/ComingSoon";
 import kit from "@/app/_components/ui/kit.module.css";
+import { isMockMode } from "@/app/_lib/api/client";
 import { formatDate, formatWon } from "@/app/_lib/format";
 import { suspendForFraud } from "../../_actions";
 import { StatusPill } from "../../_components/StatusPill";
@@ -11,6 +13,8 @@ import { getSuspicious } from "../../_lib/api";
 export const metadata: Metadata = { title: "부정 사용 확인" };
 
 async function SuspiciousContent() {
+  if (!isMockMode) return <ComingSoon feature="부정 사용 확인" />;
+
   const rows = await getSuspicious();
 
   return (
