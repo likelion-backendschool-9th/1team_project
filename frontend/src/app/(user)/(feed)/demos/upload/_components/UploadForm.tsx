@@ -1,21 +1,15 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useRef, useState, type FormEvent } from "react";
 import { FormMessage } from "@/app/_components/ui/FormMessage";
 import kit from "@/app/_components/ui/kit.module.css";
-import { initialFormState } from "@/app/_lib/formState";
-import { getUploadStatus, uploadDemo, type UploadStatus } from "../_actions";
-import { MAX_DEMO_MB } from "../_lib/rules";
+import { createDemoDraft, deleteOwnDemo, publishDemoVersion } from "../../_actions";
+import { uploadDemoZip } from "../../_lib/uploadZip";
+import { checkDemoZip, MAX_DEMO_MB, MAX_DESCRIPTION, MAX_TITLE } from "../_lib/rules";
 import styles from "./UploadForm.module.css";
 
-const steps = ["확장자 검사", "용량 검사", "악성코드 검사 (VirusTotal)", "샌드박스 배포"];
-
-function checkFile(file: File | undefined) {
-  if (!file) return null;
-  if (!file.name.toLowerCase().endsWith(".zip")) return "zip 파일만 올릴 수 있어요.";
-  if (file.size > MAX_DEMO_MB * 1024 * 1024) return `${MAX_DEMO_MB}MB 이하만 올릴 수 있어요.`;
-  return null;
-}
+const steps = ["정보 저장", "zip 검증·업로드", "공개"];
 
 type Props = {
   used: number;
@@ -23,43 +17,76 @@ type Props = {
 };
 
 export function UploadForm({ used, capacity }: Props) {
-  const [state, formAction, pending] = useActionState(uploadDemo, initialFormState);
-  const [status, setStatus] = useState<UploadStatus | null>(null);
+  const router = useRouter();
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [file, setFile] = useState<File | null>(null);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [result, setResult] = useState<{ ok: boolean; message: string } | null>(null);
+  const [step, setStep] = useState(0);
+  const [pending, setPending] = useState(false);
   const full = used >= capacity;
-  const demoId = Number(state.values.demoId);
-  const startedAt = Number(state.values.startedAt);
+  const fileError = errors.file ?? (file ? checkDemoZip(file) : null);
 
-  // 업로드가 끝나면 검사 진행률을 1.5초마다 확인한다 (GET demos/{demoId}/status).
-  useEffect(() => {
-    if (!state.ok || !demoId) return;
-    let stopped = false;
-    async function poll() {
-      const next = await getUploadStatus(demoId, startedAt);
-      if (stopped) return;
-      setStatus(next);
-      if (!next.done && !next.failed) timer = window.setTimeout(poll, 1500);
-    }
-    let timer = window.setTimeout(poll, 0);
-    return () => {
-      stopped = true;
-      window.clearTimeout(timer);
-    };
-  }, [state.ok, demoId, startedAt]);
-  const [file, setFile] = useState<{ name: string; size: number; error: string | null } | null>(null);
-  const [seenAttempt, setSeenAttempt] = useState(state.attempt);
-  // 제출하면 폼이 초기화되므로 선택한 파일 표시도 비운다.
-  if (seenAttempt !== state.attempt) {
-    setSeenAttempt(state.attempt);
-    setFile(null);
-  }
-  const error = (key: string) => state.errors[key];
-  const fileError = file?.error ?? error("file");
   const invalid = (key: string, message: string | null | undefined) =>
     message ? { "aria-invalid": true as const, "aria-describedby": `upload-${key}-error` } : {};
 
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!file) {
+      setErrors({ file: "zip 파일을 선택해 주세요." });
+      fileRef.current?.focus();
+      return;
+    }
+    if (checkDemoZip(file)) return;
+
+    const form = new FormData(event.currentTarget);
+    setPending(true);
+    setErrors({});
+    setResult(null);
+    try {
+      setStep(1);
+      const draft = await createDemoDraft({
+        title: String(form.get("title") ?? ""),
+        description: String(form.get("description") ?? ""),
+        tags: String(form.get("tags") ?? ""),
+      });
+      if (!draft.ok || draft.demoId === undefined) {
+        setErrors(draft.errors ?? {});
+        setResult(draft);
+        return;
+      }
+
+      setStep(2);
+      const upload = await uploadDemoZip(draft.demoId, file);
+      if (!upload.ok) {
+        // 파일 없는 초안을 남기면 다시 시도할 때 인벤토리만 찬다
+        await deleteOwnDemo(draft.demoId);
+        setErrors({ file: upload.message });
+        setResult({ ok: false, message: "zip을 올리지 못했어요." });
+        return;
+      }
+
+      if (form.get("publish") === "on") {
+        setStep(3);
+        const published = await publishDemoVersion(draft.demoId, upload.version.id);
+        if (!published.ok) {
+          setResult({ ok: false, message: `파일은 저장했지만 공개하지 못했어요: ${published.message}` });
+          router.push(`/demos/${draft.demoId}/manage`);
+          return;
+        }
+        router.push(`/demos/${draft.demoId}`);
+        return;
+      }
+      router.push(`/demos/${draft.demoId}/manage`);
+    } finally {
+      setPending(false);
+      setStep(0);
+    }
+  }
+
   return (
     <div className={styles.layout}>
-      <form action={formAction} className={`${kit.card} ${kit.form}`} key={state.attempt}>
+      <form onSubmit={handleSubmit} className={`${kit.card} ${kit.form}`} noValidate>
         <div className={kit.field}>
           <label htmlFor="upload-file" className={kit.label}>
             데모 파일 (zip)
@@ -81,17 +108,15 @@ export function UploadForm({ used, capacity }: Props) {
             )}
           </label>
           <input
+            ref={fileRef}
             id="upload-file"
-            name="file"
             type="file"
             accept=".zip,application/zip"
             className="sr-only"
             {...invalid("file", fileError)}
             onChange={(event) => {
-              const selected = event.target.files?.[0];
-              setFile(
-                selected ? { name: selected.name, size: selected.size, error: checkFile(selected) } : null,
-              );
+              setFile(event.target.files?.[0] ?? null);
+              setErrors((current) => ({ ...current, file: "" }));
             }}
           />
           <p id="upload-file-error" className={kit.error}>
@@ -106,14 +131,13 @@ export function UploadForm({ used, capacity }: Props) {
           <input
             id="upload-title"
             name="title"
-            maxLength={40}
-            defaultValue={state.values.title}
+            maxLength={MAX_TITLE}
             placeholder="예: 실시간 채팅앱"
             className={kit.input}
-            {...invalid("title", error("title"))}
+            {...invalid("title", errors.title)}
           />
           <p id="upload-title-error" className={kit.error}>
-            {error("title")}
+            {errors.title}
           </p>
         </div>
 
@@ -124,52 +148,42 @@ export function UploadForm({ used, capacity }: Props) {
           <textarea
             id="upload-description"
             name="description"
-            maxLength={200}
+            maxLength={MAX_DESCRIPTION}
             rows={3}
-            defaultValue={state.values.description}
             placeholder="어떤 기술로 무엇을 만들었는지 알려 주세요"
             className={kit.textarea}
             style={{ minHeight: 96 }}
-            {...invalid("description", error("description"))}
+            {...invalid("description", errors.description)}
           />
           <p id="upload-description-error" className={kit.error}>
-            {error("description")}
+            {errors.description}
           </p>
         </div>
 
-        <div className={kit.grid2}>
-          <fieldset className={kit.fieldset}>
-            <legend className={kit.label}>실행 방식</legend>
-            <label className={kit.check}>
-              <input type="radio" name="runtime" value="web" defaultChecked={state.values.runtime !== "unity"} />
-              html / css / js
-            </label>
-            <label className={kit.check}>
-              <input type="radio" name="runtime" value="unity" defaultChecked={state.values.runtime === "unity"} />
-              Unity WebGL
-            </label>
-          </fieldset>
-          <div className={kit.field}>
-            <label htmlFor="upload-tags" className={kit.label}>
-              기술 태그
-            </label>
-            <input
-              id="upload-tags"
-              name="tags"
-              defaultValue={state.values.tags}
-              placeholder="react, websocket"
-              className={kit.input}
-              aria-describedby="upload-tags-hint"
-            />
-            <p id="upload-tags-hint" className={kit.hint}>
-              쉼표로 구분해요.
-            </p>
-          </div>
+        <div className={kit.field}>
+          <label htmlFor="upload-tags" className={kit.label}>
+            기술 태그
+          </label>
+          <input
+            id="upload-tags"
+            name="tags"
+            placeholder="react, websocket"
+            className={kit.input}
+            aria-describedby="upload-tags-hint"
+          />
+          <p id="upload-tags-hint" className={kit.hint}>
+            쉼표로 구분해요.
+          </p>
         </div>
 
+        <label className={kit.check}>
+          <input type="checkbox" name="publish" defaultChecked />
+          업로드가 끝나면 바로 공개
+        </label>
+
         <div className={kit.between}>
-          <FormMessage ok={state.ok} message={state.message} />
-          <button type="submit" className={kit.btnPrimary} disabled={pending || full || Boolean(file?.error)}>
+          <FormMessage ok={result?.ok ?? null} message={result?.message ?? null} />
+          <button type="submit" className={kit.btnPrimary} disabled={pending || full || Boolean(fileError)}>
             {pending ? "올리는 중…" : "업로드"}
           </button>
         </div>
@@ -184,17 +198,17 @@ export function UploadForm({ used, capacity }: Props) {
           </p>
         </section>
         <section className={kit.card} aria-live="polite">
-          <h2 className={kit.cardTitle}>검사 진행 상황</h2>
+          <h2 className={kit.cardTitle}>진행 상황</h2>
           <ol className={styles.steps}>
-            {steps.map((step, index) => {
-              const done = status !== null && (status.done || index < status.step - 1);
-              const running = status !== null && !status.done && index === status.step - 1;
+            {steps.map((name, index) => {
+              const done = step > index + 1;
+              const running = step === index + 1;
               return (
-                <li key={step} className={done ? styles.done : undefined}>
+                <li key={name} className={done ? styles.done : undefined}>
                   <span className={styles.stepMark} aria-hidden="true">
                     {done ? "✓" : running ? "…" : index + 1}
                   </span>
-                  {step}
+                  {name}
                   <span className="sr-only">{done ? " 완료" : running ? " 진행 중" : " 대기"}</span>
                 </li>
               );
@@ -204,10 +218,11 @@ export function UploadForm({ used, capacity }: Props) {
         <section className={kit.card}>
           <h2 className={kit.cardTitle}>업로드 규격</h2>
           <ul className={styles.rules}>
-            <li>zip 최상단에 index.html이 있어야 해요.</li>
-            <li>외부 서버 호출은 샌드박스에서 막혀요.</li>
-            <li>Unity는 WebGL 빌드 폴더를 그대로 압축해 주세요.</li>
-            <li>최대 {MAX_DEMO_MB}MB까지 올릴 수 있어요.</li>
+            <li>zip 최상위에 index.html이 있어야 해요.</li>
+            <li>zip {MAX_DEMO_MB}MB, 압축 해제 후 30MB, 파일 200개까지 올릴 수 있어요.</li>
+            <li>Vite는 base: &apos;./&apos;, CRA는 homepage: &apos;.&apos;로 빌드해 주세요.</li>
+            <li>라우터는 Hash Router를 권장해요.</li>
+            <li>외부 서버 호출은 샌드박스에서 막혀요. 쿠키·브라우저 저장소도 쓸 수 없어요.</li>
           </ul>
         </section>
       </aside>

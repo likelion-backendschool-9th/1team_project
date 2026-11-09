@@ -100,9 +100,14 @@ public class Demo extends BaseEntity {
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
 
+    /** 현재 공개 중인 버전(demo_versions.id). 공개한 적 없으면 null */
+    @Column(name = "current_version_id")
+    private Long currentVersionId;
+
     @Builder
     private Demo(Long userId, String title, String description, DemoType demoType, String filePath,
-                 String apiUrl, String openapiJson, String scenarioJson, String externalUrl, String thumbnail) {
+                 String apiUrl, String openapiJson, String scenarioJson, String externalUrl, String thumbnail,
+                 DemoStatus status) {
         this.userId = userId;
         this.title = title;
         this.description = description;
@@ -113,6 +118,7 @@ public class Demo extends BaseEntity {
         this.scenarioJson = scenarioJson;
         this.externalUrl = externalUrl;
         this.thumbnail = thumbnail;
+        this.status = status == null ? DemoStatus.ACTIVE : status;
     }
 
     public void update(String title, String description, String thumbnail) {
@@ -125,6 +131,20 @@ public class Demo extends BaseEntity {
     public void reupload(String filePath) {
         this.filePath = filePath;
         this.version++;
+    }
+
+    /** 버전을 공개한다. Worker가 읽는 공개 포인터와 함께 바뀌어야 한다. */
+    public void publish(DemoVersion target) {
+        this.currentVersionId = target.getId();
+        this.filePath = target.getStoragePrefix();
+        this.version = target.getNumber();
+        this.status = DemoStatus.ACTIVE;
+    }
+
+    /** 공개를 내리고 초안으로 돌린다. 파일과 버전은 그대로 둔다. */
+    public void unpublish() {
+        this.currentVersionId = null;
+        this.status = DemoStatus.DRAFT;
     }
 
     public void hide() {

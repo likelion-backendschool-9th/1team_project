@@ -14,6 +14,7 @@ import com.dipsource.global.exception.BusinessException;
 import com.dipsource.global.exception.ErrorCode;
 import com.dipsource.repository.admin.AdminActionLogRepository;
 import com.dipsource.repository.demo.DemoRepository;
+import com.dipsource.service.demo.DemoPublicationService;
 import com.dipsource.repository.feed.FeedCommentRepository;
 import com.dipsource.repository.feed.FeedRepository;
 import com.dipsource.repository.post.PostCommentRepository;
@@ -47,6 +48,7 @@ public class AdminContentServiceImpl implements AdminContentService {
     private final FeedCommentRepository feedCommentRepository;
     private final PostCommentRepository postCommentRepository;
     private final DemoRepository demoRepository;
+    private final DemoPublicationService demoPublicationService;
     private final UserRepository userRepository;
     private final ReportRepository reportRepository;
     private final FeedService feedService;
@@ -152,7 +154,8 @@ public class AdminContentServiceImpl implements AdminContentService {
         Demo demo = demoRepository.findById(demoId)
                 .filter(d -> d.getStatus() != DemoStatus.DELETED)
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "데모를 찾을 수 없습니다"));
-        demo.delete();
+        // 공개 포인터까지 지워야 Worker에서도 바로 막힌다
+        demoPublicationService.revokeAndDelete(demo);
         logDelete(adminId, "DEMO", demoId);
     }
 

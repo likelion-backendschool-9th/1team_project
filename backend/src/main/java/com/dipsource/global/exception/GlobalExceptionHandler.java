@@ -10,6 +10,7 @@ import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 /** 예외를 공통 에러 JSON으로 변환한다. */
 
@@ -52,6 +53,13 @@ public class GlobalExceptionHandler {
         public ResponseEntity<ErrorResponse> handleBadRequest(Exception ex) {
                 return ResponseEntity.badRequest()
                                 .body(ErrorResponse.of(ErrorCode.BAD_REQUEST.getCode(), ErrorCode.BAD_REQUEST.getDefaultMessage()));
+        }
+
+        /** 업로드 크기가 spring.servlet.multipart 한도를 넘음 → 413 */
+        @ExceptionHandler(MaxUploadSizeExceededException.class)
+        public ResponseEntity<ErrorResponse> handleUploadTooLarge(MaxUploadSizeExceededException ex) {
+                return ResponseEntity.status(ErrorCode.PAYLOAD_TOO_LARGE.getStatus())
+                                .body(ErrorResponse.of(ErrorCode.PAYLOAD_TOO_LARGE.getCode(), ErrorCode.PAYLOAD_TOO_LARGE.getDefaultMessage()));
         }
 
         /** 위에서 잡지 못한 모든 예외 → 500 반환. 스택 트레이스는 서버 로그에만 기록한다. */

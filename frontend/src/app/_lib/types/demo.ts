@@ -10,6 +10,8 @@ export type DemoSummary = {
   likeCount: number;
 };
 
+export type DemoStatus = "DRAFT" | "ACTIVE" | "HIDDEN";
+
 export type DemoSort = "trending" | "latest" | "popular";
 
 export type DemoDetail = DemoSummary & {
@@ -20,6 +22,10 @@ export type DemoDetail = DemoSummary & {
   sizeMb: number;
   liked: boolean;
   bookmarked: boolean;
+  status?: DemoStatus;
+  currentVersionId?: number | null;
+  /** 실행 주소. 공개 중인 데모에만 있다. */
+  runUrl?: string | null;
 };
 
 export type DemoFeedbackType = "question" | "bug" | "praise";
@@ -28,9 +34,20 @@ export type DemoComment = {
   id: number;
   author: UserSummary;
   type: DemoFeedbackType;
-  content: string;
+  content: string | null; // 삭제된 피드백은 null
   createdAt: string;
   likeCount: number;
   liked: boolean;
   replies?: DemoComment[];
+};
+
+export type DemoVersion = {
+  id: number;
+  number: number;
+  status: "UPLOADING" | "READY" | "FAILED" | "DELETED";
+  entryPath: string;
+  fileCount: number;
+  totalBytes: number;
+  current: boolean;
+  createdAt: string;
 };

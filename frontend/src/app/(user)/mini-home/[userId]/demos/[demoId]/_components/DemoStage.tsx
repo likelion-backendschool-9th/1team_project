@@ -13,21 +13,22 @@ type Props = {
   title: string;
   seed: number;
   label: string;
+  thumbnail: string | null;
+  /** 실행 주소. 공개 전이거나 목 모드면 없다. */
+  runUrl: string | null;
   initialPlays: number;
   initialLikes: number;
   liked: boolean;
   bookmarked: boolean;
 };
 
-// 샌드박스 서버가 연결되기 전까지는 iframe에 안내 화면을 띄운다.
-const PLACEHOLDER = `<!doctype html><html><body style="margin:0;height:100vh;display:grid;place-items:center;background:#1f1b17;color:#ffd04d;font-family:system-ui">
-<div style="text-align:center"><div style="font-size:42px">🥢</div><p>샌드박스 연결 전 미리보기예요</p></div></body></html>`;
-
 export function DemoStage({
   demoId,
   title,
   seed,
   label,
+  thumbnail,
+  runUrl,
   initialPlays,
   initialLikes,
   liked,
@@ -66,19 +67,21 @@ export function DemoStage({
     <div className={styles.stageWrap}>
       <div className={styles.stage}>
         {playing ? (
+          // allow-same-origin을 넣지 않는다. 데모는 opaque origin에서 돌아 찍먹 쿠키·저장소에 닿지 못한다
           <iframe
             title={`${title} 샌드박스`}
-            srcDoc={PLACEHOLDER}
+            src={runUrl ?? undefined}
             sandbox="allow-scripts"
+            referrerPolicy="no-referrer"
             className={styles.frame}
           />
         ) : (
-          <DemoThumb seed={seed} thumbnail={null} label={label} className={styles.thumb} />
+          <DemoThumb seed={seed} thumbnail={thumbnail} label={label} className={styles.thumb} />
         )}
       </div>
       <div className={styles.actions}>
-        <button type="button" className={kit.btnPrimary} onClick={handlePlay} disabled={playing}>
-          {playing ? "실행 중" : "▶ 찍먹하기"}
+        <button type="button" className={kit.btnPrimary} onClick={handlePlay} disabled={playing || !runUrl}>
+          {playing ? "실행 중" : runUrl ? "▶ 찍먹하기" : "아직 실행할 수 없어요"}
         </button>
         <button
           type="button"

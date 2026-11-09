@@ -66,3 +66,6 @@ docs/_local/
 .cursorrules
 .cursor/rules/*.mdc
 .cursor/hooks/.pending-handoff
+
+### Cloudflare Workers ###
+.wrangler/
