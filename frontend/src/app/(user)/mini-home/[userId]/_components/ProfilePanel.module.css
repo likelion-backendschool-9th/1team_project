@@ -207,8 +207,12 @@
 
 .grass {
   display: grid;
-  grid-template-columns: repeat(10, 1fr);
-  gap: 6px;
+  /* GitHub처럼 세로 7칸(요일)을 채우고 다음 주는 오른쪽 열로 */
+  /* 열 수는 ProfilePanel의 GRASS_WEEKS(20주)와 같다. 데이터가 짧아도 칸 크기가 커지지 않게 고정한다 */
+  grid-template-rows: repeat(7, auto);
+  grid-template-columns: repeat(20, minmax(0, 1fr));
+  grid-auto-flow: column;
+  gap: 3px;
   padding: 12px;
   margin-top: 10px;
   border: 1px solid #ece6db;
@@ -219,6 +223,10 @@
 .grass span {
   aspect-ratio: 1;
   border-radius: 2px;
+}
+
+.grass .grassEmpty {
+  background: transparent;
 }
 
 .level0 {
