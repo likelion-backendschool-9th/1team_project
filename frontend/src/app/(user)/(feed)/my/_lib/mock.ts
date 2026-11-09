@@ -23,7 +23,7 @@ export type ChipPackage = { id: number; chips: number };
 
 export type ChipHistory = {
   id: number;
-  type: "charge" | "use" | "refund";
+  type: "charge" | "use" | "refund" | "revenue";
   description: string;
   amount: number;
   createdAt: string;

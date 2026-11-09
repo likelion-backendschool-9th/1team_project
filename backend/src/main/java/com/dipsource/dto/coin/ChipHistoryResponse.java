@@ -31,7 +31,8 @@ public record ChipHistoryResponse(
     private static String toType(ChipTransactionType type) {
         return switch (type) {
             case CHARGE -> "charge";
-            case REFUND, BLOG_INCOME, DONATION_INCOME -> "refund";
+            case REFUND -> "refund";
+            case BLOG_INCOME, DONATION_INCOME -> "revenue";
             default -> "use";
         };
     }

@@ -13,7 +13,7 @@ import styles from "../_components/My.module.css";
 
 export const metadata: Metadata = { title: "칩 충전", robots: { index: false } };
 
-const historyLabels = { charge: "충전", use: "사용", refund: "환불" };
+const historyLabels = { charge: "충전", use: "사용", refund: "환불", revenue: "수익" };
 
 async function CoinsContent() {
   const me = await getMe();
@@ -79,7 +79,12 @@ async function CoinsContent() {
                 <tr key={row.id}>
                   <td>{formatDateTime(row.createdAt)}</td>
                   <td>
-                    <span className={row.type === "use" ? kit.pill : row.type === "charge" ? kit.pillAccent : kit.pillSuccess}>
+                    <span className={
+                      row.type === "use" ? kit.pill :
+                      row.type === "charge" ? kit.pillAccent :
+                      row.type === "revenue" ? kit.pillWarn :
+                      kit.pillSuccess
+                    }>
                       {historyLabels[row.type]}
                     </span>
                   </td>
