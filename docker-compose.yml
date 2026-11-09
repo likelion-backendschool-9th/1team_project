@@ -15,11 +15,31 @@ services:
       timeout: 5s
       retries: 5
 
+  elasticsearch:
+    build: ./docker/elasticsearch
+    container_name: dipsource-elasticsearch
+    restart: always
+    environment:
+      discovery.type: single-node
+      # 개발 환경 전용. 운영은 docker-compose.prod.yml에서 인증을 켠다
+      xpack.security.enabled: "false"
+      ES_JAVA_OPTS: -Xms512m -Xmx512m
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fs http://localhost:9200/_cluster/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
   backend:
     build: ./backend
     container_name: dipsource-backend
     restart: always
     environment:
+      SPRING_ELASTICSEARCH_URIS: http://elasticsearch:9200
+      SEARCH_ES_ENABLED: "true"
+      SEARCH_ENGINE: ${SEARCH_ENGINE:-elasticsearch}
       SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/${POSTGRES_DB}
       SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
@@ -61,3 +81,4 @@ services:
 
 volumes:
   postgres_data:
+  elasticsearch_data:

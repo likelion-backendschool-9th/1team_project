@@ -1,0 +1,15 @@
+[
+  {"id": "c", "category": "영문기술명", "q": "C", "type": "post", "purpose": "C 언어만, C++·C#·C 레벨 제외", "relevant": {"hp_c": 3}},
+  {"id": "r", "category": "영문기술명", "q": "R", "type": "post", "purpose": "R 언어만, R&D 제외", "relevant": {"hp_r": 3}},
+  {"id": "d", "category": "영문기술명", "q": "D", "type": "post", "purpose": "D 언어만, D 등급 제외", "relevant": {"hp_d": 3}},
+  {"id": "v", "category": "영문기술명", "q": "V", "type": "post", "purpose": "V 언어", "relevant": {"hp_v": 3}},
+  {"id": "j", "category": "영문기술명", "q": "J", "type": "post", "purpose": "J 언어", "relevant": {"hp_j": 3}},
+  {"id": "q", "category": "영문기술명", "q": "q", "type": "post", "purpose": "q 언어", "relevant": {"hp_q": 3}},
+  {"id": "cpp", "category": "기호기술명", "q": "C++", "type": "post", "purpose": "C와 구분", "relevant": {"hp_cpp_tmpl": 3}},
+  {"id": "cs", "category": "기호기술명", "q": "C#", "type": "post", "purpose": "C와 구분", "relevant": {"hp_cs_linq": 3}},
+  {"id": "fs", "category": "기호기술명", "q": "F#", "type": "post", "purpose": "F와 구분", "relevant": {"hp_fs": 3}},
+  {"id": "web", "category": "한국어한글자", "q": "웹", "type": "post", "purpose": "태그·독립 단어만, 웹소켓·웹사이트 제외", "relevant": {"hp_web": 3, "hp_websocket2": 1}},
+  {"id": "app", "category": "한국어한글자", "q": "앱", "type": "post", "purpose": "태그·독립 단어만, 앱스토어 제외", "relevant": {"hp_app": 3}},
+  {"id": "bot", "category": "한국어한글자", "q": "봇", "type": "post", "purpose": "태그만, 본문 언급 제외", "relevant": {"hp_bot": 3}},
+  {"id": "git", "category": "한국어한글자", "q": "깃", "type": "post", "purpose": "git 태그, 깃발 제외", "relevant": {"hp_git": 3, "hp_git_en": 2}}
+]

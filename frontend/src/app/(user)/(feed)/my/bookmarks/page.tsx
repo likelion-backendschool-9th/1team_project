@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { connection } from "next/server";
+import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import kit from "@/app/_components/ui/kit.module.css";
 import { LinkTabs } from "@/app/_components/ui/LinkTabs";
 import { formatDate } from "@/app/_lib/format";
+import { getMe } from "@/app/(user)/_lib/api";
 import { getBookmarks } from "../_lib/api";
 import type { BookmarkType } from "../_lib/mock";
 
@@ -18,6 +20,8 @@ const types: { value: BookmarkType; label: string; icon: string }[] = [
 
 async function BookmarksContent({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   await connection();
+  if (!(await getMe())) redirect("/login?redirect=/my/bookmarks");
+
   const raw = (await searchParams).type;
   const type = types.find((item) => item.value === raw)?.value;
   const bookmarks = await getBookmarks(type);

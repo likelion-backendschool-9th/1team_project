@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { ConfirmButton } from "@/app/_components/ui/ConfirmButton";
 import { ChipIcon, ChipPack } from "@/app/_components/ui/ChipIcon";
@@ -15,8 +16,10 @@ export const metadata: Metadata = { title: "칩 충전", robots: { index: false 
 const historyLabels = { charge: "충전", use: "사용", refund: "환불" };
 
 async function CoinsContent() {
-  const [me, packages, history] = await Promise.all([getMe(), getPackages(), getChipHistory()]);
-  if (!me) return null;
+  const me = await getMe();
+  if (!me) redirect("/login?redirect=/my/coins");
+
+  const [packages, history] = await Promise.all([getPackages(), getChipHistory()]);
 
   return (
     <>

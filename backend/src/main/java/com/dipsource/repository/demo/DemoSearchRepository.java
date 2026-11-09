@@ -1,11 +1,16 @@
 package com.dipsource.repository.demo;
 
+import com.dipsource.dto.search.AutocompletePrefix;
 import com.dipsource.dto.search.SearchCondition;
 import com.dipsource.dto.search.SearchOperator;
+import com.dipsource.dto.search.SearchSignal;
 import com.dipsource.dto.search.SearchSort;
+import com.dipsource.dto.search.SearchType;
 import com.dipsource.dto.search.SearchTermCandidate;
+import com.dipsource.dto.search.SearchTermFrequency;
 import com.dipsource.entity.demo.Demo;
 import com.dipsource.global.common.LikePattern;
+import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
 import org.springframework.data.domain.Page;
@@ -28,7 +33,8 @@ public interface DemoSearchRepository extends Repository<Demo, Long> {
                 LikePattern.contains(condition.phrase().toLowerCase(Locale.ROOT)),
                 condition.operator() == SearchOperator.AND,
                 condition.sort() == SearchSort.RELEVANCE,
-                condition.viewerId(),
+                condition.exclusions().hiddenIds(SearchType.DEMO),
+                condition.exclusions().blockedIds(),
                 pageable);
     }
 
@@ -47,11 +53,8 @@ public interface DemoSearchRepository extends Repository<Demo, Long> {
             ) m
             WHERE d.status = 'ACTIVE'
               AND d.deleted_at IS NULL
-              AND (:viewerId IS NULL OR d.user_id NOT IN (
-                  SELECT blocked_id FROM blocks WHERE blocker_id = :viewerId
-                  UNION
-                  SELECT blocker_id FROM blocks WHERE blocked_id = :viewerId
-              ))
+              AND d.id <> ALL(CAST(:excludedIds AS bigint[]))
+              AND d.user_id <> ALL(CAST(:excludedAuthors AS bigint[]))
               AND m.matched >= CASE WHEN :matchAll THEN cardinality(CAST(:patterns AS text[])) ELSE 1 END
             ORDER BY CASE WHEN :relevance THEN
                          CASE WHEN lower(d.title) = :phrase THEN 100 ELSE 0 END
@@ -69,11 +72,8 @@ public interface DemoSearchRepository extends Repository<Demo, Long> {
             ) m
             WHERE d.status = 'ACTIVE'
               AND d.deleted_at IS NULL
-              AND (:viewerId IS NULL OR d.user_id NOT IN (
-                  SELECT blocked_id FROM blocks WHERE blocker_id = :viewerId
-                  UNION
-                  SELECT blocker_id FROM blocks WHERE blocked_id = :viewerId
-              ))
+              AND d.id <> ALL(CAST(:excludedIds AS bigint[]))
+              AND d.user_id <> ALL(CAST(:excludedAuthors AS bigint[]))
               AND m.matched >= CASE WHEN :matchAll THEN cardinality(CAST(:patterns AS text[])) ELSE 1 END
             """)
     Page<Demo> searchByLikePatterns(
@@ -82,7 +82,8 @@ public interface DemoSearchRepository extends Repository<Demo, Long> {
             @Param("phrasePattern") String phrasePattern,
             @Param("matchAll") boolean matchAll,
             @Param("relevance") boolean relevance,
-            @Param("viewerId") Long viewerId,
+            @Param("excludedIds") Long[] excludedIds,
+            @Param("excludedAuthors") Long[] excludedAuthors,
             Pageable pageable);
 
     /**
@@ -123,4 +124,52 @@ public interface DemoSearchRepository extends Repository<Demo, Long> {
             @Param("word") String word,
             @Param("pattern") String pattern,
             @Param("maxDistance") int maxDistance);
+
+    /**
+     * 4단계: 자동완성 단어 후보. 공개(ACTIVE)이면서 삭제되지 않은 데모의 제목에서 접두어로 시작하는 단어와 등장 횟수.
+     * 쿼리 설명은 {@code PostSearchRepository#findTermsByPrefix}와 같다.
+     *
+     * @param prefix 마지막 단어의 접두어 조건(한글 조합 중 받침 처리 포함)
+     * @param limit  최대 개수
+     */
+    default List<SearchTermFrequency> findTermsByPrefix(AutocompletePrefix prefix, int limit) {
+        return findTitleTermsByPrefix(prefix.pattern(), prefix.composing(), prefix.stemPattern(), prefix.stemLength(),
+                prefix.nextFrom(), prefix.nextTo(), limit);
+    }
+
+    @Query(nativeQuery = true, value = """
+            SELECT s.term AS term, count(*) AS frequency
+            FROM demos d
+            CROSS JOIN LATERAL regexp_split_to_table(lower(d.title), '[^a-z0-9가-힣_.#+-]+') AS s(term)
+            WHERE length(s.term) BETWEEN 1 AND 50
+                  AND d.status = 'ACTIVE'
+                  AND d.deleted_at IS NULL
+              AND (s.term LIKE :pattern
+                   OR (:composing
+                       AND s.term LIKE :stemPattern
+                       AND substr(s.term, :stemLength + 1, 1) COLLATE "C" BETWEEN :nextFrom AND :nextTo))
+            GROUP BY s.term
+            ORDER BY frequency DESC, length(s.term), s.term
+            LIMIT :limit
+            """)
+    List<SearchTermFrequency> findTitleTermsByPrefix(
+            @Param("pattern") String pattern,
+            @Param("composing") boolean composing,
+            @Param("stemPattern") String stemPattern,
+            @Param("stemLength") int stemLength,
+            @Param("nextFrom") String nextFrom,
+            @Param("nextTo") String nextTo,
+            @Param("limit") int limit);
+
+    /** 재정렬 신호. 공개 상태가 아닌 데모는 돌려주지 않아서, 인덱스가 늦어도 여기서 걸러진다 */
+    @Query(nativeQuery = true, value = """
+            SELECT d.id AS id, d.user_id AS authorId, d.like_count AS likeCount, d.play_count AS viewCount,
+                   CAST(extract(epoch FROM (now() - d.created_at)) AS double precision) / 86400 AS ageDays,
+                   (SELECT count(*) FROM follows f WHERE f.following_id = d.user_id) AS followerCount
+            FROM demos d
+            WHERE d.id IN (:ids) AND d.status = 'ACTIVE' AND d.deleted_at IS NULL
+            """)
+    List<SearchSignal> findSignals(@Param("ids") Collection<Long> ids);
+
+    List<Demo> findByIdIn(Collection<Long> ids);
 }

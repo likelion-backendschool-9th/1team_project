@@ -116,4 +116,20 @@ public interface FollowRepository extends JpaRepository<Follow, FollowId> {
             WHERE follower_id = :followerId AND following_id = :followingId
             """, nativeQuery = true)
     int deleteByFollowerIdAndFollowingId(@Param("followerId") Long followerId, @Param("followingId") Long followingId);
+
+    /** 후보마다 내 팔로잉 중 몇 명이 그 사람을 팔로우하는지. 요청 하나에 쿼리 하나다 */
+    @Query(value = """
+            SELECT f.following_id AS userId, count(*) AS mutualCount
+            FROM follows f
+            WHERE f.follower_id IN (SELECT mine.following_id FROM follows mine WHERE mine.follower_id = :viewerId)
+              AND f.following_id IN (:candidateIds)
+            GROUP BY f.following_id
+            """, nativeQuery = true)
+    List<MutualFollowCount> countMutualFollows(@Param("viewerId") Long viewerId, @Param("candidateIds") Collection<Long> candidateIds);
+
+    interface MutualFollowCount {
+        Long getUserId();
+
+        Long getMutualCount();
+    }
 }

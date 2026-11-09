@@ -14,16 +14,19 @@ public interface PostCommentRepository extends JpaRepository<PostComment, Long> 
      * 글의 표시 가능한 최상위 댓글 목록 (최신순, 커서 페이지네이션)
      * 삭제됐고 활성 대댓글도 없는 댓글은 DB에서 제외 — hasNext 계산 정확도 보장
      * size+1개를 요청해 hasNext 여부를 판단하고, Service에서 첫 size개만 처리
+     * 숨길 회원의 댓글도 DB에서 제외 — 조회 후에 거르면 페이지가 비어 커서가 끊긴다
      */
     @Query(value = """
             SELECT * FROM post_comments pc
             WHERE pc.post_id = :postId
               AND pc.parent_id IS NULL
               AND (:cursor IS NULL OR pc.id < :cursor)
+              AND pc.user_id <> ALL(CAST(:hiddenUserIds AS bigint[]))
               AND (pc.deleted_at IS NULL
                    OR EXISTS (
                        SELECT 1 FROM post_comments r
                        WHERE r.parent_id = pc.id AND r.deleted_at IS NULL
+                         AND r.user_id <> ALL(CAST(:hiddenUserIds AS bigint[]))
                    ))
             ORDER BY pc.id DESC
             LIMIT :size
@@ -31,6 +34,7 @@ public interface PostCommentRepository extends JpaRepository<PostComment, Long> 
     List<PostComment> findTopLevelCommentsVisible(
             @Param("postId") Long postId,
             @Param("cursor") Long cursor,
+            @Param("hiddenUserIds") Long[] hiddenUserIds,
             @Param("size") int size);
 
     /** 댓글 소프트 삭제 (deleted_at IS NULL 조건으로 원자적 처리) — 실제 변경된 행 수 반환 */

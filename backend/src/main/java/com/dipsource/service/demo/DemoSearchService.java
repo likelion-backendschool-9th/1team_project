@@ -1,9 +1,13 @@
 package com.dipsource.service.demo;
 
 import com.dipsource.dto.demo.DemoSearchItemResponse;
+import com.dipsource.dto.search.AutocompletePrefix;
 import com.dipsource.dto.search.SearchCondition;
+import com.dipsource.dto.search.SearchSignal;
 import com.dipsource.dto.search.SearchTermCandidate;
+import com.dipsource.dto.search.SearchTermFrequency;
 import com.dipsource.global.common.PageResponse;
+import java.util.Collection;
 import java.util.List;
 import org.springframework.data.domain.Pageable;
 
@@ -24,4 +28,18 @@ public interface DemoSearchService {
      * @param maxDistance 허용하는 최대 편집 거리
      */
     List<SearchTermCandidate> findClosestTerms(String word, int maxDistance);
+
+    /**
+     * 자동완성 단어 후보. 공개 데모 제목에 나오는 단어 중 접두어로 시작하는 단어와 등장 횟수(자주 나온 순).
+     *
+     * @param prefix 마지막 단어의 접두어 조건
+     * @param limit  최대 개수
+     */
+    List<SearchTermFrequency> findTermsByPrefix(AutocompletePrefix prefix, int limit);
+
+    /** 재정렬 신호. 공개 상태가 아닌 데모은(는) 빠진다 */
+    List<SearchSignal> findSignals(Collection<Long> ids);
+
+    /** 검색 결과 항목을 주어진 ID 순서대로 만든다 */
+    List<DemoSearchItemResponse> findItems(List<Long> ids);
 }

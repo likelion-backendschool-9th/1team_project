@@ -4,7 +4,9 @@ import { redirect } from "next/navigation";
 import { apiFetch, hasBackend, isMockMode } from "@/app/_lib/api/client";
 import { mutate } from "@/app/_lib/api/mutate";
 import type { DmMessage, DmRoom } from "@/app/_lib/types/dm";
+import type { AutocompleteSuggestion } from "@/app/_lib/types/search";
 import { getMe, getServerTime } from "./_lib/api";
+import { getAutocomplete } from "./_lib/autocomplete";
 import { getMessages, getRooms } from "./_lib/dmApi";
 import { endSession } from "./_lib/session";
 
@@ -24,6 +26,21 @@ export async function loadDmRooms(): Promise<{ myId: number; rooms: DmRoom[]; no
 export async function loadDmMessages(myId: number, partnerId: number): Promise<DmMessage[]> {
   if (!Number.isSafeInteger(partnerId) || partnerId <= 0) return [];
   return getMessages(myId, partnerId);
+}
+
+/**
+ * 검색창 자동완성 후보. 검색창은 모든 화면에 있는 클라이언트 입력이라 이 Action으로 후보를 받아 온다.
+ * 검색은 비로그인도 쓰는 공개 기능이라 권한 확인이 없다. 실패하면 빈 목록을 줘서 검색창은 그대로 쓸 수 있게 한다.
+ */
+export async function loadAutocomplete(q: string): Promise<AutocompleteSuggestion[]> {
+  if (typeof q !== "string") return [];
+  const query = q.trim();
+  if (!query || query.length > 50) return [];
+  try {
+    return await getAutocomplete(query);
+  } catch {
+    return [];
+  }
 }
 
 export async function markNotificationsRead(ids: number[]) {

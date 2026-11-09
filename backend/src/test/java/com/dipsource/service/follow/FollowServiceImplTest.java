@@ -14,6 +14,7 @@ import com.dipsource.dto.user.UserSummaryResponse;
 import com.dipsource.entity.user.enums.UserStatus;
 import com.dipsource.global.exception.BusinessException;
 import com.dipsource.global.exception.ErrorCode;
+import com.dipsource.repository.block.BlockRepository;
 import com.dipsource.repository.follow.FollowRepository;
 import com.dipsource.service.follow.impl.FollowServiceImpl;
 import com.dipsource.service.user.UserService;
@@ -39,11 +40,14 @@ class FollowServiceImplTest {
     @Mock
     private UserService userService;
 
+    @Mock
+    private BlockRepository blockRepository;
+
     private FollowServiceImpl service;
 
     @BeforeEach
     void setUp() {
-        service = new FollowServiceImpl(repository, userService);
+        service = new FollowServiceImpl(repository, userService, blockRepository);
     }
 
     @Nested
@@ -66,6 +70,18 @@ class FollowServiceImplTest {
             service.follow(1L, 2L);
 
             verify(repository).insertIgnore(1L, 2L);
+        }
+
+        @Test
+        void blockedRelationIsRejected() {
+            when(userService.isActiveUser(2L)).thenReturn(true);
+            when(blockRepository.existsBetween(1L, 2L)).thenReturn(true);
+
+            assertThatThrownBy(() -> service.follow(1L, 2L))
+                    .isInstanceOf(BusinessException.class)
+                    .extracting(e -> ((BusinessException) e).getErrorCode())
+                    .isEqualTo(ErrorCode.NOT_FOUND);
+            verify(repository, never()).insertIgnore(any(), any());
         }
 
         @Test

@@ -7,6 +7,7 @@ import com.dipsource.entity.user.enums.UserStatus;
 import com.dipsource.global.common.PageResponse;
 import com.dipsource.global.exception.BusinessException;
 import com.dipsource.global.exception.ErrorCode;
+import com.dipsource.repository.block.BlockRepository;
 import com.dipsource.repository.follow.FollowRepository;
 import com.dipsource.service.follow.FollowService;
 import com.dipsource.service.user.UserService;
@@ -36,12 +37,14 @@ public class FollowServiceImpl implements FollowService {
 
     private final FollowRepository followRepository;
     private final UserService userService;
+    private final BlockRepository blockRepository;
 
     @Override
     @Transactional
     public void follow(Long followerId, Long targetId) {
         requireOther(followerId, targetId);
-        if (!userService.isActiveUser(targetId)) {
+        // 차단 여부가 드러나지 않도록 없는 회원과 같은 응답을 준다.
+        if (!userService.isActiveUser(targetId) || blockRepository.existsBetween(followerId, targetId)) {
             throw new BusinessException(ErrorCode.NOT_FOUND, "팔로우할 수 없는 회원이에요.");
         }
         // 동시에 두 번 눌러도 한 줄만 남도록 DB의 중복 무시(ON CONFLICT)에 맡긴다.

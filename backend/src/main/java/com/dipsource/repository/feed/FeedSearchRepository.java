@@ -2,9 +2,13 @@ package com.dipsource.repository.feed;
 
 import com.dipsource.dto.search.SearchCondition;
 import com.dipsource.dto.search.SearchOperator;
+import com.dipsource.dto.search.SearchSignal;
 import com.dipsource.dto.search.SearchSort;
+import com.dipsource.dto.search.SearchType;
 import com.dipsource.entity.feed.Feed;
 import com.dipsource.global.common.LikePattern;
+import java.util.Collection;
+import java.util.List;
 import java.util.Locale;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -26,7 +30,8 @@ public interface FeedSearchRepository extends Repository<Feed, Long> {
                 LikePattern.contains(condition.phrase().toLowerCase(Locale.ROOT)),
                 condition.operator() == SearchOperator.AND,
                 condition.sort() == SearchSort.RELEVANCE,
-                condition.viewerId(),
+                condition.exclusions().hiddenIds(SearchType.FEED),
+                condition.exclusions().blockedIds(),
                 pageable);
     }
 
@@ -43,13 +48,10 @@ public interface FeedSearchRepository extends Repository<Feed, Long> {
                 FROM unnest(CAST(:patterns AS text[])) AS t(k)
             ) m
             WHERE f.status = 'ACTIVE'
-            AND f.deleted_at IS NULL
-            AND (:viewerId IS NULL OR f.user_id NOT IN (
-                SELECT blocked_id FROM blocks WHERE blocker_id = :viewerId
-                UNION
-                SELECT blocker_id FROM blocks WHERE blocked_id = :viewerId
-            ))
-            AND m.matched >= CASE WHEN :matchAll THEN cardinality(CAST(:patterns AS text[])) ELSE 1 END
+              AND f.deleted_at IS NULL
+              AND f.id <> ALL(CAST(:excludedIds AS bigint[]))
+              AND f.user_id <> ALL(CAST(:excludedAuthors AS bigint[]))
+              AND m.matched >= CASE WHEN :matchAll THEN cardinality(CAST(:patterns AS text[])) ELSE 1 END
             ORDER BY CASE WHEN :relevance THEN
                          CASE WHEN lower(f.content) = :phrase THEN 100 ELSE 0 END
                        + CASE WHEN lower(f.content) LIKE :phrasePattern THEN 30 ELSE 0 END
@@ -64,13 +66,10 @@ public interface FeedSearchRepository extends Repository<Feed, Long> {
                 FROM unnest(CAST(:patterns AS text[])) AS t(k)
             ) m
             WHERE f.status = 'ACTIVE'
-            AND f.deleted_at IS NULL
-            AND (:viewerId IS NULL OR f.user_id NOT IN (
-                SELECT blocked_id FROM blocks WHERE blocker_id = :viewerId
-                UNION
-                SELECT blocker_id FROM blocks WHERE blocked_id = :viewerId
-            ))
-            AND m.matched >= CASE WHEN :matchAll THEN cardinality(CAST(:patterns AS text[])) ELSE 1 END
+              AND f.deleted_at IS NULL
+              AND f.id <> ALL(CAST(:excludedIds AS bigint[]))
+              AND f.user_id <> ALL(CAST(:excludedAuthors AS bigint[]))
+              AND m.matched >= CASE WHEN :matchAll THEN cardinality(CAST(:patterns AS text[])) ELSE 1 END
             """)
     Page<Feed> searchByLikePatterns(
             @Param("patterns") String[] patterns,
@@ -78,6 +77,19 @@ public interface FeedSearchRepository extends Repository<Feed, Long> {
             @Param("phrasePattern") String phrasePattern,
             @Param("matchAll") boolean matchAll,
             @Param("relevance") boolean relevance,
-            @Param("viewerId") Long viewerId,
+            @Param("excludedIds") Long[] excludedIds,
+            @Param("excludedAuthors") Long[] excludedAuthors,
             Pageable pageable);
+
+    /** 재정렬 신호. 공개 상태가 아닌 피드는 돌려주지 않아서, 인덱스가 늦어도 여기서 걸러진다. 피드에는 조회수가 없다 */
+    @Query(nativeQuery = true, value = """
+            SELECT f.id AS id, f.user_id AS authorId, f.like_count AS likeCount, 0 AS viewCount,
+                   CAST(extract(epoch FROM (now() - f.created_at)) AS double precision) / 86400 AS ageDays,
+                   (SELECT count(*) FROM follows x WHERE x.following_id = f.user_id) AS followerCount
+            FROM feeds f
+            WHERE f.id IN (:ids) AND f.status = 'ACTIVE' AND f.deleted_at IS NULL
+            """)
+    List<SearchSignal> findSignals(@Param("ids") Collection<Long> ids);
+
+    List<Feed> findByIdIn(Collection<Long> ids);
 }

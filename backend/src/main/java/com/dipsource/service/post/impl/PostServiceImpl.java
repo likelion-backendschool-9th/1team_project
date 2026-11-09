@@ -4,6 +4,8 @@ import com.dipsource.dto.post.PostDetailResponse;
 import com.dipsource.dto.post.PostIdResponse;
 import com.dipsource.dto.post.PostSummaryResponse;
 import com.dipsource.dto.post.WritePostRequest;
+import com.dipsource.dto.search.SearchTargetChangedEvent;
+import com.dipsource.dto.search.SearchType;
 import com.dipsource.dto.user.UserSummaryResponse;
 import com.dipsource.entity.post.Post;
 import com.dipsource.entity.post.PostCategory;
@@ -32,6 +34,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -60,6 +63,7 @@ public class PostServiceImpl implements PostService {
     private final BlogSubscriptionRepository blogSubscriptionRepository;
     private final TagRepository tagRepository;
     private final UserService userService;
+    private final ApplicationEventPublisher eventPublisher;
     private final BlockRepository blockRepository;
 
     @Override
@@ -131,6 +135,8 @@ public class PostServiceImpl implements PostService {
         // 태그는 지우고 다시 붙인다.
         postTagRepository.deleteByPostId(postId);
         attachTags(postRepository.getReferenceById(postId), request.tags());
+        // 태그 삭제는 벌크 쿼리라 검색 색인 동기화에 잡히지 않는다
+        eventPublisher.publishEvent(new SearchTargetChangedEvent(SearchType.POST, postId));
     }
 
     @Override
