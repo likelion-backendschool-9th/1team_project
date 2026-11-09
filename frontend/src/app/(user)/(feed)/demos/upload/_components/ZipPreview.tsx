@@ -25,7 +25,14 @@ export function ZipPreview({ file }: Props) {
 
   async function handleLocal() {
     setView({ kind: "busy" });
-    const entries = await readZip(await file.arrayBuffer());
+    let entries;
+    try {
+      // 선택한 뒤 원본 파일이 지워지거나 바뀌면 읽기가 실패한다
+      entries = await readZip(await file.arrayBuffer());
+    } catch {
+      setView({ kind: "error", message: "파일을 읽지 못했어요. 다시 선택해 주세요." });
+      return;
+    }
     if (!entries) {
       setView({ kind: "needsServer", reason: "브라우저에서 이 zip을 읽지 못했어요." });
       return;

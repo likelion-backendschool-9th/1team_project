@@ -1,0 +1,5 @@
+{
+  "endpoints": [
+    { "method": "GET", "path": "/settings", "status": 200, "dataKey": "settings" }
+  ]
+}

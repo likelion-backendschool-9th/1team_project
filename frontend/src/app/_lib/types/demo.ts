@@ -64,3 +64,20 @@ export type DemoUsage = {
   demoCount: number;
   maxDemos: number;
 };
+
+export type DemoTemplateSummary = { key: string; title: string; description: string; usage: string };
+
+export type DemoTemplate = DemoTemplateSummary & {
+  html: string;
+  css: string;
+  js: string;
+  mockConfig: string;
+  sampleData: string;
+};
+
+export type DemoVersionConfig = {
+  mockConfig?: string;
+  sampleData?: string;
+  /** 코드 편집기로 만든 버전에만 있다. */
+  editor?: { html: string; css?: string; js?: string };
+};

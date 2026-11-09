@@ -25,6 +25,10 @@ public interface DemoVersionRepository extends JpaRepository<DemoVersion, Long> 
     /** 관리 화면에 보여 줄 버전. 최신순 */
     List<DemoVersion> findByDemoIdAndStatusInOrderByIdDesc(Long demoId, Collection<DemoVersionStatus> statuses);
 
+    /** 같은 파일을 함께 쓰는 다른 버전. 가장 오래된 것부터 */
+    List<DemoVersion> findByStoragePrefixAndIdNotAndStatusInOrderByIdAsc(
+            String storagePrefix, Long id, Collection<DemoVersionStatus> statuses);
+
     /** 촬영할 차례가 된 버전 하나 */
     Optional<DemoVersion> findFirstByStatusAndThumbnailStatusAndThumbnailNextAtLessThanEqualOrderByThumbnailNextAtAsc(
             DemoVersionStatus status, DemoThumbnailStatus thumbnailStatus, LocalDateTime now);

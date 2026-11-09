@@ -1,0 +1,6 @@
+{
+  "endpoints": [
+    { "method": "GET", "path": "/tasks", "status": 200, "dataKey": "tasks" },
+    { "method": "POST", "path": "/tasks/move", "status": 200, "response": { "message": "저장했어요 (Mock 응답이라 실제로 저장되지는 않아요)" } }
+  ]
+}

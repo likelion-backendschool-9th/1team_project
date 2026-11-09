@@ -85,19 +85,54 @@ public class DemoVersion extends BaseEntity {
     @Column(name = "thumbnail_error", length = 300)
     private String thumbnailError;
 
+    /** 정적 파일의 용량을 이 버전이 부담하는지. Mock 설정만 바꾼 버전은 파일을 공유하므로 false */
+    @Column(name = "owns_files", nullable = false, columnDefinition = "boolean default true not null")
+    private boolean ownsFiles = true;
+
+    /** Mock API 설정 원문(JSON). 없으면 null */
+    @Column(name = "mock_config", columnDefinition = "text")
+    private String mockConfig;
+
+    /** 샘플 데이터 원문(JSON). 없으면 null */
+    @Column(name = "sample_data", columnDefinition = "text")
+    private String sampleData;
+
+    /** Worker가 읽는 컴파일된 Mock의 R2 키. 없으면 null */
+    @Column(name = "mock_key", length = 200)
+    private String mockKey;
+
+    /** 코드 편집기로 만든 버전의 원본 코드(JSON). ZIP으로 올렸으면 null */
+    @Column(name = "editor_source", columnDefinition = "text")
+    private String editorSource;
+
     @Builder
-    private DemoVersion(Long demoId, int number, String entryPath, int fileCount, long totalBytes, long chargedBytes) {
+    private DemoVersion(Long demoId, int number, String entryPath, int fileCount, long totalBytes, long chargedBytes,
+                        Boolean ownsFiles, String mockConfig, String sampleData, String editorSource) {
         this.demoId = demoId;
         this.number = number;
         this.entryPath = entryPath;
         this.fileCount = fileCount;
         this.totalBytes = totalBytes;
         this.chargedBytes = chargedBytes;
+        this.ownsFiles = ownsFiles == null || ownsFiles;
+        this.mockConfig = mockConfig;
+        this.sampleData = sampleData;
+        this.editorSource = editorSource;
     }
 
     /** id가 정해진 뒤에 경로를 붙인다. */
     public void assignStoragePrefix(String storagePrefix) {
         this.storagePrefix = storagePrefix;
+    }
+
+    public void assignMockKey(String mockKey) {
+        this.mockKey = mockKey;
+    }
+
+    /** 파일을 함께 쓰던 버전이 지워질 때 파일 용량을 넘겨받는다. */
+    public void adoptFiles() {
+        this.ownsFiles = true;
+        this.chargedBytes += this.totalBytes;
     }
 
     public void markReady() {

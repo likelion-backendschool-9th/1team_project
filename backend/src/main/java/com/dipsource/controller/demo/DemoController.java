@@ -2,10 +2,13 @@ package com.dipsource.controller.demo;
 
 import com.dipsource.dto.demo.DemoCreateRequest;
 import com.dipsource.dto.demo.DemoCursorResponse;
+import com.dipsource.dto.demo.DemoEditorSaveRequest;
 import com.dipsource.dto.demo.DemoPreviewResponse;
 import com.dipsource.dto.demo.DemoPublishRequest;
 import com.dipsource.dto.demo.DemoResponse;
 import com.dipsource.dto.demo.DemoUsageResponse;
+import com.dipsource.dto.demo.DemoVersionConfigRequest;
+import com.dipsource.dto.demo.DemoVersionConfigResponse;
 import com.dipsource.dto.demo.DemoVersionResponse;
 import com.dipsource.global.auth.UserPrincipal;
 import com.dipsource.global.common.ApiResponse;
@@ -56,6 +59,8 @@ import org.springframework.web.multipart.MultipartFile;
  * POST   /demos/{demoId}/versions/{versionId}/preview — 버전 미리보기 URL (본인만)
  * POST   /demos/{demoId}/versions/{versionId}/restore — 이전 버전 복구 (본인만)
  * POST   /demos/{demoId}/thumbnail    — 썸네일 직접 올리기 (본인만)
+ * POST   /demos/{demoId}/versions/editor — 코드 편집 결과 저장 (본인만)
+ * GET·POST /demos/{demoId}/versions/{versionId}/config — Mock·샘플 데이터 (본인만)
  */
 @RestController
 @RequestMapping("/demos")
@@ -179,6 +184,36 @@ public class DemoController {
             @RequestBody(required = false) DemoPublishRequest request) {
         Long expected = request == null ? null : request.expectedCurrentVersionId();
         return ResponseEntity.ok(ApiResponse.of(demoService.publish(requireUserId(principal), demoId, versionId, expected)));
+    }
+
+    /** 코드 편집기 내용을 새 버전으로 저장 */
+    @PostMapping("/{demoId}/versions/editor")
+    public ResponseEntity<ApiResponse<DemoVersionResponse>> saveEditor(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @PathVariable Long demoId,
+            @Valid @RequestBody DemoEditorSaveRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.of(versionService.saveEditor(requireUserId(principal), demoId, request)));
+    }
+
+    /** 버전의 Mock·샘플 데이터·편집기 코드 (본인만) */
+    @GetMapping("/{demoId}/versions/{versionId}/config")
+    public ResponseEntity<ApiResponse<DemoVersionConfigResponse>> getConfig(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @PathVariable Long demoId,
+            @PathVariable Long versionId) {
+        return ResponseEntity.ok(ApiResponse.of(versionService.getConfig(requireUserId(principal), demoId, versionId)));
+    }
+
+    /** Mock·샘플 데이터를 바꾼 새 버전을 만든다 */
+    @PostMapping("/{demoId}/versions/{versionId}/config")
+    public ResponseEntity<ApiResponse<DemoVersionResponse>> saveConfig(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @PathVariable Long demoId,
+            @PathVariable Long versionId,
+            @Valid @RequestBody DemoVersionConfigRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.of(versionService.saveConfig(requireUserId(principal), demoId, versionId, request)));
     }
 
     /** 썸네일 직접 올리기 */

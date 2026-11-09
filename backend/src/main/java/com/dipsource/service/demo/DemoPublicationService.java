@@ -116,6 +116,9 @@ public class DemoPublicationService {
         pointer.put("versionId", version.getId());
         pointer.put("storagePrefix", version.getStoragePrefix());
         pointer.put("entryPath", version.getEntryPath());
+        if (version.getMockKey() != null) {
+            pointer.put("mockKey", version.getMockKey());
+        }
         try {
             return objectMapper.writeValueAsBytes(pointer);
         } catch (JsonProcessingException e) {

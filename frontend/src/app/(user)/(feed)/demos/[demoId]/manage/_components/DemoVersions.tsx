@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { ConfirmButton } from "@/app/_components/ui/ConfirmButton";
@@ -73,6 +74,12 @@ export function DemoVersions({ demoId, versions, currentVersionId }: Props) {
                 >
                   미리보기
                 </button>
+                <Link
+                  href={`/demos/studio?demoId=${demoId}&versionId=${version.id}`}
+                  className={`${kit.btnGhost} ${kit.sm}`}
+                >
+                  코드·Mock 편집
+                </Link>
                 {!version.current && (
                   <>
                     <ConfirmButton

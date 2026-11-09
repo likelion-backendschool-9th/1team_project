@@ -9,8 +9,8 @@ const ANCESTOR = "https://dipsource.test";
 const SECRET = "test-signing-secret";
 const NONCE = "abcdefghijklmnop1234";
 
-function signedPath(prefix, expiresInSeconds, file = "index.html", secret = SECRET) {
-  const scope = Buffer.from(JSON.stringify({ p: prefix })).toString("base64url");
+function signedPath(prefix, expiresInSeconds, file = "index.html", secret = SECRET, mockKey = undefined) {
+  const scope = Buffer.from(JSON.stringify(mockKey ? { p: prefix, m: mockKey } : { p: prefix })).toString("base64url");
   const expires = Math.floor(Date.now() / 1000) + expiresInSeconds;
   const signature = createHmac("sha256", secret).update(`${scope}.${expires}`).digest("base64url");
   return `/p/${scope}/${expires}.${signature}/${file}`;
@@ -289,5 +289,125 @@ describe("실행 상태 스크립트", () => {
     assert.match(plain.headers.get("content-type"), /json/);
     const asset = await call(`/demos/1/versions/2/missing.js?dip_nonce=${NONCE}`, { headers: { "Sec-Fetch-Dest": "script" } });
     assert.match(asset.headers.get("content-type"), /json/);
+  });
+});
+
+describe("Mock API", () => {
+  const demo = 7;
+  const version = 70;
+  const mockKey = `demos/${demo}/versions/${version}/mock.json`;
+  const base = `/demos/${demo}/versions/${version}/__mock`;
+  const endpoints = [
+    { method: "GET", path: "/products", status: 200, response: [{ id: 1, name: "Keyboard" }] },
+    { method: "POST", path: "/orders", status: 201, response: { id: 10 } },
+    { method: "PUT", path: "/orders", status: 200, response: { updated: true } },
+    { method: "DELETE", path: "/orders/1", status: 204 },
+    { method: "GET", path: "/broken", status: 500, response: { error: "fail" } },
+  ];
+
+  before(async () => {
+    await bucket.put(`demos/${demo}/publication.json`, JSON.stringify({
+      versionId: version, storagePrefix: `demos/${demo}/versions/${version}`, entryPath: "index.html", mockKey,
+    }));
+    await bucket.put(mockKey, JSON.stringify({ endpoints }));
+    await bucket.put(`demos/${demo}/versions/${version}/files/index.html`, "<p>");
+    await bucket.put(`demos/${demo}/versions/69/mock.json`, JSON.stringify({ endpoints }));
+  });
+
+  it("GET 응답", async () => {
+    const res = await call(`${base}/products`);
+    assert.equal(res.status, 200);
+    assert.match(res.headers.get("content-type"), /json/);
+    assert.deepEqual(await res.json(), [{ id: 1, name: "Keyboard" }]);
+  });
+
+  it("POST 응답과 등록한 상태 코드", async () => {
+    const res = await call(`${base}/orders`, { method: "POST", body: "{}", headers: { "Content-Type": "application/json" } });
+    assert.equal(res.status, 201);
+    assert.deepEqual(await res.json(), { id: 10 });
+  });
+
+  it("204는 본문이 없다", async () => {
+    const res = await call(`${base}/orders/1`, { method: "DELETE" });
+    assert.equal(res.status, 204);
+    assert.equal(await res.text(), "");
+  });
+
+  it("등록한 오류 상태를 그대로 준다", async () => {
+    assert.equal((await call(`${base}/broken`)).status, 500);
+  });
+
+  it("등록하지 않은 경로는 404, 메서드만 다르면 405", async () => {
+    assert.equal((await call(`${base}/users`)).status, 404);
+    const res = await call(`${base}/products`, { method: "POST" });
+    assert.equal(res.status, 405);
+    assert.equal(res.headers.get("allow"), "GET");
+  });
+
+  it("쓰기 요청이 R2를 바꾸지 않는다", async () => {
+    const before = await bucket.list(`demos/${demo}/`);
+    await call(`${base}/orders`, { method: "POST", body: JSON.stringify({ evil: 1 }) });
+    await call(`${base}/orders`, { method: "PUT", body: "x" });
+    await call(`${base}/orders/1`, { method: "DELETE" });
+    assert.deepEqual(await bucket.list(`demos/${demo}/`), before);
+    assert.deepEqual(await (await call(`${base}/products`)).json(), [{ id: 1, name: "Keyboard" }]);
+  });
+
+  it("opaque origin의 preflight를 허용한다 (등록한 메서드만)", async () => {
+    const res = await call(`${base}/orders`, {
+      method: "OPTIONS",
+      headers: { Origin: "null", "Access-Control-Request-Method": "POST", "Access-Control-Request-Headers": "content-type" },
+    });
+    assert.equal(res.status, 204);
+    assert.equal(res.headers.get("access-control-allow-origin"), "*");
+    assert.equal(res.headers.get("access-control-allow-methods"), "POST, PUT");
+    assert.equal(res.headers.get("access-control-allow-credentials"), null);
+
+    const denied = await call(`${base}/orders`, { method: "OPTIONS", headers: { "Access-Control-Request-Method": "PATCH" } });
+    assert.equal(denied.status, 405);
+    const unknown = await call(`${base}/nope`, { method: "OPTIONS", headers: { "Access-Control-Request-Method": "GET" } });
+    assert.equal(unknown.status, 404);
+  });
+
+  it("응답에 CORS를 열되 쿠키를 설정하지 않는다", async () => {
+    const res = await call(`${base}/products`, { headers: { Origin: "null", Cookie: "secret=1" } });
+    assert.equal(res.headers.get("access-control-allow-origin"), "*");
+    assert.equal(res.headers.get("set-cookie"), null);
+    assert.doesNotMatch(await res.text(), /secret/);
+  });
+
+  it("공개되지 않은 버전의 Mock은 404", async () => {
+    assert.equal((await call(`/demos/${demo}/versions/69/__mock/products`)).status, 404);
+    assert.equal((await call("/demos/9/versions/3/__mock/products")).status, 404);
+  });
+
+  it("Mock이 없는 공개 버전은 404", async () => {
+    assert.equal((await call("/demos/1/versions/2/__mock/products")).status, 404);
+  });
+
+  it("정적 경로의 쓰기 금지는 그대로다", async () => {
+    assert.equal((await call(`/demos/${demo}/versions/${version}/index.html`, { method: "POST" })).status, 405);
+    assert.equal((await call(`/demos/${demo}/versions/${version}/index.html`, { method: "OPTIONS" })).status, 405);
+  });
+
+  it("__mock 아래로 정적 파일을 읽을 수 없다", async () => {
+    assert.equal((await call(`${base}/../mock.json`)).status, 404);
+    assert.equal((await call(`/demos/${demo}/versions/${version}/mock.json`)).status, 404);
+  });
+
+  it("서명 경로의 Mock은 grant의 키만 읽는다", async () => {
+    const file = signedPath(`demos/${demo}/versions/${version}`, 60, "__mock/products", SECRET, mockKey);
+    assert.deepEqual(await (await call(file)).json(), [{ id: 1, name: "Keyboard" }]);
+    const noMock = signedPath(`demos/${demo}/versions/${version}`, 60, "__mock/products");
+    assert.equal((await call(noMock)).status, 404);
+    const expired = signedPath(`demos/${demo}/versions/${version}`, -1, "__mock/products", SECRET, mockKey);
+    assert.equal((await call(expired)).status, 403);
+    const badKey = signedPath(`demos/${demo}/versions/${version}`, 60, "__mock/products", SECRET, "demos/1/publication.json");
+    assert.equal((await call(badKey)).status, 403);
+  });
+
+  it("CSP가 Mock 경로로의 fetch를 허용하는 범위를 넓히지 않는다", async () => {
+    const csp = (await call(`/demos/${demo}/versions/${version}/index.html`)).headers.get("content-security-policy");
+    assert.match(csp, new RegExp(`connect-src http://[^ ]+/demos/${demo}/versions/${version}/(;|$)`));
   });
 });

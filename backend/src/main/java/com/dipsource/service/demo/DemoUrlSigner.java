@@ -1,5 +1,6 @@
 package com.dipsource.service.demo;
 
+import com.dipsource.entity.demo.DemoVersion;
 import com.dipsource.global.config.DemoProperties;
 import com.dipsource.global.exception.BusinessException;
 import com.dipsource.global.exception.ErrorCode;
@@ -25,6 +26,13 @@ public class DemoUrlSigner {
 
     private final DemoProperties properties;
     private final ObjectMapper objectMapper;
+
+    /** 버전의 파일과 Mock을 읽을 수 있는 권한 */
+    public Map<String, String> grantOf(DemoVersion version) {
+        return version.getMockKey() == null
+                ? Map.of("p", version.getStoragePrefix())
+                : Map.of("p", version.getStoragePrefix(), "m", version.getMockKey());
+    }
 
     /**
      * @param grant     Worker에 넘길 권한. p: 파일 경로 접두사

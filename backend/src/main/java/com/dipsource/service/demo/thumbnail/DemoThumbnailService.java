@@ -21,7 +21,6 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.Iterator;
-import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import javax.imageio.ImageIO;
@@ -84,7 +83,7 @@ public class DemoThumbnailService {
         }
         String url;
         try {
-            String signed = urlSigner.sign(Map.of("p", version.getStoragePrefix()), version.getEntryPath(),
+            String signed = urlSigner.sign(urlSigner.grantOf(version), version.getEntryPath(),
                     Instant.now().plus(CAPTURE_URL_TTL));
             byte[] image = resize(client.capture(signed));
             url = store(version.getDemoId(), image);

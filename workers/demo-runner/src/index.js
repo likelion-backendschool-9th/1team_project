@@ -1,6 +1,9 @@
 // 찍먹 데모 실행 Worker.
 // 비공개 R2의 정적 파일을 내려 주기만 한다. 사용자 코드는 서버에서 실행하지 않고 브라우저의 sandbox 안에서만 돈다.
 
+const MOCK_ROUTE = /^\/demos\/(\d{1,18})\/versions\/(\d{1,18})\/__mock(\/.*)$/;
+const SIGNED_MOCK_PATH = /^__mock(\/.*)$/;
+const MOCK_KEY = /^demos\/\d{1,18}\/versions\/\d{1,18}\/mock\.json$/;
 const DEMO_ROUTE = /^\/demos\/(\d{1,18})\/versions\/(\d{1,18})\/(.*)$/;
 const SIGNED_ROUTE = /^\/p\/([A-Za-z0-9_-]{1,512})\/(\d{1,12})\.([A-Za-z0-9_-]{43})\/(.*)$/;
 const THUMBNAIL_ROUTE = /^\/thumbnails\/(\d{1,18})\/([0-9a-f-]{36}\.jpg)$/;
@@ -45,6 +48,12 @@ export default {
 async function route(request, env) {
   const url = new URL(request.url);
   const nonce = readNonce(url);
+
+  // Mock 경로만 쓰기 메서드를 받는다. 정적 파일 경로의 GET/HEAD 제한은 그대로다
+  const mock = MOCK_ROUTE.exec(url.pathname);
+  if (mock) return serveMockFromPublication(request, env, mock[1], mock[2], mock[3]);
+  const signedMock = signedMockRequest(url);
+  if (signedMock) return serveSignedMock(request, env, signedMock);
 
   if (request.method !== "GET" && request.method !== "HEAD") {
     return errorResponse(405, "method_not_allowed", { Allow: "GET, HEAD" });
@@ -99,7 +108,8 @@ async function serveSigned(request, env, url, [, scope, expires, signature, rawP
 function parseGrant(scope) {
   try {
     const grant = JSON.parse(atob(scope.replaceAll("-", "+").replaceAll("_", "/")));
-    return SIGNED_PREFIX.test(grant.p) ? grant : null;
+    if (!SIGNED_PREFIX.test(grant.p) || (grant.m !== undefined && !MOCK_KEY.test(grant.m))) return null;
+    return grant;
   } catch {
     return null;
   }
@@ -133,6 +143,80 @@ async function serveThumbnail(request, env, demoId, name) {
     "Cache-Control": "public, max-age=86400",
   });
   return new Response(request.method === "HEAD" ? null : object.body, { headers });
+}
+
+function signedMockRequest(url) {
+  const signed = SIGNED_ROUTE.exec(url.pathname);
+  if (!signed) return null;
+  const path = SIGNED_MOCK_PATH.exec(signed[4]);
+  return path ? { scope: signed[1], expires: signed[2], signature: signed[3], path: path[1] } : null;
+}
+
+async function serveSignedMock(request, env, { scope, expires, signature, path }) {
+  const valid = (await verifySignature(env, `${scope}.${expires}`, signature)) && Number(expires) * 1000 > Date.now();
+  const grant = valid ? parseGrant(scope) : null;
+  if (!grant) return mockError(403, "invalid_signature");
+  if (!grant.m) return mockError(404, "not_found");
+  return serveMock(request, env, grant.m, path);
+}
+
+async function serveMockFromPublication(request, env, demoId, versionId, path) {
+  const publication = await readPublication(env, demoId);
+  if (!publication || String(publication.versionId) !== versionId || !publication.mockKey) {
+    return mockError(404, "not_found");
+  }
+  return serveMock(request, env, publication.mockKey, path);
+}
+
+/**
+ * 등록된 정적 응답만 돌려준다. 요청 본문은 읽지 않고, R2·DB에 아무것도 쓰지 않으며, 사용자 코드를 실행하지 않는다.
+ * 호출자는 sandbox의 opaque origin이라 쿠키 없이 CORS만 연다.
+ */
+async function serveMock(request, env, mockKey, path) {
+  if (!MOCK_KEY.test(mockKey)) return mockError(404, "not_found");
+  const object = await env.DEMO_BUCKET.get(mockKey);
+  if (!object) return mockError(404, "not_found");
+  const { endpoints } = await object.json();
+
+  const samePath = endpoints.filter((endpoint) => endpoint.path === path);
+  if (samePath.length === 0) return mockError(404, "not_found");
+  const methods = samePath.map((endpoint) => endpoint.method);
+
+  if (request.method === "OPTIONS") {
+    if (!methods.includes(request.headers.get("Access-Control-Request-Method"))) {
+      return mockError(405, "method_not_allowed");
+    }
+    return new Response(null, {
+      status: 204,
+      headers: {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": methods.join(", "),
+        "Access-Control-Allow-Headers": "content-type, accept",
+        "Access-Control-Max-Age": "600",
+      },
+    });
+  }
+
+  const endpoint = samePath.find((item) => item.method === request.method);
+  if (!endpoint) return mockError(405, "method_not_allowed", { Allow: methods.join(", ") });
+
+  const body = endpoint.status === 204 ? null : JSON.stringify(endpoint.response ?? null);
+  return new Response(body, { status: endpoint.status, headers: mockHeaders() });
+}
+
+function mockHeaders(extra = {}) {
+  return {
+    "Content-Type": "application/json; charset=utf-8",
+    "X-Content-Type-Options": "nosniff",
+    "Content-Security-Policy": "sandbox; default-src 'none'",
+    "Access-Control-Allow-Origin": "*",
+    "Cache-Control": "no-store",
+    ...extra,
+  };
+}
+
+function mockError(status, code, extra = {}) {
+  return new Response(JSON.stringify({ error: code }), { status, headers: mockHeaders(extra) });
 }
 
 async function readPublication(env, demoId) {

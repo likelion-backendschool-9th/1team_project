@@ -342,7 +342,7 @@ public class DemoZipValidator {
     }
 
     /** Vite·CRA 기본 빌드는 /assets/... 로 시작해서 하위 경로에서 실행하면 파일을 못 찾는다. 공개 전에 알려 준다. */
-    private void checkEntryHtml(DemoArchive archive) throws IOException {
+    public void checkEntryHtml(DemoArchive archive) throws IOException {
         DemoArchive.File entry = archive.files().stream()
                 .filter(file -> file.path().equals(archive.entryPath()))
                 .findFirst().orElseThrow();

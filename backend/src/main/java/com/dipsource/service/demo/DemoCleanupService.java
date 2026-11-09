@@ -9,6 +9,7 @@ import com.dipsource.repository.demo.DemoVersionRepository;
 import com.dipsource.service.demo.storage.DemoStorage;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
@@ -27,6 +28,8 @@ public class DemoCleanupService {
 
     private static final int BATCH_SIZE = 50;
     private static final long STUCK_UPLOAD_HOURS = 1;
+    private static final Set<DemoVersionStatus> FILE_USING_STATUSES =
+            Set.of(DemoVersionStatus.UPLOADING, DemoVersionStatus.READY, DemoVersionStatus.DELETING);
 
     private final DemoVersionRepository versionRepository;
     private final DemoPreviewRepository previewRepository;
@@ -46,7 +49,12 @@ public class DemoCleanupService {
 
     private void purge(DemoVersion target) {
         try {
-            storage.deletePrefix(target.getStoragePrefix() + "/");
+            if (target.getMockKey() != null) {
+                storage.delete(target.getMockKey());
+            }
+            if (sharers(target).isEmpty()) {
+                storage.deletePrefix(target.getStoragePrefix() + "/");
+            }
             demoRepository.findById(target.getDemoId())
                     .filter(demo -> demo.getDeletedAt() != null)
                     .ifPresent(demo -> storage.deletePrefix("demos/" + demo.getId() + "/thumbnails/"));
@@ -62,13 +70,25 @@ public class DemoCleanupService {
     private void releaseAndMarkDeleted(DemoVersion version) {
         Long ownerId = demoRepository.findById(version.getDemoId()).orElseThrow().getUserId();
         DemoVersionStatus before = version.getStatus();
+        long released = version.getChargedBytes();
+        // 파일을 함께 쓰는 버전이 남아 있으면 파일 용량은 그 버전으로 넘긴다
+        List<DemoVersion> sharers = sharers(version);
+        if (version.isOwnsFiles() && !sharers.isEmpty()) {
+            sharers.get(0).adoptFiles();
+            released -= version.getTotalBytes();
+        }
         // 용량 UPDATE가 영속성 컨텍스트를 비우므로 상태를 먼저 바꾼다
         version.markDeleted();
         if (before == DemoVersionStatus.UPLOADING) {
-            quotaService.releaseReservedBytes(ownerId, version.getChargedBytes());
+            quotaService.releaseReservedBytes(ownerId, released);
         } else if (before == DemoVersionStatus.READY || before == DemoVersionStatus.DELETING) {
-            quotaService.releaseUsedBytes(ownerId, version.getChargedBytes());
+            quotaService.releaseUsedBytes(ownerId, released);
         }
+    }
+
+    private List<DemoVersion> sharers(DemoVersion version) {
+        return versionRepository.findByStoragePrefixAndIdNotAndStatusInOrderByIdAsc(
+                version.getStoragePrefix(), version.getId(), FILE_USING_STATUSES);
     }
 
     private void purgePreview(DemoPreview preview) {

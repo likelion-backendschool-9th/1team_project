@@ -1,7 +1,16 @@
 import "server-only";
 import { cache } from "react";
 import { ApiRequestError, apiFetch, hasBackend, type ApiResponse } from "@/app/_lib/api/client";
-import type { DemoComment, DemoDetail, DemoSort, DemoUsage, DemoVersion } from "@/app/_lib/types/demo";
+import type {
+  DemoComment,
+  DemoDetail,
+  DemoSort,
+  DemoTemplate,
+  DemoTemplateSummary,
+  DemoUsage,
+  DemoVersion,
+  DemoVersionConfig,
+} from "@/app/_lib/types/demo";
 import { createMockDemoComments, mockDemoTags, mockDemos } from "./mock";
 
 // 커서 페이지네이션 응답. 데모는 백엔드가 이미 있으므로 MOCK_EXCEPT_DM이어도 실서버를 쓴다.
@@ -90,4 +99,32 @@ export async function getDemoUsage(): Promise<DemoUsage | null> {
   if (!hasBackend) return null;
   const { data } = await apiFetch<ApiResponse<DemoUsage>>("/api/v1/demos/usage");
   return data;
+}
+
+export async function getDemoTemplates(): Promise<DemoTemplateSummary[]> {
+  if (!hasBackend) return [];
+  const { data } = await apiFetch<ApiResponse<DemoTemplateSummary[]>>("/api/v1/demo-templates");
+  return data;
+}
+
+export async function getDemoTemplate(key: string): Promise<DemoTemplate | null> {
+  if (!hasBackend) return null;
+  try {
+    const { data } = await apiFetch<ApiResponse<DemoTemplate>>(`/api/v1/demo-templates/${encodeURIComponent(key)}`);
+    return data;
+  } catch (error) {
+    if (error instanceof ApiRequestError && error.status === 404) return null;
+    throw error;
+  }
+}
+
+export async function getVersionConfig(demoId: number, versionId: number): Promise<DemoVersionConfig | null> {
+  if (!hasBackend) return null;
+  try {
+    const { data } = await apiFetch<ApiResponse<DemoVersionConfig>>(`/api/v1/demos/${demoId}/versions/${versionId}/config`);
+    return data;
+  } catch (error) {
+    if (error instanceof ApiRequestError && (error.status === 404 || error.status === 403)) return null;
+    throw error;
+  }
 }
