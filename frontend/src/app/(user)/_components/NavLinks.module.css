@@ -28,6 +28,13 @@
   background: var(--accent-soft);
 }
 
+/* 오른쪽 사이드가 옆에 있는 넓은 화면에서는 숨긴다. (프로필 카드에 같은 바로가기가 있다) */
+@media (min-width: 1101px) {
+  .narrowOnly {
+    display: none;
+  }
+}
+
 
 
 @media (max-width: 760px) {
