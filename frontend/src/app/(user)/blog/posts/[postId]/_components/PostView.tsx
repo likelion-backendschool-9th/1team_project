@@ -29,6 +29,13 @@ import { PostActions } from "../../../_components/PostActions";
 import { PostCommentLoadMore } from "./PostCommentLoadMore";
 import styles from "./Post.module.css";
 
+
+/** 본문 첫 줄이 글 제목과 같은 "# 제목"이면 위 제목과 두 번 보이지 않게 뺀다. */
+function withoutTitleHeading(content: string, title: string) {
+  const match = content.match(/^\s*#\s+(.+?)\s*(?:\r?\n|$)/);
+  return match && match[1].trim() === title.trim() ? content.slice(match[0].length) : content;
+}
+
 type Props = {
   params: Promise<{ postId: string }>;
 };
@@ -101,7 +108,7 @@ export async function PostView({ params }: Props) {
         </header>
 
         <div className={locked ? styles.lockedBody : undefined}>
-          <Markdown source={post.content} limit={locked ? 3 : undefined} />
+          <Markdown source={withoutTitleHeading(post.content, post.title)} limit={locked ? 3 : undefined} />
         </div>
 
         {locked && (

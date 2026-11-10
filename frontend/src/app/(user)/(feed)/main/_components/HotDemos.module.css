@@ -109,6 +109,7 @@
 }
 
 .card {
+  position: relative;
   scroll-snap-align: start;
   overflow: hidden;
   border-radius: var(--radius-card);

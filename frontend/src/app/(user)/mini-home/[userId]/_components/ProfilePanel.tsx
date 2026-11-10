@@ -53,11 +53,15 @@ export function ProfilePanel({ profile, languages, contributions, repos }: Props
       {profile.quote && <blockquote className={styles.quote}>{profile.quote}</blockquote>}
 
       <h3 className={styles.label}>STACK TAGS</h3>
-      <ul className={styles.tags}>
-        {profile.stackTags.map((tag) => (
-          <li key={tag}>#{tag}</li>
-        ))}
-      </ul>
+      {profile.stackTags.length === 0 ? (
+        <p className={styles.emptyNote}>아직 등록한 기술 스택이 없어요.</p>
+      ) : (
+        <ul className={styles.tags}>
+          {profile.stackTags.map((tag) => (
+            <li key={tag}>#{tag}</li>
+          ))}
+        </ul>
+      )}
 
       {top && (
         <>
@@ -89,32 +93,41 @@ export function ProfilePanel({ profile, languages, contributions, repos }: Props
           {formatCount(contributions.totalCommits)} COMMITS
         </span>
       </div>
-      <div
-        className={styles.grass}
-        role="img"
-        aria-label={`최근 ${GRASS_WEEKS}주 활동, 총 ${contributions.totalCommits}커밋`}
-      >
-        {toGrassCells(contributions.days).map((day, index) =>
-          day ? (
-            <span key={day.date} className={styles[`level${day.level}`]} title={day.date} />
-          ) : (
-            <span key={`empty-${index}`} className={styles.grassEmpty} />
-          ),
-        )}
-      </div>
+      {contributions.days.length === 0 ? (
+        // GitHub 계정이 없거나 활동을 못 불러오면 빈 칸 대신 안내만 보여 준다.
+        <p className={styles.emptyNote}>GitHub 활동이 아직 없어요. GitHub으로 로그인하면 잔디가 보여요.</p>
+      ) : (
+        <div
+          className={styles.grass}
+          role="img"
+          aria-label={`최근 ${GRASS_WEEKS}주 활동, 총 ${contributions.totalCommits}커밋`}
+        >
+          {toGrassCells(contributions.days).map((day, index) =>
+            day ? (
+              <span key={day.date} className={styles[`level${day.level}`]} title={day.date} />
+            ) : (
+              <span key={`empty-${index}`} className={styles.grassEmpty} />
+            ),
+          )}
+        </div>
+      )}
 
-      <h3 className={`${styles.rowLabel} ${styles.repoLabel}`}>대표 레포지토리</h3>
-      <ul className={styles.repos}>
-        {repos.map((repo) => (
-          <li key={repo.name}>
-            <span className={styles.repoName}>{repo.name}</span>
-            <span className={styles.stars}>
-              <span aria-hidden="true">★</span>
-              <span className="sr-only">스타</span> {formatCount(repo.stars)}
-            </span>
-          </li>
-        ))}
-      </ul>
+      {repos.length > 0 && (
+        <>
+          <h3 className={`${styles.rowLabel} ${styles.repoLabel}`}>대표 레포지토리</h3>
+          <ul className={styles.repos}>
+            {repos.map((repo) => (
+              <li key={repo.name}>
+                <span className={styles.repoName}>{repo.name}</span>
+                <span className={styles.stars}>
+                  <span aria-hidden="true">★</span>
+                  <span className="sr-only">스타</span> {formatCount(repo.stars)}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
     </section>
   );
 }

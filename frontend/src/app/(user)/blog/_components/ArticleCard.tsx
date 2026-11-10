@@ -48,7 +48,10 @@ export function ArticleCard({ post, now, loggedIn }: Props) {
       <h3 id={`post-${post.id}`} className={styles.title}>
         <Link href={`/blog/posts/${post.id}`}>{post.title}</Link>
       </h3>
-      <p className={styles.excerpt}>{post.excerpt}</p>
+      {/* 요약이 제목으로 시작하면(본문 첫 줄이 제목) 제목을 빼고 보여 준다 */}
+      <p className={styles.excerpt}>
+        {post.excerpt.startsWith(post.title) ? post.excerpt.slice(post.title.length).trimStart() : post.excerpt}
+      </p>
 
       {demo && (
         <div className={styles.source}>

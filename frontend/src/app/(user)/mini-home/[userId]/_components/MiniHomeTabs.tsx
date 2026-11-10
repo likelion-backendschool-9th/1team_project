@@ -17,7 +17,7 @@ export function MiniHomeTabs({ userId, myId }: Props) {
   const tabs = [
     { href: base, label: "홈" },
     { href: `${base}/demos`, label: "데모" },
-    { href: `/blog/${userId}`, label: "블로그" },
+    { href: `${base}/blog`, label: "블로그" },
     { href: `${base}/guestbook`, label: "방명록" },
     ...(isOwner ? [{ href: `${base}/edit`, label: "스킨" }] : []),
   ];

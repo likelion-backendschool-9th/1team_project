@@ -4,7 +4,7 @@ import { MiniHomeHome } from "./_components/MiniHomeHome";
 
 export const metadata: Metadata = {
   title: "미니홈피",
-  description: "개발자의 대표 데모, 블로그 글, 일촌평을 한곳에서 둘러보세요.",
+  description: "개발자의 대표 데모, 블로그 글, 방명록을 한곳에서 둘러보세요.",
 };
 
 export default function MiniHomePage({ params }: PageProps<"/mini-home/[userId]">) {

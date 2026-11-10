@@ -1,7 +1,7 @@
 :root {
-  --shell-max: 1760px;
-  --aside-left: 260px;
-  --aside-right: 300px;
+  --shell-max: 1920px;
+  --aside-left: clamp(260px, 17vw, 300px);
+  --aside-right: clamp(260px, 17vw, 300px);
   --bg: #fbf8f3;
   --surface: #ffffff;
   --surface-muted: #f3f1ed;
@@ -30,6 +30,8 @@
 
 html {
   height: 100%;
+  /* 페이지마다 세로 스크롤바가 생겼다 없어지며 화면이 좌우로 밀리지 않도록 자리를 항상 비워 둔다. */
+  scrollbar-gutter: stable;
 }
 
 body {

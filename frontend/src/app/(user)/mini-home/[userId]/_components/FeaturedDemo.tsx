@@ -37,7 +37,7 @@ export function FeaturedDemo({ demo, variant, postId, comments, me, now, isOwner
           <span className={styles.live} aria-hidden="true" />
           대표 데모
         </h2>
-        <span className={styles.hint}>브라우저 내 직접 인터랙션 지원</span>
+        {demo && <span className={styles.hint}>브라우저 안에서 바로 체험할 수 있어요</span>}
       </div>
 
       {demo ? (
@@ -55,7 +55,8 @@ export function FeaturedDemo({ demo, variant, postId, comments, me, now, isOwner
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={demo.thumbnail} alt="" className={`${styles.canvas} ${styles.mascot}`} />
                   ) : (
-                    <DemoArt variant={variant} caption={demo.engine} className={styles.canvas} />
+                    // 대표 데모는 왼쪽 위에 제목 배지가 따로 있어 실행 환경 글자를 겹쳐 그리지 않는다
+                    <DemoArt variant={variant} caption="" className={styles.canvas} />
                   )}
                   <span className={styles.badge}>
                     <span className={styles.badgeDot} aria-hidden="true" />
@@ -108,7 +109,8 @@ export function FeaturedDemo({ demo, variant, postId, comments, me, now, isOwner
                   </span>
                 )}
               </div>
-              <p className={styles.rule}>업로드 규격: zip · html/css/js 단일 구동 지원</p>
+              {/* 올리는 사람에게만 필요한 안내라 내 홈피에서만 보여 준다 */}
+              {isOwner && <p className={styles.rule}>업로드 규격: zip · html/css/js 단일 구동 지원</p>}
             </>
           }
         />
