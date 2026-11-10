@@ -20,7 +20,13 @@ export function DemoArt({ caption, className = "", thumbnail }: Props) {
 
   return (
     <div className={`${styles.art} ${styles.glass} ${className}`}>
-      {caption && <span className={styles.pill}>{caption}</span>}
+      {caption ? (
+        <span className={styles.pill}>{caption}</span>
+      ) : (
+        <span className={styles.glyph} aria-hidden="true">
+          {"</>"}
+        </span>
+      )}
     </div>
   );
 }

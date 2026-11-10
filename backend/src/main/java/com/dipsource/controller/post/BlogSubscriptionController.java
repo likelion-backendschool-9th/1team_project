@@ -2,6 +2,7 @@ package com.dipsource.controller.post;
 
 import com.dipsource.dto.post.BlogSubscriptionInfoResponse;
 import com.dipsource.dto.post.CancelSubscriptionRequest;
+import com.dipsource.dto.post.ChangeSubscriptionPriceRequest;
 import com.dipsource.dto.post.MySubscriptionResponse;
 import com.dipsource.dto.post.SubscribeRequest;
 import com.dipsource.global.auth.UserPrincipal;
@@ -9,6 +10,7 @@ import com.dipsource.global.common.ApiResponse;
 import com.dipsource.global.exception.BusinessException;
 import com.dipsource.global.exception.ErrorCode;
 import com.dipsource.service.post.BlogSubscriptionService;
+import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -17,6 +19,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -69,6 +72,16 @@ public class BlogSubscriptionController {
     ) {
         Long viewerId = principal == null ? null : principal.getUserId();
         return ApiResponse.of(blogSubscriptionService.getInfo(userId, viewerId));
+    }
+
+    /** 내 블로그 월 구독료(원) 변경. 0이면 구독을 받지 않는다 */
+    @PutMapping("/users/me/subscription")
+    public ResponseEntity<Void> changePrice(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @Valid @RequestBody ChangeSubscriptionPriceRequest request
+    ) {
+        blogSubscriptionService.changePrice(requireUserId(principal), request.price());
+        return ResponseEntity.noContent().build();
     }
 
     private static void rejectPlus(String plan) {

@@ -34,7 +34,7 @@ function DemoCard({ demo }: { demo: DemoSummary }) {
             {demo.likeCount}
           </span>
         </p>
-        <Link href={`/demos/${demo.id}`} className={styles.play}>
+        <Link href={`/mini-home/${demo.author.id}/demos/${demo.id}`} className={styles.play}>
           찍먹하기
           <ArrowRightIcon />
         </Link>

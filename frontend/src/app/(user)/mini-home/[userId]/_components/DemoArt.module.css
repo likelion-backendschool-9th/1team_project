@@ -13,8 +13,22 @@
 }
 
 .glass {
-  border: 1px solid #f3e6cf;
-  background: linear-gradient(135deg, #fffaf0, #fde9c9);
+  border: 1px solid #e1e5ec;
+  background: linear-gradient(135deg, #ffffff, #eef0f5);
+}
+
+/* 대표 데모 칸(.canvas, display:block)에 들어가도 가운데 정렬이 유지되게 한다. */
+.art.glass {
+  display: flex;
+}
+
+/* 썸네일이 없을 때 가운데 코드 글리프 (피드 썸네일과 같은 표시) */
+.glyph {
+  user-select: none;
+  color: rgb(90 100 125 / 30%);
+  font-family: ui-monospace, "SFMono-Regular", Menlo, monospace;
+  font-size: 44px;
+  font-weight: 700;
 }
 
 .bars {

@@ -2,6 +2,7 @@ package com.dipsource.service.dm.impl;
 
 import com.dipsource.dto.dm.DmMessageItemResponse;
 import com.dipsource.dto.dm.DmMessageResponse;
+import com.dipsource.dto.dm.DmReadResponse;
 import com.dipsource.dto.dm.DmRoomResponse;
 import com.dipsource.dto.dm.DmSendRequest;
 import com.dipsource.dto.user.UserSummaryResponse;
@@ -11,6 +12,7 @@ import com.dipsource.entity.dm.DmRoomMember;
 import com.dipsource.global.common.PageResponse;
 import com.dipsource.global.exception.BusinessException;
 import com.dipsource.global.exception.ErrorCode;
+import com.dipsource.global.websocket.UserMessageSender;
 import com.dipsource.repository.block.BlockRepository;
 import com.dipsource.repository.dm.DmMessageRepository;
 import com.dipsource.repository.dm.DmRoomMemberRepository;
@@ -46,6 +48,7 @@ public class DmServiceImpl implements DmService {
     private final DmMessageRepository dmMessageRepository;
     private final UserService userService;
     private final BlockRepository blockRepository;
+    private final UserMessageSender userMessageSender;
 
     @Override
     @Transactional
@@ -81,7 +84,8 @@ public class DmServiceImpl implements DmService {
         }
         userService.markActive(senderId);
 
-        return DmMessageResponse.of(message, receiverId);
+        UserSummaryResponse sender = userService.getSummaries(List.of(senderId)).get(senderId);
+        return DmMessageResponse.of(message, sender, receiverId);
     }
 
     @Override
@@ -163,12 +167,38 @@ public class DmServiceImpl implements DmService {
 
         // 대화 내역을 열었으니 가장 최근 메시지까지 읽은 것으로 표시한다.
         if (me != null) {
-            DmRoomMember reader = me;
-            dmMessageRepository.findFirstByRoomIdAndDeletedAtIsNullOrderByIdDesc(roomId)
-                    .ifPresent(latest -> reader.read(latest.getId()));
+            readUpToLatest(me, partnerId);
         }
 
         return PageResponse.of(page, items);
+    }
+
+    @Override
+    @Transactional
+    public void markRead(Long userId, Long partnerId) {
+        if (partnerId == null || partnerId.equals(userId) || blockRepository.existsBetween(userId, partnerId)) {
+            return;
+        }
+        dmRoomRepository.findSharedRooms(userId, partnerId).stream()
+                .findFirst()
+                .flatMap(room -> dmRoomMemberRepository.findByIdRoomId(room.getId()).stream()
+                        .filter(member -> member.getId().getUserId().equals(userId))
+                        .findFirst())
+                .ifPresent(me -> readUpToLatest(me, partnerId));
+    }
+
+    /** 방의 가장 최근 메시지까지 읽음 처리하고, 새로 읽은 게 있으면 상대 화면의 "1"을 지우도록 알린다. */
+    private void readUpToLatest(DmRoomMember me, Long partnerId) {
+        dmMessageRepository.findFirstByRoomIdAndDeletedAtIsNullOrderByIdDesc(me.getId().getRoomId())
+                .ifPresent(latest -> {
+                    Long before = me.getLastReadMessageId();
+                    if (before != null && before >= latest.getId()) {
+                        return;
+                    }
+                    me.read(latest.getId());
+                    userMessageSender.send(partnerId, UserMessageSender.DM_READ,
+                            new DmReadResponse(me.getId().getUserId(), latest.getId()));
+                });
     }
 
     private Optional<Long> findPartnerId(Long roomId, Long userId) {

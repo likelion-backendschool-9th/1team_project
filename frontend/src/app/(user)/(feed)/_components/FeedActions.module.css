@@ -16,7 +16,7 @@
   padding: 4px 4px;
   border-radius: 10px;
   color: var(--ink-soft);
-  font-size: 14px;
+  font-size: 13px;
   transition: color 0.15s ease;
 }
 
@@ -27,7 +27,7 @@
 .icon {
   position: relative;
   display: inline-flex;
-  font-size: 19px;
+  font-size: 17px;
   transition: transform 0.15s ease;
 }
 

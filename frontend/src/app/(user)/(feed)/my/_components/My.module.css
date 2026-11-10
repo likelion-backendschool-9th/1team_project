@@ -47,8 +47,11 @@
   font-weight: 800;
 }
 
+/* 보유 칩도 다른 통계와 같은 색으로 두고, 아이콘은 라벨 앞에 작게 둔다. */
 .chip {
-  color: var(--accent-ink);
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
 }
 
 .shortcut {
@@ -106,9 +109,17 @@
   justify-content: space-between;
   gap: 16px;
   padding: 28px;
+  border: 1px solid #f7cf66;
   border-radius: var(--radius-card);
-  background: linear-gradient(135deg, #ffd04d, #ffb020);
-  box-shadow: 0 10px 30px rgb(232 135 10 / 25%);
+  /* 쨍한 단색 대신, 밝은 노랑에서 따뜻한 귤빛으로 번지는 그라데이션 + 왼쪽 위 하이라이트 */
+  background:
+    radial-gradient(circle at 12% 0%, rgb(255 255 255 / 55%), transparent 50%),
+    linear-gradient(135deg, #ffe9a8 0%, #ffd45e 55%, #ffbb3a 100%);
+  box-shadow: 0 10px 30px rgb(232 135 10 / 18%);
+}
+
+.balance > p {
+  color: var(--ink-soft);
 }
 
 .balanceValue {

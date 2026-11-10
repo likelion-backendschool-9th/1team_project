@@ -140,7 +140,7 @@ export function FeedComposer({ nickname, myDemos }: Props) {
       className={`${styles.composer} ${stuck ? styles.stuck : ""}`}
     >
       <form action={formAction} className={styles.form}>
-        <Avatar name={nickname} size={48} />
+        <Avatar name={nickname} size={42} />
         <ComposerField
           key={`field-${state.attempt}`}
           defaultValue={state.values.content}

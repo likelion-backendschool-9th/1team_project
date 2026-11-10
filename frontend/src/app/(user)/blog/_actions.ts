@@ -7,7 +7,7 @@ import { runForm } from "@/app/_lib/api/formAction";
 import { mutate } from "@/app/_lib/api/mutate";
 import { readValues, type FormState } from "@/app/_lib/formState";
 import type { PostComment } from "@/app/_lib/types/post";
-import { categories } from "./_lib/query";
+import { categories, PAID_MIN_LENGTH } from "./_lib/query";
 
 const POST_FIELDS = ['title', 'category', 'tags', 'content', 'demoId', 'price'];
 
@@ -27,6 +27,8 @@ function validatePost(formData: FormData) {
     errors.category = '분류를 골라 주세요.';
   if (values.content.length < 20)
     errors.content = '본문을 20자 이상 입력해 주세요.';
+  else if (paid && values.content.length < PAID_MIN_LENGTH)
+    errors.content = `유료 글은 본문을 ${PAID_MIN_LENGTH.toLocaleString()}자 이상 써 주세요. (지금 ${values.content.length.toLocaleString()}자)`;
   const price = Number(values.price);
   if (paid && (!Number.isInteger(price) || price < 1 || price > 100))
     errors.price = '1~100칩 사이로 입력해 주세요.';
@@ -156,6 +158,24 @@ export async function unlockPost(postId: number) {
   // 본문 전체와 줄어든 칩 잔액이 바로 보이도록 다시 그린다.
   // 잔액은 레이아웃(오른쪽 프로필 카드)에도 보여서 레이아웃째로 다시 그린다 (글 상세·/my/coins 포함).
   revalidatePath('/', 'layout');
+  return result;
+}
+
+/**
+ * 내 블로그 월 구독료(원) 변경. 0이면 구독을 받지 않는다. 상한·하한은 없다 (팀 결정).
+ * 바꿀 블로그는 백엔드가 JWT로 정하고, ownerId는 다시 그릴 화면 경로에만 쓴다.
+ */
+export async function changeSubscriptionPrice(ownerId: number, price: number) {
+  if (!isId(ownerId) || !Number.isSafeInteger(price) || price < 0 || price > 2_147_483_647)
+    return { ok: false, message: "0원 이상의 숫자로 입력해 주세요." };
+  const result = await mutate(
+    "/api/v1/users/me/subscription",
+    "PUT",
+    { price },
+    price === 0 ? "이제 구독을 받지 않아요." : "구독료를 바꿨어요. 이미 구독한 사람은 결제한 가격 그대로 이어져요.",
+    !hasBackend,
+  );
+  if (result.ok && hasBackend) revalidatePath(`/blog/${ownerId}`);
   return result;
 }
 

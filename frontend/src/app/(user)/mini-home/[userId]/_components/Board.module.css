@@ -4,9 +4,10 @@
   flex-direction: column;
   gap: 16px;
   padding: 24px;
-  border: 1px solid #ece6db;
+  border: 1px solid #e1e5ec;
   border-radius: 24px;
   background: var(--surface);
+  box-shadow: 0 1px 2px rgb(30 40 60 / 4%), 0 6px 18px rgb(30 40 60 / 6%);
 }
 
 .header {
@@ -14,7 +15,7 @@
   align-items: center;
   justify-content: space-between;
   padding-bottom: 16px;
-  border-bottom: 1px solid #ece6db;
+  border-bottom: 1px solid #e1e5ec;
 }
 
 .title {
@@ -49,7 +50,7 @@
   align-items: center;
   gap: 10px;
   padding: 12px 14px;
-  border: 1px solid #ece6db;
+  border: 1px solid #e1e5ec;
   border-radius: 12px;
   background: var(--surface);
   font-size: 15px;
@@ -113,7 +114,7 @@ a.row:hover {
   min-width: 0;
   flex: 1;
   padding: 9px 16px;
-  border: 1px solid #e6dfd3;
+  border: 1px solid #e1e5ec;
   border-radius: 12px;
   background: #fbfaf7;
   font-size: 15px;

@@ -126,6 +126,18 @@ public class BlogSubscriptionServiceImpl implements BlogSubscriptionService {
         return new BlogSubscriptionInfoResponse(owner.getBlogSubscriptionPrice(), subscribed, subscriberCount);
     }
 
+    @Override
+    @Transactional
+    public void changePrice(Long userId, int price) {
+        if (price < 0) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "구독료는 0원 이상으로 정해 주세요.");
+        }
+        User user = userRepository.findById(userId)
+                .filter(found -> found.getStatus() == UserStatus.ACTIVE)
+                .orElseThrow(() -> new BusinessException(ErrorCode.FORBIDDEN, "구독료를 바꿀 수 없는 계정이에요."));
+        user.changeBlogSubscriptionPrice(price);
+    }
+
     /** 활동 중이고, 보는 사람과 차단 관계가 아닌 블로그 주인. 아니면 404 */
     private User findVisibleOwner(Long blogOwnerId, Long viewerId) {
         User owner = userRepository.findById(blogOwnerId)

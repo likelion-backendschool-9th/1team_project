@@ -1,9 +1,10 @@
 .card {
   color: var(--ink);
   padding: 24px;
-  border: 1px solid #ece6db;
+  border: 1px solid #e1e5ec;
   border-radius: 24px;
   background: var(--surface);
+  box-shadow: 0 1px 2px rgb(30 40 60 / 4%), 0 6px 18px rgb(30 40 60 / 6%);
 }
 
 .header {
@@ -13,7 +14,7 @@
   justify-content: space-between;
   gap: 8px;
   padding-bottom: 16px;
-  border-bottom: 1px solid #ece6db;
+  border-bottom: 1px solid #e1e5ec;
 }
 
 .title {
@@ -28,7 +29,7 @@
   width: 12px;
   height: 12px;
   border-radius: 50%;
-  background: #20b46a;
+  background: #ffc21a;
 }
 
 .hint {
@@ -188,7 +189,7 @@
   flex-direction: column;
   gap: 10px;
   padding-block: 12px;
-  border-block: 1px solid #ece6db;
+  border-block: 1px solid #e1e5ec;
 }
 
 .socialButtons {
@@ -336,7 +337,7 @@
 }
 
 .later {
-  border: 1px solid #e6dfd3;
+  border: 1px solid #e1e5ec;
   background: var(--surface);
   color: var(--ink-soft);
 }
@@ -352,13 +353,13 @@
 }
 
 .making {
-  border: 1px solid #f5d27a;
-  background: #fffbea;
-  color: #c2410c;
+  border: 1px solid #e1e5ec;
+  background: var(--surface);
+  color: var(--ink);
 }
 
 .making:hover {
-  background: #fff3cf;
+  background: var(--surface-muted);
 }
 
 .disabled,
@@ -369,7 +370,7 @@
 
 .rule {
   user-select: none;
-  color: #c2410c;
+  color: var(--ink-faint);
   font-size: 13px;
   text-align: center;
 }

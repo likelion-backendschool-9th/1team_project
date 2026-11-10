@@ -70,13 +70,14 @@
 }
 
 .play {
-  display: flex;
+  display: inline-flex;
+  align-self: flex-end;
   align-items: center;
-  justify-content: center;
-  gap: 6px;
-  padding: 10px;
-  border-radius: 12px;
-  background: var(--surface-muted);
+  gap: 4px;
+  padding: 6px 12px;
+  border-radius: var(--radius-pill);
+  color: var(--accent-ink);
+  font-size: 13px;
   font-weight: 700;
   user-select: none;
 }
