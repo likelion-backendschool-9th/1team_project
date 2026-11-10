@@ -135,8 +135,19 @@
 
 @media (max-width: 760px) {
   .visit,
-  .center {
+  .center,
+  .right {
     flex-wrap: wrap;
+  }
+
+  .right {
+    gap: 8px;
+    max-width: 100%;
+  }
+
+  .button {
+    padding: 8px 12px;
+    font-size: 14px;
   }
 }
 

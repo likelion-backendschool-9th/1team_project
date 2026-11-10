@@ -1,10 +1,10 @@
 .card {
   display: flex;
   flex-direction: column;
-  gap: 18px;
-  padding: 24px 24px 20px;
+  gap: 14px;
+  padding: 18px 20px 16px;
   border: 1px solid var(--border);
-  border-radius: 28px;
+  border-radius: 22px;
   background: var(--surface);
   box-shadow: var(--shadow-card);
 }
@@ -13,9 +13,9 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 6px 6px 6px 18px;
+  padding: 4px 4px 4px 16px;
   border: 1px solid var(--border);
-  border-radius: 18px;
+  border-radius: 14px;
   background: #fbfaf8;
 }
 
@@ -32,10 +32,10 @@
 .input {
   min-width: 0;
   flex: 1;
-  padding: 10px 0;
+  padding: 8px 0;
   border: 0;
   background: none;
-  font-size: 16px;
+  font-size: 15px;
 }
 
 .input:focus {
@@ -48,8 +48,8 @@
 
 .submit {
   flex: none;
-  padding: 10px 22px;
-  border-radius: 14px;
+  padding: 8px 18px;
+  border-radius: 11px;
   background: #ffc21a;
   font-weight: 700;
 }
@@ -60,7 +60,7 @@
 
 .chips {
   display: flex;
-  gap: 10px;
+  gap: 8px;
   padding: 4px;
   margin: -4px;
   overflow-x: auto;
@@ -75,11 +75,11 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 9px 20px;
+  padding: 7px 16px;
   border: 1px solid var(--border);
   border-radius: var(--radius-pill);
   color: var(--ink-soft);
-  font-size: 15px;
+  font-size: 14px;
   white-space: nowrap;
 }
 

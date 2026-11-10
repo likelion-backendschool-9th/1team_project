@@ -283,3 +283,11 @@
   font-size: 14px;
   font-weight: 700;
 }
+
+/* 기술 스택·잔디가 없을 때 빈 칸 대신 보여 주는 안내 */
+.emptyNote {
+  margin: 4px 0 12px;
+  color: var(--ink-faint);
+  font-size: 13px;
+  line-height: 1.5;
+}

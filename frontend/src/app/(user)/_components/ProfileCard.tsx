@@ -21,9 +21,11 @@ export function ProfileCard({ me, unreadCount, notifications, now }: Props) {
   return (
     <section className={styles.card} aria-label="내 프로필">
       <div className={styles.profile}>
-        <Avatar name={me.nickname} size={56} />
-        <p className={styles.name}>{me.nickname}</p>
-        <LogoutButton />
+        <Avatar name={me.nickname} size={48} />
+        <div className={styles.who}>
+          <p className={styles.name}>{me.nickname}</p>
+          <LogoutButton />
+        </div>
       </div>
       {me.plus && <UserBadges badges={me.badges} />}
       <dl className={styles.stats}>

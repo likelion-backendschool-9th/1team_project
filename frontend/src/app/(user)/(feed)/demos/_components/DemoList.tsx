@@ -60,7 +60,7 @@ export async function DemoList({ searchParams }: Props) {
         데모 {demos.length}개
       </p>
       {demos.length === 0 ? (
-        <p className={kit.empty}>이 태그의 데모가 아직 없어요.</p>
+        <p className={kit.empty}>{tag ? "이 태그의 데모가 아직 없어요." : "아직 올라온 데모가 없어요. 첫 데모를 올려 보세요."}</p>
       ) : (
         <ul className={styles.grid}>
           {demos.map((demo) => (

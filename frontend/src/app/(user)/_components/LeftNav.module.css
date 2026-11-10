@@ -38,3 +38,15 @@
     display: none;
   }
 }
+
+/* 데스크톱: 떠 있는 둥근 패널 */
+@media (min-width: 1101px) {
+  .nav {
+    top: 16px;
+    height: calc(100vh - 32px);
+  border: 1px solid var(--frame-border);
+  border-radius: 28px;
+  background: var(--frame);
+  box-shadow: var(--shadow-frame);
+  }
+}
