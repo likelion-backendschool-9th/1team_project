@@ -306,10 +306,19 @@ class MiniHomeServiceImplTest {
     }
 
     @Test
+    void acceptsTenStackTags() {
+        when(repository.findByUserId(1L)).thenReturn(Optional.of(home()));
+
+        var response = service.update(1L, request(List.of(10L), "", "a,b,c,d,e,f,g,h,i,j"));
+
+        assertThat(response.stackTags()).hasSize(10);
+    }
+
+    @Test
     void rejectsTooManyStackTags() {
         when(repository.findByUserId(1L)).thenReturn(Optional.of(home()));
 
-        assertThatThrownBy(() -> service.update(1L, request(List.of(10L), "", "a,b,c,d,e,f")))
+        assertThatThrownBy(() -> service.update(1L, request(List.of(10L), "", "a,b,c,d,e,f,g,h,i,j,k")))
                 .isInstanceOf(BusinessException.class)
                 .extracting(ex -> ((BusinessException) ex).getErrorCode())
                 .isEqualTo(ErrorCode.BAD_REQUEST);
