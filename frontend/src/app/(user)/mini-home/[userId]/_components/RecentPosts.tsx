@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { MiniHomePost } from "@/app/_lib/types/miniHome";
 import styles from "./Board.module.css";
+import { PostLock } from "./PostLock";
 
 type Props = {
   posts: MiniHomePost[];
@@ -23,13 +24,7 @@ export function RecentPosts({ posts }: Props) {
             <li key={post.id}>
               <Link href={`/blog/posts/${post.id}`} className={styles.row}>
                 <span className={styles.text}>{post.title}</span>
-                {post.membership ? (
-                  <span className={styles.member}>
-                    <span aria-hidden="true">🔒</span> 멤버십
-                  </span>
-                ) : (
-                  <span className={styles.free}>무료</span>
-                )}
+                <PostLock post={post} />
               </Link>
             </li>
           ))}

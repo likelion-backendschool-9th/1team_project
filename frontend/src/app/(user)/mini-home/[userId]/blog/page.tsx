@@ -5,7 +5,11 @@ import { connection } from "next/server";
 import { Suspense } from "react";
 import kit from "@/app/_components/ui/kit.module.css";
 import { getMe } from "@/app/(user)/_lib/api";
+import { SeriesCard } from "@/app/(user)/blog/_components/SeriesCard";
+import seriesStyles from "@/app/(user)/blog/_components/PopularSeries.module.css";
+import { getUserSeries } from "@/app/(user)/blog/_lib/api";
 import boardStyles from "../_components/Board.module.css";
+import { PostLock } from "../_components/PostLock";
 import { getMyPosts, getProfile } from "../_lib/api";
 import { parseUserId } from "../_lib/parse";
 
@@ -17,10 +21,25 @@ async function BlogContent({ params }: { params: Promise<{ userId: string }> }) 
   const userId = parseUserId((await params).userId);
   const profile = userId ? await getProfile(userId) : null;
   if (!userId || !profile) notFound();
-  const [me, posts] = await Promise.all([getMe(), getMyPosts(userId, 20)]);
+  const [me, posts, seriesList] = await Promise.all([getMe(), getMyPosts(userId, 20), getUserSeries(userId)]);
   const isOwner = me?.id === userId;
 
   return (
+    <div className={kit.stack}>
+      {seriesList.length > 0 && (
+        <section className={kit.card} aria-labelledby="mini-series-title">
+          <h2 id="mini-series-title" className={kit.cardTitle}>
+            <span aria-hidden="true">📚</span> 연재 시리즈
+          </h2>
+          <ul className={`${seriesStyles.grid} ${boardStyles.seriesList}`}>
+            {seriesList.map((item) => (
+              <li key={item.id}>
+                <SeriesCard series={item} />
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
     <section className={kit.card} aria-labelledby="mini-blog-title">
       <div className={kit.cardHeader}>
         <h2 id="mini-blog-title" className={kit.cardTitle}>
@@ -45,19 +64,14 @@ async function BlogContent({ params }: { params: Promise<{ userId: string }> }) 
             <li key={post.id}>
               <Link href={`/blog/posts/${post.id}`} className={boardStyles.row}>
                 <span className={boardStyles.text}>{post.title}</span>
-                {post.membership ? (
-                  <span className={boardStyles.member}>
-                    <span aria-hidden="true">🔒</span> 멤버십
-                  </span>
-                ) : (
-                  <span className={boardStyles.free}>무료</span>
-                )}
+                <PostLock post={post} />
               </Link>
             </li>
           ))}
         </ul>
       )}
     </section>
+    </div>
   );
 }
 

@@ -141,7 +141,7 @@ export async function DemoDetailView({ params }: Props) {
               confirmLabel="삭제"
               danger
               className={`${kit.btnDanger} ${kit.sm}`}
-              onConfirm={deleteDemo.bind(null, demo.id)}
+              onConfirm={deleteDemo.bind(null, Number(userId), demo.id)}
               />
             </div>
           ) : (

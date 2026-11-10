@@ -124,7 +124,7 @@ export function DemoManage({ demo, versions, usage }: Props) {
             className={`${kit.btnDanger} ${kit.sm}`}
             onConfirm={() => deleteOwnDemo(demo.id)}
             onDone={(result) => {
-              if (result.ok) router.push("/demos");
+              if (result.ok) router.push(`/mini-home/${demo.author.id}/demos`);
               else setNotice(result);
             }}
           />
