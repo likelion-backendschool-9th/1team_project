@@ -39,6 +39,15 @@ public interface CoinService {
     void paySeries(Long userId, Long seriesId, int amountKrw);
 
     /**
+     * 딥소스 플러스 갱신 결제(현금). 칩은 쓰지 않고 payments에 PLUS로 남긴다.
+     * PG 연동 전에는 충전처럼 즉시 PAID 처리한다.
+     *
+     * @param userId    갱신되는 회원
+     * @param amountKrw 한 달 요금(원)
+     */
+    void payPlus(Long userId, int amountKrw);
+
+    /**
      * 한 회원의 칩 거래 내역을 최신순으로 반환한다.
      *
      * @param userId   조회 대상 회원

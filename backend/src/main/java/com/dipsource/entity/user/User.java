@@ -206,6 +206,11 @@ public class User extends BaseEntity {
         this.plusAutoRenew = false;
     }
 
+    /** 만료 시각을 30일 뒤로 민다. 가상 결제가 같은 트랜잭션에서 성공할 때만 호출한다. */
+    public void extendPlus() {
+        this.plusUntil = plusUntil.plusDays(30);
+    }
+
     /** 만료 시각이 지금보다 뒤면 플러스다. 같은 시각은 만료로 본다. */
     public boolean isPlus(LocalDateTime now) {
         return plusUntil != null && plusUntil.isAfter(now);

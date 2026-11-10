@@ -2,12 +2,18 @@ package com.dipsource.service.user.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.dipsource.entity.user.User;
 import com.dipsource.global.exception.BusinessException;
 import com.dipsource.global.exception.ErrorCode;
 import com.dipsource.repository.user.UserRepository;
+import com.dipsource.service.coin.CoinService;
 import java.time.Clock;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -17,6 +23,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.transaction.support.TransactionTemplate;
 
 @ExtendWith(MockitoExtension.class)
 class PlusSubscriptionServiceImplTest {
@@ -27,12 +34,18 @@ class PlusSubscriptionServiceImplTest {
     @Mock
     private UserRepository userRepository;
 
+    @Mock
+    private CoinService coinService;
+
+    @Mock
+    private TransactionTemplate transactionTemplate;
+
     private PlusSubscriptionServiceImpl service;
     private User user;
 
     @BeforeEach
     void setUp() {
-        service = new PlusSubscriptionServiceImpl(userRepository, CLOCK);
+        service = new PlusSubscriptionServiceImpl(userRepository, coinService, transactionTemplate, CLOCK);
         user = User.builder().email("me@test.local").nickname("회원").build();
     }
 
@@ -80,6 +93,45 @@ class PlusSubscriptionServiceImplTest {
         service.start(1L);
 
         assertThat(user.isPlus(NOW.plusDays(30))).isFalse();
+    }
+
+    @Test
+    void 만료되면_가상결제하고_30일_연장한다() {
+        user.startPlus(NOW.minusDays(40));
+        when(userRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(user));
+
+        service.renewUser(1L, NOW);
+
+        assertThat(user.getPlusUntil()).isEqualTo(NOW.minusDays(10).plusDays(30));
+        assertThat(user.isPlus(NOW)).isTrue();
+        assertThat(user.isPlusAutoRenew()).isTrue();
+        verify(coinService).payPlus(1L, PlusSubscriptionServiceImpl.PRICE_KRW);
+    }
+
+    @Test
+    void 여러_기간이_밀리면_기간마다_결제하고_미래가_될_때까지_연장한다() {
+        user.startPlus(NOW.minusDays(70));
+        when(userRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(user));
+
+        service.renewUser(1L, NOW);
+
+        assertThat(user.getPlusUntil()).isEqualTo(NOW.minusDays(40).plusDays(60));
+        assertThat(user.isPlus(NOW)).isTrue();
+        verify(coinService, times(2)).payPlus(1L, PlusSubscriptionServiceImpl.PRICE_KRW);
+    }
+
+    @Test
+    void 아직_만료_전이거나_해지했으면_결제하지_않는다() {
+        user.startPlus(NOW);
+        when(userRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(user));
+        service.renewUser(1L, NOW);
+
+        user.cancelPlus();
+        user.extendPlus();
+        user.extendPlus();
+        service.renewUser(1L, NOW.plusDays(90));
+
+        verify(coinService, never()).payPlus(anyLong(), anyInt());
     }
 
     @Test
