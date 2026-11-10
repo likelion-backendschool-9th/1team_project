@@ -1,0 +1,89 @@
+.banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 22px 26px;
+  border-radius: var(--radius-card);
+  background: #1f1b17;
+  color: #f5efe3;
+  box-shadow: var(--shadow-card);
+}
+
+.text {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.label {
+  user-select: none;
+  color: #ffc21a;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+}
+
+.title {
+  font-size: 19px;
+  font-weight: 800;
+}
+
+.benefits {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  color: #cfc6b6;
+  font-size: 14px;
+}
+
+.benefits li::before {
+  margin-right: 6px;
+  color: #ffc21a;
+  content: "✓";
+}
+
+.side {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
+}
+
+.price {
+  color: #cfc6b6;
+  font-size: 14px;
+}
+
+.price strong {
+  color: #fff;
+  font-size: 20px;
+  font-weight: 800;
+}
+
+.cta {
+  user-select: none;
+  padding: 11px 18px;
+  border-radius: 12px;
+  background: #ffc21a;
+  color: #1f1b17;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.cta:hover {
+  background: #ffb800;
+}
+
+@media (max-width: 760px) {
+  .side {
+    width: 100%;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+}

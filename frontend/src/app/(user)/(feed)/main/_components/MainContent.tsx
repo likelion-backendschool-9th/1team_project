@@ -12,6 +12,7 @@ import {
 import { FeedCard } from "../../_components/FeedCard";
 import { FeedComposer } from "./FeedComposer";
 import { HotDemos } from "./HotDemos";
+import { PlusBanner } from "./PlusBanner";
 import { TagChips } from "./TagChips";
 import styles from "./MainContent.module.css";
 
@@ -51,6 +52,7 @@ export async function MainContent({ searchParams }: Props) {
     <>
       <TagChips tags={tags} activeTag={activeTag} />
       <HotDemos demos={demos} />
+      {!me?.plus && <PlusBanner />}
       {me && <FeedComposer nickname={me.nickname} myDemos={myDemos} />}
       <section aria-labelledby="feed-list-title">
         <h2 id="feed-list-title" className="sr-only">
