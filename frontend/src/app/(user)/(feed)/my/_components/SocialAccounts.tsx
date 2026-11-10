@@ -56,20 +56,20 @@ export function SocialAccounts({ linked, justLinked, linkError }: Props) {
             const isLinked = linked.includes(provider.value);
             return (
               <li key={provider.value} className={`${styles.card} ${isLinked ? styles.linked : ""}`}>
-                <ProviderIcon provider={provider.value} size={30} />
+                <ProviderIcon provider={provider.value} size={24} />
                 <p className={styles.name}>
                   {provider.label}
                   {isLinked && <span className={styles.badge}>연동됨</span>}
                 </p>
                 <p className={styles.status}>
-                  {isLinked ? (lastOne ? "지금 로그인에 쓰는 유일한 계정" : "로그인에 사용 중") : "아직 연동하지 않았어요"}
+                  {isLinked ? (lastOne ? "유일한 로그인 수단" : "로그인에 사용 중") : "연동 안 됨"}
                 </p>
 
                 {isLinked ? (
                   lastOne ? (
                     // 소셜 로그인만 쓰므로 마지막 하나를 끊으면 로그인할 방법이 없어진다
                     <span className={`${styles.action} ${styles.actionDisabled}`} aria-disabled="true">
-                      해제할 수 없어요
+                      해제 불가
                     </span>
                   ) : (
                     <ConfirmButton
