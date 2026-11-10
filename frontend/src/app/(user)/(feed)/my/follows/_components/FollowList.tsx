@@ -1,10 +1,13 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Avatar } from "@/app/_components/ui/Avatar";
+import { ConfirmButton } from "@/app/_components/ui/ConfirmButton";
 import kit from "@/app/_components/ui/kit.module.css";
 import { DmOpenButton } from "@/app/(user)/_components/DmOpenButton";
+import { blockUser } from "../../../_actions";
 import { FollowButton } from "../../../_components/FollowButton";
 import type { FollowPage } from "../../_lib/api";
 import styles from "../../_components/My.module.css";
@@ -20,7 +23,9 @@ type Props = {
 
 // 첫 페이지는 서버에서 받아 오고, 맨 아래에 닿으면 다음 페이지를 이어 붙인다.
 export function FollowList({ tab, q, initial }: Props) {
+  const router = useRouter();
   const [users, setUsers] = useState(initial.users);
+  const [notice, setNotice] = useState<{ ok: boolean; message: string } | null>(null);
   const [page, setPage] = useState(initial.page);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
@@ -63,9 +68,24 @@ export function FollowList({ tab, q, initial }: Props) {
     return () => observer.disconnect();
   }, [hasMore, error, loadMore]);
 
+  // 차단하면 서로의 팔로우가 지워지므로 목록에서 바로 빼고, 탭의 숫자도 다시 받아 온다.
+  function handleBlocked(userId: number, result: { ok: boolean; message: string }) {
+    setNotice(result);
+    if (!result.ok) return;
+    setUsers((prev) => prev.filter((user) => user.id !== userId));
+    router.refresh();
+  }
+
+  const status = (
+    <p role="status" className={notice?.ok === false ? kit.error : kit.faint}>
+      {notice?.message}
+    </p>
+  );
+
   if (users.length === 0) {
     return (
       <section className={kit.card} aria-label={tab === "followers" ? "팔로워" : "팔로잉"}>
+        {status}
         <p className={kit.empty}>{q ? `'${q}'와(과) 일치하는 사람이 없어요.` : "아직 아무도 없어요."}</p>
       </section>
     );
@@ -73,6 +93,7 @@ export function FollowList({ tab, q, initial }: Props) {
 
   return (
     <section className={kit.card} aria-label={tab === "followers" ? "팔로워" : "팔로잉"} aria-busy={loading}>
+      {status}
       <ul className={kit.list}>
         {users.map((user) => (
           <li key={user.id} className={kit.listItem}>
@@ -94,6 +115,16 @@ export function FollowList({ tab, q, initial }: Props) {
               DM
             </DmOpenButton>
             <FollowButton userId={user.id} nickname={user.nickname} following={user.following} />
+            <ConfirmButton
+              label="차단"
+              title={`${user.nickname}님을 차단할까요?`}
+              description="차단하면 서로의 팔로우가 끊기고 피드·블로그·DM이 서로 보이지 않아요. 이 사용자의 블로그 글 북마크도 해제돼요. 설정에서 차단을 풀어도 팔로우와 북마크는 돌아오지 않아요."
+              confirmLabel="차단"
+              danger
+              className={`${kit.btnGhost} ${kit.sm}`}
+              onConfirm={blockUser.bind(null, user.id)}
+              onDone={(result) => handleBlocked(user.id, result)}
+            />
           </li>
         ))}
       </ul>
