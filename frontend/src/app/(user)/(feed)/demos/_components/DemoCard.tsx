@@ -13,7 +13,7 @@ type Props = {
 export function DemoCard({ demo }: Props) {
   return (
     <article className={styles.card} aria-labelledby={`demo-card-${demo.id}`}>
-      <Link href={`/demos/${demo.id}`} tabIndex={-1} aria-hidden="true">
+      <Link href={`/mini-home/${demo.author.id}/demos/${demo.id}`} tabIndex={-1} aria-hidden="true">
         <DemoThumb
           seed={demo.id - 1}
           thumbnail={demo.thumbnail}
@@ -23,7 +23,7 @@ export function DemoCard({ demo }: Props) {
       </Link>
       <div className={styles.body}>
         <h2 id={`demo-card-${demo.id}`} className={styles.name}>
-          <Link href={`/demos/${demo.id}`}>{demo.title}</Link>
+          <Link href={`/mini-home/${demo.author.id}/demos/${demo.id}`}>{demo.title}</Link>
         </h2>
         <p className={styles.desc}>{demo.description}</p>
         <div className={styles.author}>
@@ -36,7 +36,7 @@ export function DemoCard({ demo }: Props) {
             <span aria-hidden="true">·</span> 실행 {formatCount(demo.playCount)}
           </span>
         </div>
-        <Link href={`/demos/${demo.id}`} className={styles.play}>
+        <Link href={`/mini-home/${demo.author.id}/demos/${demo.id}`} className={styles.play}>
           찍먹하기
           <ArrowRightIcon />
         </Link>

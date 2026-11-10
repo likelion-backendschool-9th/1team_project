@@ -65,9 +65,21 @@
   flex-direction: column;
 }
 
-.chip dd,
+/* 칩도 다른 통계와 같은 색·정렬로 두고, 아이콘은 라벨 앞에 작게 둔다. 누르면 충전 화면이라 마우스를 올리면 노랗게 표시한다. */
 .chip dt {
-  color: var(--accent-ink);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+}
+
+.chip {
+  border-radius: 12px;
+  transition: background 0.15s ease;
+}
+
+.chip:has(.statLink:hover) {
+  background: #fff8e1;
 }
 
 .home {
@@ -75,9 +87,10 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 14px 16px;
+  padding: 12px 16px;
   border: 1px solid var(--border);
-  border-radius: 14px;
+  border-radius: 12px;
+  font-size: 15px;
   font-weight: 700;
 }
 
@@ -98,9 +111,10 @@
   align-items: center;
   justify-content: center;
   gap: 6px;
-  padding: 12px 8px;
-  border-radius: 14px;
+  padding: 11px 8px;
+  border-radius: 12px;
   background: var(--surface-muted);
+  font-size: 14px;
   font-weight: 700;
   white-space: nowrap;
 }

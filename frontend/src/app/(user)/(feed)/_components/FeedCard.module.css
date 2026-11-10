@@ -1,17 +1,17 @@
 .card {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  padding: 17px 20px;
-  border-radius: var(--radius-card);
+  gap: 10px;
+  padding: 16px 20px 12px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
   background: var(--surface);
-  box-shadow: var(--shadow-card);
 }
 
 .header {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 12px;
 }
 
 .author {
@@ -20,21 +20,21 @@
 }
 
 .name {
-  font-size: 18px;
-  font-weight: 800;
+  font-size: 15px;
+  font-weight: 700;
 }
 
 .meta {
-  color: var(--ink-soft);
-  font-size: 15px;
-  font-weight: 500;
+  color: var(--ink-faint);
+  font-size: 13px;
+  font-weight: 400;
 }
 
 .more {
   display: inline-flex;
-  padding: 8px;
-  color: var(--ink);
-  font-size: 22px;
+  padding: 6px;
+  color: var(--ink-faint);
+  font-size: 18px;
 }
 
 .more:disabled {
@@ -42,7 +42,8 @@
 }
 
 .content {
-  font-size: 17px;
+  font-size: 15px;
+  line-height: 1.6;
   overflow-wrap: anywhere;
   white-space: pre-wrap;
 }

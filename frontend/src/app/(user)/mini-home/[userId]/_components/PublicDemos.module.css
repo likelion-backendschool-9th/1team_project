@@ -34,9 +34,10 @@
   height: 100%;
   flex-direction: column;
   padding: 18px;
-  border: 1px solid #ece6db;
+  border: 1px solid #e1e5ec;
   border-radius: 20px;
   background: var(--surface);
+  box-shadow: 0 1px 2px rgb(30 40 60 / 4%), 0 6px 18px rgb(30 40 60 / 6%);
 }
 
 .thumbWrap {
@@ -83,7 +84,7 @@
   gap: 8px;
   padding-top: 14px;
   margin-top: auto;
-  border-top: 1px solid #ece6db;
+  border-top: 1px solid #e1e5ec;
 }
 
 .desc {

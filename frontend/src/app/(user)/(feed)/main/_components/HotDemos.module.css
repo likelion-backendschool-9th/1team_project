@@ -153,15 +153,23 @@
 
 .play {
   user-select: none;
-  display: flex;
+  display: inline-flex;
+  align-self: flex-end;
   align-items: center;
-  justify-content: center;
-  gap: 8px;
-  margin-top: 4px;
-  padding: 10px;
-  border-radius: 12px;
-  background: var(--surface-muted);
+  gap: 4px;
+  margin-top: 2px;
+  padding: 6px 12px;
+  border-radius: var(--radius-pill);
+  color: var(--accent-ink);
+  font-size: 13px;
   font-weight: 700;
+}
+
+/* 카드 어디를 눌러도 데모로 간다. 버튼은 작은 표시만 남긴다. */
+.play::after {
+  position: absolute;
+  inset: 0;
+  content: "";
 }
 
 .play:hover {
@@ -184,7 +192,13 @@
   display: none;
 }
 
-.track {
+/* 좌우 화살표와 자동 넘김이 있어 진행 막대는 숨긴다. (바로 아래 플러스 배너와 붙어 선처럼 보였다) */
+.track,
+.track[hidden] {
+  display: none;
+}
+
+.trackUnused {
   position: absolute;
   right: 0;
   bottom: -12px;
