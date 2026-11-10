@@ -10,8 +10,12 @@ import com.dipsource.service.search.query.TextNormalizer;
 import java.time.Clock;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
+import java.util.Set;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -61,18 +65,35 @@ public class PopularSearchServiceImpl implements PopularSearchService {
     @Transactional(readOnly = true)
     public List<String> popular(int limit) {
         int size = size(limit);
-        List<String> keywords = searchKeywordLogRepository.countSince(LocalDateTime.now(clock).minusDays(WINDOW_DAYS))
+        List<String> keywords = new ArrayList<>(searchKeywordLogRepository.countSince(LocalDateTime.now(clock).minusDays(WINDOW_DAYS))
                 .stream()
                 .map(row -> new Score((String) row[0], ((Number) row[1]).longValue(), (LocalDateTime) row[2]))
                 .sorted(Comparator.comparingLong(Score::count).reversed()
                         .thenComparing(Score::latest, Comparator.reverseOrder()))
                 .limit(size)
                 .map(Score::keyword)
-                .toList();
-        if (!keywords.isEmpty()) {
-            return keywords;
+                .toList());
+        if (keywords.size() >= size) {
+            return List.copyOf(keywords);
         }
-        return tagRepository.findPopularNames(size);
+        Set<String> seen = new HashSet<>();
+        keywords.forEach(keyword -> seen.add(matchKey(keyword)));
+        for (String tag : tagRepository.findPopularNames(size + keywords.size())) {
+            if (keywords.size() >= size) {
+                break;
+            }
+            String key = matchKey(tag);
+            if (key.isEmpty() || !seen.add(key)) {
+                continue;
+            }
+            keywords.add(tag);
+        }
+        return List.copyOf(keywords);
+    }
+
+    /** 이미 넣은 검색어와 태그를 비교한다. 앞뒤 공백과 대소문자는 구분하지 않는다. */
+    private static String matchKey(String value) {
+        return value.trim().toLowerCase(Locale.ROOT);
     }
 
     private static int size(int limit) {
