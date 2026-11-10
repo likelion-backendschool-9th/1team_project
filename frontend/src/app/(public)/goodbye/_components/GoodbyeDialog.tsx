@@ -16,7 +16,7 @@ export function GoodbyeDialog() {
   }, []);
 
   function handleClose() {
-    window.location.replace("/main");
+    window.location.replace("/");
   }
 
   return (

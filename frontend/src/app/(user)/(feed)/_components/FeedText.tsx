@@ -19,7 +19,7 @@ export function FeedText({ text }: Props) {
     if (!name) continue;
     if (start > cursor) nodes.push(text.slice(cursor, start));
     nodes.push(
-      <Link key={`${start}-${name}`} href={`/main?tag=${encodeURIComponent(name.toLowerCase())}`} className={styles.tag}>
+      <Link key={`${start}-${name}`} href={`/?tag=${encodeURIComponent(name.toLowerCase())}`} className={styles.tag}>
         #{name}
       </Link>,
     );

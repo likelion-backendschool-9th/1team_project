@@ -5,17 +5,16 @@ const nextConfig: NextConfig = {
   cacheComponents: true,
   partialPrefetching: true,
   async redirects() {
-    return [{ source: "/", destination: "/main", permanent: false }];
+    return [{ source: "/main", destination: "/", permanent: false }];
   },
   async rewrites() {
-    if (!process.env.API_ORIGIN) return [];
-    return [
-      {
-        source: "/api/v1/:path*",
-        destination: `${process.env.API_ORIGIN}/api/v1/:path*`,
-      },
-    ];
-  },
+    return {
+      beforeFiles: [{ source: "/", destination: "/main" }],
+      afterFiles: process.env.API_ORIGIN
+        ? [{ source: "/api/v1/:path*", destination: `${process.env.API_ORIGIN}/api/v1/:path*` }]
+        : [],
+    };
+  }
 };
 
 export default nextConfig;

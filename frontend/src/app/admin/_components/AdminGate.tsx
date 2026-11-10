@@ -38,7 +38,7 @@ export async function AdminGate({ children }: Props) {
               로그인하기
             </Link>
           )}
-          <Link href="/main" className={guest ? styles.secondary : styles.primary}>
+          <Link href="/" className={guest ? styles.secondary : styles.primary}>
             서비스로 돌아가기
           </Link>
         </div>

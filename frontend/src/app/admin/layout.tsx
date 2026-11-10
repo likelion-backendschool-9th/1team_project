@@ -25,7 +25,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
                 <strong>찍먹</strong>
                 <span className={styles.logoSub}>ADMIN</span>
               </Link>
-              <Link href="/main" className={styles.back}>
+              <Link href="/" className={styles.back}>
                 서비스로 돌아가기 →
               </Link>
             </div>

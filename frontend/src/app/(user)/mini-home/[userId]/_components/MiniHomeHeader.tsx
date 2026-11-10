@@ -31,7 +31,7 @@ export function MiniHomeHeader({ profile, visitors, isOwner, chipBalance }: Prop
           </p>
           {profile.domain && <span className={styles.domain}>{profile.domain}</span>}
         </div>
-        <Link href="/main" className={styles.feedLink}>
+        <Link href="/" className={styles.feedLink}>
           <span aria-hidden="true">←</span> 피드 바로가기
         </Link>
       </div>
