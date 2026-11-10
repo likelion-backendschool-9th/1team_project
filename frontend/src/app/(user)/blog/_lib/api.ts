@@ -15,7 +15,8 @@ import type {
   PostSeries,
   PostSort,
   PostSummary,
-  SubscribedAuthor,
+  SeriesDetail,
+  SeriesPurchase,
 } from "@/app/_lib/types/post";
 import type { UserSummary } from "@/app/_lib/types/user";
 import { getMe } from "@/app/(user)/_lib/api";
@@ -27,8 +28,9 @@ import {
   findMockBlogOwner,
   mockDemoOptions,
   mockArticleRanking,
+  findMockSeries,
   mockSeries,
-  mockSubscribedAuthors,
+  mockSeriesPurchases,
 } from "./mock";
 
 export type PostQuery = {
@@ -60,10 +62,49 @@ export async function getPosts({ category, sort, q }: PostQuery): Promise<PostSu
   return data.content;
 }
 
-// 연재 시리즈는 백엔드에 아직 없다. 백엔드가 연결되면 목업을 섞지 않고 비워 둔다(섹션이 숨겨진다).
+// 시리즈 API는 백엔드에 있어서 MOCK_EXCEPT_DM이어도 실서버를 쓴다.
+/** 인기 시리즈 (산 사람이 많은 순) */
 export async function getPopularSeries(): Promise<PostSeries[]> {
-  if (hasBackend) return [];
-  return mockSeries;
+  if (!hasBackend) return mockSeries;
+  const { data } = await apiFetch<ApiResponse<PostSeries[]>>("/api/v1/series?size=6");
+  return data;
+}
+
+/** 작가의 시리즈 목록. 최근에 만든 순 */
+export async function getUserSeries(userId: number): Promise<PostSeries[]> {
+  if (!hasBackend) return mockSeries.filter((item) => item.author.id === userId);
+  const { data } = await apiFetch<ApiResponse<PostSeries[]>>(`/api/v1/users/${userId}/series`);
+  return data;
+}
+
+/** 시리즈 화면. 없거나 차단 관계면 null */
+export async function getSeries(seriesId: number): Promise<SeriesDetail | null> {
+  if (!hasBackend) return findMockSeries(seriesId);
+  try {
+    const { data } = await apiFetch<ApiResponse<SeriesDetail>>(`/api/v1/series/${seriesId}`);
+    return data;
+  } catch (error) {
+    if (error instanceof ApiRequestError && error.status === 404) return null;
+    throw error;
+  }
+}
+
+/** 내가 산 시리즈. 비로그인이면 빈 목록 */
+export async function getSeriesPurchases(): Promise<SeriesPurchase[]> {
+  if (!hasBackend) return mockSeriesPurchases;
+  try {
+    const { data } = await apiFetch<ApiResponse<SeriesPurchase[]>>("/api/v1/users/me/series-purchases");
+    return data;
+  } catch (error) {
+    if (error instanceof ApiRequestError && (error.status === 401 || error.status === 403)) return [];
+    throw error;
+  }
+}
+
+/** 글쓰기에서 고를 내 시리즈 */
+export async function getMySeries(): Promise<PostSeries[]> {
+  const me = await getMe();
+  return me ? getUserSeries(me.id) : [];
 }
 
 // 랭킹 API(GET rankings)는 아직 빈 목록을 돌려주는 스텁이다.
@@ -82,29 +123,6 @@ export async function getArticleRanking(): Promise<ArticleRanking> {
     likes: rank(byLikes.content, (post) => post.likeCount),
     follows: [],
   };
-}
-
-type MySubscription = {
-  id: number;
-  author: UserSummary;
-  blogTitle: string;
-  nextBillingAt: string;
-  status: "active" | "canceled";
-};
-
-// 구독 중인 작가는 내 구독 목록(GET subscriptions/me)으로 채운다. 접속 상태 API는 없어 점은 표시하지 않는다.
-export async function getSubscribedAuthors(): Promise<SubscribedAuthor[]> {
-  if (!hasBackend) return mockSubscribedAuthors;
-  try {
-    const { data } = await apiFetch<ApiResponse<MySubscription[]>>("/api/v1/subscriptions/me");
-    return data.map((subscription) => ({
-      user: subscription.author,
-      seriesLabel: subscription.status === "canceled" ? `${subscription.blogTitle} · 해지 예정` : subscription.blogTitle,
-    }));
-  } catch (error) {
-    if (error instanceof ApiRequestError && (error.status === 401 || error.status === 403)) return [];
-    throw error;
-  }
 }
 
 export async function getPost(postId: number): Promise<PostDetail | null> {
@@ -141,26 +159,19 @@ export async function getUserPosts(userId: number): Promise<PostSummary[]> {
   return data.content;
 }
 
-// 블로그 주인: 회원 정보는 프로필(GET users/{userId}), 소개·글 수·총 조회수는 GET users/{userId}/blog,
-// 구독료·구독 여부·구독자 수는 GET users/{userId}/subscription으로 받는다.
+// 블로그 주인: 회원 정보는 프로필(GET users/{userId}), 소개·글 수·총 조회수는 GET users/{userId}/blog로 받는다.
 export async function getBlogOwner(userId: number): Promise<BlogOwner | null> {
   if (!hasBackend) return findMockBlogOwner(userId);
   try {
-    const [{ data: user }, { data: stats }, { data: subscription }] = await Promise.all([
+    const [{ data: user }, { data: stats }] = await Promise.all([
       apiFetch<ApiResponse<UserSummary>>(`/api/v1/users/${userId}`),
       apiFetch<ApiResponse<{ bio: string; postCount: number; totalViews: number }>>(`/api/v1/users/${userId}/blog`),
-      apiFetch<ApiResponse<{ price: number; subscribed: boolean; subscriberCount: number }>>(
-        `/api/v1/users/${userId}/subscription`,
-      ),
     ]);
     return {
       user: { id: user.id, nickname: user.nickname, profileImage: user.profileImage, techStacks: user.techStacks },
       bio: stats.bio,
-      subscriberCount: subscription.subscriberCount,
       postCount: stats.postCount,
       totalViews: stats.totalViews,
-      subscriptionPrice: subscription.price,
-      subscribed: subscription.subscribed,
     };
   } catch (error) {
     if (error instanceof ApiRequestError && error.status === 404) return null;

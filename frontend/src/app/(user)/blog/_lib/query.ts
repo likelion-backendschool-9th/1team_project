@@ -1,4 +1,4 @@
-import type { PostCategory, PostSort } from "@/app/_lib/types/post";
+import type { PostCategory, PostSort, PostSummary } from "@/app/_lib/types/post";
 
 export const categories: { value: PostCategory; label: string }[] = [
   { value: "frontend", label: "프론트엔드" },
@@ -12,6 +12,11 @@ export const categories: { value: PostCategory; label: string }[] = [
 
 /** 유료 글 본문 최소 글자 수 (앞뒤 공백 제외). 백엔드 PostServiceImpl과 같은 값 */
 export const PAID_MIN_LENGTH = 1000;
+
+/** 잠긴 글인지. 백엔드는 paid를 주고, 목업은 칩 가격으로 판단한다. 시리즈 회차는 칩 가격 없이 잠긴다 */
+export function isPaidPost(post: Pick<PostSummary, "price" | "paid">) {
+  return post.paid ?? post.price > 0;
+}
 
 export const sorts: { value: PostSort; label: string }[] = [
   { value: "latest", label: "최신순" },

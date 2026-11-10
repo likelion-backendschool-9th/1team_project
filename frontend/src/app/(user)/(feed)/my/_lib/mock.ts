@@ -30,15 +30,6 @@ export type ChipHistory = {
 };
 
 // 블로그 구독과 딥소스 플러스는 칩이 아니라 현금 월 자동이체다.
-export type Subscription = {
-  id: number;
-  author: UserSummary;
-  blogTitle: string;
-  pricePerMonth: number;
-  nextBillingAt: string;
-  status: "active" | "canceled";
-};
-
 export type PlusMembership = {
   active: boolean;
   since: string | null;
@@ -114,12 +105,6 @@ export const mockHistory: ChipHistory[] = [
   { id: 3,  type: "charge",  description: "칩 300개 충전",                            amount: 300,  createdAt: "2026-10-27T19:40:00+09:00" },
   { id: 2,  type: "use",     description: "정시우 미니홈피 칩 후원",                  amount: -30,  createdAt: "2026-10-26T09:00:00+09:00" },
   { id: 1,  type: "use",     description: "「10만 동시접속 채팅 서버」 잠금 해제",   amount: -20,  createdAt: "2026-10-25T21:14:00+09:00" },
-];
-
-export const mockSubscriptions: Subscription[] = [
-  { id: 1, author: mockUsers.cha, blogTitle: "차재인의 개발 블로그", pricePerMonth: 5000, nextBillingAt: "2026-12-01T09:00:00+09:00", status: "active" },
-  { id: 2, author: mockUsers.yoon, blogTitle: "윤세진의 개발 블로그", pricePerMonth: 3000, nextBillingAt: "2026-12-01T09:00:00+09:00", status: "active" },
-  { id: 3, author: mockUsers.seungjo, blogTitle: "김승조의 개발 블로그", pricePerMonth: 3000, nextBillingAt: "2026-11-15T09:00:00+09:00", status: "canceled" },
 ];
 
 // 딥소스 플러스는 아직 준비 중이라(백엔드가 plan: plus 요청을 거절) 구독하지 않은 상태로 둔다.

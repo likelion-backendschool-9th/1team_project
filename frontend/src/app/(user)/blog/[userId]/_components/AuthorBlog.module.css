@@ -40,21 +40,14 @@
   gap: 8px;
 }
 
-.seriesTitle {
-  margin: 10px 0 6px;
-  font-size: 17px;
-  font-weight: 800;
-  line-height: 1.4;
+.newSeries {
+  margin-top: 16px;
 }
 
-.priceForm {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-  margin-top: 12px;
+.newSeries summary {
+  cursor: pointer;
 }
 
-.priceInput {
-  width: 160px;
+.newSeries[open] summary {
+  margin-bottom: 16px;
 }

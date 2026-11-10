@@ -32,18 +32,6 @@
   font-size: 14px;
 }
 
-.more {
-  user-select: none;
-  display: inline-flex;
-  flex: none;
-  align-items: center;
-  gap: 2px;
-  margin-top: 6px;
-  color: var(--ink-soft);
-  font-size: 14px;
-  font-weight: 500;
-}
-
 .grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -90,6 +78,10 @@
   font-size: 19px;
   font-weight: 800;
   line-height: 1.4;
+}
+
+.name a:hover {
+  text-decoration: underline;
 }
 
 .desc {

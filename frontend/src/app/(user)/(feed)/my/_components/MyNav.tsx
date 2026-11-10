@@ -15,7 +15,7 @@ const items = [
   { href: "/my/bookmarks", label: "북마크" },
   { href: "/my/settings", label: "설정" },
   { href: "/my/coins", label: "칩" },
-  { href: "/my/subscription", label: "구독" },
+  { href: "/my/subscription", label: "구독·구매" },
 ];
 
 function NavList({

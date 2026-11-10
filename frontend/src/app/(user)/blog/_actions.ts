@@ -9,7 +9,8 @@ import { readValues, type FormState } from "@/app/_lib/formState";
 import type { PostComment } from "@/app/_lib/types/post";
 import { categories, PAID_MIN_LENGTH } from "./_lib/query";
 
-const POST_FIELDS = ['title', 'category', 'tags', 'content', 'demoId', 'price'];
+const POST_FIELDS = ['title', 'category', 'tags', 'content', 'demoId', 'price', 'seriesId'];
+const SERIES_FIELDS = ['title', 'description', 'price', 'status'];
 
 function isId(value: number) {
   return Number.isSafeInteger(value) && value > 0;
@@ -29,8 +30,10 @@ function validatePost(formData: FormData) {
     errors.content = '본문을 20자 이상 입력해 주세요.';
   else if (paid && values.content.length < PAID_MIN_LENGTH)
     errors.content = `유료 글은 본문을 ${PAID_MIN_LENGTH.toLocaleString()}자 이상 써 주세요. (지금 ${values.content.length.toLocaleString()}자)`;
+  // 시리즈 안 유료 글은 칩 가격 없이 시리즈를 산 사람만 읽는다.
+  const seriesId = Number(values.seriesId) || null;
   const price = Number(values.price);
-  if (paid && (!Number.isInteger(price) || price < 1 || price > 100))
+  if (paid && !seriesId && (!Number.isInteger(price) || price < 1 || price > 100))
     errors.price = '1~100칩 사이로 입력해 주세요.';
   const body = {
     title: values.title,
@@ -41,7 +44,9 @@ function validatePost(formData: FormData) {
       .filter(Boolean),
     content: values.content,
     demoId: Number(values.demoId) || null,
-    price: paid ? price : 0,
+    price: paid && !seriesId ? price : 0,
+    seriesId,
+    paid,
   };
   return { values, errors, body };
 }
@@ -161,38 +166,78 @@ export async function unlockPost(postId: number) {
   return result;
 }
 
-/**
- * 내 블로그 월 구독료(원) 변경. 0이면 구독을 받지 않는다. 상한·하한은 없다 (팀 결정).
- * 바꿀 블로그는 백엔드가 JWT로 정하고, ownerId는 다시 그릴 화면 경로에만 쓴다.
- */
-export async function changeSubscriptionPrice(ownerId: number, price: number) {
-  if (!isId(ownerId) || !Number.isSafeInteger(price) || price < 0 || price > 2_147_483_647)
-    return { ok: false, message: "0원 이상의 숫자로 입력해 주세요." };
-  const result = await mutate(
-    "/api/v1/users/me/subscription",
-    "PUT",
-    { price },
-    price === 0 ? "이제 구독을 받지 않아요." : "구독료를 바꿨어요. 이미 구독한 사람은 결제한 가격 그대로 이어져요.",
-    !hasBackend,
-  );
-  if (result.ok && hasBackend) revalidatePath(`/blog/${ownerId}`);
-  return result;
+function validateSeries(formData: FormData) {
+  const values = readValues(formData, SERIES_FIELDS);
+  const errors: Record<string, string> = {};
+  if (!values.title) errors.title = '제목을 입력해 주세요.';
+  else if (values.title.length > 80) errors.title = '80자 이하로 입력해 주세요.';
+  if (values.description.length > 500) errors.description = '500자 이하로 입력해 주세요.';
+  // 가격은 상한·하한이 없다 (팀 결정). 0원이면 무료 시리즈
+  const price = Number(values.price || '0');
+  if (!Number.isSafeInteger(price) || price < 0 || price > 2_147_483_647)
+    errors.price = '0원 이상의 숫자로 입력해 주세요.';
+  const status = values.status === 'completed' ? 'completed' : 'ongoing';
+  return { values, errors, body: { title: values.title, description: values.description, price, status } };
 }
 
-export async function subscribeBlog(userId: number) {
-  if (!isId(userId)) return { ok: false, message: '잘못된 요청이에요.' };
-  // 구독 API는 백엔드에 있어서 MOCK_EXCEPT_DM이어도 실서버를 쓴다.
+// 시리즈 API는 백엔드에 있어서 MOCK_EXCEPT_DM이어도 실서버를 쓴다.
+/** 시리즈 만들기. 만들면 시리즈 화면으로 간다 */
+export async function createSeries(previous: FormState, formData: FormData): Promise<FormState> {
+  const { values, errors, body } = validateSeries(formData);
+  const attempt = previous.attempt + 1;
+  if (Object.keys(errors).length > 0)
+    return { ok: false, message: '입력값을 확인해 주세요.', errors, values, attempt };
+  if (!hasBackend)
+    return { ok: true, message: '시리즈를 만들었어요. (백엔드 연결 전이라 실제로 저장되지는 않아요)', errors: {}, values, attempt };
+
+  let seriesId: number;
+  try {
+    const { data } = await apiFetch<ApiResponse<{ id: number }>>('/api/v1/series', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    });
+    seriesId = data.id;
+  } catch (error) {
+    if (error instanceof ApiRequestError)
+      return { ok: false, message: error.error.message, errors: {}, values, attempt };
+    throw error;
+  }
+  revalidatePath('/blog', 'layout');
+  redirect(`/blog/series/${seriesId}`);
+}
+
+/** 시리즈 수정 (제목·소개·가격·연재 상태). 이미 산 사람은 가격이 바뀌어도 계속 읽는다 */
+export async function updateSeries(seriesId: number, previous: FormState, formData: FormData): Promise<FormState> {
+  const { values, errors, body } = validateSeries(formData);
+  const state = await runForm(previous, values, errors, () =>
+    mutate(`/api/v1/series/${seriesId}`, 'PUT', body, '시리즈를 수정했어요.', !hasBackend),
+  );
+  if (state.ok && hasBackend) revalidatePath('/blog', 'layout');
+  return state;
+}
+
+/** 시리즈 삭제. 회차나 산 사람이 있으면 백엔드가 막는다. 지우면 내 블로그로 간다 */
+export async function deleteSeries(seriesId: number, ownerId: number) {
+  if (!isId(seriesId) || !isId(ownerId)) return { ok: false, message: '잘못된 요청이에요.' };
+  const result = await mutate(`/api/v1/series/${seriesId}`, 'DELETE', undefined, '시리즈를 지웠어요.', !hasBackend);
+  if (!result.ok || !hasBackend) return result;
+  revalidatePath('/blog', 'layout');
+  redirect(`/blog/${ownerId}`);
+}
+
+/** 시리즈 구매 (현금, 한 번 사면 이후 회차까지 계속 열람) */
+export async function purchaseSeries(seriesId: number) {
+  if (!isId(seriesId)) return { ok: false, message: '잘못된 요청이에요.' };
   const result = await mutate(
-    '/api/v1/subscriptions',
+    `/api/v1/series/${seriesId}/purchase`,
     'POST',
-    { authorId: userId },
-    '구독했어요. 매달 같은 날 자동이체돼요.',
+    undefined,
+    '시리즈를 샀어요. 이후 올라오는 회차까지 계속 볼 수 있어요.',
     !hasBackend,
   );
   if (!result.ok || !hasBackend) return result;
-  // 구독 버튼·유료 글 잠금이 바로 바뀌도록 다시 그린다.
-  revalidatePath(`/blog/${userId}`);
-  revalidatePath('/blog/posts/[postId]', 'page');
+  // 시리즈 화면·회차 잠금·구매 목록이 바로 바뀌도록 다시 그린다.
+  revalidatePath('/blog', 'layout');
   revalidatePath('/my/subscription');
   return result;
 }
