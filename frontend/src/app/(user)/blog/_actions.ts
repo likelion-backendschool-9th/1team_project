@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { apiFetch, ApiRequestError, hasBackend, isMockMode, type ApiResponse } from "@/app/_lib/api/client";
+import { apiFetch, ApiRequestError, hasBackend, type ApiResponse } from "@/app/_lib/api/client";
 import { runForm } from "@/app/_lib/api/formAction";
 import { mutate } from "@/app/_lib/api/mutate";
 import { readValues, type FormState } from "@/app/_lib/formState";
@@ -192,6 +192,7 @@ export async function createPostComment(
       'POST',
       values,
       '댓글을 남겼어요.',
+      !hasBackend,
     ),
   );
   if (state.ok) revalidatePath(`/blog/posts/${postId}`);
@@ -205,6 +206,7 @@ export async function togglePostLike(postId: number, like: boolean) {
     like ? 'POST' : 'DELETE',
     undefined,
     like ? '좋아요를 반영했어요.' : '좋아요를 취소했어요.',
+    !hasBackend,
   );
 }
 
@@ -223,12 +225,12 @@ export async function togglePostBookmark(postId: number, bookmark: boolean) {
 export async function updatePostComment(commentId: number, content: string) {
   const text = content.trim();
   if (!text || text.length > 1000) return { ok: false, message: "1~1000자로 입력해 주세요." };
-  return mutate(`/api/v1/posts/comments/${commentId}`, "PUT", { content: text }, "댓글을 수정했어요.");
+  return mutate(`/api/v1/posts/comments/${commentId}`, "PUT", { content: text }, "댓글을 수정했어요.", !hasBackend);
 }
 
 export async function deletePostComment(postId: number, commentId: number) {
   if (!isId(postId) || !isId(commentId)) return { ok: false, message: "잘못된 요청이에요." };
-  const result = await mutate(`/api/v1/posts/comments/${commentId}`, "DELETE", undefined, "댓글을 삭제했어요.");
+  const result = await mutate(`/api/v1/posts/comments/${commentId}`, "DELETE", undefined, "댓글을 삭제했어요.", !hasBackend);
   if (result.ok) revalidatePath(`/blog/posts/${postId}`);
   return result;
 }
@@ -237,8 +239,8 @@ export async function replyPostComment(postId: number, parentId: number, content
   if (!isId(postId) || !isId(parentId)) return { ok: false, message: "잘못된 요청이에요.", data: null };
   const text = content.trim();
   if (!text || text.length > 1000) return { ok: false, message: "1~1000자로 입력해 주세요.", data: null };
-  // 목 모드: 실제 저장 없음 — 클라이언트 낙관적 업데이트로만 처리
-  if (isMockMode) return { ok: true, message: "답글을 남겼어요.", data: null };
+  // 백엔드가 없을 때만 저장 없이 화면에서만 처리한다 (댓글 API는 백엔드에 있어서 MOCK_EXCEPT_DM이어도 실서버를 쓴다)
+  if (!hasBackend) return { ok: true, message: "답글을 남겼어요.", data: null };
   try {
     const { data } = await apiFetch<ApiResponse<PostComment>>(
       `/api/v1/posts/${postId}/comments`,
@@ -272,5 +274,6 @@ export async function togglePostCommentLike(commentId: number, like: boolean) {
     like ? 'POST' : 'DELETE',
     undefined,
     '좋아요를 반영했어요.',
+    !hasBackend,
   );
 }

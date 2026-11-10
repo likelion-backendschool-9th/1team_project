@@ -64,6 +64,7 @@ class PostServiceImplTest {
     @Mock private UserService userService;
     @Mock private BlockRepository blockRepository;
     @Mock private CoinService coinService;
+    @Mock private com.dipsource.repository.user.UserRepository userRepository;
 
     private PostServiceImpl service;
 
@@ -72,7 +73,7 @@ class PostServiceImplTest {
         service = new PostServiceImpl(postRepository, postLikeRepository, postBookmarkRepository, postTagRepository,
                 postPurchaseRepository, blogSubscriptionRepository, tagRepository, userService,
                 org.mockito.Mockito.mock(org.springframework.context.ApplicationEventPublisher.class),
-                blockRepository, new PostViewCounter(), coinService);
+                blockRepository, new PostViewCounter(), coinService, userRepository);
     }
 
     @Nested
@@ -371,6 +372,54 @@ class PostServiceImplTest {
                     .isInstanceOf(BusinessException.class)
                     .extracting(e -> ((BusinessException) e).getErrorCode())
                     .isEqualTo(ErrorCode.BAD_REQUEST);
+        }
+    }
+
+    @Nested
+    class BlogStatsAndViews {
+
+        @Test
+        void viewsSortOrdersByViewCount() {
+            when(postRepository.findList(any(), any(), any(), any(), any())).thenReturn(new PageImpl<>(List.of()));
+
+            service.getPosts(null, null, "views", null, PageRequest.of(0, 5));
+
+            ArgumentCaptor<Pageable> pageable = ArgumentCaptor.forClass(Pageable.class);
+            verify(postRepository).findList(any(), any(), any(), any(), pageable.capture());
+            assertThat(pageable.getValue().getSort().iterator().next().getProperty()).isEqualTo("viewCount");
+        }
+
+        @Test
+        void blogStatsSumsActivePosts() {
+            com.dipsource.entity.user.User owner = com.dipsource.entity.user.User.builder()
+                    .email("a@test.local").nickname("작가").bio("백엔드 개발자").build();
+            when(userRepository.findById(AUTHOR)).thenReturn(Optional.of(owner));
+            when(postRepository.countByUserIdAndStatus(AUTHOR, PostStatus.ACTIVE)).thenReturn(3L);
+            when(postRepository.sumViewCountByUserIdAndStatus(AUTHOR, PostStatus.ACTIVE)).thenReturn(120L);
+
+            var stats = service.getBlogStats(AUTHOR, null);
+
+            assertThat(stats.bio()).isEqualTo("백엔드 개발자");
+            assertThat(stats.postCount()).isEqualTo(3);
+            assertThat(stats.totalViews()).isEqualTo(120);
+        }
+
+        @Test
+        void blockedOrInactiveBlogIsNotFound() {
+            com.dipsource.entity.user.User owner = com.dipsource.entity.user.User.builder()
+                    .email("a@test.local").nickname("작가").build();
+            when(userRepository.findById(AUTHOR)).thenReturn(Optional.of(owner));
+            when(blockRepository.existsBetween(OTHER, AUTHOR)).thenReturn(true);
+            assertThatThrownBy(() -> service.getBlogStats(AUTHOR, OTHER))
+                    .isInstanceOf(BusinessException.class)
+                    .extracting(e -> ((BusinessException) e).getErrorCode())
+                    .isEqualTo(ErrorCode.NOT_FOUND);
+
+            owner.suspend();
+            assertThatThrownBy(() -> service.getBlogStats(AUTHOR, null))
+                    .isInstanceOf(BusinessException.class)
+                    .extracting(e -> ((BusinessException) e).getErrorCode())
+                    .isEqualTo(ErrorCode.NOT_FOUND);
         }
     }
 

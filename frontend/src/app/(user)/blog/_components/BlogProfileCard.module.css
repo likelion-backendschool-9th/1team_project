@@ -74,6 +74,12 @@
   background: #ffb800;
 }
 
+.writeRow {
+  display: grid;
+  grid-template-columns: 1fr 1.4fr;
+  gap: 10px;
+}
+
 .actions {
   display: grid;
   grid-template-columns: 1fr 1fr;

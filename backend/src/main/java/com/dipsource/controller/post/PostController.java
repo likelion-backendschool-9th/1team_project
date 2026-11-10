@@ -1,5 +1,6 @@
 package com.dipsource.controller.post;
 
+import com.dipsource.dto.post.BlogStatsResponse;
 import com.dipsource.dto.post.PostDetailResponse;
 import com.dipsource.dto.post.PostIdResponse;
 import com.dipsource.dto.post.PostSummaryResponse;
@@ -60,6 +61,16 @@ public class PostController {
     }
 
     /** 글 상세 (비로그인 가능, 잠긴 유료 글은 앞부분만) */
+    /** 블로그 주인 화면의 소개·글 수·총 조회수 (비로그인 가능) */
+    @GetMapping("/users/{userId}/blog")
+    public ResponseEntity<ApiResponse<BlogStatsResponse>> blogStats(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @PathVariable Long userId
+    ) {
+        Long viewerId = principal == null ? null : principal.getUserId();
+        return ResponseEntity.ok(ApiResponse.of(postService.getBlogStats(userId, viewerId)));
+    }
+
     @GetMapping("/posts/{postId}")
     public ResponseEntity<ApiResponse<PostDetailResponse>> post(
             @AuthenticationPrincipal UserPrincipal principal,
