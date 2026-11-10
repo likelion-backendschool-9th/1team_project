@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import type { ReactNode } from "react";
+import { useExpandStage } from "@/app/(user)/_components/useExpandStage";
 import styles from "./FeaturedDemo.module.css";
 
 type Props = {
@@ -16,21 +17,10 @@ type Props = {
 
 // 대표 데모는 새 창 없이 이 자리에서 크게 키워 실행한다. 좋아요·댓글은 키운 화면 아래에 그대로 둔다.
 export function FeaturedBody({ stage, summary, actions, description, extra, runHref }: Props) {
-  const [expanded, setExpanded] = useState(false);
-  const bodyRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!expanded) return;
-    bodyRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-    function handleKey(event: KeyboardEvent) {
-      if (event.key === "Escape" && !document.querySelector("dialog[open]")) setExpanded(false);
-    }
-    document.addEventListener("keydown", handleKey);
-    return () => document.removeEventListener("keydown", handleKey);
-  }, [expanded]);
+  const { expanded, setExpanded, ref } = useExpandStage<HTMLDivElement>();
 
   return (
-    <div ref={bodyRef} className={`${styles.body} ${expanded ? styles.expanded : ""}`}>
+    <div ref={ref} className={`${styles.body} ${expanded ? styles.expanded : ""}`}>
       <div className={styles.stage}>{stage}</div>
       <div className={styles.info}>
         <div className={styles.summary}>
