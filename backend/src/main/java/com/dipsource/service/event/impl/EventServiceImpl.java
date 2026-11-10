@@ -13,6 +13,7 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Set;
+import java.util.regex.Pattern;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -27,8 +28,11 @@ public class EventServiceImpl implements EventService {
     private static final int DEFAULT_SIZE = 20;
     private static final int MAX_SIZE = 100;
     private static final String DEFAULT_EMOJI = "🎉";
-    private static final String CTA_LABEL = "데모 둘러보기";
-    private static final String CTA_HREF = "/demos";
+    private static final String CTA_LABEL = "이벤트 참여하기";
+    /** 참여 경로를 정하지 않은 이벤트의 기본 경로 */
+    private static final String DEFAULT_CTA_HREF = "/demos";
+    /** 사이트 안 경로만 받는다. //로 시작하면 다른 사이트로 가므로 막는다 */
+    private static final Pattern INTERNAL_PATH = Pattern.compile("^/(?![/\\\\])[^\\s\\\\]*$");
     private static final Set<String> STATUSES = Set.of("ongoing", "upcoming", "ended");
     private static final DateTimeFormatter ISO = DateTimeFormatter.ISO_OFFSET_DATE_TIME;
 
@@ -71,7 +75,9 @@ public class EventServiceImpl implements EventService {
                 request.summary().trim(),
                 request.reward().trim(),
                 request.startAt(),
-                request.endAt());
+                request.endAt(),
+                imageUrlOrNull(request.imageUrl()),
+                ctaHrefOrNull(request.ctaHref()));
         return toResponse(eventRepository.save(event), LocalDate.now(clock));
     }
 
@@ -79,6 +85,8 @@ public class EventServiceImpl implements EventService {
     @Transactional
     public EventResponse update(Long eventId, SaveEventRequest request) {
         checkPeriod(request.startAt(), request.endAt());
+        String imageUrl = imageUrlOrNull(request.imageUrl());
+        String ctaHref = ctaHrefOrNull(request.ctaHref());
         Event event = findActive(eventId);
         event.update(
                 request.title().trim(),
@@ -86,7 +94,9 @@ public class EventServiceImpl implements EventService {
                 request.summary().trim(),
                 request.reward().trim(),
                 request.startAt(),
-                request.endAt());
+                request.endAt(),
+                imageUrl,
+                ctaHref);
         return toResponse(event, LocalDate.now(clock));
     }
 
@@ -131,6 +141,28 @@ public class EventServiceImpl implements EventService {
         return emoji.trim();
     }
 
+    private static String imageUrlOrNull(String imageUrl) {
+        if (imageUrl == null || imageUrl.isBlank()) {
+            return null;
+        }
+        String url = imageUrl.trim();
+        if (!url.startsWith("https://") && !url.startsWith("http://")) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "이미지 주소를 확인해 주세요.");
+        }
+        return url;
+    }
+
+    private static String ctaHrefOrNull(String ctaHref) {
+        if (ctaHref == null || ctaHref.isBlank()) {
+            return null;
+        }
+        String href = ctaHref.trim();
+        if (!INTERNAL_PATH.matcher(href).matches()) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "참여 경로는 /demos/upload처럼 /로 시작하는 사이트 안 주소여야 해요.");
+        }
+        return href;
+    }
+
     static String statusOf(LocalDate start, LocalDate end, LocalDate today) {
         if (today.isBefore(start)) {
             return "upcoming";
@@ -154,6 +186,7 @@ public class EventServiceImpl implements EventService {
                 event.getEmoji(),
                 0,
                 CTA_LABEL,
-                CTA_HREF);
+                event.getCtaHref() == null ? DEFAULT_CTA_HREF : event.getCtaHref(),
+                event.getImageUrl());
     }
 }

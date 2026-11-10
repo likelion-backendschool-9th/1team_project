@@ -50,12 +50,20 @@ public class Event extends BaseEntity {
     @Column(name = "ends_at", nullable = false)
     private LocalDate endsAt;
 
+    /** 대표 이미지 URL. 없으면 null */
+    @Column(name = "image_url", length = 500)
+    private String imageUrl;
+
+    /** 참여하기 버튼이 보내는 사이트 안 경로 (예: /demos/upload). 없으면 null */
+    @Column(name = "cta_href", length = 300)
+    private String ctaHref;
+
     /** 삭제 시각. 삭제하지 않았으면 null */
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
 
     public static Event create(String title, String emoji, String summary, String reward,
-                               LocalDate startsAt, LocalDate endsAt) {
+                               LocalDate startsAt, LocalDate endsAt, String imageUrl, String ctaHref) {
         Event event = new Event();
         event.title = title;
         event.emoji = emoji;
@@ -63,17 +71,21 @@ public class Event extends BaseEntity {
         event.reward = reward;
         event.startsAt = startsAt;
         event.endsAt = endsAt;
+        event.imageUrl = imageUrl;
+        event.ctaHref = ctaHref;
         return event;
     }
 
     public void update(String title, String emoji, String summary, String reward,
-                       LocalDate startsAt, LocalDate endsAt) {
+                       LocalDate startsAt, LocalDate endsAt, String imageUrl, String ctaHref) {
         this.title = title;
         this.emoji = emoji;
         this.summary = summary;
         this.reward = reward;
         this.startsAt = startsAt;
         this.endsAt = endsAt;
+        this.imageUrl = imageUrl;
+        this.ctaHref = ctaHref;
     }
 
     public void delete() {

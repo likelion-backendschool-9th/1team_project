@@ -57,8 +57,9 @@ class EventServiceImplTest {
         assertThat(ended.emoji()).isEqualTo("🎉");
         assertThat(ended.participantCount()).isZero();
         assertThat(ended.content()).isEqualTo(ended.summary());
-        assertThat(ended.ctaLabel()).isEqualTo("데모 둘러보기");
+        assertThat(ended.ctaLabel()).isEqualTo("이벤트 참여하기");
         assertThat(ended.ctaHref()).isEqualTo("/demos");
+        assertThat(ended.imageUrl()).isNull();
         assertThat(ended.startAt()).isEqualTo("2026-11-05T00:00:00+09:00");
         assertThat(ended.endAt()).isEqualTo("2026-11-09T23:59:00+09:00");
     }
@@ -86,7 +87,7 @@ class EventServiceImplTest {
 
     @Test
     void 목록은_요청한_상태로_거른다() {
-        Event ongoing = Event.create("진행", "🎉", "소개", "보상", TODAY.minusDays(1), TODAY.plusDays(1));
+        Event ongoing = Event.create("진행", "🎉", "소개", "보상", TODAY.minusDays(1), TODAY.plusDays(1), null, null);
         ReflectionTestUtils.setField(ongoing, "id", 3L);
         when(eventRepository.findVisible(eq("ongoing"), eq(TODAY), any()))
                 .thenReturn(new PageImpl<>(List.of(ongoing), PageRequest.of(0, 20), 1));
@@ -101,11 +102,60 @@ class EventServiceImplTest {
         assertThat(today.getValue()).isEqualTo(TODAY);
     }
 
+    @Test
+    void 이미지와_참여_경로를_저장하고_응답에_담는다() {
+        when(eventRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        EventResponse response = service.create(new SaveEventRequest(
+                "제목", null, "소개", "보상", TODAY, TODAY, null,
+                " https://cdn.example.com/events/a.jpg ", " /blog/write "));
+
+        assertThat(response.imageUrl()).isEqualTo("https://cdn.example.com/events/a.jpg");
+        assertThat(response.ctaHref()).isEqualTo("/blog/write");
+    }
+
+    @Test
+    void 수정에서_이미지를_비우면_지운다() {
+        Event event = Event.create("제목", "🎉", "소개", "보상", TODAY, TODAY,
+                "https://cdn.example.com/events/a.jpg", "/blog/write");
+        when(eventRepository.findByIdAndDeletedAtIsNull(5L)).thenReturn(Optional.of(event));
+
+        EventResponse response = service.update(5L, new SaveEventRequest(
+                "제목", null, "소개", "보상", TODAY, TODAY, null, "", "/demos/upload"));
+
+        assertThat(response.imageUrl()).isNull();
+        assertThat(response.ctaHref()).isEqualTo("/demos/upload");
+    }
+
+    @Test
+    void 참여_경로가_사이트_밖이면_400이다() {
+        for (String href : new String[]{"https://evil.example", "//evil.example", "/\\evil.example", "demos", "/demos upload"}) {
+            SaveEventRequest request = new SaveEventRequest("제목", null, "소개", "보상", TODAY, TODAY, null, null, href);
+            assertThatThrownBy(() -> service.create(request))
+                    .as(href)
+                    .isInstanceOf(BusinessException.class)
+                    .extracting(ex -> ((BusinessException) ex).getErrorCode())
+                    .isEqualTo(ErrorCode.BAD_REQUEST);
+        }
+        verify(eventRepository, never()).save(any());
+    }
+
+    @Test
+    void 이미지_주소가_http가_아니면_400이다() {
+        SaveEventRequest request = new SaveEventRequest(
+                "제목", null, "소개", "보상", TODAY, TODAY, null, "javascript:alert(1)", null);
+
+        assertThatThrownBy(() -> service.create(request))
+                .isInstanceOf(BusinessException.class)
+                .extracting(ex -> ((BusinessException) ex).getErrorCode())
+                .isEqualTo(ErrorCode.BAD_REQUEST);
+    }
+
     private EventResponse create(LocalDate start, LocalDate end) {
         return service.create(request(start, end));
     }
 
     private static SaveEventRequest request(LocalDate start, LocalDate end) {
-        return new SaveEventRequest("제목", " ", "소개", "보상", start, end, "upcoming");
+        return new SaveEventRequest("제목", " ", "소개", "보상", start, end, "upcoming", null, null);
     }
 }

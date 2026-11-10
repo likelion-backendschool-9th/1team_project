@@ -128,25 +128,31 @@
   line-height: 1.35;
 }
 
+.author span:last-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 두 버튼은 금액과 상관없이 같은 높이, 시리즈 보기는 같은 너비로 둔다 */
 .preview,
 .open {
   user-select: none;
   display: inline-flex;
   flex: none;
-  max-width: 96px;
+  height: 56px;
   align-items: center;
   justify-content: center;
-  padding: 8px 12px;
+  padding: 0 14px;
   border-radius: 12px;
   font-size: 14px;
   font-weight: 700;
   line-height: 1.35;
   text-align: center;
+  white-space: nowrap;
 }
 
 .preview {
-  max-width: none;
-  white-space: nowrap;
   background: #fff3cf;
   color: #b45f06;
 }
@@ -156,6 +162,8 @@
 }
 
 .open {
+  width: 128px;
+  flex-direction: column;
   background: #ffc21a;
 }
 
@@ -163,13 +171,15 @@
   background: #ffb800;
 }
 
+.price {
+  overflow: hidden;
+  max-width: 100%;
+  font-size: 13px;
+  text-overflow: ellipsis;
+}
+
 @media (max-width: 1280px) {
   .grid {
     grid-template-columns: minmax(0, 1fr);
-  }
-
-  .preview,
-  .open {
-    max-width: none;
   }
 }

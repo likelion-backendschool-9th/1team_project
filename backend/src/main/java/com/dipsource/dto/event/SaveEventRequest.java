@@ -5,7 +5,10 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import java.time.LocalDate;
 
-/** 이벤트 등록·수정 요청. status는 폼이 보내도 저장하지 않는다. */
+/**
+ * 이벤트 등록·수정 요청. status는 폼이 보내도 저장하지 않는다.
+ * imageUrl은 POST /admin/events/images로 먼저 올려 받은 주소, ctaHref는 참여하기 버튼이 보낼 사이트 안 경로다.
+ */
 public record SaveEventRequest(
         @NotBlank(message = "제목을 입력해 주세요.") @Size(max = 100, message = "제목은 100자 이하여야 합니다.") String title,
         @Size(max = 8, message = "이모지는 8자 이하여야 합니다.") String emoji,
@@ -13,6 +16,8 @@ public record SaveEventRequest(
         @NotBlank(message = "보상을 입력해 주세요.") @Size(max = 100, message = "보상은 100자 이하여야 합니다.") String reward,
         @NotNull(message = "시작일을 입력해 주세요.") LocalDate startAt,
         @NotNull(message = "종료일을 입력해 주세요.") LocalDate endAt,
-        String status
+        String status,
+        @Size(max = 500, message = "이미지 주소는 500자 이하여야 합니다.") String imageUrl,
+        @Size(max = 300, message = "참여 경로는 300자 이하여야 합니다.") String ctaHref
 ) {
 }

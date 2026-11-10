@@ -43,8 +43,10 @@ export function SeriesCard({ series }: Props) {
             1화 읽기
           </Link>
         )}
+        {/* 금액 길이와 상관없이 버튼 크기가 같도록 이름과 금액을 두 줄로 고정한다 */}
         <Link href={`/blog/series/${series.id}`} className={styles.open}>
-          {series.price > 0 ? `시리즈 보기 · ${formatWon(series.price)}` : "무료 시리즈 보기"}
+          <span>시리즈 보기</span>
+          <span className={styles.price}>{series.price > 0 ? formatWon(series.price) : "무료"}</span>
         </Link>
       </div>
     </article>

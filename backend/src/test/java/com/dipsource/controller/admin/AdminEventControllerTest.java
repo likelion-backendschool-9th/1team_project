@@ -62,7 +62,9 @@ class AdminEventControllerTest {
                 .andExpect(jsonPath("$.data.id").value(1))
                 .andExpect(jsonPath("$.data.status").value("ongoing"))
                 .andExpect(jsonPath("$.data.emoji").value("🎉"))
-                .andExpect(jsonPath("$.data.participantCount").value(0));
+                .andExpect(jsonPath("$.data.participantCount").value(0))
+                .andExpect(jsonPath("$.data.ctaHref").value("/demos/upload"))
+                .andExpect(jsonPath("$.data.imageUrl").value("https://cdn.example.com/events/a.jpg"));
     }
 
     @Test
@@ -115,7 +117,8 @@ class AdminEventControllerTest {
                 "1등 300칩",
                 "🎉",
                 0,
-                "데모 둘러보기",
-                "/demos");
+                "이벤트 참여하기",
+                "/demos/upload",
+                "https://cdn.example.com/events/a.jpg");
     }
 }
