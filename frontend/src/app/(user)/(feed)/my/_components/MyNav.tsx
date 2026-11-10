@@ -16,6 +16,7 @@ const items = [
   { href: "/my/settings", label: "설정" },
   { href: "/my/coins", label: "칩" },
   { href: "/my/subscription", label: "구독·구매" },
+  { href: "/my/settlements", label: "내 정산" },
 ];
 
 function NavList({
