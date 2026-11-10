@@ -9,6 +9,39 @@
   min-width: 0;
   flex-direction: column;
   gap: 12px;
+  scroll-margin-top: 24px;
+}
+
+.expanded {
+  grid-column: 1 / -1;
+}
+
+/* 대표 데모와 같은 정사각형 무대. 화면 높이를 넘지 않게 폭을 묶고 가운데 둔다. */
+.expanded .stage {
+  width: min(100%, calc(100vh - 160px));
+  aspect-ratio: 1 / 1;
+  margin-inline: auto;
+}
+
+.run {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 12px 16px;
+  border-radius: 12px;
+  background: #1f1b17;
+  color: #fff;
+  font-weight: 700;
+  user-select: none;
+}
+
+.run:hover {
+  background: #000;
+}
+
+.expanded .run {
+  flex: none;
 }
 
 .stage {
