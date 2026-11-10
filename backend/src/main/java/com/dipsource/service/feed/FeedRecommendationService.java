@@ -124,6 +124,14 @@ public class FeedRecommendationService {
     }
 
     /**
+     * 최신 피드. 전체 피드를 최신순으로. 비로그인(userId null)도 가능.
+     */
+    public FeedCursorResponse getLatestFeeds(Long userId, Long cursorId, int size) {
+        List<Feed> feeds = feedRepository.findLatestFeedsCursor(userId, cursorId, size);
+        return toResponse(feeds, userId, size);
+    }
+
+    /**
      * 태그 필터 피드. 태그가 달린 글을 최신순으로 보여 준다. 비로그인(userId null)도 가능.
      */
     public FeedCursorResponse getTagFeeds(Long userId, String tagName, Long cursorId, int size) {

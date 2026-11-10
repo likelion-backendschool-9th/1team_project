@@ -203,7 +203,7 @@ public interface FeedRepository extends JpaRepository<Feed, Long> {
     );
 
     /**
-     * 최신 피드 조회 (비로그인 사용자용).
+     * 최신 피드 조회 (비로그인 사용자용). offset 기반.
      */
     @Query(nativeQuery = true, value = """
     SELECT f.*
@@ -217,6 +217,28 @@ public interface FeedRepository extends JpaRepository<Feed, Long> {
     ORDER BY f.id DESC
     """)
     List<Feed> findLatestFeeds(@Param("userId") Long userId, Pageable pageable);
+
+    /**
+     * 최신 피드 조회 - 커서 기반 (로그인/비로그인 공용).
+     */
+    @Query(nativeQuery = true, value = """
+    SELECT f.*
+    FROM feeds f
+    WHERE f.status = 'ACTIVE'
+      AND (:userId IS NULL OR f.user_id NOT IN (
+          SELECT blocked_id FROM blocks WHERE blocker_id = :userId
+          UNION
+          SELECT blocker_id FROM blocks WHERE blocked_id = :userId
+      ))
+      AND (:cursorId IS NULL OR f.id < :cursorId)
+    ORDER BY f.id DESC
+    LIMIT :size
+    """)
+    List<Feed> findLatestFeedsCursor(
+            @Param("userId") Long userId,
+            @Param("cursorId") Long cursorId,
+            @Param("size") int size
+    );
 
     /** 좋아요 수 +1. 엔티티 필드 갱신 대신 DB UPDATE로 동시성 처리. */
     @Modifying(clearAutomatically = true, flushAutomatically = true)

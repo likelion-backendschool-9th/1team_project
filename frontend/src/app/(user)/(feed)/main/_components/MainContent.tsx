@@ -31,11 +31,13 @@ export async function MainContent({ searchParams }: Props) {
   await connection();
   const params = await searchParams;
   const activeTag = parseTag(params.tag);
-  const feedType: FeedType = params.type === "following" ? "following" : "recommended";
+  const feedType: FeedType =
+    params.type === "following" ? "following" :
+    params.type === "latest" ? "latest" : "recommended";
   const typeHref = (type: FeedType) => {
     const query = new URLSearchParams();
     if (activeTag) query.set("tag", activeTag);
-    if (type === "following") query.set("type", type);
+    if (type !== "recommended") query.set("type", type);
     const search = query.toString();
     return search ? `/?${search}` : "/";
   };
@@ -65,6 +67,7 @@ export async function MainContent({ searchParams }: Props) {
             items={[
               { href: typeHref("recommended"), label: "추천", active: feedType === "recommended" },
               { href: typeHref("following"), label: "팔로잉", active: feedType === "following" },
+              { href: typeHref("latest"), label: "최신", active: feedType === "latest" },
             ]}
           />
         </div>
@@ -72,6 +75,8 @@ export async function MainContent({ searchParams }: Props) {
           <p className={styles.empty}>
             {feedType === "following"
               ? "팔로잉한 개발자의 새 피드가 없어요."
+              : feedType === "latest"
+              ? "아직 피드가 없어요."
               : "아직 피드가 없어요. 첫 소스를 공유해 보세요."}
           </p>
         ) : (

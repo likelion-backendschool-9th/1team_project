@@ -28,7 +28,7 @@ export async function getHotDemos(): Promise<DemoSummary[]> {
   return data.content;
 }
 
-export type FeedType = "recommended" | "following";
+export type FeedType = "recommended" | "following" | "latest";
 
 export async function getFeeds(tag: string | undefined, type: FeedType): Promise<Feed[]> {
   if (isMockMode) {
