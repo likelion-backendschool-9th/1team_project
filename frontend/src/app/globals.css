@@ -2,7 +2,7 @@
   --shell-max: 1920px;
   --aside-left: clamp(260px, 17vw, 300px);
   --aside-right: clamp(260px, 17vw, 300px);
-  --bg: #fbf8f3;
+  --bg: #fdfdff;
   --surface: #ffffff;
   --surface-muted: #f3f1ed;
   --ink: #1f2328;
