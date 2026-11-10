@@ -5,7 +5,7 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Avatar } from "@/app/_components/ui/Avatar";
 import type { DmMessage } from "@/app/_lib/types/dm";
 import type { UserSummary } from "@/app/_lib/types/user";
-import type { DmSocketStatus } from "../_hooks/useDmSocket";
+import type { RealtimeStatus } from "./RealtimeProvider";
 import styles from "./Dm.module.css";
 
 type Props = {
@@ -14,7 +14,7 @@ type Props = {
   online: boolean;
   /** 불러오는 중이면 null */
   messages: DmMessage[] | null;
-  status: DmSocketStatus;
+  status: RealtimeStatus;
   error: string | null;
   /** 보내기에 성공하면 true. 연결이 끊겨 못 보냈으면 false */
   onSend: (content: string) => boolean;
@@ -22,7 +22,7 @@ type Props = {
 
 const MAX_LENGTH = 1000;
 
-const statusLabels: Record<DmSocketStatus, string> = {
+const statusLabels: Record<RealtimeStatus, string> = {
   mock: "실시간 연결 꺼짐 (NEXT_PUBLIC_WS_URL 미설정 · 보낸 메시지는 이 화면에만 보여요)",
   connecting: "연결 중…",
   connected: "실시간 연결됨",

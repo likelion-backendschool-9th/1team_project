@@ -4,14 +4,18 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { DmMessage, DmRoom } from "@/app/_lib/types/dm";
 import type { UserSummary } from "@/app/_lib/types/user";
 import { loadDmMessages, loadDmRooms } from "../_actions";
-import { useDmSocket, type DmSocketMessage } from "../_hooks/useDmSocket";
 import { DmChat } from "./DmChat";
 import { DmRoomList } from "./DmRoomList";
+import { useRealtime, useRealtimeEvent, type DmSocketMessage } from "./RealtimeProvider";
 import styles from "./Dm.module.css";
 
 type Props = {
   id: string;
   initialPartner: UserSummary | null;
+  /** 보고 있는 대화 상대가 바뀔 때 */
+  onViewingChange: (partnerId: number | null) => void;
+  /** 안 읽은 DM 수가 바뀔 때. DM 버튼 배지에 쓴다 */
+  onUnreadChange: (count: number) => void;
 };
 
 type Conversation = {
@@ -32,8 +36,8 @@ function applyToRooms(rooms: DmRoom[], message: DmSocketMessage, partnerId: numb
   return [updated, ...rooms.filter((item) => item !== room)];
 }
 
-/** DM 창 내용. 열릴 때 대화 목록을 받아 오고, 열려 있는 동안 실시간으로 연결한다. */
-export function DmPanel({ id, initialPartner }: Props) {
+/** DM 창 내용. 열릴 때 대화 목록을 받아 오고, 실시간으로 받은 메시지·읽음 표시를 반영한다. */
+export function DmPanel({ id, initialPartner, onViewingChange, onUnreadChange }: Props) {
   const [myId, setMyId] = useState<number | null>(null);
   const [rooms, setRooms] = useState<DmRoom[] | null>(null);
   const [now, setNow] = useState(0);
@@ -59,6 +63,14 @@ export function DmPanel({ id, initialPartner }: Props) {
     partnerRef.current = partner;
     roomsRef.current = rooms;
   }, [partner, rooms]);
+
+  useEffect(() => {
+    onViewingChange(partner?.id ?? null);
+  }, [partner, onViewingChange]);
+
+  useEffect(() => {
+    if (rooms) onUnreadChange(rooms.reduce((sum, room) => sum + room.unreadCount, 0));
+  }, [rooms, onUnreadChange]);
 
   useEffect(() => {
     let cancelled = false;
@@ -94,6 +106,8 @@ export function DmPanel({ id, initialPartner }: Props) {
     };
   }, [myId, partner]);
 
+  const realtime = useRealtime();
+
   const receive = useCallback(
     (message: DmSocketMessage) => {
       if (myId === null) return;
@@ -108,6 +122,8 @@ export function DmPanel({ id, initialPartner }: Props) {
         refreshRooms();
       }
       if (!viewing) return;
+      // 보고 있는 대화에 온 메시지는 바로 읽음 처리해서 상대 화면의 "1"도 지운다.
+      if (!mine) realtime.publish("/app/dm.read", { partnerId: otherId });
       setConversation((current) =>
         !current || current.partnerId !== otherId || current.messages.some((item) => item.id === message.id)
           ? current
@@ -126,19 +142,38 @@ export function DmPanel({ id, initialPartner }: Props) {
             },
       );
     },
-    [myId, refreshRooms],
+    [myId, refreshRooms, realtime],
   );
-  const socket = useDmSocket(receive);
+  useRealtimeEvent("dm", receive);
+
+  // 상대가 내 메시지를 읽으면 그 메시지까지 "1"을 지운다.
+  useRealtimeEvent("dm-read", (event) => {
+    setConversation((current) =>
+      !current || current.partnerId !== event.readerId
+        ? current
+        : {
+            ...current,
+            messages: current.messages.map((item) =>
+              item.senderId === myId && !item.read && item.id <= event.lastReadMessageId
+                ? { ...item, read: true }
+                : item,
+            ),
+          },
+    );
+  });
 
   function handleSend(content: string): boolean {
     if (!partner || myId === null) return false;
-    if (socket.status !== "mock") return socket.send(partner.id, content);
+    if (realtime.status !== "mock") {
+      return realtime.publish("/app/dm.send", { receiverId: partner.id, content });
+    }
 
     // 백엔드 없이 확인할 때는 화면에만 붙인다.
     const message: DmSocketMessage = {
       id: Date.now(),
       roomId: 0,
       senderId: myId,
+      sender: null,
       receiverId: partner.id,
       content,
       createdAt: new Date().toISOString(),
@@ -167,8 +202,8 @@ export function DmPanel({ id, initialPartner }: Props) {
             partner={room?.user ?? partner}
             online={room?.online ?? false}
             messages={messages}
-            status={socket.status}
-            error={socket.error ?? (messages ? null : loadError)}
+            status={realtime.status}
+            error={realtime.error ?? (messages ? null : loadError)}
             onSend={handleSend}
           />
         ) : (
