@@ -10,6 +10,7 @@ import { subscribeBlog } from "../../_actions";
 import { ArticleCard } from "../../_components/ArticleCard";
 import { getBlogOwner, getPopularSeries, getServerTime, getUserPosts } from "../../_lib/api";
 import styles from "./AuthorBlog.module.css";
+import { SubscriptionPriceForm } from "./SubscriptionPriceForm";
 
 type Props = {
   params: Promise<{ userId: string }>;
@@ -60,7 +61,12 @@ export async function AuthorBlog({ params }: Props) {
               새 글 쓰기
             </Link>
           ) : owner.subscribed ? (
-            <span className={kit.pillSuccess}>✓ 구독 중</span>
+            <>
+              <span className={kit.pillSuccess}>✓ 구독 중</span>
+              <Link href="/my/subscription" className={kit.btnGhost}>
+                구독 관리
+              </Link>
+            </>
           ) : owner.subscriptionPrice <= 0 ? null : (
             <ConfirmButton
               label={`구독하기 · 월 ${formatWon(owner.subscriptionPrice)}`}
@@ -76,6 +82,8 @@ export async function AuthorBlog({ params }: Props) {
           </Link>
         </div>
       </section>
+
+      {mine && <SubscriptionPriceForm ownerId={userId} price={owner.subscriptionPrice} />}
 
       {series.length > 0 && (
         <section aria-labelledby="owner-series">

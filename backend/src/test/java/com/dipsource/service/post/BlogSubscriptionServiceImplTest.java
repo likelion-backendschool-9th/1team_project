@@ -162,6 +162,39 @@ class BlogSubscriptionServiceImplTest {
         }
     }
 
+    @Nested
+    class ChangePrice {
+
+        @Test
+        void changesMyPriceWithoutLimit() {
+            User me = user(ME, 0);
+            when(userRepository.findById(ME)).thenReturn(Optional.of(me));
+
+            service.changePrice(ME, 1_000_000);
+
+            assertThat(me.getBlogSubscriptionPrice()).isEqualTo(1_000_000);
+        }
+
+        @Test
+        void zeroStopsTakingSubscriptions() {
+            User me = user(ME, 3000);
+            when(userRepository.findById(ME)).thenReturn(Optional.of(me));
+
+            service.changePrice(ME, 0);
+
+            assertThat(me.getBlogSubscriptionPrice()).isZero();
+        }
+
+        @Test
+        void negativeIsRejected() {
+            assertThatThrownBy(() -> service.changePrice(ME, -1))
+                    .isInstanceOf(BusinessException.class)
+                    .extracting(e -> ((BusinessException) e).getErrorCode())
+                    .isEqualTo(ErrorCode.BAD_REQUEST);
+            verify(userRepository, never()).findById(any());
+        }
+    }
+
     private void stubUsers(int price) {
         when(userRepository.findByIdForUpdate(ME)).thenReturn(Optional.of(user(ME, 0)));
         when(userRepository.findById(OWNER)).thenReturn(Optional.of(user(OWNER, price)));

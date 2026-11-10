@@ -22,4 +22,10 @@ public interface BlogSubscriptionService {
 
     /** 블로그 주인 화면용 구독 정보. viewerId는 비로그인이면 null. 없는 회원·차단 관계는 404 */
     BlogSubscriptionInfoResponse getInfo(Long blogOwnerId, Long viewerId);
+
+    /**
+     * 내 블로그 월 구독료(원)를 바꾼다. 0이면 구독을 받지 않는다. 음수는 400.
+     * 이미 결제한 구독은 결제한 가격 그대로 만료일까지 이어진다.
+     */
+    void changePrice(Long userId, int price);
 }
