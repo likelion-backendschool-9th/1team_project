@@ -3,6 +3,7 @@ package com.dipsource.service.user.impl;
 import com.dipsource.entity.user.SocialAccount;
 import com.dipsource.service.user.SocialProfile;
 import com.dipsource.entity.user.User;
+import com.dipsource.entity.user.enums.SocialProvider;
 import com.dipsource.entity.user.enums.UserStatus;
 import com.dipsource.global.auth.JwtProvider;
 import com.dipsource.global.auth.RefreshTokenHasher;
@@ -20,6 +21,8 @@ import java.time.Instant;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -160,6 +163,64 @@ public class AuthServiceImpl implements AuthService {
                     return new AuthResult(user, false);
                 })
                 .orElseGet(() -> createUser(profile));
+    }
+
+    @Override
+    @Transactional
+    public void linkSocialAccount(Long userId, SocialProfile profile) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.UNAUTHORIZED));
+
+        // 이 소셜 계정이 이미 어딘가에 연결돼 있는지 먼저 본다
+        Optional<SocialAccount> existing =
+                socialAccountRepository.findByProviderAndProviderId(profile.provider(), profile.providerId());
+        if (existing.isPresent()) {
+            if (existing.get().getUser().getId().equals(userId)) {
+                return; // 이미 내 계정에 연결돼 있으면 그대로 성공
+            }
+            throw new BusinessException(ErrorCode.CONFLICT, "이미 다른 찍먹 계정에 연결된 소셜 계정이에요.");
+        }
+
+        // 같은 종류(예: 카카오)를 다른 카카오 계정으로 하나 더 붙이는 건 막는다
+        boolean sameProviderLinked = user.getSocialAccounts().stream()
+                .anyMatch(account -> account.getProvider() == profile.provider());
+        if (sameProviderLinked) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "이미 같은 종류의 소셜 계정이 연결돼 있어요.");
+        }
+
+        // builder 안에서 user.getSocialAccounts()에 추가되고, cascade로 함께 저장된다
+        SocialAccount.builder()
+                .user(user)
+                .provider(profile.provider())
+                .providerId(profile.providerId())
+                .build();
+        user.syncGithubUsername(profile.githubUsername()); // GitHub을 연결하면 잔디용 아이디도 채운다
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<SocialProvider> getLinkedProviders(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.UNAUTHORIZED));
+        return user.getSocialAccounts().stream()
+                .map(SocialAccount::getProvider)
+                .sorted()
+                .toList();
+    }
+
+    @Override
+    @Transactional
+    public void unlinkSocialAccount(Long userId, SocialProvider provider) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.UNAUTHORIZED));
+        // 소셜 로그인만 쓰므로, 다 끊으면 다시 로그인할 방법이 없어진다
+        if (user.getSocialAccounts().size() <= 1) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "로그인할 소셜 계정이 하나는 남아 있어야 해요.");
+        }
+        boolean removed = user.getSocialAccounts().removeIf(account -> account.getProvider() == provider);
+        if (!removed) {
+            throw new BusinessException(ErrorCode.NOT_FOUND, "연결되지 않은 소셜 계정이에요.");
+        }
     }
     
     @Override 

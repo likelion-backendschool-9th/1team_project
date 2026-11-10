@@ -6,18 +6,27 @@ import { formatCount, formatDate } from "@/app/_lib/format";
 import { UserBadges } from "@/app/(user)/_components/UserBadges";
 import { getMe } from "@/app/(user)/_lib/api";
 import { verifyCompany, withdraw } from "../_actions";
-import { getAccount } from "../_lib/api";
 import { AccountForm } from "./AccountForm";
 import { LogoutConfirm } from "./LogoutConfirm";
 import styles from "./My.module.css";
 import { ProfileImageUploader } from "./ProfileImageUploader";
+import { getAccount, getSocialAccounts } from "../_lib/api";
+import { SocialAccounts } from "./SocialAccounts";
 
 const providers = { github: "GitHub", kakao: "카카오", google: "구글" };
 
-export async function MyContent() {
-  const [me, account] = await Promise.all([getMe(), getAccount()]);
-  if (!me) return null;
+type Props = {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+};
 
+export async function MyContent({ searchParams }: Props) {
+  const [me, account, socialAccounts, params] = await Promise.all([
+    getMe(),
+    getAccount(),
+    getSocialAccounts(),
+    searchParams,
+  ]);
+  if (!me) return null;
   return (
     <div className={kit.stack}>
       <section className={`${kit.card} ${styles.summary}`} aria-label="프로필 요약">
@@ -34,7 +43,7 @@ export async function MyContent() {
           </p>
           <UserBadges badges={me.badges} />
           <p className={kit.faint} style={{ marginTop: 8 }}>
-            {providers[account.provider]} 계정 · {account.email} · {formatDate(account.joinedAt)} 가입
+            {socialAccounts.map((provider) => providers[provider]).join(" · ")} 계정 · {account.email} · {formatDate(account.joinedAt)} 가입
           </p>
         </div>
         <dl className={styles.stats}>
@@ -72,6 +81,11 @@ export async function MyContent() {
       </div>
 
       <AccountForm nickname={me.nickname} techStacks={me.techStacks.join(", ")} account={account} />
+      <SocialAccounts
+        linked={socialAccounts}
+        justLinked={typeof params.linked === "string" ? params.linked : undefined}
+        linkError={typeof params.linkError === "string" ? params.linkError : undefined}
+      />
 
       <section className={kit.card} aria-labelledby="company-title">
         <div className={kit.between}>

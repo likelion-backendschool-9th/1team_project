@@ -1,6 +1,7 @@
 package com.dipsource.global.auth;
 
 import com.dipsource.entity.user.enums.UserStatus;
+import com.dipsource.global.exception.BusinessException;
 import com.dipsource.service.user.AuthResult;
 import com.dipsource.service.user.AuthService;
 import com.dipsource.service.user.SocialProfile;
@@ -25,6 +26,8 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
 
+    /** 소셜 계정 연동을 시작한 회원 ID를 세션에 잠깐 담아 두는 이름 (AuthController.link에서 넣는다) */
+    public static final String LINK_USER_ID = "OAUTH_LINK_USER_ID";
     private final AuthService authService;
     private final AuthCookieWriter authCookieWriter;
 
@@ -41,6 +44,22 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
         SocialProfile profile = SocialProfile.of(
                 token.getAuthorizedClientRegistrationId(),
                 token.getPrincipal().getAttributes());
+
+        // 내 정보에서 "연동하기"로 들어온 경우: 새로 가입·로그인하지 않고 지금 회원에 붙인다
+        HttpSession linkSession = request.getSession(false);
+        Long linkUserId = linkSession == null ? null : (Long) linkSession.getAttribute(LINK_USER_ID);
+        if (linkUserId != null) {
+            linkSession.removeAttribute(LINK_USER_ID);
+            String query;
+            try {
+                authService.linkSocialAccount(linkUserId, profile);
+                query = "linked=" + profile.provider().name().toLowerCase();
+            } catch (BusinessException e) {
+                query = "linkError=" + e.getErrorCode().name().toLowerCase();
+            }
+            getRedirectStrategy().sendRedirect(request, response, frontendBaseUrl + "/my?" + query);
+            return;
+        }
 
         AuthResult result;
         try {

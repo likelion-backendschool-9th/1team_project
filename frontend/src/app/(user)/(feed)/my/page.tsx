@@ -5,12 +5,12 @@ import { MyContent } from "./_components/MyContent";
 
 export const metadata: Metadata = { title: "내 정보", robots: { index: false } };
 
-export default function MyPage() {
+export default function MyPage({ searchParams }: PageProps<"/my">) {
   return (
     <>
       <h1 className={kit.pageTitle}>내 정보</h1>
       <Suspense fallback={<p role="status" aria-busy="true">불러오는 중…</p>}>
-        <MyContent />
+        <MyContent searchParams={searchParams} />
       </Suspense>
     </>
   );
