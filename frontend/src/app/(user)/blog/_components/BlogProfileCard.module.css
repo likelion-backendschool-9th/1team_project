@@ -70,9 +70,11 @@
   font-size: 12px;
 }
 
-.chip dd,
 .chip dt {
-  color: var(--accent-ink);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
 }
 
 .write {

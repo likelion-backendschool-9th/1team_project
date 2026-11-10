@@ -4,8 +4,10 @@
   z-index: 5;
   scroll-margin-top: 24px;
   transition: box-shadow 0.2s ease;
-  border-radius: var(--radius-card);
+  border: 1px solid var(--border);
+  border-radius: 18px;
   background: var(--surface);
+  /* 피드 카드보다 한 단계 위: 글쓰기 창은 그림자로 떠 보이게 둔다. */
   box-shadow: var(--shadow-card);
 }
 
@@ -18,7 +20,7 @@
   align-items: center;
   flex-wrap: wrap;
   gap: 12px;
-  padding: 18px 20px;
+  padding: 14px 14px 14px 18px;
 }
 
 .input {
@@ -26,7 +28,7 @@
   flex: 1;
   border: 0;
   background: none;
-  font-size: 17px;
+  font-size: 16px;
 }
 
 .input:focus {
@@ -38,13 +40,13 @@
 }
 
 .form:focus-within {
-  border-radius: var(--radius-card);
+  border-radius: 18px;
   outline: 2px solid var(--accent-ink);
 }
 
 .count {
   color: var(--ink-faint);
-  font-size: 15px;
+  font-size: 12px;
   white-space: nowrap;
 }
 
@@ -52,7 +54,7 @@
   display: inline-flex;
   padding: 6px;
   color: var(--ink-soft);
-  font-size: 24px;
+  font-size: 21px;
 }
 
 .tool:disabled {
@@ -64,8 +66,9 @@
 }
 
 .submit {
-  padding: 12px 24px;
-  border-radius: 14px;
+  padding: 10px 22px;
+  border-radius: 12px;
+  font-size: 15px;
   background: var(--accent);
   font-weight: 700;
 }

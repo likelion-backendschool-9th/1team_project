@@ -46,10 +46,12 @@ export function BlogProfileCard({ me, unreadCount, notifications, now }: Props) 
           </dd>
         </div>
         <div className={styles.chip}>
-          <dt>보유 칩</dt>
+          <dt>
+            <ChipIcon size={12} /> 보유 칩
+          </dt>
           <dd>
             <Link href="/my/coins" className={styles.statLink} aria-label={`보유 칩 ${formatCount(me.chipBalance)}개, 충전·사용 내역 보기`}>
-              <ChipIcon size={16} /> {formatCount(me.chipBalance)}
+              {formatCount(me.chipBalance)}
             </Link>
           </dd>
         </div>

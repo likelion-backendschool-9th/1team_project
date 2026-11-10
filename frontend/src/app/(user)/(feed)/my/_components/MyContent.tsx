@@ -47,10 +47,10 @@ export async function MyContent() {
             <dd>{formatCount(me.followingCount)}</dd>
           </div>
           <div>
-            <dt>보유 칩</dt>
-            <dd className={styles.chip}>
-              <ChipIcon size={18} /> {formatCount(me.chipBalance)}
-            </dd>
+            <dt className={styles.chip}>
+              <ChipIcon size={12} /> 보유 칩
+            </dt>
+            <dd>{formatCount(me.chipBalance)}</dd>
           </div>
         </dl>
       </section>
