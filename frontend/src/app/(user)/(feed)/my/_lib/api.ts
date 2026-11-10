@@ -11,6 +11,8 @@ import {
   mockHistory,
   mockPackages,
   mockPlus,
+  mockSettlementSummary,
+  mockSettlements,
   mockSettings,
   type BlockedUser,
   type Bookmark,
@@ -19,8 +21,13 @@ import {
   type ChipPackage,
   type FollowUser,
   type MyAccount,
+  type MyIncome,
+  type MySettlement,
   type PlusMembership,
   type Settings,
+  type SettlementSummary,
+  type IncomeSource,
+  type DailyIncome,
 } from "./mock";
 
 async function getPage<T>(path: `/api/v1/${string}`, mock: T[]): Promise<T[]> {
@@ -146,5 +153,99 @@ export async function getBookmarks(type: BookmarkType | undefined): Promise<Book
 export async function getSocialAccounts() : Promise<OAuthProvider[]> {
   if (!hasBackend) return [mockAccount.provider];
   const {data} = await apiFetch<ApiResponse<OAuthProvider[]>>("/api/v1/users/me/social-accounts");
+  return data;
+}
+
+export type SettlementPage = { items: MySettlement[]; page: number; totalPages: number };
+
+const CHIP_WON = 200;
+
+function mockDays(month: string): DailyIncome[] {
+  const [year, monthNumber] = month.split("-").map(Number);
+  const last = new Date(year, monthNumber, 0).getDate();
+  const seoul = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Seoul" }).format(new Date());
+  const end = seoul.startsWith(month) ? Number(seoul.slice(8, 10)) : last;
+  return Array.from({ length: end }, (_, index) => {
+    const chips = index === 0 ? 40 : index === 2 ? 4 : 0;
+    return {
+      date: `${month}-${String(index + 1).padStart(2, "0")}`,
+      chips,
+      gross: chips * CHIP_WON,
+      count: chips > 0 ? 1 : 0,
+    };
+  });
+}
+
+function mockIncomes(month: string): MyIncome[] {
+  return [
+    {
+      occurredAt: `${month}-01T10:00:00`,
+      refType: "POST_PURCHASE",
+      label: "글 판매",
+      targetType: "POST",
+      targetId: 1,
+      title: "GitHub Actions CI/CD",
+      senderNickname: "김승조",
+      chips: 40,
+      gross: 8000,
+    },
+    {
+      occurredAt: `${month}-03T15:00:00`,
+      refType: "DONATION",
+      label: "후원",
+      targetType: "DONATION",
+      targetId: 8,
+      title: "미니홈피 후원",
+      senderNickname: "윤세진",
+      chips: 4,
+      gross: 800,
+    },
+  ];
+}
+
+export async function getMySettlementSummary(): Promise<SettlementSummary> {
+  if (!hasBackend) return mockSettlementSummary;
+  const { data } = await apiFetch<ApiResponse<SettlementSummary>>("/api/v1/settlements/me/summary");
+  return data;
+}
+
+export async function getMySettlements(page = 1, size = 20): Promise<SettlementPage> {
+  if (!hasBackend) {
+    return { items: mockSettlements, page: 1, totalPages: 1 };
+  }
+  const query = new URLSearchParams({ page: String(page - 1), size: String(size) });
+  const { data } = await apiFetch<ApiResponse<PageResponse<MySettlement>>>(`/api/v1/settlements/me?${query}`);
+  return { items: data.content, page, totalPages: data.totalPages };
+}
+
+export async function getMyDaily(month: string): Promise<DailyIncome[]> {
+  if (!hasBackend) return mockDays(month);
+  const { data } = await apiFetch<ApiResponse<DailyIncome[]>>(`/api/v1/settlements/me/daily?month=${month}`);
+  return data;
+}
+
+export async function getMySources(month: string): Promise<IncomeSource[]> {
+  if (!hasBackend) {
+    const rows = mockIncomes(month);
+    return [
+      { refType: "POST_PURCHASE", label: "글 판매", chips: 40, gross: 8000, count: 1 },
+      { refType: "DONATION", label: "후원", chips: 4, gross: 800, count: 1 },
+    ].map((source) => (rows.some((row) => row.refType === source.refType) ? source : { ...source, chips: 0, gross: 0, count: 0 }));
+  }
+  const { data } = await apiFetch<ApiResponse<IncomeSource[]>>(`/api/v1/settlements/me/sources?month=${month}`);
+  return data;
+}
+
+export async function getMyIncomes(filter: { month?: string; date?: string }): Promise<MyIncome[]> {
+  if (!hasBackend) {
+    const month = filter.date?.slice(0, 7) ?? filter.month ?? "";
+    const rows = mockIncomes(month).filter((row) => !filter.date || row.occurredAt.startsWith(filter.date));
+    const days = new Set(mockDays(month).map((day) => day.date));
+    return rows.filter((row) => days.has(row.occurredAt.slice(0, 10)));
+  }
+  const query = new URLSearchParams();
+  if (filter.date) query.set("date", filter.date);
+  else if (filter.month) query.set("month", filter.month);
+  const { data } = await apiFetch<ApiResponse<MyIncome[]>>(`/api/v1/settlements/me/incomes?${query}`);
   return data;
 }
