@@ -161,6 +161,24 @@ export async function unlockPost(postId: number) {
   return result;
 }
 
+/**
+ * 내 블로그 월 구독료(원) 변경. 0이면 구독을 받지 않는다. 상한·하한은 없다 (팀 결정).
+ * 바꿀 블로그는 백엔드가 JWT로 정하고, ownerId는 다시 그릴 화면 경로에만 쓴다.
+ */
+export async function changeSubscriptionPrice(ownerId: number, price: number) {
+  if (!isId(ownerId) || !Number.isSafeInteger(price) || price < 0 || price > 2_147_483_647)
+    return { ok: false, message: "0원 이상의 숫자로 입력해 주세요." };
+  const result = await mutate(
+    "/api/v1/users/me/subscription",
+    "PUT",
+    { price },
+    price === 0 ? "이제 구독을 받지 않아요." : "구독료를 바꿨어요. 이미 구독한 사람은 결제한 가격 그대로 이어져요.",
+    !hasBackend,
+  );
+  if (result.ok && hasBackend) revalidatePath(`/blog/${ownerId}`);
+  return result;
+}
+
 export async function subscribeBlog(userId: number) {
   if (!isId(userId)) return { ok: false, message: '잘못된 요청이에요.' };
   // 구독 API는 백엔드에 있어서 MOCK_EXCEPT_DM이어도 실서버를 쓴다.

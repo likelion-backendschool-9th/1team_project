@@ -75,6 +75,17 @@ async function SubscriptionContent() {
         <h2 id="subscription-title" className={kit.cardTitle}>
           블로그 구독
         </h2>
+        {subscriptions.length === 0 && (
+          <div className={kit.empty}>
+            <p>아직 구독한 블로그가 없어요.</p>
+            <p>
+              블로그 주인 화면의 <strong>구독하기</strong>로 구독하면 여기에 보여요.{" "}
+              <Link href="/blog" className={kit.more}>
+                블로그 둘러보기 →
+              </Link>
+            </p>
+          </div>
+        )}
         <ul className={kit.list}>
           {subscriptions.map((item) => (
             <li key={item.id} className={kit.listItem}>

@@ -64,7 +64,7 @@
 - [x] `POST /subscriptions`, `DELETE /subscriptions/me`, `GET /subscriptions/me`(내 목록), `GET /users/{userId}/subscription`(블로그 화면용)
 - [x] 만료된 구독 처리 — 조회 시 체크(`expires_at > now`). EXPIRED로 바꾸는 배치는 아직 없음
 - [ ] 자동 갱신(매달 결제) — PG 연동 후
-- [ ] 구독료 설정 API — 아직 없음 (시드 데이터의 `blog_subscription_price`로 확인)
+- [x] 구독료 설정 API — `PUT users/me/subscription` (내 블로그 화면의 구독료 설정, 0원이면 구독 안 받음, 상한·하한 없음)
 - [x] `백엔드-청사진.md` 상태 업데이트
 
 **프론트**
