@@ -3,17 +3,27 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
-  padding: 22px 24px 16px;
+  padding: 16px 20px 12px;
   border: 1px solid var(--border);
-  border-radius: 22px;
+  border-radius: 16px;
   background: var(--surface);
-  box-shadow: var(--shadow-card);
   cursor: pointer;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  transition: border-color 0.15s ease, transform 0.15s ease;
 }
 
 .card:hover {
-  border-color: #f5d27a;
+  border-color: #d8d0c4;
+  transform: translateY(-2px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card {
+    transition: none;
+  }
+
+  .card:hover {
+    transform: none;
+  }
 }
 
 /* 카드 어디를 눌러도 글 상세로 간다: 제목 링크를 카드 전체로 늘린다.
@@ -40,7 +50,7 @@
   min-width: 0;
   flex: 1;
   color: var(--ink-faint);
-  font-size: 14px;
+  font-size: 13px;
 }
 
 .name {
@@ -78,7 +88,7 @@
 }
 
 .title {
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 800;
   line-height: 1.4;
 }
@@ -178,7 +188,7 @@
 
 @media (max-width: 760px) {
   .card {
-    padding: 20px 18px 16px;
+    padding: 16px 16px 12px;
   }
 
   .source {

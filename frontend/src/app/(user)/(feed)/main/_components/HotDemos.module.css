@@ -115,6 +115,22 @@
   border-radius: var(--radius-card);
   background: var(--surface);
   box-shadow: var(--shadow-card);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.card:hover {
+  box-shadow: 0 2px 4px rgb(60 40 10 / 6%), 0 12px 28px rgb(60 40 10 / 10%);
+  transform: translateY(-3px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card {
+    transition: none;
+  }
+
+  .card:hover {
+    transform: none;
+  }
 }
 
 .thumb {
