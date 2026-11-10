@@ -20,7 +20,9 @@ public record UserMeResponse(
         int followingCount,
         int chipBalance,
         // USER / ADMIN / MASTER. 프론트가 관리자 화면 접근을 막는 데 쓴다 (실제 권한 검사는 SecurityConfig의 /admin/**)
-        String role
+        String role,
+        // 칩으로 늘린 데모 인벤토리 칸 수. 데모 올리기 화면에서 남은 칸을 계산할 때 쓴다
+        int extraInventorySlots
 ) {
     /**
      * @param followerCount  나를 팔로우하는 활동 회원 수
@@ -42,7 +44,8 @@ public record UserMeResponse(
                 Math.toIntExact(followerCount),
                 Math.toIntExact(followingCount),
                 user.getChipBalance(),
-                user.getRole() == null ? "USER" : user.getRole().name()
+                user.getRole() == null ? "USER" : user.getRole().name(),
+                user.getExtraInventorySlots()
         );
     }
 }
