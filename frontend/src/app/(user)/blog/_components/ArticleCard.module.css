@@ -129,74 +129,8 @@
   font-size: 18px;
 }
 
-.source {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 18px 20px;
-  margin-top: 6px;
-  border: 1px solid #fbe6ad;
-  border-radius: 20px;
-  background: #fffbea;
-}
-
-.code {
-  user-select: none;
-  display: inline-flex;
-  flex: none;
-  width: 56px;
-  height: 56px;
-  align-items: center;
-  justify-content: center;
-  border-radius: 14px;
-  background: #ffefc2;
-  color: #b45f06;
-  font-family: ui-monospace, "SFMono-Regular", Menlo, monospace;
-  font-weight: 700;
-}
-
-.sourceInfo {
-  min-width: 0;
-  flex: 1;
-}
-
-.sourceTitle {
-  font-size: 16px;
-  font-weight: 700;
-}
-
-.sourceDesc {
-  color: var(--ink-faint);
-  font-size: 13px;
-}
-
-.play {
-  user-select: none;
-  display: inline-flex;
-  flex: none;
-  align-items: center;
-  gap: 4px;
-  padding: 10px 20px;
-  border-radius: 14px;
-  background: #ffc21a;
-  font-weight: 700;
-}
-
-.play:hover {
-  background: #ffb800;
-}
-
 @media (max-width: 760px) {
   .card {
     padding: 16px 16px 12px;
-  }
-
-  .source {
-    flex-wrap: wrap;
-  }
-
-  .play {
-    width: 100%;
-    justify-content: center;
   }
 }

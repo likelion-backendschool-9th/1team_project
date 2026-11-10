@@ -1,5 +1,6 @@
 package com.dipsource.service.post.impl;
 
+import com.dipsource.dto.feed.FeedDemoResponse;
 import com.dipsource.dto.post.BlogStatsResponse;
 import com.dipsource.dto.post.PostDetailResponse;
 import com.dipsource.dto.post.PostIdResponse;
@@ -9,6 +10,7 @@ import com.dipsource.dto.search.SearchTargetChangedEvent;
 import com.dipsource.dto.search.SearchType;
 import com.dipsource.dto.user.UserSummaryResponse;
 import com.dipsource.entity.post.Post;
+import com.dipsource.entity.notification.NotificationType;
 import com.dipsource.entity.post.PostCategory;
 import com.dipsource.entity.post.PostSeries;
 import com.dipsource.entity.post.PostStatus;
@@ -33,6 +35,8 @@ import com.dipsource.repository.post.PostTagRepository;
 import com.dipsource.repository.tag.TagRepository;
 import com.dipsource.repository.user.UserRepository;
 import com.dipsource.service.coin.CoinService;
+import com.dipsource.service.notification.NotificationService;
+import com.dipsource.service.feed.FeedDemoAssembler;
 import com.dipsource.service.post.PostService;
 import com.dipsource.service.user.UserService;
 import java.time.LocalDateTime;
@@ -81,6 +85,8 @@ public class PostServiceImpl implements PostService {
     private final BlogSubscriptionRepository blogSubscriptionRepository;
     private final PostSeriesRepository postSeriesRepository;
     private final SeriesPurchaseRepository seriesPurchaseRepository;
+    private final FeedDemoAssembler demoAssembler;
+    private final NotificationService notificationService;
     private final TagRepository tagRepository;
     private final UserService userService;
     private final ApplicationEventPublisher eventPublisher;
@@ -149,7 +155,8 @@ public class PostServiceImpl implements PostService {
         boolean bookmarked = viewerId != null && postBookmarkRepository.existsById(new PostUserId(viewerId, postId));
         String seriesTitle = post.getSeriesId() == null ? null
                 : postSeriesRepository.findById(post.getSeriesId()).map(PostSeries::getTitle).orElse(null);
-        return PostDetailResponse.of(post, author, tags, canReadAll(post, viewerId), liked, bookmarked, seriesTitle);
+        FeedDemoResponse demo = post.getDemoId() == null ? null : demoAssembler.byIds(List.of(post.getDemoId())).get(post.getDemoId());
+        return PostDetailResponse.of(post, author, tags, canReadAll(post, viewerId), liked, bookmarked, seriesTitle, demo);
     }
 
     @Override
@@ -161,6 +168,8 @@ public class PostServiceImpl implements PostService {
         PostSeries series = findOwnSeries(userId, request.seriesId());
         boolean paid = isPaid(request, series);
         requirePaidLength(paid, series, request.content());
+        // 피드처럼 숨김·삭제·남의 초안 데모는 붙일 수 없다
+        demoAssembler.requireAttachable(request.demoId(), userId);
         Post post = Post.builder()
                 .userId(userId)
                 .demoId(request.demoId())
@@ -175,6 +184,9 @@ public class PostServiceImpl implements PostService {
         }
         post = postRepository.save(post);
         attachTags(post, request.tags());
+        if (series != null) {
+            notifyNewEpisode(series.getId(), userId, post.getId());
+        }
         return new PostIdResponse(post.getId());
     }
 
@@ -185,6 +197,10 @@ public class PostServiceImpl implements PostService {
         PostSeries series = findOwnSeries(userId, request.seriesId());
         boolean paid = isPaid(request, series);
         requirePaidLength(paid, series, request.content());
+        // 이미 붙어 있던 데모는 그대로 두고, 바꿀 때만 붙일 수 있는지 본다
+        if (!Objects.equals(post.getDemoId(), request.demoId())) {
+            demoAssembler.requireAttachable(request.demoId(), userId);
+        }
         post.update(request.title().strip(), parseCategory(request.category()), request.content(),
                 post.getThumbnailUrl(), request.demoId(), paid, request.price());
         Long seriesId = series == null ? null : series.getId();
@@ -224,9 +240,12 @@ public class PostServiceImpl implements PostService {
         if (post.getUserId().equals(userId)) {
             throw new BusinessException(ErrorCode.BAD_REQUEST, "본인 글에는 좋아요할 수 없어요.");
         }
+        // insertIgnore가 영속성 컨텍스트를 비우므로 작성자는 먼저 읽어 둔다
+        Long authorId = post.getUserId();
         int inserted = postLikeRepository.insertIgnore(userId, postId);
         if (inserted > 0) {
             postRepository.incrementLikeCount(postId);
+            notificationService.notify(authorId, userId, NotificationType.LIKE, NotificationService.TARGET_POST, postId);
         }
     }
 
@@ -283,7 +302,11 @@ public class PostServiceImpl implements PostService {
         if (hiddenFrom(userId, post.getUserId())) {
             throw new BusinessException(ErrorCode.NOT_FOUND, "글을 찾을 수 없어요.");
         }
-        postBookmarkRepository.insertIgnore(userId, postId);
+        Long authorId = post.getUserId();
+        // 처음 북마크할 때만 알린다 (다시 눌러도 알림이 쌓이지 않게)
+        if (postBookmarkRepository.insertIgnore(userId, postId) > 0) {
+            notificationService.notify(authorId, userId, NotificationType.BOOKMARK, NotificationService.TARGET_POST, postId);
+        }
     }
 
     @Override
@@ -351,7 +374,9 @@ public class PostServiceImpl implements PostService {
         Set<Long> likedIds = viewerId != null && !postIds.isEmpty()
                 ? new java.util.HashSet<>(postLikeRepository.findLikedPostIds(viewerId, postIds))
                 : Collections.emptySet();
-        return PageResponse.of(page, post -> PostSummaryResponse.of(post, authors.get(post.getUserId()), likedIds.contains(post.getId())));
+        Map<Long, FeedDemoResponse> demos = demoAssembler.byIds(page.getContent().stream().map(Post::getDemoId).toList());
+        return PageResponse.of(page, post -> PostSummaryResponse.of(post, authors.get(post.getUserId()),
+                likedIds.contains(post.getId()), post.getDemoId() == null ? null : demos.get(post.getDemoId())));
     }
 
     private boolean hiddenFrom(Long viewerId, Long authorId) {
@@ -372,6 +397,13 @@ public class PostServiceImpl implements PostService {
         if (paid && series == null && content.strip().length() < PAID_MIN_CONTENT_LENGTH) {
             throw new BusinessException(ErrorCode.BAD_REQUEST,
                     "유료 글은 본문을 " + PAID_MIN_CONTENT_LENGTH + "자 이상 써 주세요.");
+        }
+    }
+
+    /** 시리즈를 산 사람들에게 새 회차가 올라왔다고 알린다. 차단 관계면 notify가 건너뛴다 */
+    private void notifyNewEpisode(Long seriesId, Long authorId, Long postId) {
+        for (Long buyerId : seriesPurchaseRepository.findUserIdsBySeriesId(seriesId)) {
+            notificationService.notify(buyerId, authorId, NotificationType.NEW_EPISODE, NotificationService.TARGET_POST, postId);
         }
     }
 

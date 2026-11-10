@@ -5,7 +5,7 @@ import { Brand } from "@/app/(user)/_components/Brand";
 import { oauthProviders, type OAuthProvider } from "@/app/_lib/types/auth";
 import { parseRedirect } from "@/app/_lib/redirect";
 import { startLogin } from "./_actions";
-import { ProviderIcon } from "./_components/ProviderIcon";
+import { ProviderIcon } from "@/app/_components/ui/ProviderIcon";
 import styles from "./page.module.css";
 
 

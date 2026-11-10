@@ -76,30 +76,6 @@
   font-weight: 800;
 }
 
-.source {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 14px;
-  padding: 18px 20px;
-  border: 1px solid #fbe6ad;
-  border-radius: 18px;
-  background: #fffbea;
-}
-
-.source > span {
-  display: inline-flex;
-  width: 48px;
-  height: 48px;
-  align-items: center;
-  justify-content: center;
-  border-radius: 12px;
-  background: #ffefc2;
-  color: #b45f06;
-  font-family: ui-monospace, "SFMono-Regular", Menlo, monospace;
-  font-weight: 700;
-}
-
 @media (max-width: 760px) {
   .article {
     padding: 20px;
