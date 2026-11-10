@@ -16,6 +16,7 @@ import com.dipsource.repository.follow.FollowRepository;
 import com.dipsource.repository.tag.TagRepository;
 import com.dipsource.repository.user.UserInterestTagRepository;
 import com.dipsource.repository.user.UserRepository;
+import com.dipsource.service.image.ImageService;
 import com.dipsource.service.user.AuthService;
 import com.dipsource.service.user.UserService;
 import java.time.Duration;
@@ -27,8 +28,13 @@ import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.dipsource.dto.image.ImageUploadResult;
+import org.springframework.web.multipart.MultipartFile;
+
 
 /** {@link UserService} 구현체. */
 @Service
@@ -46,6 +52,8 @@ public class UserServiceImpl implements UserService {
     private final TagRepository tagRepository;
     private final UserInterestTagRepository userInterestTagRepository;
     private final FollowRepository followRepository;
+    // R2가 꺼진 환경(로컬 등)에서는 ImageService 빈이 없다. 없어도 서버는 떠야 해서 ObjectProvider로 받는다
+    private final ObjectProvider<ImageService> imageServiceProvider;
 
 
 
@@ -136,6 +144,53 @@ public class UserServiceImpl implements UserService {
             parseGithubUsername(request.githubUrl()));
         
         return toMeResponse(user);
+    }
+
+    @Override 
+    @Transactional
+    public UserMeResponse updateProfileImage(Long userId, MultipartFile file) {
+        if (file == null || file.isEmpty()) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "이미지 파일을 골라 주세요.");
+        }
+        User user = getUser(userId);
+        String before = user.getProfileImage();
+
+        ImageUploadResult uploaded = imageService().upload(file, "profiles");
+        user.changeProfileImage(uploaded.thumbnailUrl());
+
+        deleteIfStored(before);
+        return toMeResponse(user);
+    }
+
+    @Override
+    @Transactional
+    public UserMeResponse deleteProfileImage(Long userId) {
+        User user = getUser(userId);
+        String before = user.getProfileImage();
+        user.changeProfileImage(null);
+        deleteIfStored(before);
+        return toMeResponse(user);
+    }
+
+    /** R2가 꺼져 있으면 이미지 기능을 쓸 수 없다고 알려 준다 */
+    private ImageService imageService() {
+        ImageService service = imageServiceProvider.getIfAvailable();
+        if (service == null) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "이미지 저장소가 꺼져 있어 프로필 이미지를 바꿀 수 없어요.");
+        }
+        return service;
+    }
+
+    private void deleteIfStored(String imageUrl) {
+        ImageService service = imageServiceProvider.getIfAvailable();
+        if (service == null || !service.isStoredImage(imageUrl)) {
+            return;
+        }
+        try {
+            service.delete(imageUrl);
+        } catch (RuntimeException e) {
+            // 남은 파일은 용량만 차지할 뿐 화면에는 영향이 없다
+        }
     }
 
     @Override 

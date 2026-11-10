@@ -23,7 +23,7 @@ export function FeedCard({ feed, myId, now }: Props) {
     <article className={styles.card} aria-label={`${author.nickname}의 피드`}>
       <header className={styles.header}>
         <Link href={`/mini-home/${author.id}`} aria-label={`${author.nickname} 미니홈피`}>
-          <Avatar name={author.nickname} size={40} />
+          <Avatar name={author.nickname} src={author.profileImage} size={40} />
         </Link>
         <div className={styles.author}>
           <Link href={`/mini-home/${author.id}`} className={styles.name}>

@@ -150,7 +150,7 @@ function CommentRow({ comment, now, me, actions, onReply, maxCommentLength }: Ro
   return (
     <div className={styles.row}>
       <Link href={`/mini-home/${comment.author.id}`} aria-label={`${comment.author.nickname} 미니홈피`}>
-        <Avatar name={comment.author.nickname} size={36} tone="light" />
+        <Avatar name={comment.author.nickname} src={comment.author.profileImage} size={36} tone="light" />
       </Link>
       <div className={styles.body}>
         <p className={styles.meta}>

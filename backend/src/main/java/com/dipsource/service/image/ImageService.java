@@ -214,4 +214,12 @@ public class ImageService {
         }
         return filename.substring(filename.lastIndexOf("."));
     }
+
+    /**
+     * 우리 R2에 올린 이미지인지. 소셜 로그인 프로필 사진(구글·깃허브·카카오 주소)처럼
+     * 우리 파일이 아닌 주소는 지우면 안 되므로 지우기 전에 이걸로 확인한다.
+     */
+    public boolean isStoredImage(String imageUrl) {
+        return imageUrl != null && imageUrl.startsWith(publicUrl + "/");
+    }
 }

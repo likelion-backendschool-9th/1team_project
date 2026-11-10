@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { Avatar } from "@/app/_components/ui/Avatar";
 import { ConfirmButton } from "@/app/_components/ui/ConfirmButton";
 import { ChipIcon } from "@/app/_components/ui/ChipIcon";
 import kit from "@/app/_components/ui/kit.module.css";
@@ -11,6 +10,7 @@ import { getAccount } from "../_lib/api";
 import { AccountForm } from "./AccountForm";
 import { LogoutConfirm } from "./LogoutConfirm";
 import styles from "./My.module.css";
+import { ProfileImageUploader } from "./ProfileImageUploader";
 
 const providers = { github: "GitHub", kakao: "카카오", google: "구글" };
 
@@ -21,7 +21,7 @@ export async function MyContent() {
   return (
     <div className={kit.stack}>
       <section className={`${kit.card} ${styles.summary}`} aria-label="프로필 요약">
-        <Avatar name={me.nickname} size={72} />
+        <ProfileImageUploader nickname={me.nickname} profileImage={me.profileImage} />
         <div className={kit.grow}>
           <p className={styles.name}>
             {me.nickname}

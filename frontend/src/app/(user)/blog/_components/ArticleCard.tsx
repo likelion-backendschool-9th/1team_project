@@ -24,7 +24,7 @@ export function ArticleCard({ post, now, loggedIn }: Props) {
     <article className={styles.card} aria-labelledby={`post-${post.id}`}>
       <header className={styles.header}>
         <Link href={`/blog/${author.id}`} aria-label={`${author.nickname} 블로그`}>
-          <Avatar name={author.nickname} size={40} />
+          <Avatar name={author.nickname} src={author.profileImage} size={40} />
         </Link>
         <p className={styles.meta}>
           <Link href={`/blog/${author.id}`} className={styles.name}>

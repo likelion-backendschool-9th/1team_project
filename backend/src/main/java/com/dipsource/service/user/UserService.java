@@ -10,6 +10,8 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 
+import org.springframework.web.multipart.MultipartFile;
+
 /** 회원 조회·온보딩 프로필 저장. */
 public interface UserService {
 
@@ -41,4 +43,10 @@ public interface UserService {
 
     /** 회원 탈퇴. 행은 남기고 개인정보를 비운다. */
     void withdraw(Long userId);
+
+        /** 프로필 이미지 변경. 예전 이미지가 우리 R2 파일이면 지운다 */
+    UserMeResponse updateProfileImage(Long userId, MultipartFile file);
+
+    /** 프로필 이미지 지우기 (기본 이미지로) */
+    UserMeResponse deleteProfileImage(Long userId);
 }

@@ -21,7 +21,7 @@ export function BlogProfileCard({ me, unreadCount, notifications, now }: Props) 
   return (
     <section className={styles.card} aria-label="내 프로필">
       <div className={styles.profile}>
-        <Avatar name={me.nickname} size={48} />
+        <Avatar name={me.nickname} src={me.profileImage} size={48} />
         <div className={styles.who}>
           <p className={styles.name}>{me.nickname}</p>
           <LogoutButton />
