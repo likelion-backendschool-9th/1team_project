@@ -16,7 +16,6 @@ type Props = {
 export function DmRoomList({ rooms, now, activeId, onSelect }: Props) {
   return (
     <nav aria-label="대화 목록" className={styles.rooms}>
-      <p className={styles.roomsTitle}>메시지</p>
       {rooms.length === 0 && <p className={styles.loading}>아직 대화가 없어요.</p>}
       <ul>
         {rooms.map((room) => {
