@@ -96,7 +96,7 @@
 /* 카드 크기는 고정하고, 넓어진 만큼 더 많이 보이며 넘치는 카드는 가로로 스크롤한다. */
 .grid {
   display: grid;
-  grid-auto-columns: 290px;
+  grid-auto-columns: 270px;
   grid-auto-flow: column;
   gap: 12px;
   padding: 4px 4px 14px;
@@ -142,11 +142,6 @@
   flex-direction: column;
   gap: 8px;
   padding: 14px;
-}
-
-.name {
-  font-size: 17px;
-  font-weight: 800;
 }
 
 .meta {
@@ -230,4 +225,12 @@
   bottom: 0;
   border-radius: inherit;
   background: #d8cdb6;
+}
+
+.name {
+  font-size: 17px;
+  font-weight: 800;
+  overflow: hidden;          /* 넘친 글자는 숨기고 */
+  text-overflow: ellipsis;   /* 잘린 자리에 … 표시 */
+  white-space: nowrap;       /* 줄바꿈 금지 */
 }
