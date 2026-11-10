@@ -117,7 +117,7 @@ export async function DemoDetailView({ params }: Props) {
           )}
           <div className={styles.author}>
             <Link href={`/mini-home/${demo.author.id}`} className={styles.authorLink}>
-              <Avatar name={demo.author.nickname} size={40} />
+              <Avatar name={demo.author.nickname} src={demo.author.profileImage} size={40} />
               <span>
                 <strong>{demo.author.nickname}</strong>
                 <span className={kit.faint}> · {demo.author.techStacks[0]}</span>
@@ -141,7 +141,7 @@ export async function DemoDetailView({ params }: Props) {
               confirmLabel="삭제"
               danger
               className={`${kit.btnDanger} ${kit.sm}`}
-              onConfirm={deleteDemo.bind(null, demo.id)}
+              onConfirm={deleteDemo.bind(null, Number(userId), demo.id)}
               />
             </div>
           ) : (

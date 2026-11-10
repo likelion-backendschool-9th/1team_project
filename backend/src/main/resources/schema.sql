@@ -10,6 +10,6 @@ ALTER TABLE IF EXISTS demo_versions DROP CONSTRAINT IF EXISTS demo_versions_stat
 ALTER TABLE IF EXISTS users DROP CONSTRAINT IF EXISTS users_role_check;
 -- 칩 거래 종류에 INVENTORY_SLOT(데모 인벤토리 칸 구매)이 추가되어 옛 type 제약을 지운다.
 ALTER TABLE IF EXISTS chip_transactions DROP CONSTRAINT IF EXISTS chip_transactions_type_check;
--- 시리즈 구매가 추가되어 결제 종류(SERIES_PURCHASE)·알림 종류(SERIES_PURCHASE)의 옛 제약을 지운다(새 DB는 Hibernate가 새 값으로 만든다).
+-- 시리즈 구매(SERIES_PURCHASE)·딥소스 플러스(PLUS)·알림 종류(SERIES_PURCHASE)가 추가되어 옛 제약을 지운다(새 DB는 Hibernate가 새 값으로 만든다).
 ALTER TABLE IF EXISTS payments DROP CONSTRAINT IF EXISTS payments_payment_type_check;
 ALTER TABLE IF EXISTS notifications DROP CONSTRAINT IF EXISTS notifications_type_check;

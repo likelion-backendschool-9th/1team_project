@@ -1,6 +1,7 @@
 import "server-only";
 import type { OAuthProvider } from "@/app/_lib/types/auth";
-import { apiFetch, hasBackend, isMockMode, type ApiResponse, type PageResponse } from "@/app/_lib/api/client";
+import { ApiRequestError, apiFetch, hasBackend, isMockMode, type ApiResponse, type PageResponse } from "@/app/_lib/api/client";
+import type { MyProfile } from "@/app/_lib/types/user";
 import {
   mockAccount,
   mockBlocked,
@@ -111,8 +112,24 @@ export async function getChipHistory(page = 1, size = HISTORY_PAGE_SIZE): Promis
   const { data } = await apiFetch<ApiResponse<PageResponse<ChipHistory>>>(`/api/v1/coins/history?${query}`);
   return { items: data.content, page, totalPages: data.totalPages, total: data.totalElements };
 }
-// 딥소스 플러스 구독 조회 API는 아직 정해지지 않았다 (프론트엔드-청사진 11장).
-export const getPlus = async (): Promise<PlusMembership> => mockPlus;
+/** 플러스 여부와 다음 결제일은 내 정보에서 읽는다. 해지 후면 만료 전이어도 다음 결제는 없다. */
+export async function getPlus(): Promise<PlusMembership> {
+  if (!hasBackend) return mockPlus;
+  try {
+    const { data } = await apiFetch<ApiResponse<MyProfile>>("/api/v1/users/me");
+    const renewing = Boolean(data.plus && data.plusAutoRenew);
+    return {
+      active: Boolean(data.plus),
+      since: null,
+      nextBillingAt: renewing ? (data.plusUntil ?? null) : null,
+    };
+  } catch (error) {
+    if (error instanceof ApiRequestError && error.status === 401) {
+      return { active: false, since: null, nextBillingAt: null };
+    }
+    throw error;
+  }
+}
 
 export async function getBookmarks(type: BookmarkType | undefined): Promise<Bookmark[]> {
   if (isMockMode) return mockBookmarks.filter((item) => !type || item.type === type);

@@ -119,13 +119,22 @@ export async function getDemos(userId: number, size = 3): Promise<MiniHomeDemo[]
   return data.content;
 }
 
+type PostRow = { id: number; title: string; price: number; paid?: boolean; seriesId?: number | null };
+
+function toMiniHomePost(post: PostRow): MiniHomePost {
+  return {
+    id: post.id,
+    title: post.title,
+    paid: post.paid ?? post.price > 0,
+    price: post.price,
+    seriesId: post.seriesId ?? null,
+  };
+}
+
 export async function getRecentPosts(userId: number): Promise<MiniHomePost[]> {
   if (isMockMode) return mockPosts;
-  // 블로그 API는 유료 여부를 price(칩 가격)로 준다. 0보다 크면 멤버십(유료) 글이다.
-  const { data } = await apiFetch<ApiResponse<PageResponse<{ id: number; title: string; price: number }>>>(
-    `/api/v1/users/${userId}/posts?size=3`,
-  );
-  return data.content.map((post) => ({ id: post.id, title: post.title, membership: post.price > 0 }));
+  const { data } = await apiFetch<ApiResponse<PageResponse<PostRow>>>(`/api/v1/users/${userId}/posts?size=3`);
+  return data.content.map(toMiniHomePost);
 }
 
 // 홈 카드에 보여 줄 최근 방명록 3개와 전체 수. (일촌평은 방명록으로 통일했다)
@@ -150,13 +159,11 @@ export async function getGuestbook(userId: number): Promise<MiniHomeComment[]> {
   return data.content;
 }
 
-// 미니홈피 수정 화면의 "제작기 글" 선택칸에 쓴다. 블로그 API는 유료 여부를 price로 준다.
+// 미니홈피 수정 화면의 "제작기 글" 선택칸과 블로그 탭에 쓴다.
 export async function getMyPosts(userId: number, size = 20): Promise<MiniHomePost[]> {
   if (isMockMode) return mockPosts;
-  const { data } = await apiFetch<ApiResponse<PageResponse<{ id: number; title: string; price: number }>>>(
-    `/api/v1/users/${userId}/posts?size=${size}`,
-  );
-  return data.content.map((post) => ({ id: post.id, title: post.title, membership: post.price > 0 }));
+  const { data } = await apiFetch<ApiResponse<PageResponse<PostRow>>>(`/api/v1/users/${userId}/posts?size=${size}`);
+  return data.content.map(toMiniHomePost);
 }
 
 export async function getDemoComments(demoId: number): Promise<MiniHomeComment[]> {

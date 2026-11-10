@@ -54,14 +54,15 @@ class AdminPaymentServiceImplTest {
                 .thenReturn(List.of(
                         new Object[]{"2026-09", "CHIP_CHARGE", 4000L},
                         new Object[]{"2026-11", "CHIP_CHARGE", 10000L},
-                        new Object[]{"2026-11", "BLOG_SUBSCRIPTION", 1500L}));
+                        new Object[]{"2026-11", "BLOG_SUBSCRIPTION", 1500L},
+                        new Object[]{"2026-11", "PLUS", 4900L}));
 
         List<AdminRevenueResponse> rows = service.revenue("2026-09", "2026-11");
 
         assertThat(rows).containsExactly(
                 new AdminRevenueResponse("2026-09", 0, 0, 4000),
                 new AdminRevenueResponse("2026-10", 0, 0, 0),
-                new AdminRevenueResponse("2026-11", 1500, 0, 10000));
+                new AdminRevenueResponse("2026-11", 1500, 4900, 10000));
     }
 
     @Test

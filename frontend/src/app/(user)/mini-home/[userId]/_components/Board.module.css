@@ -39,6 +39,12 @@
   font-size: 13px;
 }
 
+.seriesList {
+  margin-top: 16px;
+  padding: 0;
+  list-style: none;
+}
+
 .list {
   display: flex;
   flex-direction: column;

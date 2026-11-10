@@ -68,7 +68,7 @@ async function SubscriptionContent() {
         </div>
         <div className={`${kit.card} ${kit.stat}`}>
           <span className={kit.statLabel}>매달 자동이체</span>
-          <span className={kit.statValue}>{plus.active ? formatWon(PLUS_PRICE_WON) : "-"}</span>
+          <span className={kit.statValue}>{plus.nextBillingAt ? formatWon(PLUS_PRICE_WON) : "-"}</span>
         </div>
       </div>
       <section className={kit.card} aria-labelledby="series-purchase-title">

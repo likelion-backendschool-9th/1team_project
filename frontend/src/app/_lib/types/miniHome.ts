@@ -66,7 +66,12 @@ export type MiniHomeDemo = DemoSummary & {
 export type MiniHomePost = {
   id: number;
   title: string;
-  membership: boolean;
+  /** 잠긴 글. 시리즈 회차는 price가 0이어도 true */
+  paid: boolean;
+  /** 칩 가격. 시리즈 회차는 0 */
+  price: number;
+  /** 들어 있는 시리즈. 없으면 null */
+  seriesId: number | null;
 };
 
 export type MiniHomeComment = {
@@ -75,4 +80,11 @@ export type MiniHomeComment = {
   content: string;
   createdAt: string;
   secret: boolean;
+};
+
+export type GithubRepo = {
+  name: string;
+  stars: number;
+  /** GitHub 레포 주소 */
+  url: string;
 };

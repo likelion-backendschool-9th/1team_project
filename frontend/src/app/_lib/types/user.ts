@@ -28,6 +28,10 @@ export type MyProfile = UserSummary & {
   role?: "USER" | "ADMIN" | "MASTER";
   /** 칩으로 늘린 데모 인벤토리 칸 수 */
   extraInventorySlots?: number;
+  /** 딥소스 플러스 만료 시각. 없으면 플러스가 아니다 */
+  plusUntil?: string | null;
+  /** 자동 갱신. 해지 후에는 false */
+  plusAutoRenew?: boolean;
 };
 
 export type Following = UserSummary & {

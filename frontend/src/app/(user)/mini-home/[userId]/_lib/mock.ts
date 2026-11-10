@@ -108,8 +108,8 @@ export const mockContributions: GithubContributions = {
 };
 
 export const mockRepos: GithubRepo[] = [
-  { name: "three-fluid-simulation", stars: 328 },
-  { name: "canvas-dipsource-kit", stars: 142 },
+  { name: "three-fluid-simulation", stars: 328, url: "https://github.com" },
+  { name: "canvas-dipsource-kit", stars: 142, url: "https://github.com" },
 ];
 
 export const mockDemos: MiniHomeDemo[] = [
@@ -189,9 +189,9 @@ export const mockDemos: MiniHomeDemo[] = [
 ];
 
 export const mockPosts: MiniHomePost[] = [
-  { id: 301, title: "Three.js 셰이더 파이프라인에서 최적화 팁 10가지", membership: true },
-  { id: 302, title: "웹 워커를 이용한 프레임 드랍 없는 60fps 파티클", membership: true },
-  { id: 303, title: "오늘 리팩토링하다가 라자냐 코드 발견함. 7겹 레이어 회고", membership: false },
+  { id: 301, title: "Three.js 셰이더 파이프라인에서 최적화 팁 10가지", paid: true, price: 10, seriesId: null },
+  { id: 302, title: "웹 워커를 이용한 프레임 드랍 없는 60fps 파티클", paid: true, price: 0, seriesId: 1 },
+  { id: 303, title: "오늘 리팩토링하다가 라자냐 코드 발견함. 7겹 레이어 회고", paid: false, price: 0, seriesId: null },
 ];
 
 const MINUTE = 60_000;

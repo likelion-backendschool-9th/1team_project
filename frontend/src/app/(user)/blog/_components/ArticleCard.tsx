@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { Avatar } from "@/app/_components/ui/Avatar";
-import { MoreIcon } from "@/app/_components/ui/Icons";
 import { formatRelativeTime, formatWon } from "@/app/_lib/format";
 import { chipsToWon } from "@/app/_lib/policy";
 import type { PostSummary } from "@/app/_lib/types/post";
@@ -48,11 +47,6 @@ export function ArticleCard({ post, now, loggedIn }: Props) {
             <span aria-hidden="true">🔒</span> {post.price} 칩 잠금해제
           </span>
         )}
-        {paid && (
-          <button type="button" className={styles.more} aria-label="더보기" disabled>
-            <MoreIcon />
-          </button>
-        )}
       </header>
 
       <h3 id={`post-${post.id}`} className={styles.title}>
@@ -82,7 +76,6 @@ export function ArticleCard({ post, now, loggedIn }: Props) {
         postId={post.id}
         likeCount={post.likeCount}
         commentCount={post.commentCount}
-        repostCount={post.repostCount}
         liked={post.liked}
         readMinutes={post.readMinutes}
         loggedIn={loggedIn}

@@ -37,6 +37,19 @@ public interface UserRepository extends JpaRepository<User, Long> {
     @Query("SELECT u FROM User u WHERE u.id = :id")
     Optional<User> findByIdForUpdate(@Param("id") Long id);
 
+    /**
+     * 딥소스 플러스 자동 갱신 대상. 만료 시각이 지났고 자동 갱신이 켜진 활동 회원이다.
+     * 해지했거나 탈퇴·정지한 회원은 빠진다.
+     */
+    @Query("""
+            SELECT u.id FROM User u
+            WHERE u.plusAutoRenew = true
+              AND u.plusUntil IS NOT NULL
+              AND u.plusUntil <= :now
+              AND u.status = com.dipsource.entity.user.enums.UserStatus.ACTIVE
+            """)
+    List<Long> findPlusRenewalDueIds(@Param("now") LocalDateTime now);
+
     @Query("""
         SELECT u FROM User u
         WHERE (:status IS NULL OR u.status = :status)

@@ -6,6 +6,7 @@ import kit from "@/app/_components/ui/kit.module.css";
 import { ReportModal } from "@/app/_components/ui/ReportModal";
 import { formatCount } from "@/app/_lib/format";
 import { DemoThumb } from "@/app/(user)/(feed)/_components/DemoThumb";
+import { useExpandStage } from "@/app/(user)/_components/useExpandStage";
 import { playDemo, reportDemo, toggleDemoBookmark, toggleDemoLike } from "../_actions";
 import { createNonce, initialFrameStatus, nextFrameStatus, parseDemoMessage } from "../_lib/demoFrame";
 import styles from "./DemoDetail.module.css";
@@ -51,6 +52,7 @@ export function DemoStage({
   const [bookmarked, setBookmarked] = useState(initialBookmarked);
   const [message, setMessage] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  const { expanded, setExpanded, ref: stageRef } = useExpandStage<HTMLDivElement>();
 
   useEffect(() => {
     if (!run) return;
@@ -99,7 +101,7 @@ export function DemoStage({
   }
 
   return (
-    <div className={styles.stageWrap}>
+    <div ref={stageRef} className={`${styles.stageWrap} ${expanded ? styles.expanded : ""}`}>
       <div className={styles.stage}>
         {run ? (
           // allow-same-origin을 넣지 않는다. 데모는 opaque origin에서 돌아 찍먹 쿠키·저장소에 닿지 못한다
@@ -148,6 +150,14 @@ export function DemoStage({
       <div className={styles.actions}>
         <button type="button" className={kit.btnPrimary} onClick={handlePlay} disabled={playing || !runUrl}>
           {playing ? "실행 중" : runUrl ? "▶ 찍먹하기" : "아직 실행할 수 없어요"}
+        </button>
+        <button
+          type="button"
+          className={styles.run}
+          aria-pressed={expanded}
+          onClick={() => setExpanded((value) => !value)}
+        >
+          {expanded ? "↙ 작은 화면으로" : "▸ 큰 화면으로 실행"}
         </button>
         <button
           type="button"

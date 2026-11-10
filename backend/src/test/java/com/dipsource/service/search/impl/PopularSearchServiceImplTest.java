@@ -90,16 +90,45 @@ class PopularSearchServiceImplTest {
                 row("java", 5, older),
                 row("react", 2, newer)));
 
-        assertThat(service.popular(10)).containsExactly("java", "react", "spring");
+        assertThat(service.popular(3)).containsExactly("java", "react", "spring");
         verify(tagRepository, never()).findPopularNames(anyInt());
     }
 
     @Test
-    void 기록이_없으면_많이_쓰인_태그_이름을_돌려준다() {
+    void 기록이_없으면_태그로만_limit_개를_채운다() {
         when(searchKeywordLogRepository.countSince(eq(NOW.minusDays(7)))).thenReturn(List.of());
-        when(tagRepository.findPopularNames(10)).thenReturn(List.of("Spring", "React"));
+        when(tagRepository.findPopularNames(2)).thenReturn(List.of("Spring", "React", "Java"));
 
-        assertThat(service.popular(10)).containsExactly("Spring", "React");
+        assertThat(service.popular(2)).containsExactly("Spring", "React");
+    }
+
+    @Test
+    void 로그_한_건이면_나머지를_태그로_채운다() {
+        when(searchKeywordLogRepository.countSince(NOW.minusDays(7)))
+                .thenReturn(List.<Object[]>of(row("spring", 1, NOW)));
+        when(tagRepository.findPopularNames(4)).thenReturn(List.of("React", "Java", "Kotlin", "Vue"));
+
+        assertThat(service.popular(3)).containsExactly("spring", "React", "Java");
+    }
+
+    @Test
+    void 겹치는_태그는_빼고도_limit_까지_채운다() {
+        when(searchKeywordLogRepository.countSince(NOW.minusDays(7)))
+                .thenReturn(List.<Object[]>of(row("spring", 1, NOW)));
+        when(tagRepository.findPopularNames(4)).thenReturn(List.of(" Spring ", "React", "Java", "Kotlin"));
+
+        assertThat(service.popular(3)).containsExactly("spring", "React", "Java");
+        verify(tagRepository).findPopularNames(4);
+    }
+
+    @Test
+    void 로그가_limit_이상이면_태그를_섞지_않는다() {
+        when(searchKeywordLogRepository.countSince(NOW.minusDays(7))).thenReturn(List.of(
+                row("java", 3, NOW),
+                row("spring", 1, NOW.minusHours(1))));
+
+        assertThat(service.popular(2)).containsExactly("java", "spring");
+        verify(tagRepository, never()).findPopularNames(anyInt());
     }
 
     @Test

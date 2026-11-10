@@ -47,6 +47,18 @@ public class MiniHome extends BaseEntity {
     @Column(name = "showcase_demo3_id")
     private Long showcaseDemo3Id;
 
+    /** 대표 데모 4 ID(demos.id). 딥소스 플러스만 채운다 */
+    @Column(name = "showcase_demo4_id")
+    private Long showcaseDemo4Id;
+
+    /** 대표 데모 5 ID(demos.id). 딥소스 플러스만 채운다 */
+    @Column(name = "showcase_demo5_id")
+    private Long showcaseDemo5Id;
+
+    /** 대표 데모 6 ID(demos.id). 딥소스 플러스만 채운다 */
+    @Column(name = "showcase_demo6_id")
+    private Long showcaseDemo6Id;
+
     /** 미니홈피 제목 */
     @Column(length = 50)
     private String title;
@@ -116,10 +128,19 @@ public class MiniHome extends BaseEntity {
         this.customSkinJson = customSkinJson;
     }
 
-    /** 대표 데모 3칸을 한 번에 바꾼다. 빈 칸은 null. */
+    /** 대표 데모 3칸을 한 번에 바꾼다. 4~6칸은 비운다. */
     public void changeShowcase(Long demo1Id, Long demo2Id, Long demo3Id) {
+        changeShowcase(demo1Id, demo2Id, demo3Id, null, null, null);
+    }
+
+    /** 대표 데모 6칸을 한 번에 바꾼다. 빈 칸은 null. */
+    public void changeShowcase(Long demo1Id, Long demo2Id, Long demo3Id,
+                                Long demo4Id, Long demo5Id, Long demo6Id) {
         this.showcaseDemo1Id = demo1Id;
         this.showcaseDemo2Id = demo2Id;
         this.showcaseDemo3Id = demo3Id;
+        this.showcaseDemo4Id = demo4Id;
+        this.showcaseDemo5Id = demo5Id;
+        this.showcaseDemo6Id = demo6Id;
     }
 }

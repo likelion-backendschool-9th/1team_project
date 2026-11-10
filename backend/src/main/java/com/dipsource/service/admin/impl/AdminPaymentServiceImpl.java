@@ -84,23 +84,25 @@ public class AdminPaymentServiceImpl implements AdminPaymentService {
             throw new BusinessException(ErrorCode.BAD_REQUEST, "최대 " + MAX_MONTHS + "개월까지 볼 수 있어요.");
         }
 
-        // 달별로 [구독, 칩] 금액을 모은다. 결제가 없는 달도 0으로 채워서 돌려준다
+        // 달별로 [콘텐츠 구독, 플러스, 칩] 금액을 모은다. 결제가 없는 달도 0으로 채워서 돌려준다
         Map<String, long[]> sums = new HashMap<>();
         for (Object[] row : paymentRepository.sumPaidByMonth(
                 start.atDay(1).atStartOfDay(), end.plusMonths(1).atDay(1).atStartOfDay())) {
-            long[] sum = sums.computeIfAbsent((String) row[0], key -> new long[2]);
+            long[] sum = sums.computeIfAbsent((String) row[0], key -> new long[3]);
             long amount = ((Number) row[2]).longValue();
             // 시리즈 판매는 블로그 구독 자리(콘텐츠 매출)에 함께 더한다
             if (PaymentType.BLOG_SUBSCRIPTION.name().equals(row[1]) || PaymentType.SERIES_PURCHASE.name().equals(row[1])) {
                 sum[0] += amount;
-            } else if (PaymentType.CHIP_CHARGE.name().equals(row[1])) {
+            } else if (PaymentType.PLUS.name().equals(row[1])) {
                 sum[1] += amount;
+            } else if (PaymentType.CHIP_CHARGE.name().equals(row[1])) {
+                sum[2] += amount;
             }
         }
         List<AdminRevenueResponse> result = new ArrayList<>();
         for (YearMonth month = start; !month.isAfter(end); month = month.plusMonths(1)) {
-            long[] sum = sums.getOrDefault(month.toString(), new long[2]);
-            result.add(new AdminRevenueResponse(month.toString(), sum[0], 0, sum[1]));
+            long[] sum = sums.getOrDefault(month.toString(), new long[3]);
+            result.add(new AdminRevenueResponse(month.toString(), sum[0], sum[1], sum[2]));
         }
         return result;
     }

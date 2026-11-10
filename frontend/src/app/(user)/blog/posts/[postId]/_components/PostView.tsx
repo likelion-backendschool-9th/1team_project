@@ -175,7 +175,6 @@ export async function PostView({ params }: Props) {
           postId={post.id}
           likeCount={post.likeCount}
           commentCount={post.commentCount}
-          repostCount={post.repostCount}
           liked={post.liked}
           bookmarked={post.bookmarked}
           readMinutes={post.readMinutes}

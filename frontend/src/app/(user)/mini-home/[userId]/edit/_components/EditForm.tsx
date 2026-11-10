@@ -132,7 +132,7 @@ export function EditForm({ profile, demos, posts }: Props) {
           <option value="">선택 안 함</option>
           {posts.map((post) => (
             <option key={post.id} value={post.id}>
-              {post.membership ? "🔒 " : ""}
+              {post.paid ? "🔒 " : ""}
               {post.title}
             </option>
           ))}

@@ -145,7 +145,8 @@
 }
 
 .preview {
-  max-width: 68px;
+  max-width: none;
+  white-space: nowrap;
   background: #fff3cf;
   color: #b45f06;
 }
