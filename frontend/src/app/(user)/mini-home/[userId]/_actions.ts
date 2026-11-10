@@ -173,6 +173,10 @@ export async function saveMiniHome(previous: FormState, formData: FormData): Pro
       "미니홈피를 저장했어요.",
     );
     return featured.ok ? saved : featured;
+  }).then((result) => {
+    // 저장한 스킨·데모가 새로고침 없이 바로 보이게 미니홈피 화면을 다시 그린다.
+    if (result.ok) revalidatePath("/mini-home/[userId]", "layout");
+    return result;
   });
 }
 
