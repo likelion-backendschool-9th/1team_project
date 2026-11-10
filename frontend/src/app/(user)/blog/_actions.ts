@@ -26,12 +26,12 @@ function validatePost(formData: FormData) {
     errors.title = '80자 이하로 입력해 주세요.';
   if (!categories.some((item) => item.value === values.category))
     errors.category = '분류를 골라 주세요.';
+  // 시리즈 안 유료 글은 칩 가격 없이 시리즈를 산 사람만 읽고, 최소 글자 수도 없다.
+  const seriesId = Number(values.seriesId) || null;
   if (values.content.length < 20)
     errors.content = '본문을 20자 이상 입력해 주세요.';
-  else if (paid && values.content.length < PAID_MIN_LENGTH)
+  else if (paid && !seriesId && values.content.length < PAID_MIN_LENGTH)
     errors.content = `유료 글은 본문을 ${PAID_MIN_LENGTH.toLocaleString()}자 이상 써 주세요. (지금 ${values.content.length.toLocaleString()}자)`;
-  // 시리즈 안 유료 글은 칩 가격 없이 시리즈를 산 사람만 읽는다.
-  const seriesId = Number(values.seriesId) || null;
   const price = Number(values.price);
   if (paid && !seriesId && (!Number.isInteger(price) || price < 1 || price > 100))
     errors.price = '1~100칩 사이로 입력해 주세요.';

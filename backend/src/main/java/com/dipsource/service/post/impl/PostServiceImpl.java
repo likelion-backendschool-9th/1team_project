@@ -64,7 +64,7 @@ public class PostServiceImpl implements PostService {
     /** 검색어 최대 길이 */
     private static final int MAX_QUERY_LENGTH = 50;
 
-    /** 유료 글 본문 최소 글자 수 */
+    /** 칩으로 파는 유료 글 본문 최소 글자 수. 시리즈 회차는 제외 */
     static final int PAID_MIN_CONTENT_LENGTH = 1000;
 
     private static final Sort LATEST = Sort.by(Sort.Order.desc("createdAt"), Sort.Order.desc("id"));
@@ -160,7 +160,7 @@ public class PostServiceImpl implements PostService {
         }
         PostSeries series = findOwnSeries(userId, request.seriesId());
         boolean paid = isPaid(request, series);
-        requirePaidLength(paid, request.content());
+        requirePaidLength(paid, series, request.content());
         Post post = Post.builder()
                 .userId(userId)
                 .demoId(request.demoId())
@@ -184,7 +184,7 @@ public class PostServiceImpl implements PostService {
         Post post = findOwn(userId, postId);
         PostSeries series = findOwnSeries(userId, request.seriesId());
         boolean paid = isPaid(request, series);
-        requirePaidLength(paid, request.content());
+        requirePaidLength(paid, series, request.content());
         post.update(request.title().strip(), parseCategory(request.category()), request.content(),
                 post.getThumbnailUrl(), request.demoId(), paid, request.price());
         Long seriesId = series == null ? null : series.getId();
@@ -364,9 +364,12 @@ public class PostServiceImpl implements PostService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "글을 찾을 수 없어요."));
     }
 
-    /** 유료 글은 돈을 내고 읽을 만큼 본문이 있어야 한다. 앞뒤 공백은 세지 않는다. */
-    private static void requirePaidLength(boolean paid, String content) {
-        if (paid && content.strip().length() < PAID_MIN_CONTENT_LENGTH) {
+    /**
+     * 칩으로 한 편씩 파는 유료 글은 돈을 내고 읽을 만큼 본문이 있어야 한다. 앞뒤 공백은 세지 않는다.
+     * 시리즈 회차는 시리즈 전체를 사는 것이라 길이 제한이 없다 (팀 결정).
+     */
+    private static void requirePaidLength(boolean paid, PostSeries series, String content) {
+        if (paid && series == null && content.strip().length() < PAID_MIN_CONTENT_LENGTH) {
             throw new BusinessException(ErrorCode.BAD_REQUEST,
                     "유료 글은 본문을 " + PAID_MIN_CONTENT_LENGTH + "자 이상 써 주세요.");
         }

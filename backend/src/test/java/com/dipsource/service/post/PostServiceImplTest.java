@@ -472,6 +472,18 @@ class PostServiceImplTest {
         }
 
         @Test
+        void shortPaidEpisodeIsAllowedInSeries() {
+            when(userService.isActiveUser(AUTHOR)).thenReturn(true);
+            when(postSeriesRepository.findById(SERIES)).thenReturn(Optional.of(series(AUTHOR, 9900)));
+            when(postRepository.save(any(Post.class))).thenAnswer(inv -> withId(inv.getArgument(0), 12L));
+
+            // 시리즈 회차는 1000자 최소 길이가 없다
+            service.create(AUTHOR, new WritePostRequest("짧은 회차", "backend", List.of(), BODY, null, 0, SERIES, true));
+
+            verify(postRepository).save(any(Post.class));
+        }
+
+        @Test
         void seriesEpisodeIsNotSoldOneByOne() {
             when(postRepository.findById(10L)).thenReturn(Optional.of(episode()));
 
