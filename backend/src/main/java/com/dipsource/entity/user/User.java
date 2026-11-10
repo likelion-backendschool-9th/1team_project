@@ -85,6 +85,10 @@ public class User extends BaseEntity {
     @Column(name = "blog_subscription_price", nullable = false)
     private int blogSubscriptionPrice = 0;
 
+    /** 칩으로 늘린 데모 인벤토리 칸 수. 기본 칸(6)·플러스 보너스와 별도로 쌓인다 */
+    @Column(name = "extra_inventory_slots", nullable = false, columnDefinition = "integer default 0 not null")
+    private int extraInventorySlots = 0;
+
     /** 마지막 활동 시각. DM에서 "활동중"을 판단하는 기준이다. */
     @Column(name = "last_active_at")
     private LocalDateTime lastActiveAt;
@@ -171,6 +175,11 @@ public class User extends BaseEntity {
      */
     public void addChips(int chips) {
         this.chipBalance += chips;
+    }
+
+    /** 데모 인벤토리를 한 칸 늘린다. 칩 차감은 InventorySlotService에서 같은 트랜잭션으로 한다 */
+    public void addInventorySlot() {
+        this.extraInventorySlots += 1;
     }
 
     /**

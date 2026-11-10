@@ -17,5 +17,7 @@ public enum ChipTransactionType {
     /** 정산으로 차감(-) */
     SETTLEMENT,
     /** 관리자 조정(±) */
-    ADMIN_ADJUST
+    ADMIN_ADJUST,
+    /** 데모 인벤토리 칸 구매(-) */
+    INVENTORY_SLOT
 }

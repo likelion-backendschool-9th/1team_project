@@ -202,9 +202,23 @@ export async function sponsorChips(userId: number, previous: FormState, formData
   });
 }
 
+// 내 데모 인벤토리를 1칸 늘린다. 백엔드가 칩(INVENTORY_SLOT_CHIPS)을 차감하고 칸 수를 올린다.
 export async function expandInventory() {
-  if (!isMockMode) return { ok: false, message: "칩 사용 API 연결 전이에요." };
-  return { ok: true, message: "인벤토리를 1칸 늘렸어요. (목업이라 실제로 차감되지는 않아요)" };
+  const me = await getMe();
+  if (!me) return { ok: false, message: "로그인이 필요해요." };
+  const result = await mutate(
+    "/api/v1/mini-homes/me/inventory-slots",
+    "POST",
+    undefined,
+    "인벤토리를 1칸 늘렸어요.",
+    !hasBackend,
+  );
+  if (result.ok && hasBackend) {
+    // 늘어난 칸과 줄어든 칩 잔액이 바로 보이도록 다시 그린다.
+    revalidatePath(`/mini-home/${me.id}/demos`);
+    revalidatePath("/my/coins");
+  }
+  return result;
 }
 
 export async function recordVisit(userId: number) {
