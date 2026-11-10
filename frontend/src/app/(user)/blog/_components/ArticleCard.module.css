@@ -77,6 +77,27 @@
   -webkit-line-clamp: 2;
 }
 
+.paywall {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  border: 1px solid #f5d27a;
+  border-radius: 14px;
+  background: #fffaeb;
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.paywall:hover {
+  background: #fff3cc;
+}
+
+.paywallLock {
+  font-size: 18px;
+}
+
 .source {
   display: flex;
   align-items: center;
