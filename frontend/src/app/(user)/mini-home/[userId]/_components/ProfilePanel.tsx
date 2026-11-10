@@ -124,11 +124,19 @@ export function ProfilePanel({ profile, languages, contributions, repos }: Props
           <ul className={styles.repos}>
             {repos.map((repo) => (
               <li key={repo.name}>
-                <span className={styles.repoName}>{repo.name}</span>
-                <span className={styles.stars}>
-                  <span aria-hidden="true">★</span>
-                  <span className="sr-only">스타</span> {formatCount(repo.stars)}
-                </span>
+                <a
+                  href={repo.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={styles.repoLink}
+                  aria-label={`${repo.name} 레포지토리 GitHub에서 열기`}
+                >
+                  <span className={styles.repoName}>{repo.name}</span>
+                  <span className={styles.stars}>
+                    <span aria-hidden="true">★</span>
+                    <span className="sr-only">스타</span> {formatCount(repo.stars)}
+                  </span>
+                </a>
               </li>
             ))}
           </ul>

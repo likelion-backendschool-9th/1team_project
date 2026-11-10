@@ -108,8 +108,8 @@ export const mockContributions: GithubContributions = {
 };
 
 export const mockRepos: GithubRepo[] = [
-  { name: "three-fluid-simulation", stars: 328 },
-  { name: "canvas-dipsource-kit", stars: 142 },
+  { name: "three-fluid-simulation", stars: 328, url: "https://github.com" },
+  { name: "canvas-dipsource-kit", stars: 142, url: "https://github.com" },
 ];
 
 export const mockDemos: MiniHomeDemo[] = [
