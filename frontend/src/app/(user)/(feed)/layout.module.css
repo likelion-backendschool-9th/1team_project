@@ -13,12 +13,8 @@
   min-width: 0;
   flex-direction: column;
   gap: 20px;
-  padding: 24px 28px 120px;
-  margin-block: 16px;
-  border: 1px solid var(--frame-border);
-  border-radius: 36px;
-  background: var(--frame);
-  box-shadow: var(--shadow-frame);
+  padding: 20px 24px 120px;
+  border-inline: 1px solid var(--border);
 }
 
 .main {
@@ -42,7 +38,7 @@
 
   .center {
     padding-bottom: 24px;
-    margin-inline-end: 16px;
+    border-inline-end: 0;
   }
 }
 
@@ -57,21 +53,6 @@
 
   .center {
     padding: 16px 16px 24px;
-    margin: 0;
-    border: 0;
-    border-radius: 0;
-    box-shadow: none;
-  }
-}
-
-/* 데스크톱: 메뉴·본문·사이드를 각각 떠 있는 둥근 패널로 나눈다. */
-@media (min-width: 1101px) {
-  .shell {
-    gap: 16px;
-    padding: 16px;
-  }
-
-  .center {
-    margin-block: 0;
+    border-inline: 0;
   }
 }

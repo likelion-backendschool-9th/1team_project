@@ -44,12 +44,7 @@
   min-width: 0;
   flex-direction: column;
   gap: 24px;
-  padding: 24px 28px 64px;
-  margin-block: 16px;
-  border: 1px solid var(--frame-border);
-  border-radius: 36px;
-  background: var(--frame);
-  box-shadow: var(--shadow-frame);
+  padding: 24px 24px 64px;
 }
 
 .main:focus {
@@ -81,11 +76,6 @@
 
   .main {
     padding-inline: 0;
-    margin: 0;
-    border: 0;
-    border-radius: 0;
-    background: none;
-    box-shadow: none;
   }
 
   .nav {
@@ -102,28 +92,5 @@
   .ranking,
   .copy {
     display: none;
-  }
-}
-
-/* 데스크톱: 메뉴·본문·사이드를 각각 떠 있는 둥근 패널로 나눈다. */
-@media (min-width: 1101px) {
-  .shell {
-    gap: 16px;
-    padding: 16px;
-  }
-
-  .main {
-    margin-block: 0;
-  }
-}
-
-@media (min-width: 1101px) {
-  .nav {
-    top: 16px;
-    height: calc(100vh - 32px);
-  border: 1px solid var(--frame-border);
-  border-radius: 28px;
-  background: var(--frame);
-  box-shadow: var(--shadow-frame);
   }
 }

@@ -2,10 +2,7 @@
   --shell-max: 1920px;
   --aside-left: clamp(260px, 17vw, 300px);
   --aside-right: clamp(260px, 17vw, 300px);
-  --bg: #f3f1ec;
-  --frame: #fdfbf7;
-  --frame-border: #e9e3d8;
-  --shadow-frame: 0 2px 4px rgb(60 40 10 / 4%), 0 16px 40px rgb(60 40 10 / 6%);
+  --bg: #fbf8f3;
   --surface: #ffffff;
   --surface-muted: #f3f1ed;
   --ink: #1f2328;
