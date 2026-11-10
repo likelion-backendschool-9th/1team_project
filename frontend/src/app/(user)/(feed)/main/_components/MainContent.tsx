@@ -32,12 +32,12 @@ export async function MainContent({ searchParams }: Props) {
   const params = await searchParams;
   const activeTag = parseTag(params.tag);
   const feedType: FeedType =
-    params.type === "following" ? "following" :
-    params.type === "latest" ? "latest" : "recommended";
+  params.type === "following" ? "following" :
+    params.type === "recommended" ? "recommended" : "latest";
   const typeHref = (type: FeedType) => {
     const query = new URLSearchParams();
     if (activeTag) query.set("tag", activeTag);
-    if (type !== "recommended") query.set("type", type);
+    if (type !== "latest") query.set("type", type);
     const search = query.toString();
     return search ? `/?${search}` : "/";
   };
@@ -65,9 +65,9 @@ export async function MainContent({ searchParams }: Props) {
             label="피드 종류"
             variant="line"
             items={[
+              { href: typeHref("latest"), label: "최신", active: feedType === "latest" },
               { href: typeHref("recommended"), label: "추천", active: feedType === "recommended" },
               { href: typeHref("following"), label: "팔로잉", active: feedType === "following" },
-              { href: typeHref("latest"), label: "최신", active: feedType === "latest" },
             ]}
           />
         </div>
