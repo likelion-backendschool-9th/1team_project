@@ -104,7 +104,7 @@ class NotificationServiceImplTest {
         Notification follow = notification(NotificationType.FOLLOW, 2L, null, null);
         Notification like = notification(NotificationType.LIKE, 3L, NotificationService.TARGET_POST, 9L);
         Notification system = notification(NotificationType.SPONSOR, null, null, null);
-        when(repository.findByReceiverIdOrderByCreatedAtDescIdDesc(anyLong(), any()))
+        when(repository.findVisibleByReceiverId(anyLong(), any()))
                 .thenReturn(new PageImpl<>(List.of(follow, like, system), PageRequest.of(0, 20), 3));
         when(userService.getSummaries(List.of(2L, 3L))).thenReturn(Map.of(
                 2L, new UserSummaryResponse(2L, "팔로워", null, List.of())
@@ -148,7 +148,7 @@ class NotificationServiceImplTest {
 
     @Test
     void countsUnread() {
-        when(repository.countByReceiverIdAndReadFalse(1L)).thenReturn(3L);
+        when(repository.countVisibleUnread(1L)).thenReturn(3L);
 
         assertThat(service.countUnread(1L)).isEqualTo(3L);
     }
