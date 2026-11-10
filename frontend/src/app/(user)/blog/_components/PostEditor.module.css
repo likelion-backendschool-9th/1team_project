@@ -69,3 +69,10 @@
   font-size: 14px;
   font-weight: 600;
 }
+
+/* 유료 글인데 본문이 최소 길이보다 짧을 때 */
+.lengthShort {
+  color: var(--accent-ink);
+  font-size: 14px;
+  font-weight: 600;
+}
