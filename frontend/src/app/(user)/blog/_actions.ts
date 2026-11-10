@@ -118,7 +118,13 @@ export async function updatePost(
   );
   if (!state.ok || !hasBackend) return state;
   revalidatePath(`/blog/posts/${postId}`);
-  redirect(`/blog/posts/${postId}?updated=1`);
+  revalidatePath('/blog');
+  // 시리즈 회차는 시리즈 목록으로, 그 밖의 글은 블로그 홈으로 돌아간다.
+  if (body.seriesId) {
+    revalidatePath(`/blog/series/${body.seriesId}`);
+    redirect(`/blog/series/${body.seriesId}`);
+  }
+  redirect('/blog');
 }
 
 export async function deletePost(postId: number) {
