@@ -6,6 +6,7 @@ import { Suspense } from "react";
 import {
   BookIcon,
   GridIcon,
+  HomeIcon,
   NewsIcon,
   TicketIcon,
   UserIcon,
@@ -20,16 +21,19 @@ const items = [
   { href: "/news", label: "개발자 뉴스", Icon: NewsIcon },
   { href: "/events", label: "이벤트", Icon: TicketIcon },
   { href: "/my/coins", label: "칩 충전하기", Icon: ChipIcon },
+  // 좁은 화면에서는 오른쪽 프로필 카드(내 미니홈피 바로가기)가 피드 맨 아래로 내려가므로 메뉴에도 둔다.
+  { href: "/mini-home/me", label: "내 미니홈피", Icon: HomeIcon, narrowOnly: true },
 ] as const;
 
 function NavList({ pathname }: { pathname: string | null }) {
   return (
     <nav aria-label="주 메뉴">
       <ul className={styles.list}>
-        {items.map(({ href, label, Icon }) => {
+        {items.map((item) => {
+          const { href, label, Icon } = item;
           const active = pathname !== null && (pathname === href || pathname.startsWith(`${href}/`));
           return (
-            <li key={label}>
+            <li key={label} className={"narrowOnly" in item ? styles.narrowOnly : undefined}>
               <Link
                 href={href}
                 className={`${styles.item} ${active ? styles.active : ""}`}

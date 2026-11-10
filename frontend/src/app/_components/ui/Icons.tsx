@@ -32,6 +32,16 @@ export function GridIcon(props: Props) {
   );
 }
 
+export function HomeIcon(props: Props) {
+  return (
+    <Svg {...props}>
+      <path d="M4 10.5 12 4l8 6.5" />
+      <path d="M6 9.5V20h12V9.5" />
+      <path d="M10 20v-5h4v5" />
+    </Svg>
+  );
+}
+
 export function BookIcon(props: Props) {
   return (
     <Svg {...props}>

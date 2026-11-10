@@ -1,6 +1,7 @@
 /* 스킨 팔레트. 파도타기로 다른 홈피에 가면 배경·틀·탭 색이 함께 바뀐다. */
 .wrap {
-  --page: #f3f1ec;
+  /* 기본(크림) 스킨의 바깥 배경은 서비스 기본 배경(--bg)과 맞춘다. */
+  --page: var(--bg);
   --frame: #fdfbf7;
   --frame-border: #e9e3d8;
   --frame-ink: var(--ink);
