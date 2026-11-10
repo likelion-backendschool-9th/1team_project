@@ -24,6 +24,7 @@ type Props = {
 
 export function ReportModal({ label, title, className = kit.btnGhost, onConfirm, onDone }: Props) {
   const titleId = useId();
+  const radioName = useId();
   const dialogRef = useRef<HTMLDialogElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const [category, setCategory] = useState<string>(CATEGORIES[0]);
@@ -76,7 +77,7 @@ export function ReportModal({ label, title, className = kit.btnGhost, onConfirm,
               <label key={cat} className={styles.radioItem}>
                 <input
                   type="radio"
-                  name="report-category"
+                  name={radioName}
                   value={cat}
                   checked={category === cat}
                   onChange={() => setCategory(cat)}
