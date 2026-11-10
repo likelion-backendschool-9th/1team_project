@@ -37,7 +37,13 @@ export function ProfilePanel({ profile, languages, contributions, repos }: Props
   return (
     <section className={styles.panel} aria-label={`${profile.nickname} 프로필`}>
       <div className={styles.avatar}>
-        <span className={styles.avatarName}>{profile.nickname}</span>
+        {profile.profileImage ? (
+          // 소셜·R2 등 여러 곳의 주소라 next/image 대신 img를 쓴다. 바로 아래에 닉네임이 나와서 alt는 비운다
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={profile.profileImage} alt="" className={styles.avatarImage} referrerPolicy="no-referrer" />
+        ) : (
+          <span className={styles.avatarName}>{profile.nickname}</span>
+        )}
       </div>
       <h2 className={styles.name}>{profile.nickname}</h2>
       {(profile.plus || profile.company) && (
