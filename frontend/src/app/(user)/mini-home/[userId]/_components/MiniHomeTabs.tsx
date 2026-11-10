@@ -9,7 +9,7 @@ type Props = {
   myId?: number;
 };
 
-// 모든 탭은 지금 보고 있는 홈피 기준이다. "스킨"(꾸미기)은 내 홈피에서만 보인다.
+// 모든 탭은 지금 보고 있는 홈피 기준이다. "설정"(스킨·대표 데모·소개 꾸미기)은 내 홈피에서만 보인다.
 export function MiniHomeTabs({ userId, myId }: Props) {
   const pathname = usePathname();
   const base = `/mini-home/${userId}`;
@@ -19,7 +19,7 @@ export function MiniHomeTabs({ userId, myId }: Props) {
     { href: `${base}/demos`, label: "데모" },
     { href: `${base}/blog`, label: "블로그" },
     { href: `${base}/guestbook`, label: "방명록" },
-    ...(isOwner ? [{ href: `${base}/edit`, label: "스킨" }] : []),
+    ...(isOwner ? [{ href: `${base}/edit`, label: "설정" }] : []),
   ];
 
   return (

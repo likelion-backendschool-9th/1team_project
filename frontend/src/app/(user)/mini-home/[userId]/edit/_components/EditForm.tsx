@@ -43,7 +43,7 @@ export function EditForm({ profile, demos, posts }: Props) {
   return (
     <form action={formAction} className={`${kit.card} ${kit.form}`} key={state.attempt}>
       <div>
-        <h2 className={kit.cardTitle}>미니홈피 꾸미기</h2>
+        <h2 className={kit.cardTitle}>미니홈피 설정</h2>
         <p className={kit.faint}>스킨, 대표 데모, 소개 문구를 바꿀 수 있어요.</p>
       </div>
 
