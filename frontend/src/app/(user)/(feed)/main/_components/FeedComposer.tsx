@@ -13,6 +13,11 @@ import {
 import { DemoAttach } from "./DemoAttach";
 import styles from "./FeedComposer.module.css";
 
+function thumbLayoutClass(count: number) {
+  const layouts = [styles.count1, styles.count2, styles.count3, styles.count4, styles.count5];
+  return layouts[Math.min(Math.max(count, 1), layouts.length) - 1];
+}
+
 type FieldProps = {
   defaultValue: string;
   error: string | null;
@@ -223,7 +228,10 @@ export function FeedComposer({ nickname, myDemos }: Props) {
               </div>
             )}
             {images.length > 0 && (
-              <ul className={styles.thumbGrid} aria-label="첨부 이미지">
+              <ul
+                className={`${styles.thumbGrid} ${thumbLayoutClass(images.length)}`}
+                aria-label="첨부 이미지"
+              >
                 {images.map((img) => (
                   <li key={img.url} className={styles.thumb}>
                     {/* thumbnailUrl(400px)로 미리보기, 피드에는 원본 url이 저장됨 */}

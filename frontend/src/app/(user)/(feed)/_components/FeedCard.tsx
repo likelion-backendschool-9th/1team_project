@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Avatar } from "@/app/_components/ui/Avatar";
 import { ArrowRightIcon } from "@/app/_components/ui/Icons";
-import { formatRelativeTime } from "@/app/_lib/format";
+import { RelativeTime } from "@/app/_components/ui/RelativeTime";
 import type { Feed } from "@/app/_lib/types/feed";
 import { DemoThumb } from "./DemoThumb";
 import { FeedActions } from "./FeedActions";
@@ -15,6 +15,11 @@ type Props = {
   myId?: number;
   now: number;
 };
+
+function imageLayoutClass(count: number) {
+  const layouts = [styles.count1, styles.count2, styles.count3, styles.count4, styles.count5];
+  return layouts[Math.min(Math.max(count, 1), layouts.length) - 1];
+}
 
 export function FeedCard({ feed, myId, now }: Props) {
   const { author, demo } = feed;
@@ -31,9 +36,7 @@ export function FeedCard({ feed, myId, now }: Props) {
           </Link>
           <p className={styles.meta}>
             {author.techStacks[0]} ·{" "}
-            <time dateTime={feed.createdAt}>
-              {formatRelativeTime(feed.createdAt, now)}
-            </time>
+            <RelativeTime iso={feed.createdAt} now={now} />
           </p>
         </div>
         {author.id !== myId && (
@@ -56,7 +59,10 @@ export function FeedCard({ feed, myId, now }: Props) {
       </p>
 
       {feed.imageUrls && feed.imageUrls.length > 0 && (
-        <ul className={`${styles.images} ${feed.imageUrls.length === 1 ? styles.imagesSingle : ""}`} aria-label="첨부 이미지">
+        <ul
+          className={`${styles.images} ${imageLayoutClass(feed.imageUrls.length)}`}
+          aria-label="첨부 이미지"
+        >
           {feed.imageUrls.map((url, index) => (
             <li key={url}>
               <a href={url} target="_blank" rel="noopener noreferrer" className={styles.imageLink}>

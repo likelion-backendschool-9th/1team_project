@@ -2,6 +2,7 @@ package com.dipsource.service.feed;
 
 import com.dipsource.dto.feed.FeedCreateRequest;
 import com.dipsource.dto.feed.FeedCursorResponse;
+import com.dipsource.dto.feed.FeedDemoResponse;
 import com.dipsource.dto.feed.FeedResponse;
 import com.dipsource.dto.feed.FeedUpdateRequest;
 import com.dipsource.entity.feed.Feed;
@@ -52,6 +53,7 @@ public class FeedService {
     private final FollowRepository followRepository;
     private final TagRepository tagRepository;
     private final UserRepository userRepository;
+    private final FeedDemoAssembler feedDemos;
 
     /** R2가 비활성화된 환경에서는 null — 피드 삭제 시 이미지 정리에만 사용 */
     @Nullable
@@ -68,6 +70,7 @@ public class FeedService {
      */
     @Transactional
     public FeedResponse create(Long userId, FeedCreateRequest request) {
+        feedDemos.requireAttachable(request.demoId(), userId);
         Feed feed = Feed.builder()
                 .userId(userId)
                 .content(request.content())
@@ -95,7 +98,7 @@ public class FeedService {
 
         User author = userRepository.findById(userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "사용자를 찾을 수 없습니다"));
-        return FeedResponse.from(feed, author);
+        return FeedResponse.from(feed, author, feedDemos.of(feed));
     }
 
     /**
@@ -111,15 +114,16 @@ public class FeedService {
         User author = userRepository.findById(feed.getUserId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "사용자를 찾을 수 없습니다"));
 
+        FeedDemoResponse demo = feedDemos.of(feed);
         if (userId == null) {
-            return FeedResponse.from(feed, author);
+            return FeedResponse.from(feed, author, demo);
         }
 
         boolean liked = feedLikeRepository.existsByIdUserIdAndIdFeedId(userId, feedId);
         boolean reposted = feedRepostRepository.existsByIdUserIdAndIdFeedId(userId, feedId);
         boolean bookmarked = feedBookmarkRepository.existsByIdUserIdAndIdFeedId(userId, feedId);
         boolean following = followRepository.existsByIdFollowerIdAndIdFollowingId(userId, feed.getUserId());
-        return FeedResponse.from(feed, author, liked, reposted, bookmarked, following);
+        return FeedResponse.from(feed, author, demo, liked, reposted, bookmarked, following);
     }
 
     /**
@@ -139,7 +143,7 @@ public class FeedService {
         feed.update(request.content());
         User author = userRepository.findById(userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "사용자를 찾을 수 없습니다"));
-        return FeedResponse.from(feed, author);
+        return FeedResponse.from(feed, author, feedDemos.of(feed));
     }
 
     /**
@@ -184,10 +188,11 @@ public class FeedService {
         List<Long> feedIds = feeds.stream().map(Feed::getId).toList();
         Set<Long> likedIds = new HashSet<>(feedLikeRepository.findLikedFeedIds(userId, feedIds));
         Set<Long> bookmarkedIds = new HashSet<>(feedBookmarkRepository.findBookmarkedFeedIds(userId, feedIds));
+        Map<Long, FeedDemoResponse> demos = feedDemos.of(feeds);
         // 내 글이므로 reposted는 의미 없음(false), following도 본인이므로 false
         List<FeedResponse> responses = feeds.stream()
                 .map(feed -> FeedResponse.from(
-                        feed, author,
+                        feed, author, demos.get(feed.getDemoId()),
                         likedIds.contains(feed.getId()),
                         false,
                         bookmarkedIds.contains(feed.getId()),
@@ -213,12 +218,13 @@ public class FeedService {
         Set<Long> likedIds = new HashSet<>(feedLikeRepository.findLikedFeedIds(userId, feedIds));
         Set<Long> bookmarkedIds = new HashSet<>(feedBookmarkRepository.findBookmarkedFeedIds(userId, feedIds));
         Set<Long> followingAuthorIds = new HashSet<>(followRepository.findFollowingIdsIn(userId, authorIds));
+        Map<Long, FeedDemoResponse> demos = feedDemos.of(feeds);
         List<FeedResponse> responses = feeds.stream()
                 .map(feed -> {
                     User author = userMap.get(feed.getUserId());
                     if (author == null) return null;
                     return FeedResponse.from(
-                            feed, author,
+                            feed, author, demos.get(feed.getDemoId()),
                             likedIds.contains(feed.getId()),
                             true, // 이 목록의 피드는 모두 내가 리포스트한 것
                             bookmarkedIds.contains(feed.getId()),

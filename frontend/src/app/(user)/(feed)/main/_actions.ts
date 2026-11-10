@@ -89,6 +89,7 @@ export async function createFeed(
     if (error instanceof ApiRequestError) return failed(error.error.message);
     throw error;
   }
+  revalidatePath("/");
   revalidatePath("/main");
   return {
     values: { content: "", demoId: "", linkUrl: "" },
