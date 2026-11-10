@@ -7,6 +7,7 @@ import { loadDmMessages, loadDmRooms } from "../_actions";
 import { useDmSocket, type DmSocketMessage } from "../_hooks/useDmSocket";
 import { DmChat } from "./DmChat";
 import { DmRoomList } from "./DmRoomList";
+import { DmUserSearch } from "./DmUserSearch";
 import styles from "./Dm.module.css";
 
 type Props = {
@@ -152,13 +153,19 @@ export function DmPanel({ id, initialPartner }: Props) {
 
   return (
     <section id={id} className={styles.layout} aria-label="DM">
-      {rooms ? (
-        <DmRoomList rooms={rooms} now={now} activeId={partner?.id ?? null} onSelect={setPartner} />
-      ) : (
-        <p className={`${styles.rooms} ${styles.loading}`} role="status" aria-busy="true">
-          {loadError ?? "대화 목록을 불러오는 중…"}
-        </p>
-      )}
+      <div className={styles.side}>
+        <div className={styles.sideHeader}>
+          <p className={styles.roomsTitle}>메시지</p>
+          <DmUserSearch rooms={rooms} myId={myId} onSelect={setPartner} />
+        </div>
+        {rooms ? (
+          <DmRoomList rooms={rooms} now={now} activeId={partner?.id ?? null} onSelect={setPartner} />
+        ) : (
+          <p className={`${styles.rooms} ${styles.loading}`} role="status" aria-busy="true">
+            {loadError ?? "대화 목록을 불러오는 중…"}
+          </p>
+        )}
+      </div>
       <div className={styles.panel}>
         {partner && myId !== null ? (
           <DmChat
@@ -177,7 +184,7 @@ export function DmPanel({ id, initialPartner }: Props) {
               💬
             </span>
             <p className={styles.placeholderTitle}>메시지</p>
-            <p>왼쪽에서 대화를 고르거나, 미니홈피에서 DM 보내기를 눌러 대화를 시작해 보세요.</p>
+            <p>왼쪽에서 대화를 고르거나, 사람 찾기에서 이름을 검색해 대화를 시작해 보세요.</p>
           </div>
         )}
       </div>
