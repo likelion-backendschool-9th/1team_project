@@ -44,23 +44,34 @@
   font-size: 13px;
 }
 
-.listbox {
+.panel {
   position: absolute;
   top: calc(100% + 8px);
   right: 0;
   left: 0;
   z-index: 20;
-  margin: 0;
   padding: 6px;
   border: 1px solid var(--border);
   border-radius: 16px;
   background: var(--surface);
   box-shadow: var(--shadow-card);
-  list-style: none;
 }
 
-.listbox[hidden] {
+.panel[hidden] {
   display: none;
+}
+
+.heading {
+  margin: 4px 12px 2px;
+  color: var(--ink-soft);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.listbox {
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }
 
 .option {

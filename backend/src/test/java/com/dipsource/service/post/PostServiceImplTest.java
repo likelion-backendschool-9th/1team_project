@@ -65,6 +65,7 @@ class PostServiceImplTest {
     @Mock private com.dipsource.repository.post.PostSeriesRepository postSeriesRepository;
     @Mock private com.dipsource.repository.post.SeriesPurchaseRepository seriesPurchaseRepository;
     @Mock private com.dipsource.service.feed.FeedDemoAssembler demoAssembler;
+    @Mock private com.dipsource.service.notification.NotificationService notificationService;
     @Mock private TagRepository tagRepository;
     @Mock private UserService userService;
     @Mock private BlockRepository blockRepository;
@@ -77,7 +78,7 @@ class PostServiceImplTest {
     void setUp() {
         service = new PostServiceImpl(postRepository, postLikeRepository, postBookmarkRepository, postTagRepository,
                 postPurchaseRepository, blogSubscriptionRepository, postSeriesRepository, seriesPurchaseRepository,
-                demoAssembler, tagRepository, userService,
+                demoAssembler, notificationService, tagRepository, userService,
                 org.mockito.Mockito.mock(org.springframework.context.ApplicationEventPublisher.class),
                 blockRepository, new PostViewCounter(), coinService, userRepository);
     }
@@ -412,6 +413,51 @@ class PostServiceImplTest {
                     .isInstanceOf(BusinessException.class)
                     .extracting(e -> ((BusinessException) e).getErrorCode())
                     .isEqualTo(ErrorCode.BAD_REQUEST);
+        }
+    }
+
+    @Nested
+    class Notifications {
+
+        private static final com.dipsource.entity.notification.NotificationType LIKE =
+                com.dipsource.entity.notification.NotificationType.LIKE;
+
+        @Test
+        void likeTellsAuthorOnlyFirstTime() {
+            when(postRepository.findById(10L)).thenReturn(Optional.of(post(AUTHOR, 0)));
+            when(postLikeRepository.insertIgnore(OTHER, 10L)).thenReturn(1, 0);
+
+            service.like(OTHER, 10L);
+            service.like(OTHER, 10L);
+
+            verify(notificationService, times(1)).notify(AUTHOR, OTHER, LIKE, "POST", 10L);
+        }
+
+        @Test
+        void bookmarkTellsAuthorOnlyFirstTime() {
+            when(postRepository.findById(10L)).thenReturn(Optional.of(post(AUTHOR, 0)));
+            when(postBookmarkRepository.insertIgnore(OTHER, 10L)).thenReturn(1, 0);
+
+            service.bookmark(OTHER, 10L);
+            service.bookmark(OTHER, 10L);
+
+            verify(notificationService, times(1)).notify(AUTHOR, OTHER,
+                    com.dipsource.entity.notification.NotificationType.BOOKMARK, "POST", 10L);
+        }
+
+        @Test
+        void newEpisodeTellsSeriesBuyers() {
+            when(userService.isActiveUser(AUTHOR)).thenReturn(true);
+            when(postSeriesRepository.findById(3L)).thenReturn(Optional.of(withId(com.dipsource.entity.post.PostSeries.builder()
+                    .userId(AUTHOR).title("시리즈").description("").priceKrw(9900).build(), 3L)));
+            when(postRepository.save(any(Post.class))).thenAnswer(inv -> withId(inv.getArgument(0), 30L));
+            when(seriesPurchaseRepository.findUserIdsBySeriesId(3L)).thenReturn(List.of(OTHER, 9L));
+
+            service.create(AUTHOR, new WritePostRequest("새 회차", "backend", List.of(), BODY, null, 0, 3L, false));
+
+            var type = com.dipsource.entity.notification.NotificationType.NEW_EPISODE;
+            verify(notificationService).notify(OTHER, AUTHOR, type, "POST", 30L);
+            verify(notificationService).notify(9L, AUTHOR, type, "POST", 30L);
         }
     }
 

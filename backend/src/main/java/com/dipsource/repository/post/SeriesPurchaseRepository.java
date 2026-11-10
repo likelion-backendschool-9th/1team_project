@@ -15,6 +15,10 @@ public interface SeriesPurchaseRepository extends JpaRepository<SeriesPurchase, 
 
     boolean existsBySeriesId(Long seriesId);
 
+    /** 시리즈를 산 회원 ID. 새 회차 알림에 쓴다 */
+    @Query("SELECT p.userId FROM SeriesPurchase p WHERE p.seriesId = :seriesId")
+    List<Long> findUserIdsBySeriesId(@Param("seriesId") Long seriesId);
+
     /** 내가 산 시리즈. 최근에 산 순 */
     List<SeriesPurchase> findByUserIdOrderByPurchasedAtDescIdDesc(Long userId);
 

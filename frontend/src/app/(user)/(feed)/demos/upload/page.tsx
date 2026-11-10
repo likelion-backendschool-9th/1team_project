@@ -12,7 +12,7 @@ async function UploadContent() {
   const me = await getMe();
   if (!me) return null;
   const [used, usage] = await Promise.all([countMyDemos(me.id), getDemoUsage()]);
-  return <UploadForm used={used} capacity={inventoryCapacity(me.plus, 0)} usage={usage} />;
+  return <UploadForm used={used} capacity={inventoryCapacity(me.plus, me.extraInventorySlots ?? 0)} usage={usage} />;
 }
 
 export default function DemoUploadPage() {

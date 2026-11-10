@@ -62,7 +62,8 @@ export async function SearchContent({ searchParams }: Props) {
   const searchId = first(params.searchId)?.slice(0, 36);
   const popular = await getPopularKeywords();
 
-  if (!q)
+  if (!q) {
+    if (popular.length === 0) return null;
     return (
       <section className={kit.card} aria-labelledby="popular-title">
         <h2 id="popular-title" className={kit.cardTitle}>
@@ -79,6 +80,7 @@ export async function SearchContent({ searchParams }: Props) {
         </ol>
       </section>
     );
+  }
 
   const [outcome, me] = await Promise.all([search(q, type, sort, page, searchId), getMe()]);
   if ("error" in outcome)
@@ -126,7 +128,7 @@ export async function SearchContent({ searchParams }: Props) {
       {total === 0 && (
         <p className={kit.empty}>
           검색 결과가 없어요. 다른 키워드로 찾아보세요.
-          <br />
+          {popular.length > 0 && <br />}
           {popular.slice(0, 4).map((keyword) => (
             <Link key={keyword} href={href(keyword, "all")} className={kit.more} style={{ margin: "8px 6px 0" }}>
               #{keyword}

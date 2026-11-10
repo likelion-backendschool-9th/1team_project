@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { Suspense } from "react";
 import kit from "@/app/_components/ui/kit.module.css";
-import { formatDateTime } from "@/app/_lib/format";
+import { formatCalendarDate } from "@/app/_lib/format";
 import { statusLabels } from "../_components/eventLabels";
 import { getEvent } from "../_lib/api";
 import styles from "../_components/Events.module.css";
@@ -26,9 +26,9 @@ async function EventDetail({ params }: { params: Promise<{ eventId: string }> })
         <p>{event.summary}</p>
       </div>
       <dl className={styles.facts}>
-        <div><dt>기간</dt><dd>{formatDateTime(event.startAt)} ~ {formatDateTime(event.endAt)}</dd></div>
+        <div><dt>기간</dt><dd>{formatCalendarDate(event.startAt)} ~ {formatCalendarDate(event.endAt)}</dd></div>
         <div><dt>보상</dt><dd>{event.reward}</dd></div>
-        <div><dt>참가자</dt><dd>{event.participantCount}명</dd></div>
+        {event.participantCount > 0 && <div><dt>참가자</dt><dd>{event.participantCount}명</dd></div>}
       </dl>
       <div className={styles.content}>
         {event.content.split("\n").map((line) => (

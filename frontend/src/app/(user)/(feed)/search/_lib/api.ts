@@ -1,6 +1,6 @@
 import "server-only";
 import { mockUsers } from "@/app/(user)/_lib/mock";
-import { apiFetch, ApiRequestError, isMockMode, type ApiResponse, type PageResponse } from "@/app/_lib/api/client";
+import { apiFetch, ApiRequestError, hasBackend, isMockMode, type ApiResponse, type PageResponse } from "@/app/_lib/api/client";
 
 export type SearchType = "all" | "post" | "demo" | "user" | "feed";
 
@@ -156,7 +156,7 @@ export async function search(q: string, type: SearchType, sort: SearchSort, page
 }
 
 export async function getPopularKeywords(): Promise<string[]> {
-  if (isMockMode) return ["React", "Spring", "WebSocket", "Unity", "Next.js", "채팅", "게임"];
+  if (!hasBackend) return ["React", "Spring", "WebSocket", "Unity", "Next.js", "채팅", "게임"];
   const { data } = await apiFetch<ApiResponse<string[]>>("/api/v1/search/popular");
   return data;
 }

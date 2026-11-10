@@ -4,7 +4,7 @@ import { connection } from "next/server";
 import { Suspense } from "react";
 import kit from "@/app/_components/ui/kit.module.css";
 import { LinkTabs } from "@/app/_components/ui/LinkTabs";
-import { formatDate } from "@/app/_lib/format";
+import { formatCalendarDate } from "@/app/_lib/format";
 import type { EventStatus } from "@/app/_lib/types/event";
 import { statusLabels } from "./_components/eventLabels";
 import { getEvents } from "./_lib/api";
@@ -63,7 +63,8 @@ async function EventList({ searchParams }: { searchParams: Promise<Record<string
                   <span className={styles.title}>{event.title}</span>
                   <span className={kit.muted}>{event.summary}</span>
                   <span className={kit.faint}>
-                    {formatDate(event.startAt)} ~ {formatDate(event.endAt)} · 참가 {event.participantCount}명
+                    {formatCalendarDate(event.startAt)} ~ {formatCalendarDate(event.endAt)}
+                    {event.participantCount > 0 ? ` · 참가 ${event.participantCount}명` : ""}
                   </span>
                   <span className={styles.reward}>🎁 {event.reward}</span>
                 </span>
