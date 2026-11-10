@@ -7,7 +7,8 @@ import kit from "@/app/_components/ui/kit.module.css";
 import { getMe } from "@/app/(user)/_lib/api";
 import { updatePost } from "../../../_actions";
 import { PostEditor } from "../../../_components/PostEditor";
-import { getDemoOptions, getPost } from "../../../_lib/api";
+import { getDemoOptions, getMySeries, getPost } from "../../../_lib/api";
+import { isPaidPost } from "../../../_lib/query";
 
 export const metadata: Metadata = { title: "글 수정", robots: { index: false } };
 
@@ -16,7 +17,7 @@ async function EditForm({ params }: { params: Promise<{ postId: string }> }) {
   const postId = Number((await params).postId);
   const post = Number.isSafeInteger(postId) && postId > 0 ? await getPost(postId) : null;
   if (!post) notFound();
-  const [me, demos] = await Promise.all([getMe(), getDemoOptions()]);
+  const [me, demos, series] = await Promise.all([getMe(), getDemoOptions(), getMySeries()]);
 
   if (!me || me.id !== post.author.id)
     return (
@@ -32,6 +33,7 @@ async function EditForm({ params }: { params: Promise<{ postId: string }> }) {
     <PostEditor
       action={updatePost.bind(null, post.id)}
       demos={demos}
+      series={series}
       submitLabel="수정 완료"
       draftKey={`edit-${post.id}`}
       initial={{
@@ -41,7 +43,8 @@ async function EditForm({ params }: { params: Promise<{ postId: string }> }) {
         content: post.content,
         demoId: post.demo ? String(post.demo.id) : "",
         price: String(post.price || 10),
-        paid: post.price > 0,
+        paid: isPaidPost(post),
+        seriesId: post.seriesId ? String(post.seriesId) : "",
       }}
     />
   );

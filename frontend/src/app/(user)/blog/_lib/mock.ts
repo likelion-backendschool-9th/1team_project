@@ -6,7 +6,8 @@ import type {
   PostDetail,
   PostSeries,
   PostSummary,
-  SubscribedAuthor,
+  SeriesDetail,
+  SeriesPurchase,
 } from "@/app/_lib/types/post";
 import type { UserSummary } from "@/app/_lib/types/user";
 
@@ -23,7 +24,7 @@ export const mockSeries: PostSeries[] = [
     episodeCount: 12,
     schedule: null,
     freeEpisodes: 3,
-    price: 15,
+    price: 15000,
     firstPostId: 101,
   },
   {
@@ -38,7 +39,7 @@ export const mockSeries: PostSeries[] = [
     episodeCount: 15,
     schedule: "매주 화·금",
     freeEpisodes: 2,
-    price: 10,
+    price: 9900,
     firstPostId: 201,
   },
 ];
@@ -104,11 +105,27 @@ export const mockArticleRanking: ArticleRanking = {
   ],
 };
 
-export const mockSubscribedAuthors: SubscribedAuthor[] = [
-  { user: mockUsers.cha, seriesLabel: "대규모 트래픽 연재 12화", online: true },
-  { user: mockUsers.yoon, seriesLabel: "Next.js 15 아키텍처 연재", online: true },
-  { user: mockUsers.seungjo, seriesLabel: "DevOps CI/CD 파이프라인", online: false },
+export const mockSeriesPurchases: SeriesPurchase[] = [
+  { series: mockSeries[0], paidPrice: 15000, purchasedAt: "2026-11-01T09:00:00+09:00" },
 ];
+
+/** 목업 시리즈 화면. 1화만 실제 목업 글이 있고 나머지 회차는 제목만 만든다 */
+export function findMockSeries(seriesId: number): SeriesDetail | null {
+  const series = mockSeries.find((item) => item.id === seriesId);
+  if (!series) return null;
+  return {
+    series,
+    purchased: mockSeriesPurchases.some((item) => item.series.id === seriesId),
+    mine: false,
+    episodes: Array.from({ length: series.episodeCount }, (_, index) => ({
+      postId: index === 0 && series.firstPostId ? series.firstPostId : series.id * 1000 + index + 1,
+      order: index + 1,
+      title: `${index + 1}화`,
+      paid: index >= series.freeEpisodes,
+      createdAt: "2026-10-01T09:00:00+09:00",
+    })),
+  };
+}
 
 // 작성자별 블로그·글 상세에서 쓰는 추가 글. 블로그 홈 목록에는 위 두 글만 보여 준다.
 const extraPosts: [number, keyof typeof mockUsers, string, string, PostSummary["category"], number, number][] = [
@@ -229,12 +246,8 @@ export function findMockBlogOwner(userId: number): BlogOwner | null {
   return {
     user,
     bio: `${user.techStacks[0] ?? "개발"} 이야기를 꾸준히 기록하는 ${user.nickname}의 개발 블로그예요.`,
-    subscriberCount: 120 + userId * 37,
     postCount: createMockUserPosts(userId, 0).length,
     totalViews: 5000 + userId * 1234,
-    // 블로그 구독은 현금 월 자동이체(원)
-    subscriptionPrice: [3000, 5000, 3000][userId % 3],
-    subscribed: userId === 2 || userId === 7,
   };
 }
 

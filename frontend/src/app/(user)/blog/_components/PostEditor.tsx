@@ -16,18 +16,23 @@ type Initial = {
   demoId: string;
   price: string;
   paid: boolean;
+  /** 넣을 내 시리즈 ID. 없으면 "" */
+  seriesId: string;
 };
 
 type Props = {
   action: (previous: FormState, formData: FormData) => Promise<FormState>;
   demos: { id: number; title: string }[];
+  /** 글을 넣을 수 있는 내 시리즈 */
+  series: { id: number; title: string; price: number }[];
   initial?: Initial;
   submitLabel: string;
   /** 임시저장 구분값. 새 글은 "new", 수정은 "edit-{글 ID}". 없으면 임시저장 버튼을 숨긴다 */
   draftKey?: string;
 };
 
-type Draft = Omit<Initial, "paid"> & { paid: boolean; savedAt: number };
+// 예전 임시저장본에는 seriesId가 없을 수 있다.
+type Draft = Omit<Initial, "paid" | "seriesId"> & { paid: boolean; seriesId?: string; savedAt: number };
 
 // 임시저장은 아직 서버 API가 없어 이 브라우저(localStorage)에만 보관한다.
 const DRAFT_EVENT = "dipsource:post-draft";
@@ -67,9 +72,9 @@ function formatSavedAt(savedAt: number): string {
   return new Date(savedAt).toLocaleString("ko-KR", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" });
 }
 
-const empty: Initial = { title: "", category: "", tags: "", content: "", demoId: "", price: "10", paid: false };
+const empty: Initial = { title: "", category: "", tags: "", content: "", demoId: "", price: "10", paid: false, seriesId: "" };
 
-export function PostEditor({ action, demos, initial = empty, submitLabel, draftKey }: Props) {
+export function PostEditor({ action, demos, series, initial = empty, submitLabel, draftKey }: Props) {
   const [state, formAction, pending] = useActionState(action, initialFormState);
   const value = (key: keyof Initial) => state.values[key] ?? String(initial[key]);
   const [content, setContent] = useState(initial.content);
@@ -77,6 +82,9 @@ export function PostEditor({ action, demos, initial = empty, submitLabel, draftK
   // 그래서 select 두 개는 상태로 들고 있어 검사에 걸려도 고른 값이 남게 한다.
   const [category, setCategory] = useState(initial.category);
   const [demoId, setDemoId] = useState(initial.demoId);
+  const [seriesId, setSeriesId] = useState(initial.seriesId);
+  // 시리즈 안 유료 글은 칩 가격 없이 시리즈를 산 사람만 읽는다. 무료 시리즈에는 유료 회차를 둘 수 없다.
+  const selectedSeries = series.find((item) => String(item.id) === seriesId) ?? null;
   const [preview, setPreview] = useState(false);
   const [paid, setPaid] = useState(initial.paid);
   // 유료 글 최소 길이 안내용. 서버 검사와 같이 앞뒤 공백은 세지 않는다.
@@ -119,6 +127,7 @@ export function PostEditor({ action, demos, initial = empty, submitLabel, draftK
       demoId: text("demoId"),
       price: text("price") || "10",
       paid,
+      seriesId,
       savedAt,
     });
     setRestored(true);
@@ -135,6 +144,7 @@ export function PostEditor({ action, demos, initial = empty, submitLabel, draftK
     setContent(savedDraft.content);
     setCategory(savedDraft.category);
     setDemoId(savedDraft.demoId);
+    setSeriesId(savedDraft.seriesId ?? "");
     setPaid(savedDraft.paid);
     setPriceOverride(savedDraft.price);
     setRestored(true);
@@ -267,6 +277,32 @@ export function PostEditor({ action, demos, initial = empty, submitLabel, draftK
         </p>
       </div>
 
+      <div className={kit.field}>
+        <label htmlFor="post-series" className={kit.label}>
+          시리즈 (선택)
+        </label>
+        <select
+          id="post-series"
+          name="seriesId"
+          value={seriesId}
+          onChange={(event) => setSeriesId(event.target.value)}
+          className={kit.select}
+          aria-describedby="post-series-hint"
+        >
+          <option value="">시리즈에 넣지 않음</option>
+          {series.map((item) => (
+            <option key={item.id} value={item.id}>
+              {item.title}
+            </option>
+          ))}
+        </select>
+        <p id="post-series-hint" className={kit.faint}>
+          {series.length === 0
+            ? "시리즈는 내 블로그에서 만들 수 있어요."
+            : "고른 시리즈의 마지막 회차 뒤에 붙어요. 시리즈를 바꾸면 새 시리즈의 마지막 회차가 돼요."}
+        </p>
+      </div>
+
       <div className={kit.grid2}>
         <div className={kit.field}>
           <label htmlFor="post-demo" className={kit.label}>
@@ -298,9 +334,16 @@ export function PostEditor({ action, demos, initial = empty, submitLabel, draftK
               onChange={(event) => setPaid(event.target.checked)}
               className={kit.switch}
             />
-            {paid ? "유료 글" : "무료 공개"}
+            {selectedSeries ? (paid ? "시리즈 구매자 전용" : "무료 회차") : paid ? "유료 글" : "무료 공개"}
           </label>
-          {paid && (
+          {selectedSeries && (
+            <p className={kit.faint}>
+              {selectedSeries.price > 0
+                ? "유료로 두면 이 시리즈를 산 사람만 읽어요. 회차는 한 편씩 팔지 않아요."
+                : "무료 시리즈라 유료 회차를 넣을 수 없어요. 시리즈 가격을 먼저 정해 주세요."}
+            </p>
+          )}
+          {paid && !selectedSeries && (
             <div className={styles.priceRow}>
               <label htmlFor="post-price" className="sr-only">
                 열람 가격 (칩)

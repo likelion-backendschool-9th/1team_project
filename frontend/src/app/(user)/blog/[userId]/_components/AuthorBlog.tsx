@@ -2,15 +2,16 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { Avatar } from "@/app/_components/ui/Avatar";
-import { ConfirmButton } from "@/app/_components/ui/ConfirmButton";
 import kit from "@/app/_components/ui/kit.module.css";
-import { formatCount, formatWon } from "@/app/_lib/format";
+import { formatCount } from "@/app/_lib/format";
 import { getMe } from "@/app/(user)/_lib/api";
-import { subscribeBlog } from "../../_actions";
+import { createSeries } from "../../_actions";
 import { ArticleCard } from "../../_components/ArticleCard";
-import { getBlogOwner, getPopularSeries, getServerTime, getUserPosts } from "../../_lib/api";
+import { SeriesCard } from "../../_components/SeriesCard";
+import { SeriesForm } from "../../_components/SeriesForm";
+import series from "../../_components/PopularSeries.module.css";
+import { getBlogOwner, getServerTime, getUserPosts, getUserSeries } from "../../_lib/api";
 import styles from "./AuthorBlog.module.css";
-import { SubscriptionPriceForm } from "./SubscriptionPriceForm";
 
 type Props = {
   params: Promise<{ userId: string }>;
@@ -22,13 +23,12 @@ export async function AuthorBlog({ params }: Props) {
   const owner = Number.isSafeInteger(userId) && userId > 0 ? await getBlogOwner(userId) : null;
   if (!owner) notFound();
 
-  const [me, posts, allSeries, now] = await Promise.all([
+  const [me, posts, seriesList, now] = await Promise.all([
     getMe(),
     getUserPosts(userId),
-    getPopularSeries(),
+    getUserSeries(userId),
     getServerTime(),
   ]);
-  const series = allSeries.filter((item) => item.author.id === userId);
   const mine = me?.id === userId;
 
   return (
@@ -46,8 +46,8 @@ export async function AuthorBlog({ params }: Props) {
               <dd>{formatCount(posts.length)}</dd>
             </div>
             <div>
-              <dt>구독자</dt>
-              <dd>{formatCount(owner.subscriberCount)}</dd>
+              <dt>시리즈</dt>
+              <dd>{formatCount(seriesList.length)}</dd>
             </div>
             <div>
               <dt>총 조회</dt>
@@ -60,50 +60,37 @@ export async function AuthorBlog({ params }: Props) {
             <Link href="/blog/write" className={kit.btnPrimary}>
               새 글 쓰기
             </Link>
-          ) : owner.subscribed ? (
-            <>
-              <span className={kit.pillSuccess}>✓ 구독 중</span>
-              <Link href="/my/subscription" className={kit.btnGhost}>
-                구독 관리
-              </Link>
-            </>
-          ) : owner.subscriptionPrice <= 0 ? null : (
-            <ConfirmButton
-              label={`구독하기 · 월 ${formatWon(owner.subscriptionPrice)}`}
-              title={`${owner.user.nickname}님의 블로그를 구독할까요?`}
-              description={`매달 ${formatWon(owner.subscriptionPrice)}이 자동이체돼요. 칩은 차감되지 않아요.`}
-              confirmLabel="구독하기"
-              className={kit.btnPrimary}
-              onConfirm={subscribeBlog.bind(null, userId)}
-            />
-          )}
+          ) : null}
           <Link href={`/mini-home/${userId}`} className={kit.btnGhost}>
             미니홈피
           </Link>
         </div>
       </section>
 
-      {mine && <SubscriptionPriceForm ownerId={userId} price={owner.subscriptionPrice} />}
-
-      {series.length > 0 && (
+      {(seriesList.length > 0 || mine) && (
         <section aria-labelledby="owner-series">
           <h2 id="owner-series" className={kit.cardTitle} style={{ marginBottom: 12 }}>
-            연재 시리즈
+            연재 시리즈 {seriesList.length}
           </h2>
-          <ul className={kit.grid2}>
-            {series.map((item) => (
-              <li key={item.id} className={kit.card}>
-                <span className={kit.pillWarn}>
-                  {item.status === "completed" ? `총 ${item.episodeCount}화 완결` : `${item.schedule} 연재중`}
-                </span>
-                <h3 className={styles.seriesTitle}>{item.title}</h3>
-                <p className={kit.faint}>{item.description}</p>
-                <Link href={`/blog/posts/${item.firstPostId}`} className={kit.more} style={{ marginTop: 10 }}>
-                  1화부터 읽기 →
-                </Link>
-              </li>
-            ))}
-          </ul>
+          {seriesList.length === 0 ? (
+            <p className={`${kit.card} ${kit.empty}`}>
+              아직 시리즈가 없어요. 시리즈를 만들고 글쓰기에서 고르면 회차로 붙어요.
+            </p>
+          ) : (
+            <ul className={series.grid}>
+              {seriesList.map((item) => (
+                <li key={item.id}>
+                  <SeriesCard series={item} />
+                </li>
+              ))}
+            </ul>
+          )}
+          {mine && (
+            <details className={`${kit.card} ${styles.newSeries}`}>
+              <summary className={kit.strong}>+ 새 시리즈 만들기</summary>
+              <SeriesForm action={createSeries} submitLabel="시리즈 만들기" />
+            </details>
+          )}
         </section>
       )}
 

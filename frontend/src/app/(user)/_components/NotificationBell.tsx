@@ -19,6 +19,7 @@ const icons: Record<NotificationType, ReactNode> = {
   repost: "🔁",
   subscribe: "⭐",
   sponsor: <ChipIcon size={16} />,
+  series_purchase: "📚",
 };
 
 type Props = {

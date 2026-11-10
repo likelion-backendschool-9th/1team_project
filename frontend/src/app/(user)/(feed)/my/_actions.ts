@@ -54,20 +54,6 @@ export async function purchaseChips(packageId: number) {
   return result;
 }
 
-export async function cancelSubscription(subscriptionId: number) {
-  if (!isId(subscriptionId)) return { ok: false, message: "잘못된 요청이에요." };
-  // 구독 API는 백엔드에 있어서 MOCK_EXCEPT_DM이어도 실서버를 쓴다.
-  const result = await mutate(
-    "/api/v1/subscriptions/me",
-    "DELETE",
-    { subscriptionId },
-    "구독을 해지했어요. 다음 결제일부터 자동이체되지 않아요.",
-    !hasBackend,
-  );
-  if (result.ok && hasBackend) revalidatePath("/my/subscription");
-  return result;
-}
-
 export async function subscribePlus() {
   return mutate("/api/v1/subscriptions", "POST", { plan: "plus" }, "딥소스 플러스를 시작했어요. 매달 자동이체돼요.");
 }

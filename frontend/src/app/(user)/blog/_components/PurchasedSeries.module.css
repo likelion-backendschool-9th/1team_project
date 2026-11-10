@@ -63,18 +63,6 @@
   white-space: nowrap;
 }
 
-.dot {
-  flex: none;
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
-  background: #d5d6d8;
-}
-
-.online {
-  background: var(--online);
-}
-
 .empty {
   padding: 12px 0 4px;
   color: var(--ink-faint);

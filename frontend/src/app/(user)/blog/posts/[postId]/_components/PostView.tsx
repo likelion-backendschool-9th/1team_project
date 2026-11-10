@@ -23,7 +23,7 @@ import {
   updatePostComment,
 } from "../../../_actions";
 import { getPost, getPostComments, getServerTime } from "../../../_lib/api";
-import { categories } from "../../../_lib/query";
+import { categories, isPaidPost } from "../../../_lib/query";
 import { Markdown } from "../../../_components/Markdown";
 import { PostActions } from "../../../_components/PostActions";
 import { PostCommentLoadMore } from "./PostCommentLoadMore";
@@ -48,7 +48,9 @@ export async function PostView({ params }: Props) {
 
   const [me, { comments, hasNext, nextCursor }, now] = await Promise.all([getMe(), getPostComments(postId), getServerTime()]);
   const mine = me?.id === post.author.id;
-  const locked = post.price > 0 && !post.purchased && !mine;
+  const locked = isPaidPost(post) && !post.purchased && !mine;
+  // 시리즈 안 유료 글은 한 편씩 팔지 않고 시리즈를 사야 읽는다.
+  const seriesHref = post.seriesId ? `/blog/series/${post.seriesId}` : null;
   const category = categories.find((item) => item.value === post.category)?.label;
 
   return (
@@ -60,11 +62,18 @@ export async function PostView({ params }: Props) {
         <header className={styles.header}>
           <div className={kit.row}>
             {category && <span className={kit.pill}>{category}</span>}
-            {post.seriesTitle && <span className={kit.pillAccent}>연재 · {post.seriesTitle}</span>}
-            {post.price > 0 ? (
-              <span className={kit.pillWarn}>🔒 {post.price}칩</span>
-            ) : (
+            {post.seriesTitle && seriesHref && (
+              <Link href={seriesHref} className={kit.pillAccent}>
+                연재 · {post.seriesTitle}
+                {post.seriesOrder ? ` ${post.seriesOrder}화` : ""}
+              </Link>
+            )}
+            {!isPaidPost(post) ? (
               <span className={kit.pillSuccess}>무료 공개</span>
+            ) : seriesHref ? (
+              <span className={kit.pillWarn}>🔒 시리즈 구매자 전용</span>
+            ) : (
+              <span className={kit.pillWarn}>🔒 {post.price}칩</span>
             )}
           </div>
           <h2 id="post-title" className={styles.title}>
@@ -111,7 +120,24 @@ export async function PostView({ params }: Props) {
           <Markdown source={withoutTitleHeading(post.content, post.title)} limit={locked ? 3 : undefined} />
         </div>
 
-        {locked && (
+        {locked && seriesHref && (
+          <section className={styles.paywall} aria-labelledby="paywall-title">
+            <span className={styles.lock} aria-hidden="true">
+              🔒
+            </span>
+            <h3 id="paywall-title" className={styles.paywallTitle}>
+              이어지는 내용은 「{post.seriesTitle}」 시리즈를 사면 읽을 수 있어요
+            </h3>
+            <p className={kit.muted}>한 번 사면 이 시리즈의 유료 회차와 앞으로 올라올 회차를 모두 읽을 수 있어요.</p>
+            <div className={kit.row} style={{ justifyContent: "center" }}>
+              <Link href={seriesHref} className={kit.btnPrimary}>
+                시리즈 보러 가기
+              </Link>
+            </div>
+          </section>
+        )}
+
+        {locked && !seriesHref && (
           <section className={styles.paywall} aria-labelledby="paywall-title">
             <span className={styles.lock} aria-hidden="true">
               🔒
@@ -131,9 +157,6 @@ export async function PostView({ params }: Props) {
                 className={kit.btnPrimary}
                 onConfirm={unlockPost.bind(null, post.id)}
               />
-              <Link href={`/blog/${post.author.id}`} className={kit.btnGhost}>
-                블로그 구독하기
-              </Link>
             </div>
           </section>
         )}
