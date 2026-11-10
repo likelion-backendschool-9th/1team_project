@@ -26,6 +26,8 @@ export type MyProfile = UserSummary & {
   onboardingIncomplete?: boolean;
   /** USER / ADMIN / MASTER(최고 관리자). 관리자 화면 접근 확인용 */
   role?: "USER" | "ADMIN" | "MASTER";
+  /** 칩으로 늘린 데모 인벤토리 칸 수 */
+  extraInventorySlots?: number;
 };
 
 export type Following = UserSummary & {
