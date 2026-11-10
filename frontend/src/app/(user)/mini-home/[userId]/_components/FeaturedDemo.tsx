@@ -35,7 +35,7 @@ export function FeaturedDemo({ demo, variant, postId, comments, me, now, isOwner
       <div className={styles.header}>
         <h2 id="featured-title" className={styles.title}>
           <span className={styles.live} aria-hidden="true" />
-          대표 데모 (LIVE SANDBOX)
+          대표 데모
         </h2>
         <span className={styles.hint}>브라우저 내 직접 인터랙션 지원</span>
       </div>
@@ -92,7 +92,7 @@ export function FeaturedDemo({ demo, variant, postId, comments, me, now, isOwner
           extra={
             <>
               <div className={styles.links}>
-                <LaterButton title={demo.title} />
+                <LaterButton demoId={demo.id} title={demo.title} bookmarked={demo.bookmarked ?? false} />
                 <Link href={`/mini-home/${demo.author.id}/demos/${demo.id}`} className={styles.making}>
                   데모 상세
                   <ArrowRightIcon />

@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { ReportModal } from "@/app/_components/ui/ReportModal";
 import { formatCount, formatRelativeTime } from "@/app/_lib/format";
 import type { MiniHomeComment } from "@/app/_lib/types/miniHome";
@@ -19,20 +20,23 @@ export function Guestbook({ userId, comments, total, now, me }: Props) {
     <section className={styles.board} aria-labelledby="guestbook-title">
       <div className={styles.header}>
         <h2 id="guestbook-title" className={styles.title}>
-          <span aria-hidden="true">💬</span> 일촌평 / 방명록
+          <span aria-hidden="true">💬</span> 방명록
         </h2>
-        <span className={styles.total}>Total {formatCount(total)}</span>
+        <Link href={`/mini-home/${userId}/guestbook`} className={styles.total}>
+          Total {formatCount(total)} · 전체 보기
+        </Link>
       </div>
       <GuestbookForm userId={userId} />
       {comments.length === 0 ? (
-        <p className={styles.empty}>첫 일촌평을 남겨 보세요.</p>
+        <p className={styles.empty}>첫 방명록을 남겨 보세요.</p>
       ) : (
         <ul className={styles.list}>
           {comments.map((comment) => (
             <li key={comment.id} className={styles.row}>
               <span className={styles.text}>
                 <strong className={styles.author}>{comment.author.nickname}:</strong>
-                {comment.content}
+                {/* 비밀글은 주인·작성자에게만 내용이 온다 */}
+                {comment.content ?? "비밀글이에요."}
               </span>
               {comment.secret ? (
                 <span className={styles.lock}>

@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { getMe } from "@/app/(user)/_lib/api";
 import {
-  getComments,
+  getRecentGuestbook,
   getDemoComments,
   getDemos,
   getProfile,
@@ -30,7 +30,7 @@ export async function MiniHomeHome({ params }: Props) {
   const [inventory, posts, comments, now] = await Promise.all([
     getDemos(userId, 20),
     getRecentPosts(userId),
-    getComments(userId),
+    getRecentGuestbook(userId),
     getServerTime(),
   ]);
   // 미니홈피에는 고른 데모만 보여 준다 (일반 3개, 딥소스 플러스 6개).
