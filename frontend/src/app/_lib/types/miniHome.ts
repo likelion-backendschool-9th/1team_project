@@ -81,3 +81,10 @@ export type MiniHomeComment = {
   createdAt: string;
   secret: boolean;
 };
+
+export type GithubRepo = {
+  name: string;
+  stars: number;
+  /** GitHub 레포 주소 */
+  url: string;
+};

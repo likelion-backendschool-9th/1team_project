@@ -64,7 +64,7 @@ public class GithubServiceImpl implements GithubService {
                 .filter(RepoJson::isUsable)
                 .sorted(Comparator.comparingLong(RepoJson::stars).reversed())
                 .limit(TOP_REPOS)
-                .map(repo -> new GithubRepoResponse(repo.name(), repo.stars()))
+                .map(repo -> new GithubRepoResponse(repo.name(), repo.stars(), "https://github.com/" + repo.full_name()))
                 .toList();
     }
 

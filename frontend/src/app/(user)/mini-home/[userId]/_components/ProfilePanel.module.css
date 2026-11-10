@@ -261,6 +261,11 @@
 }
 
 .repos li {
+  display: block;
+}
+
+/* 레포 카드 전체가 버튼처럼 눌린다 */
+.repoLink {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -269,6 +274,18 @@
   border: 1px solid #e1e5ec;
   border-radius: 10px;
   background: var(--surface);
+  color: inherit;
+  transition: border-color 0.15s, transform 0.15s;
+}
+
+.repoLink:hover {
+  border-color: #ffc21a;
+  transform: translateY(-1px);
+}
+
+.repoLink:focus-visible {
+  outline: 3px solid #ffc21a;
+  outline-offset: 2px;
 }
 
 .repoName {
