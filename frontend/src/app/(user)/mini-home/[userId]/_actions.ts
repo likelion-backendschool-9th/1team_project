@@ -53,6 +53,7 @@ export async function surf(currentUserId: number) {
   redirect(`/mini-home/${nextId}`);
 }
 
+// 홈 카드의 한 줄 방명록. 공개글로 남긴다. 비밀글은 방명록 탭에서 쓴다.
 export async function writeComment(
   userId: number,
   previous: CommentState,
@@ -68,7 +69,7 @@ export async function writeComment(
   });
 
   if (!isId(userId)) return failed("잘못된 요청이에요.");
-  if (!content) return failed("일촌평을 입력해 주세요.");
+  if (!content) return failed("방명록 내용을 입력해 주세요.");
   if (content.length > MAX_COMMENT_LENGTH)
     return failed(`${MAX_COMMENT_LENGTH}자 이하로 입력해 주세요.`);
 
@@ -81,16 +82,17 @@ export async function writeComment(
     };
 
   try {
-    await apiFetch(`/api/v1/mini-homes/${userId}/comments`, {
+    await apiFetch(`/api/v1/mini-homes/${userId}/guestbook`, {
       method: "POST",
-      body: JSON.stringify({ content }),
+      body: JSON.stringify({ content, secret: false }),
     });
   } catch (error) {
     if (error instanceof ApiRequestError) return failed(error.error.message);
     throw error;
   }
   revalidatePath(`/mini-home/${userId}`);
-  return { values: { content: "" }, error: null, message: "일촌평을 남겼어요.", attempt };
+  revalidatePath(`/mini-home/${userId}/guestbook`);
+  return { values: { content: "" }, error: null, message: "방명록을 남겼어요.", attempt };
 }
 
 export async function writeGuestbook(
@@ -107,7 +109,10 @@ export async function writeGuestbook(
   const state = await runForm(previous, values, errors, () =>
     mutate(`/api/v1/mini-homes/${userId}/guestbook`, "POST", { ...values, secret }, "방명록을 남겼어요."),
   );
-  if (state.ok) revalidatePath(`/mini-home/${userId}/guestbook`);
+  if (state.ok) {
+    revalidatePath(`/mini-home/${userId}/guestbook`);
+    revalidatePath(`/mini-home/${userId}`);
+  }
   return state.ok ? { ...state, values: {} } : state;
 }
 

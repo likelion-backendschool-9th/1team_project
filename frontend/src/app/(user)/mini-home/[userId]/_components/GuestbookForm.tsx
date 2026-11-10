@@ -19,7 +19,7 @@ export function GuestbookForm({ userId }: Props) {
     <>
       <form action={formAction} className={styles.form}>
         <label htmlFor="guestbook-content" className="sr-only">
-          일촌평
+          방명록
         </label>
         <input
           key={state.attempt}
@@ -28,7 +28,7 @@ export function GuestbookForm({ userId }: Props) {
           type="text"
           defaultValue={state.values.content}
           maxLength={MAX_COMMENT_LENGTH}
-          placeholder="일촌평 한마디 남기기..."
+          placeholder="방명록 한마디 남기기..."
           autoComplete="off"
           aria-invalid={state.error ? true : undefined}
           aria-describedby={state.error ? "guestbook-error" : undefined}

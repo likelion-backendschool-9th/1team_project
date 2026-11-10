@@ -59,6 +59,8 @@ export type MiniHomeDemo = DemoSummary & {
   runUrl?: string | null;
   playCount: number;
   commentCount: number;
+  /** 내가 "나중에 해보기"에 담았는지 (데모 목록 API의 bookmarked) */
+  bookmarked?: boolean;
 };
 
 export type MiniHomePost = {

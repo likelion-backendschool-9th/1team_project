@@ -31,7 +31,6 @@ type MiniHomeSettings = {
   featuredPostId: number | null;
 };
 import {
-  createMockComments,
   findMockDemos,
   findMockProfile,
   createMockDemoComments,
@@ -129,12 +128,16 @@ export async function getRecentPosts(userId: number): Promise<MiniHomePost[]> {
   return data.content.map((post) => ({ id: post.id, title: post.title, membership: post.price > 0 }));
 }
 
-export async function getComments(
+// 홈 카드에 보여 줄 최근 방명록 3개와 전체 수. (일촌평은 방명록으로 통일했다)
+export async function getRecentGuestbook(
   userId: number,
 ): Promise<{ items: MiniHomeComment[]; total: number }> {
-  if (isMockMode) return createMockComments(Date.now());
+  if (isMockMode) {
+    const items = createMockGuestbook(Date.now());
+    return { items: items.slice(0, 3), total: items.length };
+  }
   const { data } = await apiFetch<ApiResponse<PageResponse<MiniHomeComment>>>(
-    `/api/v1/mini-homes/${userId}/comments?size=3`,
+    `/api/v1/mini-homes/${userId}/guestbook?size=3`,
   );
   return { items: data.content, total: data.totalElements };
 }
