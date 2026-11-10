@@ -66,6 +66,10 @@ services:
     environment:
       API_ORIGIN: http://backend:8080
       BROWSER_API_ORIGIN: ""
+      # DM 실시간(WebSocket) 주소. 없으면 DM 창이 "실시간 연결 꺼짐"이 되어 메시지가 상대에게 가지 않는다.
+      # 상대 주소라 브라우저가 접속한 주소 기준으로 붙는다: 3000(Next가 백엔드로 넘김)·3001(nginx가 넘김) 둘 다 된다.
+      # 백엔드는 FRONTEND_BASE_URL과 같은 주소에서 온 연결만 받으므로, 브라우저에서 여는 주소를 FRONTEND_BASE_URL과 맞춘다.
+      NEXT_PUBLIC_WS_URL: /api/v1/ws
     ports:
       - "3000:3000"
     depends_on:
