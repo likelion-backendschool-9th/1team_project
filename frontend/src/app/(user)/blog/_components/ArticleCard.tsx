@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { Avatar } from "@/app/_components/ui/Avatar";
 import { ArrowRightIcon, MoreIcon } from "@/app/_components/ui/Icons";
-import { formatRelativeTime } from "@/app/_lib/format";
+import { formatRelativeTime, formatWon } from "@/app/_lib/format";
+import { chipsToWon } from "@/app/_lib/policy";
 import type { PostSummary } from "@/app/_lib/types/post";
 import { PostActions } from "./PostActions";
 import styles from "./ArticleCard.module.css";
@@ -46,12 +47,23 @@ export function ArticleCard({ post, now, loggedIn }: Props) {
       </header>
 
       <h3 id={`post-${post.id}`} className={styles.title}>
-        <Link href={`/blog/posts/${post.id}`}>{post.title}</Link>
+        <Link href={`/blog/posts/${post.id}`} className={styles.titleLink}>
+          {post.title}
+        </Link>
       </h3>
       {/* 요약이 제목으로 시작하면(본문 첫 줄이 제목) 제목을 빼고 보여 준다 */}
       <p className={styles.excerpt}>
         {post.excerpt.startsWith(post.title) ? post.excerpt.slice(post.title.length).trimStart() : post.excerpt}
       </p>
+      {/* 유료 글은 글 상세의 잠금 안내처럼 미리보기에서도 이어지는 내용이 잠겨 있다고 보여 준다 */}
+      {post.price > 0 && (
+        <Link href={`/blog/posts/${post.id}`} className={styles.paywall}>
+          <span className={styles.paywallLock} aria-hidden="true">
+            🔒
+          </span>
+          이어지는 내용은 {post.price}칩({formatWon(chipsToWon(post.price))})으로 열람할 수 있어요
+        </Link>
+      )}
 
       {demo && (
         <div className={styles.source}>
