@@ -1,6 +1,7 @@
 package com.dipsource.repository.minihome;
 
 import com.dipsource.entity.minihome.MiniHome;
+import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
@@ -47,4 +48,14 @@ public interface MiniHomeRepository extends JpaRepository<MiniHome, Long> {
             LIMIT 1
             """, nativeQuery = true)
     Optional<Long> findRandomUserId(@Param("viewerId") Long viewerId, @Param("excludeId") Long excludeId);
+
+    /** 방문이 있는 미니홈피. 각 행은 [userId, userId, '', totalCount, 0]. 정지·탈퇴 회원은 빼는다. */
+    @Query("""
+            SELECT h.userId, h.userId, '', h.totalCount, 0
+            FROM MiniHome h
+            JOIN User u ON u.id = h.userId
+            WHERE h.totalCount > 0
+              AND u.status = com.dipsource.entity.user.enums.UserStatus.ACTIVE
+            """)
+    List<Object[]> rankByVisits();
 }

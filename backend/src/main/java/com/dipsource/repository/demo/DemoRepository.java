@@ -82,6 +82,17 @@ public interface DemoRepository extends JpaRepository<Demo, Long> {
             """)
     List<Object[]> countActiveByUserIds(@Param("userIds") Collection<Long> userIds);
 
+    /** 공개 데모의 좋아요 합. 각 행은 [userId, likeSum]. 팔로워 순위 동점 처리에 쓴다. */
+    @Query("""
+            SELECT d.userId, COALESCE(SUM(d.likeCount), 0)
+            FROM Demo d
+            WHERE d.userId IN :userIds
+              AND d.status = com.dipsource.entity.demo.DemoStatus.ACTIVE
+              AND d.deletedAt IS NULL
+            GROUP BY d.userId
+            """)
+    List<Object[]> sumActiveLikesByUserIds(@Param("userIds") Collection<Long> userIds);
+
     /** 관리자 데모 목록. 삭제(DELETED)만 빼고, 제목·설명·작성자 닉네임 검색. */
     @Query("""
             SELECT d FROM Demo d JOIN User u ON u.id = d.userId

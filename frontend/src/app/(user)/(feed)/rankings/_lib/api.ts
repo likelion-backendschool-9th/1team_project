@@ -1,6 +1,6 @@
 import "server-only";
 import { mockUsers } from "@/app/(user)/_lib/mock";
-import { apiFetch, isMockMode, type ApiResponse } from "@/app/_lib/api/client";
+import { apiFetch, hasBackend, type ApiResponse } from "@/app/_lib/api/client";
 import type { RankingPeriod, UserSummary } from "@/app/_lib/types/user";
 
 export type RankingType = "demo" | "blog" | "follower" | "home";
@@ -23,7 +23,7 @@ const subjects: Record<RankingType, string[]> = {
 const scale: Record<RankingPeriod, number> = { daily: 1, weekly: 7, monthly: 30 };
 
 export async function getRankings(type: RankingType, period: RankingPeriod): Promise<RankingRow[]> {
-  if (isMockMode) {
+  if (!hasBackend) {
     const users = Object.values(mockUsers);
     const offset = ["demo", "blog", "follower", "home"].indexOf(type) + Object.keys(scale).indexOf(period);
     return subjects[type].map((title, index) => ({

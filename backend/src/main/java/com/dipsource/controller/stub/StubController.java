@@ -37,13 +37,7 @@ public class StubController {
         return notFound();
     }
 
-    // ── 랭킹 ──
-
-    @GetMapping("/rankings")
-    public ResponseEntity<ApiResponse<List<Object>>> rankings() {
-        return ok(List.of());
-    }
-
+    // 랭킹(GET /rankings)은 RankingController로 이관했다.
     // 북마크(GET /users/me/bookmarks)는 MyBookmarkController로 이관했다.
 
     // ── 검색 (인기 키워드) ──
