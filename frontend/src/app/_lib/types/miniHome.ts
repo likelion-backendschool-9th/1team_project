@@ -48,11 +48,6 @@ export type GithubContributions = {
   days: { date: string; level: number }[];
 };
 
-export type GithubRepo = {
-  name: string;
-  stars: number;
-};
-
 export type MiniHomeDemo = DemoSummary & {
   engine: string;
   /** 실행 주소. 공개 중이고 올린 파일이 있을 때만 온다 */
