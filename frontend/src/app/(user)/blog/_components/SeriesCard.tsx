@@ -35,7 +35,7 @@ export function SeriesCard({ series }: Props) {
       )}
       <div className={styles.footer}>
         <Link href={`/blog/${series.author.id}`} className={styles.author}>
-          <Avatar name={series.author.nickname} size={22} />
+          <Avatar name={series.author.nickname} src={series.author.profileImage} size={22} />
           <span>{series.author.nickname}</span>
         </Link>
         {series.firstPostId && (
