@@ -64,6 +64,7 @@ class PostServiceImplTest {
     @Mock private BlogSubscriptionRepository blogSubscriptionRepository;
     @Mock private com.dipsource.repository.post.PostSeriesRepository postSeriesRepository;
     @Mock private com.dipsource.repository.post.SeriesPurchaseRepository seriesPurchaseRepository;
+    @Mock private com.dipsource.service.feed.FeedDemoAssembler demoAssembler;
     @Mock private TagRepository tagRepository;
     @Mock private UserService userService;
     @Mock private BlockRepository blockRepository;
@@ -76,7 +77,7 @@ class PostServiceImplTest {
     void setUp() {
         service = new PostServiceImpl(postRepository, postLikeRepository, postBookmarkRepository, postTagRepository,
                 postPurchaseRepository, blogSubscriptionRepository, postSeriesRepository, seriesPurchaseRepository,
-                tagRepository, userService,
+                demoAssembler, tagRepository, userService,
                 org.mockito.Mockito.mock(org.springframework.context.ApplicationEventPublisher.class),
                 blockRepository, new PostViewCounter(), coinService, userRepository);
     }
@@ -411,6 +412,36 @@ class PostServiceImplTest {
                     .isInstanceOf(BusinessException.class)
                     .extracting(e -> ((BusinessException) e).getErrorCode())
                     .isEqualTo(ErrorCode.BAD_REQUEST);
+        }
+    }
+
+    @Nested
+    class Demo {
+
+        @Test
+        void detailShowsAttachedDemoLikeFeed() {
+            Post post = Post.builder().userId(AUTHOR).demoId(7L).title("제작기").category(PostCategory.BACKEND)
+                    .content(BODY).build();
+            when(postRepository.findById(10L)).thenReturn(Optional.of(withId(post, 10L)));
+            when(userService.getSummaries(List.of(AUTHOR))).thenReturn(Map.of(AUTHOR, author()));
+            var demo = new com.dipsource.dto.feed.FeedDemoResponse(7L, "배치 모니터", "설명", null, List.of("Spring"), author(), 3);
+            when(demoAssembler.byIds(List.of(7L))).thenReturn(Map.of(7L, demo));
+
+            assertThat(service.getPost(10L, OTHER).demo()).isEqualTo(demo);
+        }
+
+        @Test
+        void cannotAttachHiddenOrOthersDraftDemo() {
+            when(userService.isActiveUser(AUTHOR)).thenReturn(true);
+            org.mockito.Mockito.doThrow(new BusinessException(ErrorCode.NOT_FOUND, "데모를 찾을 수 없습니다"))
+                    .when(demoAssembler).requireAttachable(99L, AUTHOR);
+
+            assertThatThrownBy(() -> service.create(AUTHOR,
+                    new WritePostRequest("제목", "backend", List.of(), BODY, 99L, 0, null, null)))
+                    .isInstanceOf(BusinessException.class)
+                    .extracting(e -> ((BusinessException) e).getErrorCode())
+                    .isEqualTo(ErrorCode.NOT_FOUND);
+            verify(postRepository, never()).save(any());
         }
     }
 

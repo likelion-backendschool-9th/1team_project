@@ -1,5 +1,6 @@
 package com.dipsource.dto.post;
 
+import com.dipsource.dto.feed.FeedDemoResponse;
 import com.dipsource.dto.user.UserSummaryResponse;
 import com.dipsource.entity.post.Post;
 import java.time.LocalDateTime;
@@ -11,7 +12,7 @@ import java.time.LocalDateTime;
  * @param category    분류 코드
  * @param price       0이면 무료, 양수면 잠금 해제 칩
  * @param readMinutes 읽는 데 걸리는 분 (본문 길이로 계산)
- * @param demo        연결한 데모. 데모 조회가 생기기 전까지 null
+ * @param demo        연결한 데모 (피드와 같은 카드 요약). 없거나 숨김·삭제됐으면 null
  * @param repostCount 블로그 리포스트는 아직 없어서 0
  * @param liked       내가 좋아요했는지
  * @param viewCount   조회수 (조회수 순위에 쓴다)
@@ -27,7 +28,7 @@ public record PostSummaryResponse(
         LocalDateTime createdAt,
         int price,
         int readMinutes,
-        Object demo,
+        FeedDemoResponse demo,
         int likeCount,
         int commentCount,
         int repostCount,
@@ -38,10 +39,10 @@ public record PostSummaryResponse(
 ) {
 
     public static PostSummaryResponse of(Post post, UserSummaryResponse author) {
-        return of(post, author, false);
+        return of(post, author, false, null);
     }
 
-    public static PostSummaryResponse of(Post post, UserSummaryResponse author, boolean liked) {
+    public static PostSummaryResponse of(Post post, UserSummaryResponse author, boolean liked, FeedDemoResponse demo) {
         return new PostSummaryResponse(
                 post.getId(),
                 author,
@@ -52,7 +53,7 @@ public record PostSummaryResponse(
                 post.getCreatedAt(),
                 post.isPaid() ? post.getPriceChips() : 0,
                 PostText.readMinutes(post.getContent()),
-                null,
+                demo,
                 post.getLikeCount(),
                 post.getCommentCount(),
                 0,

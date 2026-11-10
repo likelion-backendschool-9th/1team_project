@@ -18,6 +18,7 @@ import type {
   SeriesDetail,
   SeriesPurchase,
 } from "@/app/_lib/types/post";
+import type { DemoSummary } from "@/app/_lib/types/demo";
 import type { UserSummary } from "@/app/_lib/types/user";
 import { getMe } from "@/app/(user)/_lib/api";
 import {
@@ -179,13 +180,13 @@ export async function getBlogOwner(userId: number): Promise<BlogOwner | null> {
   }
 }
 
-// 글에 연결할 데모 후보는 내 데모 목록(GET demos?userId=)에서 고른다.
-export async function getDemoOptions(): Promise<{ id: number; title: string }[]> {
+// 글에 연결할 데모 후보는 피드 작성창처럼 내 데모 목록(GET demos?userId=)에서 고른다.
+export async function getDemoOptions(): Promise<DemoSummary[]> {
   if (!hasBackend) return mockDemoOptions;
   const me = await getMe();
   if (!me) return [];
-  const { data } = await apiFetch<ApiResponse<{ content: { id: number; title: string }[] }>>(
+  const { data } = await apiFetch<ApiResponse<PageResponse<DemoSummary>>>(
     `/api/v1/demos?userId=${me.id}&sort=latest&size=50`,
   );
-  return data.content.map(({ id, title }) => ({ id, title }));
+  return data.content;
 }

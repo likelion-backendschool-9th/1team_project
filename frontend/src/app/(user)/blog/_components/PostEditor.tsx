@@ -2,6 +2,8 @@
 
 import { useActionState, useRef, useState, useSyncExternalStore } from "react";
 import { FormMessage } from "@/app/_components/ui/FormMessage";
+import { DemoAttach } from "@/app/(user)/(feed)/main/_components/DemoAttach";
+import type { DemoSummary } from "@/app/_lib/types/demo";
 import kit from "@/app/_components/ui/kit.module.css";
 import { initialFormState, type FormState } from "@/app/_lib/formState";
 import { categories, PAID_MIN_LENGTH } from "../_lib/query";
@@ -22,7 +24,7 @@ type Initial = {
 
 type Props = {
   action: (previous: FormState, formData: FormData) => Promise<FormState>;
-  demos: { id: number; title: string }[];
+  demos: DemoSummary[];
   /** 글을 넣을 수 있는 내 시리즈 */
   series: { id: number; title: string; price: number }[];
   initial?: Initial;
@@ -305,23 +307,9 @@ export function PostEditor({ action, demos, series, initial = empty, submitLabel
 
       <div className={kit.grid2}>
         <div className={kit.field}>
-          <label htmlFor="post-demo" className={kit.label}>
-            데모 연결 (선택)
-          </label>
-          <select
-            id="post-demo"
-            name="demoId"
-            value={demoId}
-            onChange={(event) => setDemoId(event.target.value)}
-            className={kit.select}
-          >
-            <option value="">연결하지 않음</option>
-            {demos.map((demo) => (
-              <option key={demo.id} value={demo.id}>
-                {demo.title}
-              </option>
-            ))}
-          </select>
+          <span className={kit.label}>데모 연결 (선택)</span>
+          {/* 피드 작성창과 같은 데모 첨부. 임시저장을 불러오면 고른 데모로 다시 그린다 */}
+          <DemoAttach key={demoId} demos={demos} defaultDemoId={demoId} />
         </div>
         <fieldset className={kit.fieldset}>
           <legend className={kit.label}>공개 방식</legend>
