@@ -11,12 +11,15 @@ import static org.mockito.Mockito.when;
 import com.dipsource.dto.minihome.UpdateMiniHomeRequest;
 import com.dipsource.dto.user.UserSummaryResponse;
 import com.dipsource.entity.minihome.MiniHome;
+import com.dipsource.entity.user.User;
 import com.dipsource.global.exception.BusinessException;
 import com.dipsource.global.exception.ErrorCode;
 import com.dipsource.repository.block.BlockRepository;
 import com.dipsource.repository.minihome.MiniHomeRepository;
+import com.dipsource.repository.user.UserRepository;
 import com.dipsource.service.post.PostService;
 import com.dipsource.service.user.UserService;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -26,6 +29,7 @@ import org.junit.jupiter.api.Test;
 class MiniHomeServiceImplTest {
 
     private MiniHomeRepository repository;
+    private UserRepository userRepository;
     private UserService userService;
     private PostService postService;
     private MiniHomeServiceImpl service;
@@ -33,10 +37,12 @@ class MiniHomeServiceImplTest {
     @BeforeEach
     void setUp() {
         repository = mock(MiniHomeRepository.class);
+        userRepository = mock(UserRepository.class);
         userService = mock(UserService.class);
         postService = mock(PostService.class);
         service = new MiniHomeServiceImpl(
-                new MiniHomeLoader(repository, userService), repository, postService, mock(BlockRepository.class));
+                new MiniHomeLoader(repository, userService), repository, postService, mock(BlockRepository.class),
+                userRepository);
         when(repository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
         when(userService.isActiveUser(1L)).thenReturn(true);
         when(userService.getSummaries(List.of(1L))).thenReturn(Map.of(
@@ -93,6 +99,32 @@ class MiniHomeServiceImplTest {
 
         assertThat(response.showcaseDemoIds()).containsExactly(10L, 30L);
         assertThat(response.featuredDemoId()).isEqualTo(10L);
+    }
+
+    @Test
+    void plusMemberCanSaveSixShowcaseDemos() {
+        when(repository.findByUserId(1L)).thenReturn(Optional.of(home()));
+        User plus = User.builder().email("plus@test.local").nickname("플러스").build();
+        plus.startPlus(LocalDateTime.now().plusDays(1));
+        when(userRepository.findById(1L)).thenReturn(Optional.of(plus));
+
+        var response = service.update(1L, request(List.of(1L, 2L, 3L, 4L, 5L, 6L), ""));
+
+        assertThat(response.showcaseDemoIds()).containsExactly(1L, 2L, 3L, 4L, 5L, 6L);
+    }
+
+    @Test
+    void nonPlusMemberCannotSaveFourShowcaseDemos() {
+        when(repository.findByUserId(1L)).thenReturn(Optional.of(home()));
+        when(userRepository.findById(1L)).thenReturn(Optional.of(
+                User.builder().email("plain@test.local").nickname("일반").build()));
+
+        assertThatThrownBy(() -> service.update(1L, request(List.of(1L, 2L, 3L, 4L), "")))
+                .isInstanceOf(BusinessException.class)
+                .hasMessage("공개할 데모는 3개까지 고를 수 있어요.")
+                .extracting(ex -> ((BusinessException) ex).getErrorCode())
+                .isEqualTo(ErrorCode.BAD_REQUEST);
+        verify(repository, never()).save(any());
     }
 
     @Test
@@ -255,6 +287,8 @@ class MiniHomeServiceImplTest {
     @Test
     void rejectsMoreThanThreeDemos() {
         when(repository.findByUserId(1L)).thenReturn(Optional.of(home()));
+        when(userRepository.findById(1L)).thenReturn(Optional.of(
+                User.builder().email("plain@test.local").nickname("일반").build()));
 
         assertThatThrownBy(() -> service.update(1L, request(List.of(1L, 2L, 3L, 4L), "")))
                 .isInstanceOf(BusinessException.class)

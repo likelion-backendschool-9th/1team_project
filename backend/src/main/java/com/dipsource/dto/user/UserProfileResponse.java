@@ -1,6 +1,8 @@
 package com.dipsource.dto.user;
 
 import com.dipsource.entity.user.User;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 
 public record UserProfileResponse(
@@ -22,7 +24,7 @@ public record UserProfileResponse(
             summary.id(), summary.nickname(), summary.profileImage(), summary.techStacks(),
             List.of(),
             null,
-            false,
+            user.isPlus(LocalDateTime.now(ZoneId.of("Asia/Seoul"))),
             following,
             user.getExtraInventorySlots()
         );

@@ -107,7 +107,7 @@ export const mockHistory: ChipHistory[] = [
   { id: 1,  type: "use",     description: "「10만 동시접속 채팅 서버」 잠금 해제",   amount: -20,  createdAt: "2026-10-25T21:14:00+09:00" },
 ];
 
-// 딥소스 플러스는 아직 준비 중이라(백엔드가 plan: plus 요청을 거절) 구독하지 않은 상태로 둔다.
+// 백엔드가 없을 때 구독하지 않은 상태로 둔다.
 export const mockPlus: PlusMembership = {
   active: false,
   since: null,

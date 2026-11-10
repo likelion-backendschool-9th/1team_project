@@ -56,11 +56,15 @@ export async function purchaseChips(packageId: number) {
 }
 
 export async function subscribePlus() {
-  return mutate("/api/v1/subscriptions", "POST", { plan: "plus" }, "딥소스 플러스를 시작했어요. 매달 자동이체돼요.");
+  const result = await mutate("/api/v1/subscriptions", "POST", { plan: "plus" }, "딥소스 플러스를 시작했어요. 매달 자동이체돼요.");
+  if (result.ok) revalidatePath("/", "layout");
+  return result;
 }
 
 export async function cancelPlus() {
-  return mutate("/api/v1/subscriptions/me", "DELETE", { plan: "plus" }, "딥소스 플러스를 해지했어요. 이번 결제 기간까지는 혜택이 유지돼요.");
+  const result = await mutate("/api/v1/subscriptions/me", "DELETE", { plan: "plus" }, "딥소스 플러스를 해지했어요. 이번 결제 기간까지는 혜택이 유지돼요.");
+  if (result.ok) revalidatePath("/", "layout");
+  return result;
 }
 
 export async function verifyCompany() {
