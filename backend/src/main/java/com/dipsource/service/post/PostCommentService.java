@@ -3,6 +3,7 @@ package com.dipsource.service.post;
 import com.dipsource.dto.post.PostCommentCreateRequest;
 import com.dipsource.dto.post.PostCommentCursorResponse;
 import com.dipsource.dto.post.PostCommentResponse;
+import com.dipsource.entity.notification.NotificationType;
 import com.dipsource.entity.post.Post;
 import com.dipsource.entity.post.PostComment;
 import com.dipsource.entity.post.PostStatus;
@@ -14,6 +15,7 @@ import com.dipsource.repository.post.PostCommentLikeRepository;
 import com.dipsource.repository.post.PostCommentRepository;
 import com.dipsource.repository.post.PostRepository;
 import com.dipsource.repository.user.UserRepository;
+import com.dipsource.service.notification.NotificationService;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -36,6 +38,7 @@ public class PostCommentService {
     private final PostRepository postRepository;
     private final UserRepository userRepository;
     private final BlockRepository blockRepository;
+    private final NotificationService notificationService;
 
     /** 댓글 목록 조회 (최상위 댓글 + 대댓글 포함, 커서 페이지네이션) */
     @Transactional(readOnly = true)
@@ -125,6 +128,15 @@ public class PostCommentService {
                 .build();
         postCommentRepository.save(comment);
         postCommentRepository.incrementCommentCount(postId);
+
+        // 답글이면 댓글 쓴 사람에게 답글 알림, 글쓴이에게는 댓글 알림 (같은 사람이면 답글 알림 하나만)
+        Long postAuthorId = post.getUserId();
+        if (parent != null) {
+            notificationService.notify(parent.getUserId(), userId, NotificationType.REPLY, NotificationService.TARGET_POST, postId);
+        }
+        if (parent == null || !parent.getUserId().equals(postAuthorId)) {
+            notificationService.notify(postAuthorId, userId, NotificationType.COMMENT, NotificationService.TARGET_POST, postId);
+        }
 
         return PostCommentResponse.from(comment, author, false);
     }

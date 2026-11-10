@@ -89,6 +89,8 @@ class SeriesServiceImplTest {
             verify(coinService).paySeries(BUYER, SERIES, 9900);
             verify(notificationService).notify(AUTHOR, BUYER, NotificationType.SERIES_PURCHASE,
                     NotificationService.TARGET_SERIES, SERIES);
+            verify(notificationService).notify(BUYER, AUTHOR, NotificationType.PURCHASE_COMPLETE,
+                    NotificationService.TARGET_SERIES, SERIES);
         }
 
         @Test
