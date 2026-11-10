@@ -130,6 +130,63 @@ export type Bookmark = {
   savedAt: string;
 };
 
+export type MySettlement = {
+  id: number;
+  period: string;
+  totalChips: number;
+  gross: number;
+  fee: number;
+  netAmount: number;
+  status: "PENDING" | "CONFIRMED";
+  confirmedAt?: string | null;
+};
+
+export type SettlementSummary = {
+  period: string;
+  expectedChips: number;
+  expectedGross: number;
+  expectedFee: number;
+  expectedNet: number;
+  feePercent: number;
+  paidTotal: number;
+};
+
+export type DailyIncome = { date: string; chips: number; gross: number; count: number };
+
+export type IncomeSource = {
+  refType: string | null;
+  label: string;
+  chips: number;
+  gross: number;
+  count: number;
+};
+
+export type MyIncome = {
+  occurredAt: string;
+  refType: string | null;
+  label: string;
+  targetType: string | null;
+  targetId: number | null;
+  title: string | null;
+  senderNickname: string | null;
+  chips: number;
+  gross: number;
+};
+
+export const mockSettlements: MySettlement[] = [
+  { id: 1, period: "2026-10", totalChips: 100, gross: 20000, fee: 6000, netAmount: 14000, status: "CONFIRMED", confirmedAt: "2026-11-02T09:00:00" },
+];
+
+export const mockSettlementSummary: SettlementSummary = {
+  period: "2026-11",
+  expectedChips: 44,
+  expectedGross: 8800,
+  expectedFee: 2640,
+  expectedNet: 6160,
+  feePercent: 30,
+  paidTotal: 14000,
+};
+
 export const mockBookmarks: Bookmark[] = [
   { id: 1, type: "feed", title: "Unity WebGL 빌드 용량 38MB → 9MB로 줄였어요", author: "김승조", href: "/feeds/3", savedAt: "2026-11-01T20:10:00+09:00" },
   { id: 2, type: "feed", title: "Spring Batch 모니터 데모 올렸어요", author: "딥소스", href: "/feeds/6", savedAt: "2026-10-31T09:00:00+09:00" },
