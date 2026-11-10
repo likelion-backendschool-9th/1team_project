@@ -3,6 +3,8 @@ package com.dipsource.service.image;
 import com.dipsource.dto.image.ImageUploadResult;
 import com.dipsource.global.exception.BusinessException;
 import com.dipsource.global.exception.ErrorCode;
+import java.awt.Color;
+import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -122,18 +124,36 @@ public class ImageService {
      * 원본이 maxWidth보다 작으면 원본 크기를 유지한다.
      */
     private byte[] resizeToJpeg(BufferedImage original, int maxWidth) {
-        int targetWidth = Math.min(maxWidth, original.getWidth());
-        int targetHeight = (int) (original.getHeight() * ((double) targetWidth / original.getWidth()));
+        // PNG처럼 투명 채널이 있으면 JPEG로 바로 쓰면 브라우저가 깨진 이미지로 보여 준다.
+        BufferedImage source = toRgb(original);
+        int targetWidth = Math.min(maxWidth, source.getWidth());
+        int targetHeight = Math.max(1, (int) Math.round(
+                source.getHeight() * (targetWidth / (double) source.getWidth())));
         try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
-            Thumbnails.of(original)
+            Thumbnails.of(source)
                     .size(targetWidth, targetHeight)
-                    .outputFormat("JPEG")
+                    .imageType(BufferedImage.TYPE_INT_RGB)
+                    .outputFormat("jpg")
                     .outputQuality(OUTPUT_QUALITY)
                     .toOutputStream(out);
             return out.toByteArray();
         } catch (IOException e) {
             throw new BusinessException(ErrorCode.BAD_REQUEST, "이미지 처리에 실패했습니다");
         }
+    }
+
+    /** 투명 배경은 흰색으로 채운 RGB 이미지로 바꾼다. 이미 RGB면 그대로 쓴다. */
+    private static BufferedImage toRgb(BufferedImage src) {
+        if (src.getType() == BufferedImage.TYPE_INT_RGB) {
+            return src;
+        }
+        BufferedImage rgb = new BufferedImage(src.getWidth(), src.getHeight(), BufferedImage.TYPE_INT_RGB);
+        Graphics2D graphics = rgb.createGraphics();
+        graphics.setColor(Color.WHITE);
+        graphics.fillRect(0, 0, rgb.getWidth(), rgb.getHeight());
+        graphics.drawImage(src, 0, 0, null);
+        graphics.dispose();
+        return rgb;
     }
 
     private void putToR2(String key, byte[] bytes, String contentType) {

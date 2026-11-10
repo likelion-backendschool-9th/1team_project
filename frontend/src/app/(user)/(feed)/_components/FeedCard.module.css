@@ -148,21 +148,30 @@
 
 .imageLink {
   display: block;
-  height: 100%;
-}
-
-.image {
-  display: block;
-  width: 100%;
-  height: 100%;
-  max-height: 420px;
-  aspect-ratio: 4 / 3;
-  object-fit: cover;
+  overflow: hidden;
   background: var(--surface-muted, #f3ede2);
 }
 
-.imagesSingle .image {
-  aspect-ratio: auto;
+/* 한 장은 비율을 유지한다. height: 100%는 칸 높이가 없어 이미지가 0으로 접힌다. */
+.image {
+  display: block;
+  width: auto;
+  max-width: 100%;
+  height: auto;
+  max-height: 420px;
+  object-fit: contain;
+}
+
+/* 여러 장은 칸 높이를 비율로 정한 뒤 가운데를 맞춘다. */
+.images:not(.imagesSingle) .imageLink {
+  aspect-ratio: 4 / 3;
+}
+
+.images:not(.imagesSingle) .image {
+  width: 100%;
+  height: 100%;
+  max-height: none;
+  object-fit: cover;
 }
 
 .link {
