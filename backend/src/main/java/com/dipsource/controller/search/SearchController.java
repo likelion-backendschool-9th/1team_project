@@ -7,6 +7,7 @@ import com.dipsource.dto.search.SearchType;
 import com.dipsource.global.auth.UserPrincipal;
 import com.dipsource.global.common.ApiResponse;
 import com.dipsource.service.search.AutocompleteService;
+import com.dipsource.service.search.PopularSearchService;
 import com.dipsource.service.search.SearchService;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -26,6 +27,7 @@ public class SearchController {
 
     private final SearchService searchService;
     private final AutocompleteService autocompleteService;
+    private final PopularSearchService popularSearchService;
 
     /**
      * 검색. 예: GET /search?q=spring jpa&type=post&sort=relevance&op=and&page=0&size=20
@@ -64,6 +66,12 @@ public class SearchController {
             return ApiResponse.of(searchService.searchAll(q, operator, searchSort, viewerId));
         }
         return ApiResponse.of(searchService.search(q, searchType, operator, searchSort, pageable, viewerId, searchId));
+    }
+
+    /** 최근 7일 인기 검색어. 예: GET /search/popular?limit=10. 기록이 없으면 많이 쓰인 태그 이름. */
+    @GetMapping("/popular")
+    public ApiResponse<List<String>> popular(@RequestParam(defaultValue = "10") int limit) {
+        return ApiResponse.of(popularSearchService.popular(limit));
     }
 
     /**
