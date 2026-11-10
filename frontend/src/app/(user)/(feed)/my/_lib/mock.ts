@@ -33,6 +33,9 @@ export type ChipHistory = {
 export type PlusMembership = {
   active: boolean;
   since: string | null;
+  autoRenew: boolean;
+  /** 만료 시각. 해지 후에도 이 시각까지는 플러스다. */
+  until: string | null;
   nextBillingAt: string | null;
 };
 
@@ -111,6 +114,8 @@ export const mockHistory: ChipHistory[] = [
 export const mockPlus: PlusMembership = {
   active: false,
   since: null,
+  autoRenew: false,
+  until: null,
   nextBillingAt: null,
 };
 

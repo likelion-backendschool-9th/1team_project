@@ -117,15 +117,19 @@ export async function getPlus(): Promise<PlusMembership> {
   if (!hasBackend) return mockPlus;
   try {
     const { data } = await apiFetch<ApiResponse<MyProfile>>("/api/v1/users/me");
-    const renewing = Boolean(data.plus && data.plusAutoRenew);
+    const active = Boolean(data.plus);
+    const autoRenew = Boolean(data.plusAutoRenew);
+    const until = data.plusUntil ?? null;
     return {
-      active: Boolean(data.plus),
+      active,
       since: null,
-      nextBillingAt: renewing ? (data.plusUntil ?? null) : null,
+      autoRenew,
+      until,
+      nextBillingAt: active && autoRenew ? until : null,
     };
   } catch (error) {
     if (error instanceof ApiRequestError && error.status === 401) {
-      return { active: false, since: null, nextBillingAt: null };
+      return { active: false, since: null, autoRenew: false, until: null, nextBillingAt: null };
     }
     throw error;
   }

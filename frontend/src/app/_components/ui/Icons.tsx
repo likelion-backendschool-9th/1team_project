@@ -60,6 +60,16 @@ export function NewsIcon(props: Props) {
   );
 }
 
+// 감자칩 한 장. 메뉴처럼 선 아이콘이 나란히 놓이는 곳에서 그림 칩(ChipIcon) 대신 쓴다.
+export function ChipOutlineIcon(props: Props) {
+  return (
+    <Svg {...props}>
+      <path d="M5 13.2C6.2 13.15 7.2 13.25 8.3 13.1C10 12.9 11.2 11.6 12.6 9.8C13.6 8.5 14.6 6.5 17.2 6.4C19.6 6.3 20.9 8.2 20.6 10.2C20.2 13.4 16.2 17.4 10.4 17.45C7.4 17.5 5 16.4 3.8 15.2C3.2 14.6 3.2 13.4 5 13.2Z" />
+      <path d="M12.6 14C14.8 13.6 16.8 12.4 17.8 10.8" />
+    </Svg>
+  );
+}
+
 export function TicketIcon(props: Props) {
   return (
     <Svg {...props}>

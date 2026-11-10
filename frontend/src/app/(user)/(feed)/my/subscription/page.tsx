@@ -13,9 +13,18 @@ import styles from "./Subscription.module.css";
 
 export const metadata: Metadata = { title: "구독·구매 관리", robots: { index: false } };
 
+/** 만료 시각의 달력 날짜를 '12월 10일'로 보여 준다. 시간대 변환은 하지 않는다. */
+function formatMonthDay(iso: string): string {
+  const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso);
+  if (!match) return "";
+  return `${Number(match[2])}월 ${Number(match[3])}일`;
+}
+
 async function SubscriptionContent() {
   const [plus, purchases] = await Promise.all([getPlus(), getSeriesPurchases()]);
   const spent = purchases.reduce((sum, item) => sum + item.paidPrice, 0);
+  const renewing = plus.active && plus.autoRenew;
+  const ending = plus.active && !plus.autoRenew;
 
   return (
     <>
@@ -23,11 +32,12 @@ async function SubscriptionContent() {
         <div className={kit.grow}>
           <p className={styles.plusLabel}>DIPSOURCE PLUS</p>
           <h2 id="plus-title" className={styles.plusTitle}>
-            딥소스 플러스 {plus.active && <span className={kit.pillSuccess}>이용 중</span>}
+            딥소스 플러스 {renewing && <span className={kit.pillSuccess}>이용 중</span>}
           </h2>
           <p className={styles.plusPrice}>
-            월 {formatWon(PLUS_PRICE_WON)} · 자동이체
-            {plus.active && plus.nextBillingAt && ` · 다음 결제 ${formatDate(plus.nextBillingAt)}`}
+            {ending
+              ? `해지되었습니다. ${plus.until ? `${formatMonthDay(plus.until)}까지는 정상이용 가능합니다.` : ""}`.trim()
+              : `월 ${formatWon(PLUS_PRICE_WON)} · 자동이체${renewing && plus.nextBillingAt ? ` · 다음 결제 ${formatDate(plus.nextBillingAt)}` : ""}`}
           </p>
           <ul className={styles.benefits}>
             {PLUS_BENEFITS.map((benefit) => (
@@ -35,7 +45,7 @@ async function SubscriptionContent() {
             ))}
           </ul>
         </div>
-        {plus.active ? (
+        {renewing ? (
           <ConfirmButton
             label="플러스 해지"
             title="딥소스 플러스를 해지할까요?"
@@ -45,7 +55,7 @@ async function SubscriptionContent() {
             className={`${kit.btnGhost} ${styles.plusAction}`}
             onConfirm={cancelPlus}
           />
-        ) : (
+        ) : plus.active ? null : (
           <ConfirmButton
             label="플러스 시작하기"
             title="딥소스 플러스를 시작할까요?"
