@@ -54,6 +54,10 @@
   scrollbar-width: none;
 }
 
+.monthInput {
+  max-width: 220px;
+}
+
 .group {
   display: flex;
   flex: none;
@@ -223,5 +227,79 @@
 
   .main {
     padding: 20px 16px 48px;
+  }
+}
+
+/* 데스크톱: 관리 메뉴를 왼쪽 사이드바로 세운다. 좁은 화면은 위쪽 가로 메뉴(스크롤) 그대로. */
+@media (min-width: 901px) {
+  .shell {
+    display: grid;
+    grid-template-columns: 236px minmax(0, 1fr);
+  }
+
+  .header {
+    position: sticky;
+    top: 0;
+    display: flex;
+    height: 100vh;
+    flex-direction: column;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    box-shadow: none;
+  }
+
+  /* 로고와 "서비스로 돌아가기"를 사이드바의 맨 위·맨 아래로 나눠 놓는다. */
+  .headerTop {
+    display: contents;
+  }
+
+  .logo {
+    padding: 20px 22px 12px;
+  }
+
+  .back {
+    order: 3;
+    padding: 12px 22px 20px;
+    margin-top: auto;
+  }
+
+  .nav {
+    order: 2;
+    flex-direction: column;
+    gap: 8px;
+    max-width: none;
+    padding: 4px 12px 16px;
+    margin: 0;
+    overflow: visible;
+  }
+
+  .group {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 2px;
+  }
+
+  .group + .group {
+    padding-top: 8px;
+    padding-left: 0;
+    margin-left: 0;
+    border-top: 1px solid rgb(255 255 255 / 10%);
+    border-left: 0;
+  }
+
+  .group ul {
+    flex-direction: column;
+  }
+
+  .groupTitle {
+    padding: 0 10px 2px;
+  }
+
+  .navItem {
+    padding: 6px 12px;
+  }
+
+  .main {
+    width: 100%;
   }
 }

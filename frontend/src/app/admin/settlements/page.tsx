@@ -32,7 +32,6 @@ async function SettlementsContent() {
         <div className={`${kit.card} ${kit.stat}`}><span className={kit.statLabel}>수수료율</span><span className={kit.statValue}>{SETTLEMENT_FEE_PERCENT}%</span></div>
       </div>
       <SettlementGenerateForm defaultPeriod={seoulMonth(-1)} maxPeriod={seoulMonth(0)} />
-      {rows.length === 0 && <p className={kit.empty}>아직 만든 정산이 없어요. 달을 골라 정산을 만들어 보세요.</p>}
       <section className={kit.card}>
         <div className={kit.tableWrap}>
           <table className={kit.table}>
@@ -69,6 +68,7 @@ async function SettlementsContent() {
             </tbody>
           </table>
         </div>
+        {rows.length === 0 && <p className={kit.empty}>아직 만든 정산이 없어요. 달을 골라 정산을 만들어 보세요.</p>}
       </section>
     </>
   );

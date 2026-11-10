@@ -15,6 +15,11 @@ type Props = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
 
+// 받침 유무로 조사를 고른다. 예: 데모 → 가/를, 댓글 → 이/을
+function hasFinalConsonant(word: string) {
+  const code = word.charCodeAt(word.length - 1) - 0xac00;
+  return code >= 0 && code <= 11171 && code % 28 !== 0;
+}
 
 export async function ContentTable({ kind, noun, searchParams }: Props) {
   await connection();
@@ -79,7 +84,7 @@ export async function ContentTable({ kind, noun, searchParams }: Props) {
                 <td>
                   <ConfirmButton
                     label="삭제"
-                    title={`이 ${noun}을(를) 삭제할까요?`}
+                    title={`이 ${noun}${hasFinalConsonant(noun) ? "을" : "를"} 삭제할까요?`}
                     description={`「${row.title}」 · 목록에서 숨기고 관리자 기록에 남깁니다.`}
                     confirmLabel="삭제"
                     danger
@@ -92,7 +97,7 @@ export async function ContentTable({ kind, noun, searchParams }: Props) {
           </tbody>
         </table>
       </div>
-      {result.content.length === 0 && <p className={kit.empty}>조건에 맞는 {noun}이(가) 없어요.</p>}
+      {result.content.length === 0 && <p className={kit.empty}>조건에 맞는 {noun}{hasFinalConsonant(noun) ? "이" : "가"} 없어요.</p>}
       <Pagination page={page} totalPages={result.totalPages} hrefFor={hrefFor} />
     </section>
   );
