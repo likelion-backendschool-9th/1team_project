@@ -9,6 +9,7 @@ import { formatRelativeTime } from "@/app/_lib/format";
 import type { AppNotification, NotificationType } from "@/app/_lib/types/notification";
 import { markNotificationsRead } from "../_actions";
 import styles from "./NotificationBell.module.css";
+import { useRealtimeEvent } from "./RealtimeProvider";
 
 const icons: Record<NotificationType, ReactNode> = {
   like: "❤️",
@@ -27,18 +28,26 @@ type Props = {
   className: string;
 };
 
-// 알림은 별도 페이지 없이 버튼 아래 패널로 연다.
-export function NotificationBell({ notifications, unreadCount, now, className }: Props) {
+// 알림은 별도 페이지 없이 버튼 아래 패널로 연다. 새 알림은 실시간으로 받아 새로고침 없이 맨 위에 붙인다.
+export function NotificationBell({ notifications: initial, unreadCount, now, className }: Props) {
   const [open, setOpen] = useState(false);
+  const [incoming, setIncoming] = useState<AppNotification[]>([]);
   const [readIds, setReadIds] = useState<Set<number>>(new Set());
   const [, startTransition] = useTransition();
   const panelId = useId();
   const wrapRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
+  // 화면을 다시 그려 서버 목록에 이미 들어온 알림은 한 번만 보인다.
+  const fresh = incoming.filter((item) => !initial.some((known) => known.id === item.id));
+  const notifications = [...fresh, ...initial];
   const isRead = (item: AppNotification) => item.read || readIds.has(item.id);
   const unread = notifications.filter((item) => !isRead(item));
-  // 배지 숫자는 안 읽은 알림 수 API 값에서 이번에 읽은 만큼만 뺀다.
-  const badge = Math.max(0, unreadCount - readIds.size);
+  // 배지 숫자는 안 읽은 알림 수 API 값에 실시간으로 받은 만큼 더하고, 이번에 읽은 만큼 뺀다.
+  const badge = Math.max(0, unreadCount + fresh.length - readIds.size);
+
+  useRealtimeEvent("notification", (item) => {
+    setIncoming((list) => (list.some((known) => known.id === item.id) ? list : [item, ...list]));
+  });
 
   useEffect(() => {
     if (!open) return;

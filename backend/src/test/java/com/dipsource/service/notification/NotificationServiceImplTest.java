@@ -17,6 +17,7 @@ import com.dipsource.entity.notification.NotificationType;
 import com.dipsource.global.common.PageResponse;
 import com.dipsource.global.exception.BusinessException;
 import com.dipsource.global.exception.ErrorCode;
+import com.dipsource.global.websocket.UserMessageSender;
 import com.dipsource.repository.block.BlockRepository;
 import com.dipsource.repository.notification.NotificationRepository;
 import com.dipsource.service.notification.impl.NotificationServiceImpl;
@@ -35,6 +36,7 @@ class NotificationServiceImplTest {
     private NotificationRepository repository;
     private UserService userService;
     private BlockRepository blockRepository;
+    private UserMessageSender userMessageSender;
     private NotificationServiceImpl service;
 
     @BeforeEach
@@ -42,7 +44,9 @@ class NotificationServiceImplTest {
         repository = mock(NotificationRepository.class);
         userService = mock(UserService.class);
         blockRepository = mock(BlockRepository.class);
-        service = new NotificationServiceImpl(repository, userService, blockRepository);
+        userMessageSender = mock(UserMessageSender.class);
+        service = new NotificationServiceImpl(repository, userService, blockRepository, userMessageSender);
+        when(repository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
     }
 
     @Test
@@ -55,6 +59,8 @@ class NotificationServiceImplTest {
         assertThat(captor.getValue().getActorId()).isEqualTo(2L);
         assertThat(captor.getValue().getType()).isEqualTo(NotificationType.FOLLOW);
         assertThat(captor.getValue().isRead()).isFalse();
+        // 받는 사람에게 실시간으로도 보낸다
+        verify(userMessageSender).send(eq(1L), eq(UserMessageSender.NOTIFICATIONS), any(NotificationResponse.class));
     }
 
     @Test

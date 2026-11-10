@@ -42,3 +42,77 @@
     display: none;
   }
 }
+
+.badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  min-width: 24px;
+  padding: 2px 7px;
+  border-radius: var(--radius-pill);
+  color: #fff;
+  background: var(--danger);
+  box-shadow: 0 0 0 2px var(--surface);
+  font-size: 13px;
+  line-height: 20px;
+  text-align: center;
+}
+
+/* DM 버튼 바로 위에 뜨는 새 메시지 알림 */
+.toast {
+  position: fixed;
+  right: 32px;
+  bottom: 100px;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: min(340px, calc(100vw - 32px));
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  color: var(--ink);
+  background: var(--surface);
+  box-shadow: 0 10px 28px rgb(60 40 10 / 18%);
+  text-align: left;
+  animation: toast-in 0.2s ease-out;
+}
+
+.toast:hover {
+  border-color: var(--accent);
+}
+
+.toastBody {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 2px;
+  font-size: 14px;
+}
+
+.toastText {
+  overflow: hidden;
+  color: var(--ink-soft);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toast {
+    animation: none;
+  }
+}
+
+@media (max-width: 760px) {
+  .toast {
+    right: 16px;
+    bottom: 84px;
+  }
+}
