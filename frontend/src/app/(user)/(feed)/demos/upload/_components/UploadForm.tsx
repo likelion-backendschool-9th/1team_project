@@ -7,7 +7,7 @@ import kit from "@/app/_components/ui/kit.module.css";
 import type { DemoUsage } from "@/app/_lib/types/demo";
 import { connectDemoBackend, createDemoDraft, deleteOwnDemo, publishDemoVersion } from "../../_actions";
 import { BackendFields } from "../../_components/BackendFields";
-import { uploadDemoZip } from "../../_lib/uploadZip";
+import { uploadDemoThumbnail, uploadDemoZip } from "../../_lib/uploadZip";
 import { UsageMeter } from "../../_components/UsageMeter";
 import { checkBackendFields, checkDemoZip, MAX_DEMO_MB, MAX_DESCRIPTION, MAX_TITLE } from "../_lib/rules";
 import { ZipPreview } from "./ZipPreview";
@@ -22,6 +22,16 @@ const apiModes: { value: ApiMode; label: string; hint: string }[] = [
   { value: "mock", label: "Mock API 사용", hint: "업로드 후 코드 편집기에서 가짜 응답을 정하고 공개해요" },
   { value: "external", label: "외부 백엔드 연결", hint: "직접 배포한 서버의 주소를 등록해요" },
 ];
+
+// 백엔드 DemoThumbnailService와 같은 제한 (2MB, JPEG·PNG)
+const THUMBNAIL_MAX_BYTES = 2 * 1024 * 1024;
+const THUMBNAIL_TYPES = ["image/jpeg", "image/png"];
+
+function checkThumbnail(file: File): string | null {
+  if (!THUMBNAIL_TYPES.includes(file.type)) return "썸네일은 JPEG·PNG 이미지만 올릴 수 있어요.";
+  if (file.size > THUMBNAIL_MAX_BYTES) return "썸네일은 2MB 이하 이미지만 올릴 수 있어요.";
+  return null;
+}
 
 type Props = {
   used: number;
@@ -38,8 +48,21 @@ export function UploadForm({ used, capacity, usage }: Props) {
   const [step, setStep] = useState(0);
   const [pending, setPending] = useState(false);
   const [apiMode, setApiMode] = useState<ApiMode>("none");
+  const [thumbnail, setThumbnail] = useState<{ file: File; previewUrl: string } | null>(null);
   const full = used >= capacity;
   const fileError = errors.file ?? (file ? checkDemoZip(file) : null);
+  const thumbnailError = errors.thumbnail ?? (thumbnail ? checkThumbnail(thumbnail.file) : null);
+
+  function handleThumbnailChange(next: File | null) {
+    // 이전 미리보기 주소는 메모리에서 풀어 준다
+    if (thumbnail) URL.revokeObjectURL(thumbnail.previewUrl);
+    setErrors((current) => {
+      const next = { ...current };
+      delete next.thumbnail;
+      return next;
+    });
+    setThumbnail(next ? { file: next, previewUrl: URL.createObjectURL(next) } : null);
+  }
 
   const invalid = (key: string, message: string | null | undefined) =>
     message ? { "aria-invalid": true as const, "aria-describedby": `upload-${key}-error` } : {};
@@ -52,6 +75,10 @@ export function UploadForm({ used, capacity, usage }: Props) {
       return;
     }
     if (checkDemoZip(file)) return;
+    if (thumbnail && checkThumbnail(thumbnail.file)) {
+      document.getElementById("upload-thumbnail")?.focus();
+      return;
+    }
 
     const form = new FormData(event.currentTarget);
     const backend = {
@@ -101,6 +128,17 @@ export function UploadForm({ used, capacity, usage }: Props) {
         setErrors({ file: upload.message });
         setResult({ ok: false, message: "zip을 올리지 못했어요." });
         return;
+      }
+
+      // 썸네일은 선택 사항이다. 실패해도 데모는 그대로 두고, 관리 화면에서 다시 올릴 수 있다
+      // (직접 올린 썸네일은 자동 캡처 썸네일보다 우선한다)
+      if (thumbnail) {
+        const uploaded = await uploadDemoThumbnail(draft.demoId, thumbnail.file);
+        if (!uploaded.ok) {
+          setResult({ ok: false, message: `데모는 올렸지만 썸네일을 저장하지 못했어요: ${uploaded.message}` });
+          router.push(`/demos/${draft.demoId}/manage`);
+          return;
+        }
       }
 
       // Mock은 버전마다 저장되므로 응답을 정한 새 버전을 코드 편집기에서 공개한다
@@ -217,6 +255,53 @@ export function UploadForm({ used, capacity, usage }: Props) {
           />
           <p id="upload-tags-hint" className={kit.hint}>
             쉼표로 구분해요.
+          </p>
+        </div>
+
+        <div className={kit.field}>
+          <label htmlFor="upload-thumbnail" className={kit.label}>
+            썸네일 (선택)
+          </label>
+          <div className={styles.thumbnailRow}>
+            {thumbnail ? (
+              // 방금 고른 로컬 파일 미리보기(blob 주소)라 next/image를 쓰지 않는다
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={thumbnail.previewUrl} alt="선택한 썸네일 미리보기" className={styles.thumbnailPreview} />
+            ) : (
+              <span className={styles.thumbnailEmpty} aria-hidden="true">
+                🖼️
+              </span>
+            )}
+            <div className={styles.thumbnailControls}>
+              <input
+                id="upload-thumbnail"
+                type="file"
+                accept="image/jpeg,image/png"
+                onChange={(event) => handleThumbnailChange(event.target.files?.[0] ?? null)}
+                className={kit.input}
+                aria-describedby="upload-thumbnail-hint upload-thumbnail-error"
+                {...invalid("thumbnail", thumbnailError)}
+              />
+              {thumbnail && (
+                <button
+                  type="button"
+                  className={`${kit.btnGhost} ${kit.sm}`}
+                  onClick={() => {
+                    handleThumbnailChange(null);
+                    const input = document.getElementById("upload-thumbnail") as HTMLInputElement | null;
+                    if (input) input.value = "";
+                  }}
+                >
+                  선택 취소
+                </button>
+              )}
+            </div>
+          </div>
+          <p id="upload-thumbnail-hint" className={kit.hint}>
+            JPEG·PNG, 2MB 이하. 올리지 않으면 실행 화면을 자동으로 캡처해 썸네일로 써요.
+          </p>
+          <p id="upload-thumbnail-error" className={kit.error}>
+            {thumbnailError}
           </p>
         </div>
 

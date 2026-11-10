@@ -91,3 +91,38 @@ input:focus-visible + .drop,
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* 썸네일 선택: 왼쪽 미리보기, 오른쪽 파일 선택 */
+.thumbnailRow {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.thumbnailPreview,
+.thumbnailEmpty {
+  flex: none;
+  width: 128px;
+  aspect-ratio: 16 / 10;
+  border-radius: 10px;
+  background: var(--surface-muted);
+}
+
+.thumbnailPreview {
+  object-fit: cover;
+}
+
+.thumbnailEmpty {
+  display: grid;
+  font-size: 28px;
+  place-items: center;
+}
+
+.thumbnailControls {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
