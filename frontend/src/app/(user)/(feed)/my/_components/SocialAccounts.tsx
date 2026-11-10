@@ -1,10 +1,12 @@
 import { ConfirmButton } from "@/app/_components/ui/ConfirmButton";
 import kit from "@/app/_components/ui/kit.module.css";
+import { ProviderIcon } from "@/app/_components/ui/ProviderIcon";
 import type { OAuthProvider } from "@/app/_lib/types/auth";
 import { unlinkSocialAccount } from "../_actions";
+import styles from "./SocialAccounts.module.css";
 
 const providers: { value: OAuthProvider; label: string }[] = [
-  { value: "github", label: "GitHub" },
+  { value: "github", label: "깃허브" },
   { value: "google", label: "구글" },
   { value: "kakao", label: "카카오" },
 ];
@@ -26,58 +28,74 @@ export function SocialAccounts({ linked, justLinked, linkError }: Props) {
   // 연동은 백엔드 OAuth로 브라우저가 직접 이동한다. 로그인 버튼과 같은 주소 규칙을 쓴다
   const browserApiOrigin = process.env.BROWSER_API_ORIGIN ?? process.env.API_ORIGIN ?? "";
   const justLinkedLabel = providers.find((item) => item.value === justLinked)?.label;
+  const lastOne = linked.length <= 1;
 
   return (
-    <section className={kit.card} aria-labelledby="social-title">
-      <h2 id="social-title" className={kit.cardTitle}>
-        소셜 계정 연동
-      </h2>
-      <p className={kit.faint}>연동해 두면 어떤 소셜 계정으로 로그인해도 이 계정으로 들어와요.</p>
+    <section className={`${kit.card} ${styles.section}`} aria-labelledby="social-title">
+      <div className={styles.intro}>
+        <h2 id="social-title" className={kit.cardTitle}>
+          연동된 계정
+        </h2>
+        <p className={kit.faint}>연동해 두면 어떤 소셜 계정으로 로그인해도 이 계정으로 들어와요.</p>
+      </div>
 
-      {justLinkedLabel && (
-        <p role="status" className={kit.pillSuccess} style={{ marginTop: 12 }}>
-          {justLinkedLabel} 계정을 연동했어요.
-        </p>
-      )}
-      {linkError && (
-        <p role="alert" className={kit.error} style={{ marginTop: 12 }}>
-          {linkErrors[linkError] ?? "연동하지 못했어요. 잠시 후 다시 시도해 주세요."}
-        </p>
-      )}
+      <div className={styles.body}>
+        {justLinkedLabel && (
+          <p role="status" className={styles.noticeOk}>
+            {justLinkedLabel} 계정을 연동했어요
+          </p>
+        )}
+        {linkError && (
+          <p role="alert" className={styles.noticeError}>
+            {linkErrors[linkError] ?? "연동하지 못했어요. 잠시 후 다시 시도해 주세요."}
+          </p>
+        )}
 
-      <ul className={kit.list} style={{ marginTop: 12 }}>
-        {providers.map((provider) => {
-          const isLinked = linked.includes(provider.value);
-          return (
-            <li key={provider.value} className={kit.listItem}>
-              <span className={kit.grow}>
-                <strong>{provider.label}</strong>
-              </span>
-              {isLinked ? (
-                <>
-                  <span className={kit.pillSuccess}>연동됨</span>
-                  {linked.length > 1 && (
+        <ul className={styles.cards}>
+          {providers.map((provider) => {
+            const isLinked = linked.includes(provider.value);
+            return (
+              <li key={provider.value} className={`${styles.card} ${isLinked ? styles.linked : ""}`}>
+                <ProviderIcon provider={provider.value} size={24} />
+                <p className={styles.name}>
+                  {provider.label}
+                  {isLinked && <span className={styles.badge}>연동됨</span>}
+                </p>
+                <p className={styles.status}>
+                  {isLinked ? (lastOne ? "유일한 로그인 수단" : "로그인에 사용 중") : "연동 안 됨"}
+                </p>
+
+                {isLinked ? (
+                  lastOne ? (
+                    // 소셜 로그인만 쓰므로 마지막 하나를 끊으면 로그인할 방법이 없어진다
+                    <span className={`${styles.action} ${styles.actionDisabled}`} aria-disabled="true">
+                      해제 불가
+                    </span>
+                  ) : (
                     <ConfirmButton
                       label="해제"
                       title={`${provider.label} 연동을 해제할까요?`}
                       description="해제하면 이 소셜 계정으로는 로그인할 수 없어요."
                       confirmLabel="해제"
                       danger
-                      className={`${kit.btnGhost} ${kit.sm}`}
+                      className={`${styles.action} ${styles.actionGhost}`}
                       onConfirm={unlinkSocialAccount.bind(null, provider.value)}
                     />
-                  )}
-                </>
-              ) : (
-                // 백엔드 OAuth로 이동하는 주소라 Next Link가 아니라 a를 쓴다
-                <a href={`${browserApiOrigin}/api/v1/auth/link/${provider.value}`} className={`${kit.btn} ${kit.sm}`}>
-                  연동하기
-                </a>
-              )}
-            </li>
-          );
-        })}
-      </ul>
+                  )
+                ) : (
+                  // 백엔드 OAuth로 이동하는 주소라 Next Link가 아니라 a를 쓴다
+                  <a
+                    href={`${browserApiOrigin}/api/v1/auth/link/${provider.value}`}
+                    className={`${styles.action} ${styles.actionPrimary}`}
+                  >
+                    연동하기
+                  </a>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      </div>
     </section>
   );
 }

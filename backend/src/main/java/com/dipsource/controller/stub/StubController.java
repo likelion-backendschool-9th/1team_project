@@ -2,10 +2,8 @@ package com.dipsource.controller.stub;
 
 import com.dipsource.global.common.ApiResponse;
 import java.util.List;
-import java.util.Map;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -17,26 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("")
 public class StubController {
 
-    private static final Map<String, Object> EMPTY_PAGE = Map.of(
-            "content", List.of(),
-            "page", 0,
-            "size", 0,
-            "totalElements", 0,
-            "totalPages", 0
-    );
-
-    // ── 이벤트 ──
-
-    @GetMapping("/events")
-    public ResponseEntity<ApiResponse<Map<String, Object>>> events() {
-        return ok(EMPTY_PAGE);
-    }
-
-    @GetMapping("/events/{eventId}")
-    public ResponseEntity<ApiResponse<Object>> eventDetail(@PathVariable Long eventId) {
-        return notFound();
-    }
-
+    // 이벤트(GET /events)는 EventController로 이관했다.
     // 랭킹(GET /rankings)은 RankingController로 이관했다.
     // 북마크(GET /users/me/bookmarks)는 MyBookmarkController로 이관했다.
 
@@ -51,9 +30,5 @@ public class StubController {
 
     private <T> ResponseEntity<ApiResponse<T>> ok(T data) {
         return ResponseEntity.ok(ApiResponse.of(data));
-    }
-
-    private <T> ResponseEntity<ApiResponse<T>> notFound() {
-        return ResponseEntity.notFound().build();
     }
 }

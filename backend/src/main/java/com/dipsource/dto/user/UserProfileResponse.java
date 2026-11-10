@@ -24,7 +24,7 @@ public record UserProfileResponse(
             null,
             false,
             following,
-            0
+            user.getExtraInventorySlots()
         );
     }
 }

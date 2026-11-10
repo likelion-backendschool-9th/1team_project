@@ -197,7 +197,7 @@ export async function getSuspicious(): Promise<typeof mockSuspicious> {
 }
 
 export async function getAdminEvents(): Promise<DevEvent[]> {
-  if (isMockMode) return mockEvents;
+  if (!hasBackend) return mockEvents;
   const { data } = await apiFetch<ApiResponse<PageResponse<DevEvent>>>("/api/v1/events");
   return data.content;
 }
