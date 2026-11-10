@@ -43,7 +43,7 @@ export async function GuestbookContent({ params }: Props) {
             const hidden = entry.secret && !canDelete;
             return (
               <li key={entry.id} className={styles.entry}>
-                <Avatar name={entry.author.nickname} size={40} tone="light" />
+                <Avatar name={entry.author.nickname} src={entry.author.profileImage} size={40} tone="light" />
                 <div className={kit.grow}>
                   <p className={styles.meta}>
                     <strong>{entry.author.nickname}</strong>
