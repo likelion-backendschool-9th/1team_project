@@ -11,6 +11,20 @@ export function formatRelativeTime(iso: string, now: number): string {
   return new Date(iso).toLocaleDateString("ko-KR");
 }
 
+/** 다음 표시가 바뀌기까지 남은 시간. 날짜로 고정되면 0. */
+export function nextRelativeTimeDelay(iso: string, now: number): number {
+  const target = new Date(iso).getTime();
+  if (Number.isNaN(target)) return 0;
+  const diff = Math.max(0, now - target);
+  let boundary = 0;
+  if (diff < MINUTE) boundary = MINUTE;
+  else if (diff < HOUR) boundary = (Math.floor(diff / MINUTE) + 1) * MINUTE;
+  else if (diff < DAY) boundary = (Math.floor(diff / HOUR) + 1) * HOUR;
+  else if (diff < 30 * DAY) boundary = (Math.floor(diff / DAY) + 1) * DAY;
+  else return 0;
+  return boundary - diff + 50;
+}
+
 export function formatCount(value: number): string {
   return value.toLocaleString("ko-KR");
 }

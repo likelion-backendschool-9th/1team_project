@@ -1,6 +1,7 @@
 package com.dipsource.service.feed;
 
 import com.dipsource.dto.feed.FeedCursorResponse;
+import com.dipsource.dto.feed.FeedDemoResponse;
 import com.dipsource.dto.feed.FeedResponse;
 import com.dipsource.entity.feed.Feed;
 import com.dipsource.entity.user.User;
@@ -37,6 +38,7 @@ public class FeedRecommendationService {
     private final UserInterestTagRepository userInterestTagRepository;
     private final UserTagProfileRepository userTagProfileRepository;
     private final UserRepository userRepository;
+    private final FeedDemoAssembler feedDemos;
 
     /**
      * 로그인 사용자용 추천 피드.
@@ -170,10 +172,12 @@ public class FeedRecommendationService {
         Set<Long> finalBookmarkedIds = bookmarkedIds;
         Set<Long> finalFollowingIds = followingAuthorIds;
 
+        Map<Long, FeedDemoResponse> demos = feedDemos.of(feeds);
         List<FeedResponse> responses = feeds.stream()
                 .map(feed -> FeedResponse.from(
                         feed,
                         userMap.get(feed.getUserId()),
+                        demos.get(feed.getDemoId()),
                         finalLikedIds.contains(feed.getId()),
                         finalRepostedIds.contains(feed.getId()),
                         finalBookmarkedIds.contains(feed.getId()),

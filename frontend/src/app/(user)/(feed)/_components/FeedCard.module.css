@@ -134,45 +134,89 @@
   }
 }
 
-/* 첨부 이미지: 한 장이면 크게, 여러 장이면 2열 격자 */
+/* 첨부 이미지. 1장은 원본 비율, 2·4장은 짝, 3장은 위 1 + 아래 2, 5장은 위 2 + 아래 3. */
 .images {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 6px;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
   overflow: hidden;
   border-radius: 14px;
 }
 
-.imagesSingle {
-  grid-template-columns: 1fr;
-}
-
 .imageLink {
   display: block;
+  height: 100%;
   overflow: hidden;
   background: var(--surface-muted, #f3ede2);
 }
 
-/* 한 장은 비율을 유지한다. height: 100%는 칸 높이가 없어 이미지가 0으로 접힌다. */
 .image {
   display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.count1 {
+  grid-template-columns: 1fr;
+}
+
+.count1 .imageLink {
+  display: flex;
+  justify-content: center;
+  height: auto;
+  background: transparent;
+}
+
+.count1 .image {
   width: auto;
   max-width: 100%;
   height: auto;
-  max-height: 420px;
+  max-height: 480px;
   object-fit: contain;
 }
 
-/* 여러 장은 칸 높이를 비율로 정한 뒤 가운데를 맞춘다. */
-.images:not(.imagesSingle) .imageLink {
+.count2,
+.count4 {
+  grid-template-columns: 1fr 1fr;
+}
+
+.count2 .imageLink,
+.count4 .imageLink {
+  aspect-ratio: 1;
+}
+
+.count3 {
+  grid-template-columns: 1fr 1fr;
+}
+
+.count3 li:first-child {
+  grid-column: 1 / -1;
+}
+
+.count3 li:first-child .imageLink {
+  aspect-ratio: 16 / 9;
+}
+
+.count3 li:not(:first-child) .imageLink {
   aspect-ratio: 4 / 3;
 }
 
-.images:not(.imagesSingle) .image {
-  width: 100%;
-  height: 100%;
-  max-height: none;
-  object-fit: cover;
+.count5 {
+  grid-template-columns: repeat(6, 1fr);
+}
+
+.count5 li:nth-child(-n + 2) {
+  grid-column: span 3;
+}
+
+.count5 li:nth-child(n + 3) {
+  grid-column: span 2;
+}
+
+.count5 .imageLink {
+  aspect-ratio: 1;
 }
 
 .link {

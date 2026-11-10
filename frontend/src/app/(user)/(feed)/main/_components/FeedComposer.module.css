@@ -118,11 +118,10 @@
   color: var(--ink-faint);
 }
 
-/* 이미지 미리보기 그리드 */
+/* 작성 중 미리보기. 피드 카드와 같은 장수별 배치. */
 .thumbGrid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+  display: grid;
+  gap: 6px;
   list-style: none;
   margin: 0;
   padding: 0;
@@ -130,17 +129,60 @@
 
 .thumb {
   position: relative;
-  width: 80px;
-  height: 80px;
+  width: auto;
+  height: auto;
+  aspect-ratio: 1;
   border-radius: 8px;
   overflow: hidden;
-  flex-shrink: 0;
 }
 
 .thumbImg {
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+
+.count1 {
+  grid-template-columns: 1fr;
+}
+
+.count1 .thumb {
+  width: min(100%, 420px);
+  aspect-ratio: auto;
+}
+
+.count1 .thumbImg {
+  width: 100%;
+  height: auto;
+  max-height: 240px;
+  object-fit: contain;
+  background: var(--surface-muted, #f3ede2);
+}
+
+.count2,
+.count4 {
+  grid-template-columns: 1fr 1fr;
+}
+
+.count3 {
+  grid-template-columns: 1fr 1fr;
+}
+
+.count3 .thumb:first-child {
+  grid-column: 1 / -1;
+  aspect-ratio: 16 / 9;
+}
+
+.count5 {
+  grid-template-columns: repeat(6, 1fr);
+}
+
+.count5 .thumb:nth-child(-n + 2) {
+  grid-column: span 3;
+}
+
+.count5 .thumb:nth-child(n + 3) {
+  grid-column: span 2;
 }
 
 .thumbRemove {
