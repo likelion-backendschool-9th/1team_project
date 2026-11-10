@@ -42,7 +42,8 @@ public class NotificationServiceImpl implements NotificationService {
     @Override
     @Transactional(readOnly = true)
     public PageResponse<NotificationResponse> list(Long userId, Pageable pageable) {
-        Page<Notification> page = notificationRepository.findByReceiverIdOrderByCreatedAtDescIdDesc(userId, pageable);
+        // 서로 차단한 사람이 보낸 알림은 빼고 준다 (차단 전에 만들어진 알림 포함)
+        Page<Notification> page = notificationRepository.findVisibleByReceiverId(userId, pageable);
         List<Long> actorIds = page.getContent().stream()
                 .map(Notification::getActorId)
                 .filter(Objects::nonNull)
@@ -55,7 +56,7 @@ public class NotificationServiceImpl implements NotificationService {
     @Override
     @Transactional(readOnly = true)
     public long countUnread(Long userId) {
-        return notificationRepository.countByReceiverIdAndReadFalse(userId);
+        return notificationRepository.countVisibleUnread(userId);
     }
 
     @Override

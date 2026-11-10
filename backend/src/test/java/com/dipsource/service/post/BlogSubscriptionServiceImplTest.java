@@ -24,6 +24,7 @@ import com.dipsource.service.notification.NotificationService;
 import com.dipsource.service.post.impl.BlogSubscriptionServiceImpl;
 import com.dipsource.service.user.UserService;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -145,6 +146,19 @@ class BlogSubscriptionServiceImplTest {
                     .isInstanceOf(BusinessException.class)
                     .extracting(e -> ((BusinessException) e).getErrorCode())
                     .isEqualTo(ErrorCode.NOT_FOUND);
+        }
+    }
+
+    @Nested
+    class Mine {
+
+        @Test
+        void blockedBlogIsHiddenFromMyList() {
+            when(blockRepository.findHiddenUserIds(ME)).thenReturn(List.of(OWNER));
+            when(repository.findCurrentBySubscriber(eq(ME), any())).thenReturn(List.of(subscription(SubscriptionStatus.ACTIVE)));
+
+            assertThat(service.getMine(ME)).isEmpty();
+            verify(userService, never()).getSummaries(any());
         }
     }
 

@@ -18,9 +18,11 @@ import com.dipsource.service.notification.NotificationService;
 import com.dipsource.service.post.BlogSubscriptionService;
 import com.dipsource.service.user.UserService;
 import java.time.LocalDateTime;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -94,8 +96,12 @@ public class BlogSubscriptionServiceImpl implements BlogSubscriptionService {
     @Override
     @Transactional(readOnly = true)
     public List<MySubscriptionResponse> getMine(Long subscriberId) {
+        // 서로 차단한 블로그는 보여 주지 않는다. 결제한 구독이라 지우지는 않고 화면에서만 숨긴다
+        Set<Long> hidden = new HashSet<>(blockRepository.findHiddenUserIds(subscriberId));
         List<BlogSubscription> subscriptions =
-                blogSubscriptionRepository.findCurrentBySubscriber(subscriberId, LocalDateTime.now());
+                blogSubscriptionRepository.findCurrentBySubscriber(subscriberId, LocalDateTime.now()).stream()
+                        .filter(s -> !hidden.contains(s.getBlogOwnerId()))
+                        .toList();
         if (subscriptions.isEmpty()) {
             return List.of();
         }
