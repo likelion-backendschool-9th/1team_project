@@ -7,7 +7,7 @@ import { runForm } from "@/app/_lib/api/formAction";
 import { mutate } from "@/app/_lib/api/mutate";
 import { readValues, type FormState } from "@/app/_lib/formState";
 import type { PostComment } from "@/app/_lib/types/post";
-import { categories } from "./_lib/query";
+import { categories, PAID_MIN_LENGTH } from "./_lib/query";
 
 const POST_FIELDS = ['title', 'category', 'tags', 'content', 'demoId', 'price'];
 
@@ -27,6 +27,8 @@ function validatePost(formData: FormData) {
     errors.category = '분류를 골라 주세요.';
   if (values.content.length < 20)
     errors.content = '본문을 20자 이상 입력해 주세요.';
+  else if (paid && values.content.length < PAID_MIN_LENGTH)
+    errors.content = `유료 글은 본문을 ${PAID_MIN_LENGTH.toLocaleString()}자 이상 써 주세요. (지금 ${values.content.length.toLocaleString()}자)`;
   const price = Number(values.price);
   if (paid && (!Number.isInteger(price) || price < 1 || price > 100))
     errors.price = '1~100칩 사이로 입력해 주세요.';

@@ -10,6 +10,9 @@ export const categories: { value: PostCategory; label: string }[] = [
   { value: "uxui", label: "UX/UI" },
 ];
 
+/** 유료 글 본문 최소 글자 수 (앞뒤 공백 제외). 백엔드 PostServiceImpl과 같은 값 */
+export const PAID_MIN_LENGTH = 1000;
+
 export const sorts: { value: PostSort; label: string }[] = [
   { value: "latest", label: "최신순" },
   { value: "popular", label: "인기순" },

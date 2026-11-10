@@ -60,6 +60,9 @@ public class PostServiceImpl implements PostService {
     /** 검색어 최대 길이 */
     private static final int MAX_QUERY_LENGTH = 50;
 
+    /** 유료 글 본문 최소 글자 수 */
+    static final int PAID_MIN_CONTENT_LENGTH = 1000;
+
     private static final Sort LATEST = Sort.by(Sort.Order.desc("createdAt"), Sort.Order.desc("id"));
     private static final Sort POPULAR = Sort.by(
             Sort.Order.desc("likeCount"), Sort.Order.desc("viewCount"), Sort.Order.desc("createdAt"), Sort.Order.desc("id"));
@@ -148,6 +151,7 @@ public class PostServiceImpl implements PostService {
             throw new BusinessException(ErrorCode.FORBIDDEN, "글을 쓸 수 없는 계정이에요.");
         }
         int price = request.price();
+        requirePaidLength(price, request.content());
         Post post = postRepository.save(Post.builder()
                 .userId(userId)
                 .demoId(request.demoId())
@@ -166,6 +170,7 @@ public class PostServiceImpl implements PostService {
     public void update(Long userId, Long postId, WritePostRequest request) {
         Post post = findOwn(userId, postId);
         int price = request.price();
+        requirePaidLength(price, request.content());
         post.update(request.title().strip(), parseCategory(request.category()), request.content(),
                 post.getThumbnailUrl(), request.demoId(), price > 0, price);
         // 태그는 지우고 다시 붙인다.
@@ -326,6 +331,14 @@ public class PostServiceImpl implements PostService {
         return postRepository.findById(postId)
                 .filter(post -> post.getStatus() == PostStatus.ACTIVE)
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "글을 찾을 수 없어요."));
+    }
+
+    /** 유료 글은 칩을 내고 읽을 만큼 본문이 있어야 한다. 앞뒤 공백은 세지 않는다. */
+    private static void requirePaidLength(int price, String content) {
+        if (price > 0 && content.strip().length() < PAID_MIN_CONTENT_LENGTH) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST,
+                    "유료 글은 본문을 " + PAID_MIN_CONTENT_LENGTH + "자 이상 써 주세요.");
+        }
     }
 
     private Post findOwn(Long userId, Long postId) {

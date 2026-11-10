@@ -4,7 +4,7 @@ import { useActionState, useRef, useState, useSyncExternalStore } from "react";
 import { FormMessage } from "@/app/_components/ui/FormMessage";
 import kit from "@/app/_components/ui/kit.module.css";
 import { initialFormState, type FormState } from "@/app/_lib/formState";
-import { categories } from "../_lib/query";
+import { categories, PAID_MIN_LENGTH } from "../_lib/query";
 import { Markdown } from "./Markdown";
 import styles from "./PostEditor.module.css";
 
@@ -75,6 +75,8 @@ export function PostEditor({ action, demos, initial = empty, submitLabel, draftK
   const [content, setContent] = useState(initial.content);
   const [preview, setPreview] = useState(false);
   const [paid, setPaid] = useState(initial.paid);
+  // 유료 글 최소 길이 안내용. 서버 검사와 같이 앞뒤 공백은 세지 않는다.
+  const length = content.trim().length;
   const formRef = useRef<HTMLFormElement>(null);
   const storageKey = draftKey ? `dipsource:post-draft:${draftKey}` : null;
   const savedRaw = useSyncExternalStore(
@@ -246,6 +248,12 @@ export function PostEditor({ action, demos, initial = empty, submitLabel, draftK
           <div className={styles.preview} aria-live="polite">
             {content.trim() ? <Markdown source={content} /> : <p className={kit.faint}>작성한 내용이 없어요.</p>}
           </div>
+        )}
+        {paid && (
+          <p className={length < PAID_MIN_LENGTH ? styles.lengthShort : kit.faint}>
+            본문 {length.toLocaleString()} / {PAID_MIN_LENGTH.toLocaleString()}자 · 유료 글은{" "}
+            {PAID_MIN_LENGTH.toLocaleString()}자 이상 써야 발행할 수 있어요
+          </p>
         )}
         <p id="post-content-error" className={kit.error}>
           {state.errors.content}
