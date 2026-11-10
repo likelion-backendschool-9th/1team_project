@@ -10,6 +10,7 @@ import com.dipsource.global.common.ApiResponse;
 import com.dipsource.global.exception.BusinessException;
 import com.dipsource.global.exception.ErrorCode;
 import com.dipsource.service.post.BlogSubscriptionService;
+import com.dipsource.service.user.PlusSubscriptionService;
 import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -24,37 +25,48 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * 블로그 구독. "나"는 JWT에서만 가져온다.
- * POST /subscriptions·DELETE /subscriptions/me는 딥소스 플러스(plan="plus")와 주소를 같이 쓰는데, 플러스는 아직 없어서 400을 준다.
+ * 블로그 구독과 딥소스 플러스가 POST /subscriptions·DELETE /subscriptions/me를 같이 쓴다.
+ * plan="plus"만 플러스이고, authorId·subscriptionId 경로는 블로그 구독이다.
  */
 @RestController
 @RequiredArgsConstructor
 public class BlogSubscriptionController {
 
     private final BlogSubscriptionService blogSubscriptionService;
+    private final PlusSubscriptionService plusSubscriptionService;
 
-    /** 블로그 구독 (한 달치 결제). 이미 구독 중이어도 204 (멱등) */
+    /** 블로그 구독 (한 달치 결제). 이미 구독 중이어도 204 (멱등). plan="plus"면 결제 없이 플러스를 시작한다 */
     @PostMapping("/subscriptions")
     public ResponseEntity<Void> subscribe(
             @AuthenticationPrincipal UserPrincipal principal,
             @RequestBody SubscribeRequest request
     ) {
-        rejectPlus(request.plan());
+        Long userId = requireUserId(principal);
+        if (isPlus(request.plan())) {
+            plusSubscriptionService.start(userId);
+            return ResponseEntity.noContent().build();
+        }
+        rejectUnknownPlan(request.plan());
         if (request.authorId() == null) {
             throw new BusinessException(ErrorCode.BAD_REQUEST, "구독할 블로그를 골라 주세요.");
         }
-        blogSubscriptionService.subscribe(requireUserId(principal), request.authorId());
+        blogSubscriptionService.subscribe(userId, request.authorId());
         return ResponseEntity.noContent().build();
     }
 
-    /** 구독 해지. 만료일까지는 계속 읽을 수 있다. 이미 해지했어도 204 (멱등) */
+    /** 구독 해지. 만료일까지는 계속 읽을 수 있다. 이미 해지했어도 204 (멱등). plan="plus"면 플러스 자동 갱신만 끈다 */
     @DeleteMapping("/subscriptions/me")
     public ResponseEntity<Void> cancel(
             @AuthenticationPrincipal UserPrincipal principal,
             @RequestBody CancelSubscriptionRequest request
     ) {
-        rejectPlus(request.plan());
-        blogSubscriptionService.cancel(requireUserId(principal), request.subscriptionId());
+        Long userId = requireUserId(principal);
+        if (isPlus(request.plan())) {
+            plusSubscriptionService.cancel(userId);
+            return ResponseEntity.noContent().build();
+        }
+        rejectUnknownPlan(request.plan());
+        blogSubscriptionService.cancel(userId, request.subscriptionId());
         return ResponseEntity.noContent().build();
     }
 
@@ -84,9 +96,13 @@ public class BlogSubscriptionController {
         return ResponseEntity.noContent().build();
     }
 
-    private static void rejectPlus(String plan) {
+    private static boolean isPlus(String plan) {
+        return "plus".equals(plan);
+    }
+
+    private static void rejectUnknownPlan(String plan) {
         if (plan != null) {
-            throw new BusinessException(ErrorCode.BAD_REQUEST, "딥소스 플러스는 아직 준비 중이에요.");
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "지원하지 않는 구독이에요.");
         }
     }
 

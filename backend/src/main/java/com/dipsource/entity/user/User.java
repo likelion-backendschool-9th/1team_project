@@ -89,6 +89,14 @@ public class User extends BaseEntity {
     @Column(name = "extra_inventory_slots", nullable = false, columnDefinition = "integer default 0 not null")
     private int extraInventorySlots = 0;
 
+    /** 딥소스 플러스 만료 시각. 없으면 한 번도 시작하지 않은 것이다 */
+    @Column(name = "plus_until")
+    private LocalDateTime plusUntil;
+
+    /** 딥소스 플러스 자동 갱신. 해지해도 만료 시각까지는 플러스다 */
+    @Column(name = "plus_auto_renew", nullable = false, columnDefinition = "boolean default false not null")
+    private boolean plusAutoRenew = false;
+
     /** 마지막 활동 시각. DM에서 "활동중"을 판단하는 기준이다. */
     @Column(name = "last_active_at")
     private LocalDateTime lastActiveAt;
@@ -180,6 +188,27 @@ public class User extends BaseEntity {
     /** 데모 인벤토리를 한 칸 늘린다. 칩 차감은 InventorySlotService에서 같은 트랜잭션으로 한다 */
     public void addInventorySlot() {
         this.extraInventorySlots += 1;
+    }
+
+    /**
+     * 딥소스 플러스를 시작한다. 결제·칩 차감은 하지 않는다.
+     * 이미 플러스면 만료 시각은 그대로 두고 자동 갱신만 켠다.
+     */
+    public void startPlus(LocalDateTime now) {
+        if (!isPlus(now)) {
+            this.plusUntil = now.plusDays(30);
+        }
+        this.plusAutoRenew = true;
+    }
+
+    /** 자동 갱신만 끈다. 만료 시각까지는 플러스가 유지된다. */
+    public void cancelPlus() {
+        this.plusAutoRenew = false;
+    }
+
+    /** 만료 시각이 지금보다 뒤면 플러스다. 같은 시각은 만료로 본다. */
+    public boolean isPlus(LocalDateTime now) {
+        return plusUntil != null && plusUntil.isAfter(now);
     }
 
     /**

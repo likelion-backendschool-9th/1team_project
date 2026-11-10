@@ -5,12 +5,16 @@ import com.dipsource.dto.minihome.RandomMiniHomeResponse;
 import com.dipsource.dto.minihome.UpdateMiniHomeRequest;
 import com.dipsource.dto.minihome.VisitorStatsResponse;
 import com.dipsource.entity.minihome.MiniHome;
+import com.dipsource.entity.user.User;
 import com.dipsource.global.exception.BusinessException;
 import com.dipsource.global.exception.ErrorCode;
 import com.dipsource.repository.block.BlockRepository;
 import com.dipsource.repository.minihome.MiniHomeRepository;
+import com.dipsource.repository.user.UserRepository;
 import com.dipsource.service.minihome.MiniHomeService;
 import com.dipsource.service.post.PostService;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -37,11 +41,16 @@ public class MiniHomeServiceImpl implements MiniHomeService {
     /** example.dev, blog.my-site.co.kr 같은 호스트 이름. 각 칸은 영문·숫자·하이픈 1~63자, 끝은 영문 2자 이상. */
     private static final Pattern DOMAIN = Pattern.compile(
             "^(?=.{4,100}$)([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?\\.)+[a-z]{2,63}$");
+    /** 미니홈피에 보여 주는 데모 수. 일반 3개, 딥소스 플러스 6개. */
+    private static final int SHOWCASE_BASE = 3;
+    private static final int SHOWCASE_PLUS = 6;
+    private static final ZoneId ZONE = ZoneId.of("Asia/Seoul");
 
     private final MiniHomeLoader miniHomeLoader;
     private final MiniHomeRepository miniHomeRepository;
     private final PostService postService;
     private final BlockRepository blockRepository;
+    private final UserRepository userRepository;
 
     @Override
     @Transactional
@@ -67,7 +76,7 @@ public class MiniHomeServiceImpl implements MiniHomeService {
         String quote = optional(request.quote(), 80, "오늘의 한마디는 80자 이하로 입력해 주세요.");
         String domain = normalizeDomain(request.domain());
         String bgm = normalizeBgm(request.bgm());
-        List<Long> ordered = arrange(request.showcaseDemoIds(), parseFeatured(request.featuredDemoId()));
+        List<Long> ordered = arrange(userId, request.showcaseDemoIds(), parseFeatured(request.featuredDemoId()));
         home.update(headline, quote, domain, bgm);
         home.changeStackTags(parseStackTags(request.stackTags()));
         home.changeSkin(normalizeSkin(request.skin()), home.getCustomSkinJson());
@@ -86,7 +95,7 @@ public class MiniHomeServiceImpl implements MiniHomeService {
         if (!current.contains(demoId)) {
             throw new BusinessException(ErrorCode.BAD_REQUEST, "대표 데모는 공개할 데모 중에서 골라 주세요.");
         }
-        applyShowcase(home, arrange(current, demoId));
+        applyShowcase(home, arrange(userId, current, demoId));
         return toResponse(miniHomeRepository.save(home));
     }
 
@@ -243,11 +252,12 @@ public class MiniHomeServiceImpl implements MiniHomeService {
         }
     }
 
-    /** featured가 있으면 1번으로 옮기고 나머지 순서는 유지한다. */
-    private static List<Long> arrange(List<Long> showcase, Long featured) {
+    /** featured가 있으면 1번으로 옮기고 나머지 순서는 유지한다. 플러스면 6개, 아니면 3개까지다. */
+    private List<Long> arrange(Long userId, List<Long> showcase, Long featured) {
         List<Long> source = showcase == null ? List.of() : showcase;
-        if (source.size() > 3) {
-            throw new BusinessException(ErrorCode.BAD_REQUEST, "공개할 데모는 3개까지 고를 수 있어요.");
+        int limit = showcaseLimit(userId, source.size());
+        if (source.size() > limit) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "공개할 데모는 " + limit + "개까지 고를 수 있어요.");
         }
         List<Long> ids = new ArrayList<>();
         for (Long id : source) {
@@ -272,12 +282,29 @@ public class MiniHomeServiceImpl implements MiniHomeService {
         return List.copyOf(ordered);
     }
 
+    /** 3개 이하면 회원 조회 없이 통과한다. 4개 이상일 때만 플러스 여부를 본다. */
+    private int showcaseLimit(Long userId, int size) {
+        if (size <= SHOWCASE_BASE) {
+            return SHOWCASE_BASE;
+        }
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "회원을 찾을 수 없어요."));
+        return user.isPlus(LocalDateTime.now(ZONE)) ? SHOWCASE_PLUS : SHOWCASE_BASE;
+    }
+
     private static void applyShowcase(MiniHome home, List<Long> ordered) {
         home.changeShowcase(
-                ordered.isEmpty() ? null : ordered.get(0),
-                ordered.size() > 1 ? ordered.get(1) : null,
-                ordered.size() > 2 ? ordered.get(2) : null
+                slot(ordered, 0),
+                slot(ordered, 1),
+                slot(ordered, 2),
+                slot(ordered, 3),
+                slot(ordered, 4),
+                slot(ordered, 5)
         );
+    }
+
+    private static Long slot(List<Long> ordered, int index) {
+        return ordered.size() > index ? ordered.get(index) : null;
     }
 
     private static MiniHomeResponse toResponse(MiniHome home) {
@@ -304,6 +331,15 @@ public class MiniHomeServiceImpl implements MiniHomeService {
         }
         if (home.getShowcaseDemo3Id() != null) {
             ids.add(home.getShowcaseDemo3Id());
+        }
+        if (home.getShowcaseDemo4Id() != null) {
+            ids.add(home.getShowcaseDemo4Id());
+        }
+        if (home.getShowcaseDemo5Id() != null) {
+            ids.add(home.getShowcaseDemo5Id());
+        }
+        if (home.getShowcaseDemo6Id() != null) {
+            ids.add(home.getShowcaseDemo6Id());
         }
         return List.copyOf(ids);
     }

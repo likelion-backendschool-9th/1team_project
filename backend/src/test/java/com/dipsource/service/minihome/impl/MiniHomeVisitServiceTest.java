@@ -11,6 +11,7 @@ import com.dipsource.global.exception.BusinessException;
 import com.dipsource.global.exception.ErrorCode;
 import com.dipsource.repository.block.BlockRepository;
 import com.dipsource.repository.minihome.MiniHomeRepository;
+import com.dipsource.repository.user.UserRepository;
 import com.dipsource.service.post.PostService;
 import com.dipsource.service.user.UserService;
 import java.util.Optional;
@@ -35,11 +36,15 @@ class MiniHomeVisitServiceTest {
     @Mock
     private BlockRepository blockRepository;
 
+    @Mock
+    private UserRepository userRepository;
+
     private MiniHomeServiceImpl service;
 
     @BeforeEach
     void setUp() {
-        service = new MiniHomeServiceImpl(new MiniHomeLoader(repository, userService), repository, postService, blockRepository);
+        service = new MiniHomeServiceImpl(
+                new MiniHomeLoader(repository, userService), repository, postService, blockRepository, userRepository);
     }
 
     @Test

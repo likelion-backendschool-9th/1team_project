@@ -26,7 +26,7 @@ public record UpdateMiniHomeRequest(
         String stackTags,
 
         /** 비어 있어도 된다. 데모가 아직 없는 회원도 미니홈피를 저장할 수 있게 한다. */
-        @Size(max = 3, message = "공개할 데모는 3개까지 고를 수 있어요.")
+        @Size(max = 6, message = "공개할 데모는 6개까지 고를 수 있어요.")
         List<Long> showcaseDemoIds,
 
         /** 비어 있으면 목록 순서를 그대로 둔다. 프론트는 없을 때 빈 문자열을 보낸다. */
