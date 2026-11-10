@@ -25,7 +25,7 @@ async function MyRepostsContent() {
   if (feeds.length === 0) {
     return (
       <p className={styles.empty}>
-        아직 리포스트한 피드가 없어요. <Link href="/main">피드 둘러보기</Link>
+        아직 리포스트한 피드가 없어요. <Link href="/">피드 둘러보기</Link>
       </p>
     );
   }

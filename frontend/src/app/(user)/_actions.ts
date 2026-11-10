@@ -64,5 +64,5 @@ export async function logout() {
     }
   }
   await endSession();
-  redirect("/main");
+  redirect("/");
 }

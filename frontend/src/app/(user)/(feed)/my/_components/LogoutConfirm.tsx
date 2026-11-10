@@ -16,7 +16,7 @@ export function LogoutConfirm() {
       onConfirm={logout}
       onDone={(result) => {
         if (result.ok) {
-          router.push("/main");
+          router.push("/");
           router.refresh();
         }
       }}
