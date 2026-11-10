@@ -89,14 +89,14 @@ export async function toggleDemoBookmark(demoId: number, bookmark: boolean) {
   );
 }
 
-export async function deleteDemo(demoId: number) {
+export async function deleteDemo(userId: number, demoId: number) {
   const result = await send(
     `/api/v1/demos/${demoId}`,
     'DELETE',
     undefined,
     '데모를 삭제했어요. 인벤토리 1칸이 비었어요.',
   );
-  if (result.ok && hasBackend) redirect('/demos');
+  if (result.ok && hasBackend) redirect(`/mini-home/${userId}/demos`);
   return result;
 }
 
