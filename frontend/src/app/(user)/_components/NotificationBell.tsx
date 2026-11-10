@@ -20,6 +20,10 @@ const icons: Record<NotificationType, ReactNode> = {
   subscribe: "⭐",
   sponsor: <ChipIcon size={16} />,
   series_purchase: "📚",
+  bookmark: "🔖",
+  reply: "↩️",
+  purchase_complete: "✅",
+  new_episode: "🆕",
 };
 
 type Props = {

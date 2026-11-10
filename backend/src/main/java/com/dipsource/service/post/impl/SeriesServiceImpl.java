@@ -147,6 +147,9 @@ public class SeriesServiceImpl implements SeriesService {
         coinService.paySeries(userId, seriesId, price);
         notificationService.notify(authorId, userId, NotificationType.SERIES_PURCHASE,
                 NotificationService.TARGET_SERIES, seriesId);
+        // 산 사람에게도 구매가 끝났다고 알린다
+        notificationService.notify(userId, authorId, NotificationType.PURCHASE_COMPLETE,
+                NotificationService.TARGET_SERIES, seriesId);
     }
 
     @Override
