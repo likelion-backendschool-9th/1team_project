@@ -1,5 +1,6 @@
 package com.dipsource.service.post.impl;
 
+import com.dipsource.dto.feed.FeedDemoResponse;
 import com.dipsource.dto.post.BlogStatsResponse;
 import com.dipsource.dto.post.PostDetailResponse;
 import com.dipsource.dto.post.PostIdResponse;
@@ -33,6 +34,7 @@ import com.dipsource.repository.post.PostTagRepository;
 import com.dipsource.repository.tag.TagRepository;
 import com.dipsource.repository.user.UserRepository;
 import com.dipsource.service.coin.CoinService;
+import com.dipsource.service.feed.FeedDemoAssembler;
 import com.dipsource.service.post.PostService;
 import com.dipsource.service.user.UserService;
 import java.time.LocalDateTime;
@@ -81,6 +83,7 @@ public class PostServiceImpl implements PostService {
     private final BlogSubscriptionRepository blogSubscriptionRepository;
     private final PostSeriesRepository postSeriesRepository;
     private final SeriesPurchaseRepository seriesPurchaseRepository;
+    private final FeedDemoAssembler demoAssembler;
     private final TagRepository tagRepository;
     private final UserService userService;
     private final ApplicationEventPublisher eventPublisher;
@@ -149,7 +152,8 @@ public class PostServiceImpl implements PostService {
         boolean bookmarked = viewerId != null && postBookmarkRepository.existsById(new PostUserId(viewerId, postId));
         String seriesTitle = post.getSeriesId() == null ? null
                 : postSeriesRepository.findById(post.getSeriesId()).map(PostSeries::getTitle).orElse(null);
-        return PostDetailResponse.of(post, author, tags, canReadAll(post, viewerId), liked, bookmarked, seriesTitle);
+        FeedDemoResponse demo = post.getDemoId() == null ? null : demoAssembler.byIds(List.of(post.getDemoId())).get(post.getDemoId());
+        return PostDetailResponse.of(post, author, tags, canReadAll(post, viewerId), liked, bookmarked, seriesTitle, demo);
     }
 
     @Override
@@ -161,6 +165,8 @@ public class PostServiceImpl implements PostService {
         PostSeries series = findOwnSeries(userId, request.seriesId());
         boolean paid = isPaid(request, series);
         requirePaidLength(paid, series, request.content());
+        // 피드처럼 숨김·삭제·남의 초안 데모는 붙일 수 없다
+        demoAssembler.requireAttachable(request.demoId(), userId);
         Post post = Post.builder()
                 .userId(userId)
                 .demoId(request.demoId())
@@ -185,6 +191,10 @@ public class PostServiceImpl implements PostService {
         PostSeries series = findOwnSeries(userId, request.seriesId());
         boolean paid = isPaid(request, series);
         requirePaidLength(paid, series, request.content());
+        // 이미 붙어 있던 데모는 그대로 두고, 바꿀 때만 붙일 수 있는지 본다
+        if (!Objects.equals(post.getDemoId(), request.demoId())) {
+            demoAssembler.requireAttachable(request.demoId(), userId);
+        }
         post.update(request.title().strip(), parseCategory(request.category()), request.content(),
                 post.getThumbnailUrl(), request.demoId(), paid, request.price());
         Long seriesId = series == null ? null : series.getId();
@@ -351,7 +361,9 @@ public class PostServiceImpl implements PostService {
         Set<Long> likedIds = viewerId != null && !postIds.isEmpty()
                 ? new java.util.HashSet<>(postLikeRepository.findLikedPostIds(viewerId, postIds))
                 : Collections.emptySet();
-        return PageResponse.of(page, post -> PostSummaryResponse.of(post, authors.get(post.getUserId()), likedIds.contains(post.getId())));
+        Map<Long, FeedDemoResponse> demos = demoAssembler.byIds(page.getContent().stream().map(Post::getDemoId).toList());
+        return PageResponse.of(page, post -> PostSummaryResponse.of(post, authors.get(post.getUserId()),
+                likedIds.contains(post.getId()), post.getDemoId() == null ? null : demos.get(post.getDemoId())));
     }
 
     private boolean hiddenFrom(Long viewerId, Long authorId) {

@@ -14,7 +14,8 @@ export type PostSummary = {
   // 0이면 칩으로 살 수 없는 글(무료 글이거나 시리즈 구매자 전용 회차), 양수면 잠금 해제에 드는 칩 수
   price: number;
   readMinutes: number;
-  demo: { id: number; title: string; description: string } | null;
+  /** 연결한 데모 (피드 카드의 데모와 같은 요약). 목업에는 썸네일·태그가 없을 수 있다 */
+  demo: { id: number; title: string; description: string; thumbnail?: string | null; techTags?: string[] } | null;
   likeCount: number;
   commentCount: number;
   repostCount: number;

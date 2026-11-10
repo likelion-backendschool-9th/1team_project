@@ -1,5 +1,6 @@
 package com.dipsource.dto.post;
 
+import com.dipsource.dto.feed.FeedDemoResponse;
 import com.dipsource.dto.user.UserSummaryResponse;
 import com.dipsource.entity.post.Post;
 import java.time.LocalDateTime;
@@ -26,7 +27,7 @@ public record PostDetailResponse(
         LocalDateTime createdAt,
         int price,
         int readMinutes,
-        Object demo,
+        FeedDemoResponse demo,
         int likeCount,
         int commentCount,
         int repostCount,
@@ -44,8 +45,8 @@ public record PostDetailResponse(
 
     public static PostDetailResponse of(
             Post post, UserSummaryResponse author, List<String> tags, boolean unlocked, boolean liked, boolean bookmarked,
-            String seriesTitle) {
-        PostSummaryResponse summary = PostSummaryResponse.of(post, author, liked);
+            String seriesTitle, FeedDemoResponse demo) {
+        PostSummaryResponse summary = PostSummaryResponse.of(post, author, liked, demo);
         return new PostDetailResponse(
                 summary.id(),
                 summary.author(),
