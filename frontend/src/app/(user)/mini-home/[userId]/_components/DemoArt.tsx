@@ -7,9 +7,9 @@ type Props = {
   thumbnail?: string | null;
 };
 
-// 썸네일이 없는 데모를 위한 기본 그림. 예전 목업처럼 보이지 않도록 실행 환경 이름만 담백하게 보여 준다.
-// variant는 예전 호출부와 맞추려고 남겨 둔 값이라 쓰지 않는다.
-export function DemoArt({ caption, className = "", thumbnail }: Props) {
+const tones = [styles.tone0, styles.tone1, styles.tone2, styles.tone3];
+
+export function DemoArt({ variant, caption, className = "", thumbnail }: Props) {
   if (thumbnail)
     return (
       <div
@@ -19,14 +19,11 @@ export function DemoArt({ caption, className = "", thumbnail }: Props) {
     );
 
   return (
-    <div className={`${styles.art} ${styles.glass} ${className}`}>
-      {caption ? (
-        <span className={styles.pill}>{caption}</span>
-      ) : (
-        <span className={styles.glyph} aria-hidden="true">
-          {"</>"}
-        </span>
-      )}
+    <div className={`${styles.art} ${tones[variant % 4]} ${className}`}>
+      <span className={styles.glyph} aria-hidden="true">
+        {"</>"}
+      </span>
+      {caption ? <span className={styles.label}>{caption}</span> : null}
     </div>
   );
 }
