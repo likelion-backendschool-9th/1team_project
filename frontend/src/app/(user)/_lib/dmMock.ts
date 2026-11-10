@@ -1,5 +1,5 @@
 import { mockUsers } from "./mock";
-import type { DmMessage, DmRoom } from "@/app/_lib/types/dm";
+import type { DmCandidate, DmMessage, DmRoom } from "@/app/_lib/types/dm";
 
 const MINUTE = 60_000;
 
@@ -32,3 +32,20 @@ export function createMockMessages(myId: number, partnerId: number, now: number)
     read: minutesAgo > 4,
   }));
 }
+
+// DM 창 사람 찾기용 팔로잉·팔로워. 마이페이지 팔로우 목록 목과 같은 관계로 둔다.
+export const mockDmFollowings: DmCandidate[] = [
+  { ...mockUsers.cha, relation: "mutual" },
+  { ...mockUsers.kwak, relation: "mutual" },
+  { ...mockUsers.seungjo, relation: "following" },
+  { ...mockUsers.junha, relation: "following" },
+  { ...mockUsers.jinyeop, relation: "mutual" },
+];
+
+export const mockDmFollowers: DmCandidate[] = [
+  { ...mockUsers.cha, relation: "mutual" },
+  { ...mockUsers.kwak, relation: "mutual" },
+  { ...mockUsers.jung, relation: "follower" },
+  { ...mockUsers.yoon, relation: "follower" },
+  { ...mockUsers.jinyeop, relation: "mutual" },
+];

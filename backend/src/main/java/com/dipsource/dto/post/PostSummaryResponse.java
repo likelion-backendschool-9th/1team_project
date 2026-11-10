@@ -13,7 +13,8 @@ import java.time.LocalDateTime;
  * @param readMinutes 읽는 데 걸리는 분 (본문 길이로 계산)
  * @param demo        연결한 데모. 데모 조회가 생기기 전까지 null
  * @param repostCount 블로그 리포스트는 아직 없어서 0
- * @param liked       내가 좋아요했는지. 좋아요 기능 전이라 false
+ * @param liked       내가 좋아요했는지
+ * @param viewCount   조회수 (조회수 순위에 쓴다)
  */
 public record PostSummaryResponse(
         Long id,
@@ -28,7 +29,8 @@ public record PostSummaryResponse(
         int likeCount,
         int commentCount,
         int repostCount,
-        boolean liked
+        boolean liked,
+        int viewCount
 ) {
 
     public static PostSummaryResponse of(Post post, UserSummaryResponse author) {
@@ -50,7 +52,8 @@ public record PostSummaryResponse(
                 post.getLikeCount(),
                 post.getCommentCount(),
                 0,
-                liked
+                liked,
+                post.getViewCount()
         );
     }
 }

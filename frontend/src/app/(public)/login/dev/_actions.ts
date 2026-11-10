@@ -55,5 +55,5 @@ export async function loginAsDevAccount(formData: FormData) {
     maxAge: 60 * 60 * 24 * 14,
   });
 
-  redirect("/main");
+  redirect("/");
 }

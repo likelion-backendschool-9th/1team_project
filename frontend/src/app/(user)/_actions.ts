@@ -3,11 +3,11 @@
 import { redirect } from "next/navigation";
 import { apiFetch, hasBackend, isMockMode } from "@/app/_lib/api/client";
 import { mutate } from "@/app/_lib/api/mutate";
-import type { DmMessage, DmRoom } from "@/app/_lib/types/dm";
+import type { DmCandidateCursor, DmCandidatePage, DmMessage, DmRoom } from "@/app/_lib/types/dm";
 import type { AutocompleteSuggestion } from "@/app/_lib/types/search";
 import { getMe, getServerTime } from "./_lib/api";
 import { getAutocomplete } from "./_lib/autocomplete";
-import { getMessages, getRooms } from "./_lib/dmApi";
+import { getDmCandidates, getMessages, getRooms } from "./_lib/dmApi";
 import { endSession } from "./_lib/session";
 
 export async function updatePresence() {
@@ -26,6 +26,31 @@ export async function loadDmRooms(): Promise<{ myId: number; rooms: DmRoom[]; no
 export async function loadDmMessages(myId: number, partnerId: number): Promise<DmMessage[]> {
   if (!Number.isSafeInteger(partnerId) || partnerId <= 0) return [];
   return getMessages(myId, partnerId);
+}
+
+const DM_CANDIDATE_STAGES: readonly DmCandidateCursor["stage"][] = ["followings", "followers", "search"];
+
+function parseDmCandidateCursor(value: unknown): DmCandidateCursor {
+  const first: DmCandidateCursor = { stage: "followings", page: 1 };
+  if (!value || typeof value !== "object") return first;
+  const { stage, page, searchId } = value as Record<string, unknown>;
+  if (!DM_CANDIDATE_STAGES.includes(stage as DmCandidateCursor["stage"])) return first;
+  if (typeof page !== "number" || !Number.isSafeInteger(page) || page <= 0) return first;
+  return {
+    stage: stage as DmCandidateCursor["stage"],
+    page,
+    searchId: typeof searchId === "string" && searchId.length <= 200 ? searchId : undefined,
+  };
+}
+
+/**
+ * DM 창 사람 찾기 후보의 다음 페이지. DM 창은 클라이언트 창이라 스크롤할 때마다 이 Action으로 이어 받는다.
+ * 로그인 여부는 백엔드가 JWT 쿠키로 확인한다(비로그인이면 로그인 화면으로).
+ */
+export async function loadDmCandidates(q: unknown, cursor: unknown): Promise<DmCandidatePage> {
+  const query = typeof q === "string" ? q.trim() : "";
+  if (query.length > 50) return { users: [], next: null };
+  return getDmCandidates(query, parseDmCandidateCursor(cursor));
 }
 
 /**
@@ -64,5 +89,5 @@ export async function logout() {
     }
   }
   await endSession();
-  redirect("/main");
+  redirect("/");
 }

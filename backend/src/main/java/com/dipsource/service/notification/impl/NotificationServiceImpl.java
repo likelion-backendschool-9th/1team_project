@@ -7,6 +7,7 @@ import com.dipsource.entity.notification.NotificationType;
 import com.dipsource.global.common.PageResponse;
 import com.dipsource.global.exception.BusinessException;
 import com.dipsource.global.exception.ErrorCode;
+import com.dipsource.global.websocket.UserMessageSender;
 import com.dipsource.repository.block.BlockRepository;
 import com.dipsource.repository.notification.NotificationRepository;
 import com.dipsource.service.notification.NotificationService;
@@ -38,11 +39,13 @@ public class NotificationServiceImpl implements NotificationService {
     private final NotificationRepository notificationRepository;
     private final UserService userService;
     private final BlockRepository blockRepository;
+    private final UserMessageSender userMessageSender;
 
     @Override
     @Transactional(readOnly = true)
     public PageResponse<NotificationResponse> list(Long userId, Pageable pageable) {
-        Page<Notification> page = notificationRepository.findByReceiverIdOrderByCreatedAtDescIdDesc(userId, pageable);
+        // 서로 차단한 사람이 보낸 알림은 빼고 준다 (차단 전에 만들어진 알림 포함)
+        Page<Notification> page = notificationRepository.findVisibleByReceiverId(userId, pageable);
         List<Long> actorIds = page.getContent().stream()
                 .map(Notification::getActorId)
                 .filter(Objects::nonNull)
@@ -55,7 +58,7 @@ public class NotificationServiceImpl implements NotificationService {
     @Override
     @Transactional(readOnly = true)
     public long countUnread(Long userId) {
-        return notificationRepository.countByReceiverIdAndReadFalse(userId);
+        return notificationRepository.countVisibleUnread(userId);
     }
 
     @Override
@@ -81,13 +84,17 @@ public class NotificationServiceImpl implements NotificationService {
                         receiverId, actorId, type, LocalDateTime.now().minusMinutes(GROUP_MINUTES))) {
             return;
         }
-        notificationRepository.save(Notification.builder()
+        Notification saved = notificationRepository.save(Notification.builder()
                 .receiverId(receiverId)
                 .actorId(actorId)
                 .type(type)
                 .targetType(targetType)
                 .targetId(targetId)
                 .build());
+
+        // 받는 사람이 접속 중이면 새로고침 없이 알림 종에 바로 뜬다. 커밋된 뒤에 보낸다.
+        Map<Long, UserSummaryResponse> actors = actorId == null ? Map.of() : userService.getSummaries(List.of(actorId));
+        userMessageSender.send(receiverId, UserMessageSender.NOTIFICATIONS, toResponse(saved, actors));
     }
 
     private static NotificationResponse toResponse(Notification item, Map<Long, UserSummaryResponse> actors) {

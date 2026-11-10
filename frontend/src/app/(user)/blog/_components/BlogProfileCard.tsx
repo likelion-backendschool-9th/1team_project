@@ -56,10 +56,16 @@ export function BlogProfileCard({ me, unreadCount, notifications, now }: Props) 
           </dd>
         </div>
       </dl>
-      <Link href="/blog/write" className={styles.write}>
-        내 블로그 / 새 연재 쓰기
-        <ChevronRightIcon />
-      </Link>
+      {/* 전에는 한 버튼이 글쓰기로만 가서 내 블로그를 볼 방법이 없었다. 둘로 나눈다. */}
+      <div className={styles.writeRow}>
+        <Link href={`/blog/${me.id}`} className={styles.action}>
+          내 블로그
+        </Link>
+        <Link href="/blog/write" className={styles.write}>
+          새 글 쓰기
+          <ChevronRightIcon />
+        </Link>
+      </div>
       <div className={styles.actions}>
         <Link href="/my" className={styles.action}>
           <UserIcon />

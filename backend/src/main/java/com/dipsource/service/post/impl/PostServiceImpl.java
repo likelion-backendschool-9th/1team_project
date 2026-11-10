@@ -1,5 +1,6 @@
 package com.dipsource.service.post.impl;
 
+import com.dipsource.dto.post.BlogStatsResponse;
 import com.dipsource.dto.post.PostDetailResponse;
 import com.dipsource.dto.post.PostIdResponse;
 import com.dipsource.dto.post.PostSummaryResponse;
@@ -13,6 +14,8 @@ import com.dipsource.entity.post.PostStatus;
 import com.dipsource.entity.post.PostTag;
 import com.dipsource.entity.post.PostUserId;
 import com.dipsource.entity.tag.Tag;
+import com.dipsource.entity.user.User;
+import com.dipsource.entity.user.enums.UserStatus;
 import com.dipsource.global.common.LikePattern;
 import com.dipsource.global.common.PageResponse;
 import com.dipsource.global.exception.BusinessException;
@@ -25,6 +28,7 @@ import com.dipsource.repository.post.PostPurchaseRepository;
 import com.dipsource.repository.post.PostRepository;
 import com.dipsource.repository.post.PostTagRepository;
 import com.dipsource.repository.tag.TagRepository;
+import com.dipsource.repository.user.UserRepository;
 import com.dipsource.service.coin.CoinService;
 import com.dipsource.service.post.PostService;
 import com.dipsource.service.user.UserService;
@@ -56,9 +60,14 @@ public class PostServiceImpl implements PostService {
     /** 검색어 최대 길이 */
     private static final int MAX_QUERY_LENGTH = 50;
 
+    /** 유료 글 본문 최소 글자 수 */
+    static final int PAID_MIN_CONTENT_LENGTH = 1000;
+
     private static final Sort LATEST = Sort.by(Sort.Order.desc("createdAt"), Sort.Order.desc("id"));
     private static final Sort POPULAR = Sort.by(
             Sort.Order.desc("likeCount"), Sort.Order.desc("viewCount"), Sort.Order.desc("createdAt"), Sort.Order.desc("id"));
+    private static final Sort VIEWS = Sort.by(
+            Sort.Order.desc("viewCount"), Sort.Order.desc("likeCount"), Sort.Order.desc("createdAt"), Sort.Order.desc("id"));
 
     private final PostRepository postRepository;
     private final PostLikeRepository postLikeRepository;
@@ -72,6 +81,7 @@ public class PostServiceImpl implements PostService {
     private final BlockRepository blockRepository;
     private final PostViewCounter postViewCounter;
     private final CoinService coinService;
+    private final UserRepository userRepository;
 
     @Override
     @Transactional(readOnly = true)
@@ -80,7 +90,11 @@ public class PostServiceImpl implements PostService {
         Set<PostCategory> categories = (category == null || category.isBlank())
                 ? EnumSet.allOf(PostCategory.class)
                 : EnumSet.of(parseCategory(category));
-        Sort order = "popular".equals(sort) ? POPULAR : LATEST;
+        Sort order = switch (sort == null ? "" : sort) {
+            case "popular" -> POPULAR;
+            case "views" -> VIEWS;
+            default -> LATEST;
+        };
         Page<Post> page = postRepository.findList(
                 PostStatus.ACTIVE, categories, pattern(q), viewerId, limit(pageable, order));
         return toSummaries(page, viewerId);
@@ -93,6 +107,21 @@ public class PostServiceImpl implements PostService {
             return PageResponse.of(Page.empty(limit(pageable, LATEST)), List.of());
         }
         return toSummaries(postRepository.findByUserIdAndStatus(userId, PostStatus.ACTIVE, limit(pageable, LATEST)), viewerId);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public BlogStatsResponse getBlogStats(Long userId, Long viewerId) {
+        User owner = userRepository.findById(userId)
+                .filter(user -> user.getStatus() == UserStatus.ACTIVE)
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "블로그를 찾을 수 없어요."));
+        if (hiddenFrom(viewerId, userId)) {
+            throw new BusinessException(ErrorCode.NOT_FOUND, "블로그를 찾을 수 없어요.");
+        }
+        return new BlogStatsResponse(
+                owner.getBio() == null ? "" : owner.getBio(),
+                postRepository.countByUserIdAndStatus(userId, PostStatus.ACTIVE),
+                postRepository.sumViewCountByUserIdAndStatus(userId, PostStatus.ACTIVE));
     }
 
     @Override
@@ -122,6 +151,7 @@ public class PostServiceImpl implements PostService {
             throw new BusinessException(ErrorCode.FORBIDDEN, "글을 쓸 수 없는 계정이에요.");
         }
         int price = request.price();
+        requirePaidLength(price, request.content());
         Post post = postRepository.save(Post.builder()
                 .userId(userId)
                 .demoId(request.demoId())
@@ -140,6 +170,7 @@ public class PostServiceImpl implements PostService {
     public void update(Long userId, Long postId, WritePostRequest request) {
         Post post = findOwn(userId, postId);
         int price = request.price();
+        requirePaidLength(price, request.content());
         post.update(request.title().strip(), parseCategory(request.category()), request.content(),
                 post.getThumbnailUrl(), request.demoId(), price > 0, price);
         // 태그는 지우고 다시 붙인다.
@@ -300,6 +331,14 @@ public class PostServiceImpl implements PostService {
         return postRepository.findById(postId)
                 .filter(post -> post.getStatus() == PostStatus.ACTIVE)
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "글을 찾을 수 없어요."));
+    }
+
+    /** 유료 글은 칩을 내고 읽을 만큼 본문이 있어야 한다. 앞뒤 공백은 세지 않는다. */
+    private static void requirePaidLength(int price, String content) {
+        if (price > 0 && content.strip().length() < PAID_MIN_CONTENT_LENGTH) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST,
+                    "유료 글은 본문을 " + PAID_MIN_CONTENT_LENGTH + "자 이상 써 주세요.");
+        }
     }
 
     private Post findOwn(Long userId, Long postId) {

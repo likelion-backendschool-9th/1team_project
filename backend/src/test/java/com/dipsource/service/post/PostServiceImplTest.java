@@ -52,6 +52,8 @@ class PostServiceImplTest {
 
     private static final Long AUTHOR = 1L;
     private static final Long OTHER = 2L;
+    /** 유료 글 최소 길이(1000자)를 딱 채운 본문 */
+    private static final String LONG_BODY = "가".repeat(1000);
     private static final String BODY = "첫 문단입니다.\n\n둘째 문단입니다.\n\n셋째 문단입니다.\n\n넷째 문단은 잠겨야 합니다.";
 
     @Mock private PostRepository postRepository;
@@ -64,6 +66,7 @@ class PostServiceImplTest {
     @Mock private UserService userService;
     @Mock private BlockRepository blockRepository;
     @Mock private CoinService coinService;
+    @Mock private com.dipsource.repository.user.UserRepository userRepository;
 
     private PostServiceImpl service;
 
@@ -72,7 +75,7 @@ class PostServiceImplTest {
         service = new PostServiceImpl(postRepository, postLikeRepository, postBookmarkRepository, postTagRepository,
                 postPurchaseRepository, blogSubscriptionRepository, tagRepository, userService,
                 org.mockito.Mockito.mock(org.springframework.context.ApplicationEventPublisher.class),
-                blockRepository, new PostViewCounter(), coinService);
+                blockRepository, new PostViewCounter(), coinService, userRepository);
     }
 
     @Nested
@@ -96,6 +99,27 @@ class PostServiceImplTest {
             assertThat(saved.getValue().getPriceChips()).isEqualTo(30);
             // " Spring "과 "spring"은 같은 태그로 한 번만 붙는다.
             verify(postTagRepository, times(2)).save(any(PostTag.class));
+        }
+
+        @Test
+        void paidPostNeedsAtLeast1000Chars() {
+            when(userService.isActiveUser(AUTHOR)).thenReturn(true);
+            // 앞뒤 공백은 세지 않는다
+            var shortPaid = new WritePostRequest("제목", "backend", List.of(), "  " + "가".repeat(999) + "  ", null, 10);
+
+            assertThatThrownBy(() -> service.create(AUTHOR, shortPaid))
+                    .isInstanceOf(BusinessException.class)
+                    .extracting(e -> ((BusinessException) e).getErrorCode())
+                    .isEqualTo(ErrorCode.BAD_REQUEST);
+            verify(postRepository, never()).save(any());
+        }
+
+        @Test
+        void shortFreePostIsAllowed() {
+            when(userService.isActiveUser(AUTHOR)).thenReturn(true);
+            when(postRepository.save(any(Post.class))).thenAnswer(inv -> withId(inv.getArgument(0), 11L));
+
+            assertThat(service.create(AUTHOR, request("backend", List.of(), 0)).id()).isEqualTo(11L);
         }
 
         @Test
@@ -131,6 +155,18 @@ class PostServiceImplTest {
                     .isInstanceOf(BusinessException.class)
                     .extracting(e -> ((BusinessException) e).getErrorCode())
                     .isEqualTo(ErrorCode.FORBIDDEN);
+            verify(postTagRepository, never()).deleteByPostId(anyLong());
+        }
+
+        @Test
+        void cannotTurnShortPostIntoPaid() {
+            when(postRepository.findById(10L)).thenReturn(Optional.of(post(AUTHOR, 0)));
+            var shortPaid = new WritePostRequest("제목", "backend", List.of(), BODY, null, 10);
+
+            assertThatThrownBy(() -> service.update(AUTHOR, 10L, shortPaid))
+                    .isInstanceOf(BusinessException.class)
+                    .extracting(e -> ((BusinessException) e).getErrorCode())
+                    .isEqualTo(ErrorCode.BAD_REQUEST);
             verify(postTagRepository, never()).deleteByPostId(anyLong());
         }
 
@@ -314,8 +350,9 @@ class PostServiceImplTest {
         }
     }
 
+    /** 유료 글은 본문이 1000자 이상이어야 해서 가격이 있으면 긴 본문을 넣는다. */
     private static WritePostRequest request(String category, List<String> tags, int price) {
-        return new WritePostRequest("제목", category, tags, BODY, null, price);
+        return new WritePostRequest("제목", category, tags, price > 0 ? LONG_BODY : BODY, null, price);
     }
 
     @Nested
@@ -371,6 +408,54 @@ class PostServiceImplTest {
                     .isInstanceOf(BusinessException.class)
                     .extracting(e -> ((BusinessException) e).getErrorCode())
                     .isEqualTo(ErrorCode.BAD_REQUEST);
+        }
+    }
+
+    @Nested
+    class BlogStatsAndViews {
+
+        @Test
+        void viewsSortOrdersByViewCount() {
+            when(postRepository.findList(any(), any(), any(), any(), any())).thenReturn(new PageImpl<>(List.of()));
+
+            service.getPosts(null, null, "views", null, PageRequest.of(0, 5));
+
+            ArgumentCaptor<Pageable> pageable = ArgumentCaptor.forClass(Pageable.class);
+            verify(postRepository).findList(any(), any(), any(), any(), pageable.capture());
+            assertThat(pageable.getValue().getSort().iterator().next().getProperty()).isEqualTo("viewCount");
+        }
+
+        @Test
+        void blogStatsSumsActivePosts() {
+            com.dipsource.entity.user.User owner = com.dipsource.entity.user.User.builder()
+                    .email("a@test.local").nickname("작가").bio("백엔드 개발자").build();
+            when(userRepository.findById(AUTHOR)).thenReturn(Optional.of(owner));
+            when(postRepository.countByUserIdAndStatus(AUTHOR, PostStatus.ACTIVE)).thenReturn(3L);
+            when(postRepository.sumViewCountByUserIdAndStatus(AUTHOR, PostStatus.ACTIVE)).thenReturn(120L);
+
+            var stats = service.getBlogStats(AUTHOR, null);
+
+            assertThat(stats.bio()).isEqualTo("백엔드 개발자");
+            assertThat(stats.postCount()).isEqualTo(3);
+            assertThat(stats.totalViews()).isEqualTo(120);
+        }
+
+        @Test
+        void blockedOrInactiveBlogIsNotFound() {
+            com.dipsource.entity.user.User owner = com.dipsource.entity.user.User.builder()
+                    .email("a@test.local").nickname("작가").build();
+            when(userRepository.findById(AUTHOR)).thenReturn(Optional.of(owner));
+            when(blockRepository.existsBetween(OTHER, AUTHOR)).thenReturn(true);
+            assertThatThrownBy(() -> service.getBlogStats(AUTHOR, OTHER))
+                    .isInstanceOf(BusinessException.class)
+                    .extracting(e -> ((BusinessException) e).getErrorCode())
+                    .isEqualTo(ErrorCode.NOT_FOUND);
+
+            owner.suspend();
+            assertThatThrownBy(() -> service.getBlogStats(AUTHOR, null))
+                    .isInstanceOf(BusinessException.class)
+                    .extracting(e -> ((BusinessException) e).getErrorCode())
+                    .isEqualTo(ErrorCode.NOT_FOUND);
         }
     }
 

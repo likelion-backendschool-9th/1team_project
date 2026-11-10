@@ -36,15 +36,147 @@
   font-size: 14px;
 }
 
-.rooms {
-  overflow-y: auto;
+/* 왼쪽 열: 제목·사람 찾기는 고정, 대화 목록만 스크롤한다. */
+.side {
+  display: flex;
+  min-height: 0;
+  flex-direction: column;
   border-right: 1px solid var(--border);
 }
 
+.sideHeader {
+  flex: none;
+  padding: 20px 16px 10px;
+}
+
+.rooms {
+  min-height: 0;
+  flex: 1;
+  overflow-y: auto;
+}
+
 .roomsTitle {
-  padding: 20px 20px 10px;
+  padding: 0 4px 10px;
   font-size: 18px;
   font-weight: 800;
+}
+
+/* 사람 찾기. 후보 목록은 대화 목록 위에 겹쳐 뜨는 작은 드롭다운이다. */
+.search {
+  position: relative;
+}
+
+.searchField {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+  border-radius: 12px;
+  background: var(--surface-muted);
+}
+
+.searchField:focus-within {
+  outline: 2px solid var(--accent-ink);
+}
+
+.searchIcon {
+  flex: none;
+  color: var(--ink-soft);
+  font-size: 16px;
+}
+
+.searchInput {
+  min-width: 0;
+  flex: 1;
+  padding: 9px 0;
+  border: 0;
+  background: none;
+  font-size: 14px;
+}
+
+.searchInput:focus {
+  outline: none;
+}
+
+.searchInput::placeholder {
+  color: var(--ink-faint);
+}
+
+.searchDropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  left: 0;
+  z-index: 5;
+  /* 한 번에 4명(한 줄 40px = 아바타 28px + 위아래 6px)만 보이고 나머지는 스크롤한다. 8px은 위아래 여백 */
+  max-height: calc(4 * 40px + 8px);
+  padding: 4px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
+}
+
+.searchDropdown[hidden] {
+  display: none;
+}
+
+.searchOption {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.searchOption:hover,
+.searchOptionActive {
+  background: var(--surface-muted);
+}
+
+.searchName {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  font-size: 13px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.searchTag {
+  flex: none;
+  padding: 1px 6px;
+  border-radius: var(--radius-pill);
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+  font-size: 11px;
+}
+
+.searchStatus {
+  padding: 6px 8px;
+  color: var(--ink-faint);
+  font-size: 12px;
+}
+
+.searchStatus:empty {
+  display: none;
+}
+
+.searchMore {
+  display: block;
+  width: 100%;
+  padding: 6px 8px;
+  border-radius: 8px;
+  color: var(--ink-soft);
+  font-size: 12px;
+}
+
+.searchMore:hover {
+  background: var(--surface-muted);
 }
 
 .room {
@@ -313,9 +445,16 @@
     grid-template-rows: auto minmax(0, 1fr);
   }
 
-  .rooms {
-    max-height: 180px;
+  .side {
     border-right: 0;
     border-bottom: 1px solid var(--border);
+  }
+
+  .sideHeader {
+    padding: 14px 12px 8px;
+  }
+
+  .rooms {
+    max-height: 140px;
   }
 }

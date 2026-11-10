@@ -37,7 +37,7 @@ export async function MainContent({ searchParams }: Props) {
     if (activeTag) query.set("tag", activeTag);
     if (type === "following") query.set("type", type);
     const search = query.toString();
-    return search ? `/main?${search}` : "/main";
+    return search ? `/?${search}` : "/";
   };
   const me = await getMe();
   const [tags, demos, feeds, now, myDemos] = await Promise.all([

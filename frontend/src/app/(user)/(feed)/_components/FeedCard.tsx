@@ -62,7 +62,13 @@ export function FeedCard({ feed, myId, now }: Props) {
               <a href={url} target="_blank" rel="noopener noreferrer" className={styles.imageLink}>
                 {/* 업로드 이미지(R2) 크기를 미리 알 수 없어 next/image 대신 img를 쓴다. */}
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={url} alt={`첨부 이미지 ${index + 1}`} loading="lazy" className={styles.image} />
+                <img
+                  src={url}
+                  alt={`첨부 이미지 ${index + 1}`}
+                  loading="lazy"
+                  referrerPolicy="no-referrer"
+                  className={styles.image}
+                />
               </a>
             </li>
           ))}

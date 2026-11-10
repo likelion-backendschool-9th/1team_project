@@ -15,6 +15,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -26,6 +27,7 @@ import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectResponse;
 
 import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import javax.imageio.ImageIO;
 
@@ -130,6 +132,24 @@ class ImageServiceTest {
             verify(s3Client, times(2)).putObject(any(PutObjectRequest.class), any(RequestBody.class));
             assertThat(result.url()).endsWith(".jpg");
             assertThat(result.thumbnailUrl()).endsWith(".jpg");
+        }
+
+        @Test
+        @DisplayName("투명 PNG를 JPEG로 바꿔도 브라우저가 열 수 있는 이미지가 된다")
+        void uploadPng_jpegBytesAreReadable() throws Exception {
+            MockMultipartFile file = new MockMultipartFile(
+                    "image", "logo.png", "image/png", pngBytes(800, 600));
+
+            imageService.upload(file, "feeds");
+
+            ArgumentCaptor<RequestBody> bodies = ArgumentCaptor.forClass(RequestBody.class);
+            verify(s3Client, times(2)).putObject(any(PutObjectRequest.class), bodies.capture());
+            for (RequestBody body : bodies.getAllValues()) {
+                byte[] bytes = body.contentStreamProvider().newStream().readAllBytes();
+                BufferedImage decoded = ImageIO.read(new ByteArrayInputStream(bytes));
+                assertThat(decoded).isNotNull();
+                assertThat(decoded.getWidth()).isPositive();
+            }
         }
     }
 

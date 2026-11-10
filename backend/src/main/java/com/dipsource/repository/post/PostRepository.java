@@ -41,6 +41,10 @@ public interface PostRepository extends JpaRepository<Post, Long> {
 
     long countByUserIdAndStatus(Long userId, PostStatus status);
 
+    /** 한 회원의 글 조회수 합. 글이 없으면 0 */
+    @Query("SELECT COALESCE(SUM(p.viewCount), 0) FROM Post p WHERE p.userId = :userId AND p.status = :status")
+    long sumViewCountByUserIdAndStatus(@Param("userId") Long userId, @Param("status") PostStatus status);
+
     @Query("""
             SELECT p.userId, COUNT(p) FROM Post p
             WHERE p.status = :status AND p.userId IN :userIds

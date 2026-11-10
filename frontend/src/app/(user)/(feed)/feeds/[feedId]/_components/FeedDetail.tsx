@@ -40,7 +40,7 @@ export async function FeedDetail({ params, searchParams }: Props) {
 
   return (
     <div className={kit.stack}>
-      <Link href="/main" className={kit.more}>
+      <Link href="/" className={kit.more}>
         ← 피드로 돌아가기
       </Link>
       {editing ? (

@@ -24,7 +24,7 @@ async function MyFeedsContent() {
   if (feeds.length === 0) {
     return (
       <p className={styles.empty}>
-        아직 작성한 피드가 없어요. <Link href="/main">피드 작성하러 가기</Link>
+        아직 작성한 피드가 없어요. <Link href="/">피드 작성하러 가기</Link>
       </p>
     );
   }

@@ -12,7 +12,7 @@ type Props = {
 
 export function Brand({ caps = false }: Props) {
   return (
-    <Link href="/main" className={styles.logo} aria-label="찍먹 dipsource 홈">
+    <Link href="/" className={styles.logo} aria-label="찍먹 dipsource 홈">
       <LogoMark size={44} className={styles.mark} />
       <span className={`${styles.brand} ${caps ? styles.caps : ""}`}>
         <strong className={display.className}>찍먹</strong>

@@ -14,7 +14,7 @@ export function TagChips({ tags, activeTag }: Props) {
       <ul className={styles.list}>
         <li>
           <Link
-            href="/main"
+            href="/"
             className={`${styles.chip} ${!activeTag ? styles.active : ""}`}
             aria-current={!activeTag ? "page" : undefined}
           >
@@ -24,7 +24,7 @@ export function TagChips({ tags, activeTag }: Props) {
         {tags.map((tag) => (
           <li key={tag.id}>
             <Link
-              href={`/main?tag=${encodeURIComponent(tag.name)}`}
+              href={`/?tag=${encodeURIComponent(tag.name)}`}
               className={`${styles.chip} ${activeTag === tag.name ? styles.active : ""}`}
               aria-current={activeTag === tag.name ? "page" : undefined}
             >

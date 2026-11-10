@@ -4,7 +4,7 @@ import { useActionState, useRef, useState, useSyncExternalStore } from "react";
 import { FormMessage } from "@/app/_components/ui/FormMessage";
 import kit from "@/app/_components/ui/kit.module.css";
 import { initialFormState, type FormState } from "@/app/_lib/formState";
-import { categories } from "../_lib/query";
+import { categories, PAID_MIN_LENGTH } from "../_lib/query";
 import { Markdown } from "./Markdown";
 import styles from "./PostEditor.module.css";
 
@@ -73,8 +73,14 @@ export function PostEditor({ action, demos, initial = empty, submitLabel, draftK
   const [state, formAction, pending] = useActionState(action, initialFormState);
   const value = (key: keyof Initial) => state.values[key] ?? String(initial[key]);
   const [content, setContent] = useState(initial.content);
+  // 폼 액션이 끝나면 React가 폼을 초기화하는데, defaultValue만 둔 select는 첫 옵션으로 돌아가 버린다.
+  // 그래서 select 두 개는 상태로 들고 있어 검사에 걸려도 고른 값이 남게 한다.
+  const [category, setCategory] = useState(initial.category);
+  const [demoId, setDemoId] = useState(initial.demoId);
   const [preview, setPreview] = useState(false);
   const [paid, setPaid] = useState(initial.paid);
+  // 유료 글 최소 길이 안내용. 서버 검사와 같이 앞뒤 공백은 세지 않는다.
+  const length = content.trim().length;
   const formRef = useRef<HTMLFormElement>(null);
   const storageKey = draftKey ? `dipsource:post-draft:${draftKey}` : null;
   const savedRaw = useSyncExternalStore(
@@ -122,11 +128,13 @@ export function PostEditor({ action, demos, initial = empty, submitLabel, draftK
   function restoreDraft() {
     const form = formRef.current;
     if (!form || !savedDraft) return;
-    for (const key of ["title", "category", "tags", "demoId"] as const) {
+    for (const key of ["title", "tags"] as const) {
       const field = form.elements.namedItem(key);
-      if (field instanceof HTMLInputElement || field instanceof HTMLSelectElement) field.value = savedDraft[key];
+      if (field instanceof HTMLInputElement) field.value = savedDraft[key];
     }
     setContent(savedDraft.content);
+    setCategory(savedDraft.category);
+    setDemoId(savedDraft.demoId);
     setPaid(savedDraft.paid);
     setPriceOverride(savedDraft.price);
     setRestored(true);
@@ -189,7 +197,8 @@ export function PostEditor({ action, demos, initial = empty, submitLabel, draftK
           <select
             id="post-category"
             name="category"
-            defaultValue={value("category")}
+            value={category}
+            onChange={(event) => setCategory(event.target.value)}
             className={kit.select}
             {...invalid("category")}
           >
@@ -247,6 +256,12 @@ export function PostEditor({ action, demos, initial = empty, submitLabel, draftK
             {content.trim() ? <Markdown source={content} /> : <p className={kit.faint}>작성한 내용이 없어요.</p>}
           </div>
         )}
+        {paid && (
+          <p className={length < PAID_MIN_LENGTH ? styles.lengthShort : kit.faint}>
+            본문 {length.toLocaleString()} / {PAID_MIN_LENGTH.toLocaleString()}자 · 유료 글은{" "}
+            {PAID_MIN_LENGTH.toLocaleString()}자 이상 써야 발행할 수 있어요
+          </p>
+        )}
         <p id="post-content-error" className={kit.error}>
           {state.errors.content}
         </p>
@@ -257,7 +272,13 @@ export function PostEditor({ action, demos, initial = empty, submitLabel, draftK
           <label htmlFor="post-demo" className={kit.label}>
             데모 연결 (선택)
           </label>
-          <select id="post-demo" name="demoId" defaultValue={value("demoId")} className={kit.select}>
+          <select
+            id="post-demo"
+            name="demoId"
+            value={demoId}
+            onChange={(event) => setDemoId(event.target.value)}
+            className={kit.select}
+          >
             <option value="">연결하지 않음</option>
             {demos.map((demo) => (
               <option key={demo.id} value={demo.id}>
