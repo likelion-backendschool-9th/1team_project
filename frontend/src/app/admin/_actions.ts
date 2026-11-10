@@ -3,6 +3,7 @@
 import { hasBackend } from "@/app/_lib/api/client";
 import { revalidatePath } from "next/cache";
 import { runForm } from "@/app/_lib/api/formAction";
+import { CUSTOM_CTA, isInternalPath } from "@/app/_lib/eventCta";
 import { mutate } from "@/app/_lib/api/mutate";
 import { readValues, type FormState } from "@/app/_lib/formState";
 import type { ContentKind } from "./_lib/mock";
@@ -129,24 +130,42 @@ export async function suspendForFraud(userId: number) {
 const EVENT_STATUSES = ["ongoing", "upcoming", "ended"];
 
 function validateEvent(formData: FormData) {
-  const values = readValues(formData, ["title", "summary", "status", "startAt", "endAt", "reward"]);
+  const values = readValues(formData, [
+    "title", "summary", "status", "startAt", "endAt", "reward", "imageUrl", "ctaPreset", "ctaCustom",
+  ]);
+  const ctaHref = values.ctaPreset === CUSTOM_CTA ? values.ctaCustom : values.ctaPreset;
   const errors: Record<string, string> = {};
   if (!values.title) errors.title = "제목을 입력해 주세요.";
   if (!values.summary) errors.summary = "한 줄 소개를 입력해 주세요.";
   if (!EVENT_STATUSES.includes(values.status)) errors.status = "상태를 골라 주세요.";
   if (!values.startAt || !values.endAt) errors.endAt = "기간을 입력해 주세요.";
   else if (values.startAt > values.endAt) errors.endAt = "끝나는 날이 시작일보다 빨라요.";
-  return { values, errors };
+  if (!isInternalPath(ctaHref)) errors.ctaHref = "/demos/upload처럼 /로 시작하는 사이트 안 주소를 입력해 주세요.";
+  if (values.imageUrl && !/^https?:\/\//.test(values.imageUrl)) errors.image = "이미지를 다시 올려 주세요.";
+  const body = {
+    title: values.title,
+    summary: values.summary,
+    status: values.status,
+    startAt: values.startAt,
+    endAt: values.endAt,
+    reward: values.reward,
+    imageUrl: values.imageUrl || null,
+    ctaHref,
+  };
+  return { values, errors, body };
 }
 
 export async function saveEvent(eventId: number | null, previous: FormState, formData: FormData): Promise<FormState> {
-  const { values, errors } = validateEvent(formData);
+  const { values, errors, body } = validateEvent(formData);
   const state = await runForm(previous, values, errors, () =>
     eventId
-      ? mutate(`/api/v1/admin/events/${eventId}`, "PUT", values, "이벤트를 수정했어요.", !hasBackend)
-      : mutate("/api/v1/admin/events", "POST", values, "이벤트를 등록했어요.", !hasBackend),
+      ? mutate(`/api/v1/admin/events/${eventId}`, "PUT", body, "이벤트를 수정했어요.", !hasBackend)
+      : mutate("/api/v1/admin/events", "POST", body, "이벤트를 등록했어요.", !hasBackend),
   );
-  if (state.ok) revalidatePath("/admin/events");
+  if (state.ok) {
+    revalidatePath("/admin/events");
+    revalidatePath("/events", "layout");
+  }
   return state;
 }
 

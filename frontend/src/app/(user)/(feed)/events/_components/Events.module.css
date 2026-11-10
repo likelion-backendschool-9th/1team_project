@@ -26,10 +26,21 @@
 
 .banner {
   display: flex;
-  height: 120px;
+  height: 140px;
   align-items: center;
   justify-content: center;
   font-size: 52px;
+}
+
+.bannerImage {
+  overflow: hidden;
+  background: var(--surface-muted);
+}
+
+.bannerImage img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .ongoing {
@@ -83,6 +94,14 @@
   align-items: flex-start;
   gap: 8px;
   padding: 32px 28px;
+}
+
+.heroImage {
+  display: block;
+  width: 100%;
+  max-height: 480px;
+  object-fit: contain;
+  background: var(--surface-muted);
 }
 
 .heroEmoji {
