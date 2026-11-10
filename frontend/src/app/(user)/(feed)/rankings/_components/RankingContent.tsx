@@ -13,7 +13,7 @@ type Props = {
 };
 
 const types: { value: RankingType; label: string; unit: string }[] = [
-  { value: "demo", label: "🧪 데모", unit: "체험" },
+  { value: "demo", label: "🧪 데모", unit: "좋아요" },
   { value: "blog", label: "📝 블로그", unit: "조회" },
   { value: "follower", label: "👥 팔로워", unit: "명" },
   { value: "home", label: "🏠 미니홈피", unit: "방문" },
@@ -46,6 +46,7 @@ export async function RankingContent({ searchParams }: Props) {
   const podium = rows.slice(0, 3);
   const rest = rows.slice(3);
   const showTitle = type.value === "demo" || type.value === "blog";
+  const cumulative = type.value === "blog" || type.value === "home";
 
   return (
     <div className={kit.stack}>
@@ -54,12 +55,20 @@ export async function RankingContent({ searchParams }: Props) {
           label="랭킹 종류"
           items={types.map((item) => ({ href: href(item.value, period), label: item.label, active: item.value === type.value }))}
         />
-        <LinkTabs
-          label="기간"
-          variant="line"
-          items={periods.map((item) => ({ href: href(type.value, item.value), label: item.label, active: item.value === period }))}
-        />
+        {cumulative ? (
+          <p className={styles.cumulative}>누적 기준</p>
+        ) : (
+          <LinkTabs
+            label="기간"
+            variant="line"
+            items={periods.map((item) => ({ href: href(type.value, item.value), label: item.label, active: item.value === period }))}
+          />
+        )}
       </div>
+      {rows.length === 0 ? (
+        <p className={kit.empty}>아직 집계된 순위가 없어요.</p>
+      ) : (
+        <>
       <ol className={styles.podium}>
         {podium.map((row) => (
           <li key={row.rank} className={`${styles.place} ${styles[`place${row.rank}`]}`}>
@@ -78,31 +87,35 @@ export async function RankingContent({ searchParams }: Props) {
           </li>
         ))}
       </ol>
-      <section className={kit.card} aria-label="4위 이하">
-        <ol className={kit.list} start={4}>
-          {rest.map((row) => (
-            <li key={row.rank} className={kit.listItem}>
-              <span className={styles.rank}>{row.rank}</span>
-              <Avatar name={row.user.nickname} size={36} />
-              <span className={kit.grow}>
-                <Link href={`/mini-home/${row.user.id}`} className={kit.strong}>
-                  {row.user.nickname}
-                </Link>
-                {showTitle && <span className={kit.faint}> · {row.title}</span>}
-              </span>
-              <span className={styles.change} data-trend={row.change > 0 ? "up" : row.change < 0 ? "down" : "same"}>
-                {row.change > 0 ? `▲ ${row.change}` : row.change < 0 ? `▼ ${-row.change}` : "–"}
-                <span className="sr-only">
-                  {row.change > 0 ? "계단 상승" : row.change < 0 ? "계단 하락" : "변동 없음"}
+      {rest.length > 0 && (
+        <section className={kit.card} aria-label="4위 이하">
+          <ol className={kit.list} start={4}>
+            {rest.map((row) => (
+              <li key={row.rank} className={kit.listItem}>
+                <span className={styles.rank}>{row.rank}</span>
+                <Avatar name={row.user.nickname} size={36} />
+                <span className={kit.grow}>
+                  <Link href={`/mini-home/${row.user.id}`} className={kit.strong}>
+                    {row.user.nickname}
+                  </Link>
+                  {showTitle && <span className={kit.faint}> · {row.title}</span>}
                 </span>
-              </span>
-              <span className={styles.scoreRow}>
-                {formatCount(row.score)} {type.unit}
-              </span>
-            </li>
-          ))}
-        </ol>
-      </section>
+                <span className={styles.change} data-trend={row.change > 0 ? "up" : row.change < 0 ? "down" : "same"}>
+                  {row.change > 0 ? `▲ ${row.change}` : row.change < 0 ? `▼ ${-row.change}` : "–"}
+                  <span className="sr-only">
+                    {row.change > 0 ? "계단 상승" : row.change < 0 ? "계단 하락" : "변동 없음"}
+                  </span>
+                </span>
+                <span className={styles.scoreRow}>
+                  {formatCount(row.score)} {type.unit}
+                </span>
+              </li>
+            ))}
+          </ol>
+        </section>
+      )}
+        </>
+      )}
     </div>
   );
 }

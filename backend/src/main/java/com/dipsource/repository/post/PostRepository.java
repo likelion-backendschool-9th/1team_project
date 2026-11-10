@@ -104,4 +104,16 @@ public interface PostRepository extends JpaRepository<Post, Long> {
             ORDER BY p.createdAt DESC, p.id DESC
             """)
     Page<Post> searchForAdmin(@Param("q") String q, Pageable pageable);
+
+    /** 조회가 있는 공개 글. 각 행은 [postId, userId, title, viewCount, likeCount]. 정지·탈퇴 회원은 빼는다. */
+    @Query("""
+            SELECT p.id, p.userId, p.title, p.viewCount, p.likeCount
+            FROM Post p
+            JOIN User u ON u.id = p.userId
+            WHERE p.status = com.dipsource.entity.post.PostStatus.ACTIVE
+              AND p.deletedAt IS NULL
+              AND p.viewCount > 0
+              AND u.status = com.dipsource.entity.user.enums.UserStatus.ACTIVE
+            """)
+    List<Object[]> rankByViews();
 }

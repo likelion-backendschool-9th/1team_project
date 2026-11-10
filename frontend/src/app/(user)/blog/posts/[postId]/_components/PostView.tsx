@@ -2,7 +2,6 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { Avatar } from "@/app/_components/ui/Avatar";
-import { ArrowRightIcon } from "@/app/_components/ui/Icons";
 import { CommentForm } from "@/app/_components/ui/CommentForm";
 import { ConfirmButton } from "@/app/_components/ui/ConfirmButton";
 import { ReportModal } from "@/app/_components/ui/ReportModal";
@@ -26,6 +25,7 @@ import { getPost, getPostComments, getServerTime } from "../../../_lib/api";
 import { categories, isPaidPost } from "../../../_lib/query";
 import { Markdown } from "../../../_components/Markdown";
 import { PostActions } from "../../../_components/PostActions";
+import { PostDemo } from "../../../_components/PostDemo";
 import { PostCommentLoadMore } from "./PostCommentLoadMore";
 import styles from "./Post.module.css";
 
@@ -161,18 +161,7 @@ export async function PostView({ params }: Props) {
           </section>
         )}
 
-        {post.demo && (
-          <div className={styles.source}>
-            <span aria-hidden="true">&lt;/&gt;</span>
-            <div className={kit.grow}>
-              <p className={kit.strong}>{post.demo.title}</p>
-              <p className={kit.faint}>{post.demo.description}</p>
-            </div>
-            <Link href={`/demos/${post.demo.id}`} className={kit.btnPrimary}>
-              소스 찍먹하기 <ArrowRightIcon />
-            </Link>
-          </div>
-        )}
+        {post.demo && <PostDemo demo={post.demo} />}
 
         <ul className={kit.chips} aria-label="태그">
           {post.tags.map((tag) => (

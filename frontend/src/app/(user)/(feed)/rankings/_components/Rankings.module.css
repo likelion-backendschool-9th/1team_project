@@ -1,3 +1,9 @@
+.cumulative {
+  color: var(--ink-faint);
+  font-size: 13px;
+  font-weight: 500;
+}
+
 .podium {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));

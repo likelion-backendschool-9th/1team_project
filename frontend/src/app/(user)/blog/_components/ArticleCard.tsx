@@ -1,11 +1,12 @@
 import Link from "next/link";
 import { Avatar } from "@/app/_components/ui/Avatar";
-import { ArrowRightIcon, MoreIcon } from "@/app/_components/ui/Icons";
+import { MoreIcon } from "@/app/_components/ui/Icons";
 import { formatRelativeTime, formatWon } from "@/app/_lib/format";
 import { chipsToWon } from "@/app/_lib/policy";
 import type { PostSummary } from "@/app/_lib/types/post";
 import { isPaidPost } from "../_lib/query";
 import { PostActions } from "./PostActions";
+import { PostDemo } from "./PostDemo";
 import styles from "./ArticleCard.module.css";
 
 type Props = {
@@ -75,21 +76,7 @@ export function ArticleCard({ post, now, loggedIn }: Props) {
         </Link>
       )}
 
-      {demo && (
-        <div className={styles.source}>
-          <span className={styles.code} aria-hidden="true">
-            &lt;/&gt;
-          </span>
-          <div className={styles.sourceInfo}>
-            <p className={styles.sourceTitle}>{demo.title}</p>
-            <p className={styles.sourceDesc}>{demo.description}</p>
-          </div>
-          <Link href={`/demos/${demo.id}`} className={styles.play}>
-            소스 찍먹하기
-            <ArrowRightIcon />
-          </Link>
-        </div>
-      )}
+      {demo && <PostDemo demo={demo} />}
 
       <PostActions
         postId={post.id}

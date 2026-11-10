@@ -9,6 +9,7 @@ import type {
   SeriesDetail,
   SeriesPurchase,
 } from "@/app/_lib/types/post";
+import type { DemoSummary } from "@/app/_lib/types/demo";
 import type { UserSummary } from "@/app/_lib/types/user";
 
 export const mockSeries: PostSeries[] = [
@@ -251,8 +252,9 @@ export function findMockBlogOwner(userId: number): BlogOwner | null {
   };
 }
 
-export const mockDemoOptions = [
-  { id: 1, title: "실시간 채팅앱" },
-  { id: 9, title: "Spring Batch 모니터" },
-  { id: 8, title: "마크다운 에디터" },
+// 피드 작성창의 데모 첨부와 같은 모양(DemoSummary)이다.
+export const mockDemoOptions: DemoSummary[] = [
+  { id: 1, title: "실시간 채팅앱", description: "WebSocket 기반 실시간 채팅 데모", thumbnail: null, techTags: ["Spring", "STOMP"], author: mockUsers.me, likeCount: 12 },
+  { id: 9, title: "Spring Batch 모니터", description: "배치 잡 실행 이력 대시보드", thumbnail: null, techTags: ["Spring Batch", "SSE"], author: mockUsers.me, likeCount: 8 },
+  { id: 8, title: "마크다운 에디터", description: "실시간 미리보기 마크다운 에디터", thumbnail: null, techTags: ["React"], author: mockUsers.me, likeCount: 5 },
 ];

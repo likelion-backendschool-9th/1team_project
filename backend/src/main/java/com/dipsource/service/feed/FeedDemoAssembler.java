@@ -22,7 +22,7 @@ import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
-/** 피드에 붙은 데모를 카드용 요약으로 모은다. */
+/** 피드·블로그 글에 붙은 데모를 카드용 요약으로 모은다. */
 @Component
 @RequiredArgsConstructor
 public class FeedDemoAssembler {
@@ -53,8 +53,12 @@ public class FeedDemoAssembler {
 
     /** demoId → 카드 요약. 목록 조회에서 데모를 한 번에 읽는다. */
     public Map<Long, FeedDemoResponse> of(Collection<Feed> feeds) {
-        List<Long> demoIds = feeds.stream()
-                .map(Feed::getDemoId)
+        return byIds(feeds.stream().map(Feed::getDemoId).toList());
+    }
+
+    /** demoId → 카드 요약. 블로그 글처럼 피드가 아닌 곳에 붙은 데모도 같은 규칙으로 읽는다. null은 건너뛴다. */
+    public Map<Long, FeedDemoResponse> byIds(Collection<Long> ids) {
+        List<Long> demoIds = ids.stream()
                 .filter(Objects::nonNull)
                 .distinct()
                 .toList();
