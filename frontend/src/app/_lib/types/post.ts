@@ -19,6 +19,8 @@ export type PostSummary = {
   commentCount: number;
   repostCount: number;
   liked: boolean;
+  /** 조회수. 목업 데이터에는 없을 수 있다 */
+  viewCount?: number;
 };
 
 export type PostSeries = {

@@ -1,5 +1,6 @@
 package com.dipsource.service.post.impl;
 
+import com.dipsource.dto.post.BlogStatsResponse;
 import com.dipsource.dto.post.PostDetailResponse;
 import com.dipsource.dto.post.PostIdResponse;
 import com.dipsource.dto.post.PostSummaryResponse;
@@ -13,6 +14,8 @@ import com.dipsource.entity.post.PostStatus;
 import com.dipsource.entity.post.PostTag;
 import com.dipsource.entity.post.PostUserId;
 import com.dipsource.entity.tag.Tag;
+import com.dipsource.entity.user.User;
+import com.dipsource.entity.user.enums.UserStatus;
 import com.dipsource.global.common.LikePattern;
 import com.dipsource.global.common.PageResponse;
 import com.dipsource.global.exception.BusinessException;
@@ -25,6 +28,7 @@ import com.dipsource.repository.post.PostPurchaseRepository;
 import com.dipsource.repository.post.PostRepository;
 import com.dipsource.repository.post.PostTagRepository;
 import com.dipsource.repository.tag.TagRepository;
+import com.dipsource.repository.user.UserRepository;
 import com.dipsource.service.coin.CoinService;
 import com.dipsource.service.post.PostService;
 import com.dipsource.service.user.UserService;
@@ -59,6 +63,8 @@ public class PostServiceImpl implements PostService {
     private static final Sort LATEST = Sort.by(Sort.Order.desc("createdAt"), Sort.Order.desc("id"));
     private static final Sort POPULAR = Sort.by(
             Sort.Order.desc("likeCount"), Sort.Order.desc("viewCount"), Sort.Order.desc("createdAt"), Sort.Order.desc("id"));
+    private static final Sort VIEWS = Sort.by(
+            Sort.Order.desc("viewCount"), Sort.Order.desc("likeCount"), Sort.Order.desc("createdAt"), Sort.Order.desc("id"));
 
     private final PostRepository postRepository;
     private final PostLikeRepository postLikeRepository;
@@ -72,6 +78,7 @@ public class PostServiceImpl implements PostService {
     private final BlockRepository blockRepository;
     private final PostViewCounter postViewCounter;
     private final CoinService coinService;
+    private final UserRepository userRepository;
 
     @Override
     @Transactional(readOnly = true)
@@ -80,7 +87,11 @@ public class PostServiceImpl implements PostService {
         Set<PostCategory> categories = (category == null || category.isBlank())
                 ? EnumSet.allOf(PostCategory.class)
                 : EnumSet.of(parseCategory(category));
-        Sort order = "popular".equals(sort) ? POPULAR : LATEST;
+        Sort order = switch (sort == null ? "" : sort) {
+            case "popular" -> POPULAR;
+            case "views" -> VIEWS;
+            default -> LATEST;
+        };
         Page<Post> page = postRepository.findList(
                 PostStatus.ACTIVE, categories, pattern(q), viewerId, limit(pageable, order));
         return toSummaries(page, viewerId);
@@ -93,6 +104,21 @@ public class PostServiceImpl implements PostService {
             return PageResponse.of(Page.empty(limit(pageable, LATEST)), List.of());
         }
         return toSummaries(postRepository.findByUserIdAndStatus(userId, PostStatus.ACTIVE, limit(pageable, LATEST)), viewerId);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public BlogStatsResponse getBlogStats(Long userId, Long viewerId) {
+        User owner = userRepository.findById(userId)
+                .filter(user -> user.getStatus() == UserStatus.ACTIVE)
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "블로그를 찾을 수 없어요."));
+        if (hiddenFrom(viewerId, userId)) {
+            throw new BusinessException(ErrorCode.NOT_FOUND, "블로그를 찾을 수 없어요.");
+        }
+        return new BlogStatsResponse(
+                owner.getBio() == null ? "" : owner.getBio(),
+                postRepository.countByUserIdAndStatus(userId, PostStatus.ACTIVE),
+                postRepository.sumViewCountByUserIdAndStatus(userId, PostStatus.ACTIVE));
     }
 
     @Override

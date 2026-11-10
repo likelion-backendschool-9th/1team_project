@@ -52,7 +52,7 @@ public class SecurityConfig {
                                 "/demos", "/demos/*", "/demos/*/comments", "/demo-templates", "/demo-templates/*",
                                 "/feeds", "/feeds/*", "/feeds/*/comments", "/feeds/comments/*/replies",
                                 "/posts", "/posts/list", "/posts/*", "/posts/*/comments",
-                                "/users/*/posts", "/users/*/subscription",
+                                "/users/*/posts", "/users/*/subscription", "/users/*/blog",
                                 "/search", "/search/**",
                                 "/events", "/events/*",
                                 "/rankings",

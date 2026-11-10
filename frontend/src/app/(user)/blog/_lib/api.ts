@@ -3,7 +3,6 @@ import {
   ApiRequestError,
   apiFetch,
   hasBackend,
-  isMockMode,
   type ApiResponse,
   type PageResponse,
 } from "@/app/_lib/api/client";
@@ -68,13 +67,19 @@ export async function getPopularSeries(): Promise<PostSeries[]> {
 }
 
 // 랭킹 API(GET rankings)는 아직 빈 목록을 돌려주는 스텁이다.
-// 그래서 좋아요 순위만 인기순 글 목록(GET posts?sort=popular)으로 채우고, 조회·팔로우 순위는 비워 둔다(탭이 숨겨진다).
+// 그래서 조회 순위는 조회수순(GET posts?sort=views), 좋아요 순위는 인기순(GET posts?sort=popular) 글 목록으로 채운다.
+// 팔로우 순위는 무엇을 셀지 정해지지 않아 비워 둔다(탭이 숨겨진다).
 export async function getArticleRanking(): Promise<ArticleRanking> {
   if (!hasBackend) return mockArticleRanking;
-  const { data } = await apiFetch<ApiResponse<PageResponse<PostSummary>>>("/api/v1/posts?sort=popular&size=5");
+  const [{ data: byViews }, { data: byLikes }] = await Promise.all([
+    apiFetch<ApiResponse<PageResponse<PostSummary>>>("/api/v1/posts?sort=views&size=5"),
+    apiFetch<ApiResponse<PageResponse<PostSummary>>>("/api/v1/posts?sort=popular&size=5"),
+  ]);
+  const rank = (posts: PostSummary[], score: (post: PostSummary) => number) =>
+    posts.map((post, index) => ({ rank: index + 1, postId: post.id, title: post.title, score: score(post) }));
   return {
-    views: [],
-    likes: data.content.map((post, index) => ({ rank: index + 1, postId: post.id, title: post.title, score: post.likeCount })),
+    views: rank(byViews.content, (post) => post.viewCount ?? 0),
+    likes: rank(byLikes.content, (post) => post.likeCount),
     follows: [],
   };
 }
@@ -119,8 +124,9 @@ export type PostCommentPage = {
   nextCursor: string | null;
 };
 
+// 댓글 API는 백엔드에 있어서 MOCK_EXCEPT_DM이어도 실서버를 쓴다.
 export async function getPostComments(postId: number): Promise<PostCommentPage> {
-  if (isMockMode) return { comments: createMockPostComments(postId, Date.now()), hasNext: false, nextCursor: null };
+  if (!hasBackend) return { comments: createMockPostComments(postId, Date.now()), hasNext: false, nextCursor: null };
   const { data } = await apiFetch<ApiResponse<{ content: PostComment[]; hasNext: boolean; nextCursor: string | null }>>(
     `/api/v1/posts/${postId}/comments`,
   );
@@ -135,24 +141,24 @@ export async function getUserPosts(userId: number): Promise<PostSummary[]> {
   return data.content;
 }
 
-// 블로그 주인: 회원 정보는 프로필(GET users/{userId}), 구독료·구독 여부·구독자 수는 GET users/{userId}/subscription으로 받는다.
-// 소개·총 조회수는 아직 API가 없어 비워 둔다.
+// 블로그 주인: 회원 정보는 프로필(GET users/{userId}), 소개·글 수·총 조회수는 GET users/{userId}/blog,
+// 구독료·구독 여부·구독자 수는 GET users/{userId}/subscription으로 받는다.
 export async function getBlogOwner(userId: number): Promise<BlogOwner | null> {
   if (!hasBackend) return findMockBlogOwner(userId);
   try {
-    const [{ data: user }, { data: posts }, { data: subscription }] = await Promise.all([
+    const [{ data: user }, { data: stats }, { data: subscription }] = await Promise.all([
       apiFetch<ApiResponse<UserSummary>>(`/api/v1/users/${userId}`),
-      apiFetch<ApiResponse<PageResponse<PostSummary>>>(`/api/v1/users/${userId}/posts?size=1`),
+      apiFetch<ApiResponse<{ bio: string; postCount: number; totalViews: number }>>(`/api/v1/users/${userId}/blog`),
       apiFetch<ApiResponse<{ price: number; subscribed: boolean; subscriberCount: number }>>(
         `/api/v1/users/${userId}/subscription`,
       ),
     ]);
     return {
       user: { id: user.id, nickname: user.nickname, profileImage: user.profileImage, techStacks: user.techStacks },
-      bio: "",
+      bio: stats.bio,
       subscriberCount: subscription.subscriberCount,
-      postCount: posts.totalElements,
-      totalViews: 0,
+      postCount: stats.postCount,
+      totalViews: stats.totalViews,
       subscriptionPrice: subscription.price,
       subscribed: subscription.subscribed,
     };
