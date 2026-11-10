@@ -2,6 +2,7 @@ package com.dipsource.repository.demo;
 
 import com.dipsource.entity.demo.DemoLike;
 import com.dipsource.entity.demo.DemoUserId;
+import java.time.LocalDateTime;
 import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
@@ -30,4 +31,21 @@ public interface DemoLikeRepository extends JpaRepository<DemoLike, DemoUserId> 
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query(value = "DELETE FROM demo_likes WHERE user_id = :userId AND demo_id = :demoId", nativeQuery = true)
     int deleteByUserIdAndDemoId(@Param("userId") Long userId, @Param("demoId") Long demoId);
+
+    /**
+     * 기간 안에 좋아요를 받은 공개 데모.
+     * 각 행은 [demoId, userId, title, likeCount, playCount]. 숨긴·삭제한 데모와 정지·탈퇴 회원은 빼는다.
+     */
+    @Query("""
+            SELECT d.id, d.userId, d.title, COUNT(l), d.playCount
+            FROM DemoLike l
+            JOIN l.demo d
+            JOIN User u ON u.id = d.userId
+            WHERE l.createdAt >= :since
+              AND d.status = com.dipsource.entity.demo.DemoStatus.ACTIVE
+              AND d.deletedAt IS NULL
+              AND u.status = com.dipsource.entity.user.enums.UserStatus.ACTIVE
+            GROUP BY d.id, d.userId, d.title, d.playCount
+            """)
+    List<Object[]> rankByRecentLikes(@Param("since") LocalDateTime since);
 }

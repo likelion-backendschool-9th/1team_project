@@ -3,6 +3,7 @@ package com.dipsource.repository.follow;
 import com.dipsource.entity.follow.Follow;
 import com.dipsource.entity.follow.FollowId;
 import com.dipsource.entity.user.enums.UserStatus;
+import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
 import org.springframework.data.domain.Page;
@@ -68,6 +69,22 @@ public interface FollowRepository extends JpaRepository<Follow, FollowId> {
             WHERE f.id.followingId = :userId AND u.status = :status
             """)
     long countFollowers(@Param("userId") Long userId, @Param("status") UserStatus status);
+
+    /**
+     * 기간 안에 새로 생긴 팔로우. 각 행은 [followingId, count].
+     * 팔로워와 팔로잉이 둘 다 활동 중인 관계만 센다.
+     */
+    @Query("""
+            SELECT f.id.followingId, COUNT(f)
+            FROM Follow f
+            JOIN User follower ON follower.id = f.id.followerId
+            JOIN User following ON following.id = f.id.followingId
+            WHERE f.createdAt >= :since
+              AND follower.status = com.dipsource.entity.user.enums.UserStatus.ACTIVE
+              AND following.status = com.dipsource.entity.user.enums.UserStatus.ACTIVE
+            GROUP BY f.id.followingId
+            """)
+    List<Object[]> countNewFollowers(@Param("since") LocalDateTime since);
 
     /** 내가 팔로우하는 사람 수 (해당 상태의 회원만. 팔로잉 목록 전체 수와 같은 기준) */
     @Query("""
