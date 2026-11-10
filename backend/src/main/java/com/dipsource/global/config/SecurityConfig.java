@@ -53,6 +53,7 @@ public class SecurityConfig {
                                 "/feeds", "/feeds/*", "/feeds/*/comments", "/feeds/comments/*/replies",
                                 "/posts", "/posts/list", "/posts/*", "/posts/*/comments",
                                 "/users/*/posts", "/users/*/subscription", "/users/*/blog",
+                                "/series", "/series/*", "/users/*/series",
                                 "/search", "/search/**",
                                 "/events", "/events/*",
                                 "/rankings",

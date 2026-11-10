@@ -10,6 +10,7 @@ import com.dipsource.dto.search.SearchType;
 import com.dipsource.dto.user.UserSummaryResponse;
 import com.dipsource.entity.post.Post;
 import com.dipsource.entity.post.PostCategory;
+import com.dipsource.entity.post.PostSeries;
 import com.dipsource.entity.post.PostStatus;
 import com.dipsource.entity.post.PostTag;
 import com.dipsource.entity.post.PostUserId;
@@ -26,6 +27,8 @@ import com.dipsource.repository.post.PostBookmarkRepository;
 import com.dipsource.repository.post.PostLikeRepository;
 import com.dipsource.repository.post.PostPurchaseRepository;
 import com.dipsource.repository.post.PostRepository;
+import com.dipsource.repository.post.PostSeriesRepository;
+import com.dipsource.repository.post.SeriesPurchaseRepository;
 import com.dipsource.repository.post.PostTagRepository;
 import com.dipsource.repository.tag.TagRepository;
 import com.dipsource.repository.user.UserRepository;
@@ -39,6 +42,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
@@ -75,6 +79,8 @@ public class PostServiceImpl implements PostService {
     private final PostTagRepository postTagRepository;
     private final PostPurchaseRepository postPurchaseRepository;
     private final BlogSubscriptionRepository blogSubscriptionRepository;
+    private final PostSeriesRepository postSeriesRepository;
+    private final SeriesPurchaseRepository seriesPurchaseRepository;
     private final TagRepository tagRepository;
     private final UserService userService;
     private final ApplicationEventPublisher eventPublisher;
@@ -141,7 +147,9 @@ public class PostServiceImpl implements PostService {
         List<String> tags = postTagRepository.findTagNames(postId);
         boolean liked = viewerId != null && !postLikeRepository.findLikedPostIds(viewerId, List.of(postId)).isEmpty();
         boolean bookmarked = viewerId != null && postBookmarkRepository.existsById(new PostUserId(viewerId, postId));
-        return PostDetailResponse.of(post, author, tags, canReadAll(post, viewerId), liked, bookmarked);
+        String seriesTitle = post.getSeriesId() == null ? null
+                : postSeriesRepository.findById(post.getSeriesId()).map(PostSeries::getTitle).orElse(null);
+        return PostDetailResponse.of(post, author, tags, canReadAll(post, viewerId), liked, bookmarked, seriesTitle);
     }
 
     @Override
@@ -150,17 +158,22 @@ public class PostServiceImpl implements PostService {
         if (!userService.isActiveUser(userId)) {
             throw new BusinessException(ErrorCode.FORBIDDEN, "글을 쓸 수 없는 계정이에요.");
         }
-        int price = request.price();
-        requirePaidLength(price, request.content());
-        Post post = postRepository.save(Post.builder()
+        PostSeries series = findOwnSeries(userId, request.seriesId());
+        boolean paid = isPaid(request, series);
+        requirePaidLength(paid, request.content());
+        Post post = Post.builder()
                 .userId(userId)
                 .demoId(request.demoId())
                 .title(request.title().strip())
                 .category(parseCategory(request.category()))
                 .content(request.content())
-                .paid(price > 0)
-                .priceChips(price)
-                .build());
+                .paid(paid)
+                .priceChips(request.price())
+                .build();
+        if (series != null) {
+            post.placeInSeries(series.getId(), postRepository.findMaxSeriesOrder(series.getId()) + 1);
+        }
+        post = postRepository.save(post);
         attachTags(post, request.tags());
         return new PostIdResponse(post.getId());
     }
@@ -169,10 +182,19 @@ public class PostServiceImpl implements PostService {
     @Transactional
     public void update(Long userId, Long postId, WritePostRequest request) {
         Post post = findOwn(userId, postId);
-        int price = request.price();
-        requirePaidLength(price, request.content());
+        PostSeries series = findOwnSeries(userId, request.seriesId());
+        boolean paid = isPaid(request, series);
+        requirePaidLength(paid, request.content());
         post.update(request.title().strip(), parseCategory(request.category()), request.content(),
-                post.getThumbnailUrl(), request.demoId(), price > 0, price);
+                post.getThumbnailUrl(), request.demoId(), paid, request.price());
+        Long seriesId = series == null ? null : series.getId();
+        if (!Objects.equals(post.getSeriesId(), seriesId)) {
+            // 다른 시리즈로 옮기면 그 시리즈의 마지막 회차 뒤에 붙는다
+            post.placeInSeries(seriesId, seriesId == null ? null : postRepository.findMaxSeriesOrder(seriesId) + 1);
+        } else if (seriesId != null) {
+            // 같은 시리즈면 회차 번호는 그대로 두고 칩 가격만 지운다
+            post.placeInSeries(seriesId, post.getSeriesOrder());
+        }
         // 태그는 지우고 다시 붙인다.
         postTagRepository.deleteByPostId(postId);
         attachTags(postRepository.getReferenceById(postId), request.tags());
@@ -225,6 +247,10 @@ public class PostServiceImpl implements PostService {
         if (hiddenFrom(userId, post.getUserId())) {
             throw new BusinessException(ErrorCode.NOT_FOUND, "글을 찾을 수 없어요.");
         }
+        // 시리즈 안 유료 글은 한 편씩 팔지 않는다 (팀 결정)
+        if (post.getSeriesId() != null && post.isPaid()) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "시리즈를 사면 읽을 수 있어요.");
+        }
         if (!post.isPaid() || post.getPriceChips() <= 0) {
             throw new BusinessException(ErrorCode.BAD_REQUEST, "무료 글이에요.");
         }
@@ -268,7 +294,7 @@ public class PostServiceImpl implements PostService {
         postBookmarkRepository.deleteByUserIdAndPostId(userId, postId);
     }
 
-    /** 유료 글 본문 전체를 볼 수 있는지: 무료 글, 작성자, 구매자, 구독자 */
+    /** 유료 글 본문 전체를 볼 수 있는지: 무료 글, 작성자, 시리즈 안 글은 시리즈 구매자, 시리즈 밖 글은 구매자·구독자 */
     private boolean canReadAll(Post post, Long viewerId) {
         if (!post.isPaid()) {
             return true;
@@ -276,8 +302,13 @@ public class PostServiceImpl implements PostService {
         if (viewerId == null) {
             return false;
         }
-        return post.getUserId().equals(viewerId)
-                || postPurchaseRepository.existsById(new PostUserId(viewerId, post.getId()))
+        if (post.getUserId().equals(viewerId)) {
+            return true;
+        }
+        if (post.getSeriesId() != null) {
+            return seriesPurchaseRepository.existsByUserIdAndSeriesId(viewerId, post.getSeriesId());
+        }
+        return postPurchaseRepository.existsById(new PostUserId(viewerId, post.getId()))
                 || isSubscriber(viewerId, post.getUserId());
     }
 
@@ -333,12 +364,37 @@ public class PostServiceImpl implements PostService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "글을 찾을 수 없어요."));
     }
 
-    /** 유료 글은 칩을 내고 읽을 만큼 본문이 있어야 한다. 앞뒤 공백은 세지 않는다. */
-    private static void requirePaidLength(int price, String content) {
-        if (price > 0 && content.strip().length() < PAID_MIN_CONTENT_LENGTH) {
+    /** 유료 글은 돈을 내고 읽을 만큼 본문이 있어야 한다. 앞뒤 공백은 세지 않는다. */
+    private static void requirePaidLength(boolean paid, String content) {
+        if (paid && content.strip().length() < PAID_MIN_CONTENT_LENGTH) {
             throw new BusinessException(ErrorCode.BAD_REQUEST,
                     "유료 글은 본문을 " + PAID_MIN_CONTENT_LENGTH + "자 이상 써 주세요.");
         }
+    }
+
+    /** 글을 넣을 내 시리즈. seriesId가 null이면 null, 없거나 남의 시리즈면 400 */
+    private PostSeries findOwnSeries(Long userId, Long seriesId) {
+        if (seriesId == null) {
+            return null;
+        }
+        return postSeriesRepository.findById(seriesId)
+                .filter(series -> series.getUserId().equals(userId))
+                .orElseThrow(() -> new BusinessException(ErrorCode.BAD_REQUEST, "내 시리즈를 골라 주세요."));
+    }
+
+    /**
+     * 잠글 글인지. 시리즈 밖 글은 칩 가격이 있으면 유료,
+     * 시리즈 안 글은 paid로 정하고(없으면 가격으로), 무료 시리즈에는 유료 회차를 둘 수 없다.
+     */
+    private static boolean isPaid(WritePostRequest request, PostSeries series) {
+        if (series == null) {
+            return request.price() > 0;
+        }
+        boolean paid = request.paid() != null ? request.paid() : request.price() > 0;
+        if (paid && series.getPriceKrw() <= 0) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "무료 시리즈에는 유료 회차를 넣을 수 없어요. 시리즈 가격을 먼저 정해 주세요.");
+        }
+        return paid;
     }
 
     private Post findOwn(Long userId, Long postId) {

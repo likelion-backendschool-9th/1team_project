@@ -62,6 +62,8 @@ class PostServiceImplTest {
     @Mock private PostTagRepository postTagRepository;
     @Mock private PostPurchaseRepository postPurchaseRepository;
     @Mock private BlogSubscriptionRepository blogSubscriptionRepository;
+    @Mock private com.dipsource.repository.post.PostSeriesRepository postSeriesRepository;
+    @Mock private com.dipsource.repository.post.SeriesPurchaseRepository seriesPurchaseRepository;
     @Mock private TagRepository tagRepository;
     @Mock private UserService userService;
     @Mock private BlockRepository blockRepository;
@@ -73,7 +75,8 @@ class PostServiceImplTest {
     @BeforeEach
     void setUp() {
         service = new PostServiceImpl(postRepository, postLikeRepository, postBookmarkRepository, postTagRepository,
-                postPurchaseRepository, blogSubscriptionRepository, tagRepository, userService,
+                postPurchaseRepository, blogSubscriptionRepository, postSeriesRepository, seriesPurchaseRepository,
+                tagRepository, userService,
                 org.mockito.Mockito.mock(org.springframework.context.ApplicationEventPublisher.class),
                 blockRepository, new PostViewCounter(), coinService, userRepository);
     }
@@ -105,7 +108,7 @@ class PostServiceImplTest {
         void paidPostNeedsAtLeast1000Chars() {
             when(userService.isActiveUser(AUTHOR)).thenReturn(true);
             // 앞뒤 공백은 세지 않는다
-            var shortPaid = new WritePostRequest("제목", "backend", List.of(), "  " + "가".repeat(999) + "  ", null, 10);
+            var shortPaid = new WritePostRequest("제목", "backend", List.of(), "  " + "가".repeat(999) + "  ", null, 10, null, null);
 
             assertThatThrownBy(() -> service.create(AUTHOR, shortPaid))
                     .isInstanceOf(BusinessException.class)
@@ -161,7 +164,7 @@ class PostServiceImplTest {
         @Test
         void cannotTurnShortPostIntoPaid() {
             when(postRepository.findById(10L)).thenReturn(Optional.of(post(AUTHOR, 0)));
-            var shortPaid = new WritePostRequest("제목", "backend", List.of(), BODY, null, 10);
+            var shortPaid = new WritePostRequest("제목", "backend", List.of(), BODY, null, 10, null, null);
 
             assertThatThrownBy(() -> service.update(AUTHOR, 10L, shortPaid))
                     .isInstanceOf(BusinessException.class)
@@ -352,7 +355,7 @@ class PostServiceImplTest {
 
     /** 유료 글은 본문이 1000자 이상이어야 해서 가격이 있으면 긴 본문을 넣는다. */
     private static WritePostRequest request(String category, List<String> tags, int price) {
-        return new WritePostRequest("제목", category, tags, price > 0 ? LONG_BODY : BODY, null, price);
+        return new WritePostRequest("제목", category, tags, price > 0 ? LONG_BODY : BODY, null, price, null, null);
     }
 
     @Nested
@@ -408,6 +411,85 @@ class PostServiceImplTest {
                     .isInstanceOf(BusinessException.class)
                     .extracting(e -> ((BusinessException) e).getErrorCode())
                     .isEqualTo(ErrorCode.BAD_REQUEST);
+        }
+    }
+
+    @Nested
+    class Series {
+
+        private static final Long SERIES = 3L;
+
+        @Test
+        void newEpisodeGoesAfterLastAndHasNoChipPrice() {
+            when(userService.isActiveUser(AUTHOR)).thenReturn(true);
+            when(postSeriesRepository.findById(SERIES)).thenReturn(Optional.of(series(AUTHOR, 9900)));
+            when(postRepository.findMaxSeriesOrder(SERIES)).thenReturn(4);
+            when(postRepository.save(any(Post.class))).thenAnswer(inv -> withId(inv.getArgument(0), 11L));
+
+            service.create(AUTHOR, new WritePostRequest("5화", "backend", List.of(), LONG_BODY, null, 30, SERIES, true));
+
+            ArgumentCaptor<Post> saved = ArgumentCaptor.forClass(Post.class);
+            verify(postRepository).save(saved.capture());
+            assertThat(saved.getValue().getSeriesId()).isEqualTo(SERIES);
+            assertThat(saved.getValue().getSeriesOrder()).isEqualTo(5);
+            assertThat(saved.getValue().isPaid()).isTrue();
+            assertThat(saved.getValue().getPriceChips()).isZero();
+        }
+
+        @Test
+        void cannotWriteIntoOthersSeriesOrPaidEpisodeIntoFreeSeries() {
+            when(userService.isActiveUser(AUTHOR)).thenReturn(true);
+            when(postSeriesRepository.findById(SERIES)).thenReturn(Optional.of(series(OTHER, 9900)));
+            assertThatThrownBy(() -> service.create(AUTHOR,
+                    new WritePostRequest("1화", "backend", List.of(), BODY, null, 0, SERIES, false)))
+                    .isInstanceOf(BusinessException.class);
+
+            when(postSeriesRepository.findById(SERIES)).thenReturn(Optional.of(series(AUTHOR, 0)));
+            assertThatThrownBy(() -> service.create(AUTHOR,
+                    new WritePostRequest("1화", "backend", List.of(), LONG_BODY, null, 0, SERIES, true)))
+                    .isInstanceOf(BusinessException.class)
+                    .extracting(e -> ((BusinessException) e).getErrorCode())
+                    .isEqualTo(ErrorCode.BAD_REQUEST);
+            verify(postRepository, never()).save(any());
+        }
+
+        @Test
+        void seriesEpisodeOpensOnlyForSeriesBuyer() {
+            when(postRepository.findById(10L)).thenReturn(Optional.of(episode()));
+            when(userService.getSummaries(List.of(AUTHOR))).thenReturn(Map.of(AUTHOR, author()));
+            when(postSeriesRepository.findById(SERIES)).thenReturn(Optional.of(series(AUTHOR, 9900)));
+            // 블로그 구독자여도 시리즈 회차는 열리지 않는다 (구독 여부를 아예 보지 않는다)
+            org.mockito.Mockito.lenient().when(blogSubscriptionRepository.existsReadable(eq(OTHER), eq(AUTHOR), any()))
+                    .thenReturn(true);
+
+            PostDetailResponse locked = service.getPost(10L, OTHER);
+            assertThat(locked.purchased()).isFalse();
+            assertThat(locked.paid()).isTrue();
+            assertThat(locked.seriesTitle()).isEqualTo("스프링 정복");
+
+            when(seriesPurchaseRepository.existsByUserIdAndSeriesId(OTHER, SERIES)).thenReturn(true);
+            assertThat(service.getPost(10L, OTHER).purchased()).isTrue();
+        }
+
+        @Test
+        void seriesEpisodeIsNotSoldOneByOne() {
+            when(postRepository.findById(10L)).thenReturn(Optional.of(episode()));
+
+            assertThatThrownBy(() -> service.purchase(OTHER, 10L))
+                    .isInstanceOf(BusinessException.class)
+                    .hasMessageContaining("시리즈");
+            verify(coinService, never()).payForPost(anyLong(), anyLong(), anyLong(), any(), org.mockito.ArgumentMatchers.anyInt());
+        }
+
+        private Post episode() {
+            Post post = post(AUTHOR, 30);
+            post.placeInSeries(SERIES, 1);
+            return post;
+        }
+
+        private static com.dipsource.entity.post.PostSeries series(Long owner, int price) {
+            return withId(com.dipsource.entity.post.PostSeries.builder()
+                    .userId(owner).title("스프링 정복").description("").priceKrw(price).build(), SERIES);
         }
     }
 

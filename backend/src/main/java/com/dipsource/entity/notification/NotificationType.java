@@ -15,5 +15,7 @@ public enum NotificationType {
     /** 내 블로그를 구독 */
     SUBSCRIBE,
     /** 내 미니홈피에 후원 */
-    SPONSOR
+    SPONSOR,
+    /** 내 시리즈를 구매 */
+    SERIES_PURCHASE
 }

@@ -15,6 +15,8 @@ import java.time.LocalDateTime;
  * @param repostCount 블로그 리포스트는 아직 없어서 0
  * @param liked       내가 좋아요했는지
  * @param viewCount   조회수 (조회수 순위에 쓴다)
+ * @param paid        잠긴 글인지. 시리즈 안 유료 글은 price가 0이어도 true (시리즈를 사야 읽는다)
+ * @param seriesId    들어 있는 시리즈. 없으면 null
  */
 public record PostSummaryResponse(
         Long id,
@@ -30,7 +32,9 @@ public record PostSummaryResponse(
         int commentCount,
         int repostCount,
         boolean liked,
-        int viewCount
+        int viewCount,
+        boolean paid,
+        Long seriesId
 ) {
 
     public static PostSummaryResponse of(Post post, UserSummaryResponse author) {
@@ -53,7 +57,9 @@ public record PostSummaryResponse(
                 post.getCommentCount(),
                 0,
                 liked,
-                post.getViewCount()
+                post.getViewCount(),
+                post.isPaid(),
+                post.getSeriesId()
         );
     }
 }

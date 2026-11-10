@@ -13,6 +13,7 @@ public interface NotificationService {
     String TARGET_POST = "POST";
     String TARGET_DEMO = "DEMO";
     String TARGET_MINI_HOME = "MINI_HOME";
+    String TARGET_SERIES = "SERIES";
 
     /** 내 알림 목록. 최신순. */
     PageResponse<NotificationResponse> list(Long userId, Pageable pageable);
