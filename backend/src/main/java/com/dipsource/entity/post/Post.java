@@ -25,7 +25,8 @@ import org.hibernate.annotations.ColumnDefault;
 @Entity
 @Table(name = "posts", indexes = {
         @Index(name = "idx_posts_user_created", columnList = "user_id, created_at"),
-        @Index(name = "idx_posts_created", columnList = "created_at")
+        @Index(name = "idx_posts_created", columnList = "created_at"),
+        @Index(name = "idx_posts_series_order", columnList = "series_id, series_order")
 })
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Post extends BaseEntity {
@@ -65,7 +66,18 @@ public class Post extends BaseEntity {
     @Column(name = "thumbnail_url", length = 500)
     private String thumbnailUrl;
 
-    /** 유료 글 여부. 유료 글은 블로그 구독자에게 무료이고, 구독하지 않은 회원만 단건 구매할 수 있다 */
+    /** 시리즈 ID(post_series.id). 시리즈에 넣지 않은 글이면 null */
+    @Column(name = "series_id")
+    private Long seriesId;
+
+    /** 시리즈 안 회차 순서(1부터). 시리즈에 넣지 않은 글이면 null */
+    @Column(name = "series_order")
+    private Integer seriesOrder;
+
+    /**
+     * 유료 글 여부. 시리즈 밖 유료 글은 칩으로 한 편씩 사고,
+     * 시리즈 안 유료 글은 칩 가격 없이 시리즈를 산 사람만 읽는다.
+     */
     @Column(name = "is_paid", nullable = false)
     private boolean paid = false;
 
@@ -116,6 +128,15 @@ public class Post extends BaseEntity {
         this.demoId = demoId;
         this.paid = paid;
         this.priceChips = paid ? priceChips : 0;
+    }
+
+    /** 시리즈에 회차로 넣거나(order는 1부터) 빼낸다(seriesId null). 시리즈 안 유료 글은 칩 가격이 없다 */
+    public void placeInSeries(Long seriesId, Integer seriesOrder) {
+        this.seriesId = seriesId;
+        this.seriesOrder = seriesId == null ? null : seriesOrder;
+        if (seriesId != null) {
+            this.priceChips = 0;
+        }
     }
 
     public void hide() {

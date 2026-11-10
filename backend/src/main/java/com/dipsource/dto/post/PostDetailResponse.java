@@ -10,9 +10,12 @@ import java.util.List;
  *
  * @param content     본문. 잠긴 유료 글이면 앞 3문단만
  * @param tags        태그 이름
- * @param purchased   본문 전체를 볼 수 있는지 (작성자·구매자·구독자)
- * @param seriesTitle 시리즈는 아직 없어서 null
+ * @param purchased   본문 전체를 볼 수 있는지 (작성자·구매자·시리즈 구매자)
+ * @param seriesTitle 들어 있는 시리즈 제목. 없으면 null
  * @param bookmarked  내가 북마크했는지 (비로그인이면 false)
+ * @param paid        잠긴 글인지 (시리즈 안 유료 글은 price가 0이어도 true)
+ * @param seriesId    들어 있는 시리즈. 없으면 null
+ * @param seriesOrder 시리즈 안 회차 번호. 없으면 null
  */
 public record PostDetailResponse(
         Long id,
@@ -33,11 +36,15 @@ public record PostDetailResponse(
         boolean purchased,
         String seriesTitle,
         int viewCount,
-        boolean bookmarked
+        boolean bookmarked,
+        boolean paid,
+        Long seriesId,
+        Integer seriesOrder
 ) {
 
     public static PostDetailResponse of(
-            Post post, UserSummaryResponse author, List<String> tags, boolean unlocked, boolean liked, boolean bookmarked) {
+            Post post, UserSummaryResponse author, List<String> tags, boolean unlocked, boolean liked, boolean bookmarked,
+            String seriesTitle) {
         PostSummaryResponse summary = PostSummaryResponse.of(post, author, liked);
         return new PostDetailResponse(
                 summary.id(),
@@ -56,9 +63,12 @@ public record PostDetailResponse(
                 unlocked ? post.getContent() : PostText.preview(post.getContent()),
                 tags,
                 unlocked,
-                null,
+                seriesTitle,
                 post.getViewCount(),
-                bookmarked
+                bookmarked,
+                post.isPaid(),
+                post.getSeriesId(),
+                post.getSeriesOrder()
         );
     }
 }

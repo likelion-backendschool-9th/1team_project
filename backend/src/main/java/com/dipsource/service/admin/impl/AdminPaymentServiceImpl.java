@@ -90,7 +90,8 @@ public class AdminPaymentServiceImpl implements AdminPaymentService {
                 start.atDay(1).atStartOfDay(), end.plusMonths(1).atDay(1).atStartOfDay())) {
             long[] sum = sums.computeIfAbsent((String) row[0], key -> new long[2]);
             long amount = ((Number) row[2]).longValue();
-            if (PaymentType.BLOG_SUBSCRIPTION.name().equals(row[1])) {
+            // 시리즈 판매는 블로그 구독 자리(콘텐츠 매출)에 함께 더한다
+            if (PaymentType.BLOG_SUBSCRIPTION.name().equals(row[1]) || PaymentType.SERIES_PURCHASE.name().equals(row[1])) {
                 sum[0] += amount;
             } else if (PaymentType.CHIP_CHARGE.name().equals(row[1])) {
                 sum[1] += amount;

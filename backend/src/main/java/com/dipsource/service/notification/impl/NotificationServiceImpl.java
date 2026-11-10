@@ -123,6 +123,7 @@ public class NotificationServiceImpl implements NotificationService {
             case REPOST -> "님이 내 피드를 리포스트했어요.";
             case SUBSCRIBE -> "님이 내 블로그를 구독했어요.";
             case SPONSOR -> "님이 미니홈피에 칩을 후원했어요.";
+            case SERIES_PURCHASE -> "님이 내 시리즈를 구매했어요.";
         };
     }
 
@@ -132,6 +133,7 @@ public class NotificationServiceImpl implements NotificationService {
             case GUESTBOOK -> "/mini-home/" + item.getReceiverId() + "/guestbook";
             case SUBSCRIBE -> "/blog/" + item.getReceiverId();
             case SPONSOR -> "/my/coins";
+            case SERIES_PURCHASE -> item.getTargetId() == null ? "/" : "/blog/series/" + item.getTargetId();
             case LIKE, COMMENT, REPOST -> targetHref(item.getTargetType(), item.getTargetId());
         };
     }
@@ -145,6 +147,7 @@ public class NotificationServiceImpl implements NotificationService {
             case TARGET_POST -> "블로그 글";
             case TARGET_DEMO -> "데모";
             case TARGET_MINI_HOME -> "미니홈피";
+            case TARGET_SERIES -> "시리즈";
             default -> "글";
         };
     }

@@ -29,6 +29,16 @@ public interface CoinService {
     void payBlogSubscription(Long userId, Long subscriptionId, int amountKrw);
 
     /**
+     * 시리즈 구매 결제(현금). 칩은 쓰지 않고 payments에 SERIES_PURCHASE로 남긴다.
+     * PG 연동 전에는 충전처럼 즉시 PAID 처리한다.
+     *
+     * @param userId    사는 회원
+     * @param seriesId  post_series.id
+     * @param amountKrw 시리즈 가격(원)
+     */
+    void paySeries(Long userId, Long seriesId, int amountKrw);
+
+    /**
      * 한 회원의 칩 거래 내역을 최신순으로 반환한다.
      *
      * @param userId   조회 대상 회원

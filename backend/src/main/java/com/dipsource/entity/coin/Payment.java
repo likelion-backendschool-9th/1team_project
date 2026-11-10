@@ -18,7 +18,7 @@ import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
-/** 현금 결제(PG). 칩 충전과 블로그 구독 결제를 함께 기록한다. 테이블: payments */
+/** 현금 결제(PG). 칩 충전과 시리즈 구매(이전: 블로그 구독)를 함께 기록한다. 테이블: payments */
 @Getter
 @Entity
 @EntityListeners(AuditingEntityListener.class)
@@ -44,6 +44,10 @@ public class Payment {
     /** 블로그 구독 ID(blog_subscriptions.id). BLOG_SUBSCRIPTION일 때만 사용 */
     @Column(name = "subscription_id")
     private Long subscriptionId;
+
+    /** 시리즈 ID(post_series.id). SERIES_PURCHASE일 때만 사용 */
+    @Column(name = "series_id")
+    private Long seriesId;
 
     /** 결제 금액(원) */
     @Column(name = "amount_krw", nullable = false)
@@ -80,11 +84,12 @@ public class Payment {
     private LocalDateTime createdAt;
 
     @Builder
-    private Payment(Long userId, PaymentType paymentType, Long subscriptionId, int amountKrw,
+    private Payment(Long userId, PaymentType paymentType, Long subscriptionId, Long seriesId, int amountKrw,
                     Integer chips, String pgOrderId) {
         this.userId = userId;
         this.paymentType = paymentType;
         this.subscriptionId = subscriptionId;
+        this.seriesId = seriesId;
         this.amountKrw = amountKrw;
         this.chips = chips;
         this.pgOrderId = pgOrderId;

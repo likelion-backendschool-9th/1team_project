@@ -56,6 +56,29 @@ public interface PostRepository extends JpaRepository<Post, Long> {
 
     boolean existsByIdAndUserIdAndStatus(Long id, Long userId, PostStatus status);
 
+    /** 시리즈의 회차. 순서대로 */
+    List<Post> findBySeriesIdAndStatusOrderBySeriesOrderAscIdAsc(Long seriesId, PostStatus status);
+
+    /** 시리즈의 마지막 회차 번호. 회차가 없으면 0 (지운 글의 번호도 다시 쓰지 않는다) */
+    @Query("SELECT COALESCE(MAX(p.seriesOrder), 0) FROM Post p WHERE p.seriesId = :seriesId")
+    int findMaxSeriesOrder(@Param("seriesId") Long seriesId);
+
+    /** 시리즈별 공개 회차 수·무료 회차 수·첫 회차 ID. [seriesId, 회차 수, 무료 회차 수, 첫 회차 ID] */
+    @Query(value = """
+            SELECT p.series_id, COUNT(*), SUM(CASE WHEN p.is_paid THEN 0 ELSE 1 END),
+                   (ARRAY_AGG(p.id ORDER BY p.series_order, p.id))[1]
+            FROM posts p
+            WHERE p.series_id IN (:seriesIds) AND p.status = 'ACTIVE'
+            GROUP BY p.series_id
+            """, nativeQuery = true)
+    List<Object[]> summarizeSeries(@Param("seriesIds") Collection<Long> seriesIds);
+
+    /** 시리즈에 남아 있는 글이 있는지 (지운 글 제외) */
+    boolean existsBySeriesIdAndStatusNot(Long seriesId, PostStatus status);
+
+    /** 시리즈에 유료 회차가 있는지 (지운 글 제외) */
+    boolean existsBySeriesIdAndPaidTrueAndStatusNot(Long seriesId, PostStatus status);
+
     /** 조회수 +1. 동시에 여러 명이 봐도 빠지지 않게 UPDATE 한 번으로 올린다. */
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("UPDATE Post p SET p.viewCount = p.viewCount + 1 WHERE p.id = :postId")
