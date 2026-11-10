@@ -20,7 +20,7 @@ const items = [
   { href: "/blog", label: "블로그", Icon: BookIcon },
   { href: "/news", label: "개발자 뉴스", Icon: NewsIcon },
   { href: "/events", label: "이벤트", Icon: TicketIcon },
-  { href: "/my/coins", label: "칩 충전하기", Icon: ChipOutlineIcon },
+  { href: "/my/coins", label: "칩 충전", Icon: ChipOutlineIcon },
   // 좁은 화면에서는 오른쪽 프로필 카드(내 미니홈피 바로가기)가 피드 맨 아래로 내려가므로 메뉴에도 둔다.
   { href: "/mini-home/me", label: "내 미니홈피", Icon: HomeIcon, narrowOnly: true },
 ] as const;
