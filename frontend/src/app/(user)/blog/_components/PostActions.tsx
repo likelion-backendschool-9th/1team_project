@@ -2,12 +2,7 @@
 
 import Link from "next/link";
 import { useState, useTransition } from "react";
-import {
-  BookmarkIcon,
-  CommentIcon,
-  HeartIcon,
-  RepostIcon,
-} from "@/app/_components/ui/Icons";
+import { BookmarkIcon, CommentIcon, HeartIcon } from "@/app/_components/ui/Icons";
 import kit from "@/app/_components/ui/kit.module.css";
 import { togglePostBookmark, togglePostLike } from "../_actions";
 import styles from "./PostActions.module.css";
@@ -16,7 +11,6 @@ type Props = {
   postId: number;
   likeCount: number;
   commentCount: number;
-  repostCount: number;
   liked: boolean;
   /** 목록 카드에서는 알 수 없어 생략한다 (기본 false) */
   bookmarked?: boolean;
@@ -28,7 +22,6 @@ export function PostActions({
   postId,
   likeCount,
   commentCount,
-  repostCount,
   liked,
   bookmarked: initialBookmarked = false,
   readMinutes,
@@ -92,10 +85,6 @@ export function PostActions({
         <CommentIcon />
         댓글 {commentCount}
       </Link>
-      <span className={styles.action}>
-        <RepostIcon />
-        리포스트 {repostCount}
-      </span>
       <span className={styles.read}>읽는 시간 {readMinutes}분</span>
       <button
         type="button"
