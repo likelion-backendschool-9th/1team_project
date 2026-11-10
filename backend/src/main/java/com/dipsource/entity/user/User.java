@@ -117,6 +117,10 @@ public class User extends BaseEntity {
         this.githubUsername = githubUsername;
     }
 
+    public void changeProfileImage(String profileImage) {
+        this.profileImage = profileImage;
+    }
+
     public void changeBlogSubscriptionPrice(int price) {
         this.blogSubscriptionPrice = price;
     }

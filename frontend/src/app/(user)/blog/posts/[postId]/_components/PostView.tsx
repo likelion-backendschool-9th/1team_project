@@ -72,7 +72,7 @@ export async function PostView({ params }: Props) {
           </h2>
           <div className={styles.byline}>
             <Link href={`/blog/${post.author.id}`} className={styles.author}>
-              <Avatar name={post.author.nickname} size={40} />
+              <Avatar name={post.author.nickname}src={post.author.profileImage} size={40} />
               <span>
                 <strong>{post.author.nickname}</strong>
                 <span className={kit.faint} style={{ display: "block" }}>
