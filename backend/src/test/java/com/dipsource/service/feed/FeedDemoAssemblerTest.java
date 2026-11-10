@@ -56,6 +56,14 @@ class FeedDemoAssemblerTest {
     }
 
     @Test
+    @DisplayName("데모가 없는 피드는 빈 결과로 두고 조회가 죽지 않는다")
+    void allowsFeedWithoutDemo() {
+        Feed feed = feed(null);
+
+        assertThat(assembler.of(List.of(feed)).get(null)).isNull();
+    }
+
+    @Test
     @DisplayName("삭제된 데모는 카드에 넣지 않는다")
     void hidesDeletedDemo() {
         Feed feed = feed(9L);
