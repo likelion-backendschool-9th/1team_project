@@ -62,14 +62,15 @@ public class FeedDemoAssembler {
                 .filter(Objects::nonNull)
                 .distinct()
                 .toList();
+        // Map.of()는 null 키를 조회하면 NPE가 난다. 데모가 없는 피드의 demoId는 null이다.
         if (demoIds.isEmpty()) {
-            return Map.of();
+            return new HashMap<>();
         }
         List<Demo> demos = demoRepository.findAllById(demoIds).stream()
                 .filter(demo -> visible(demo, null))
                 .toList();
         if (demos.isEmpty()) {
-            return Map.of();
+            return new HashMap<>();
         }
         Map<Long, List<String>> tags = tagsOf(demos.stream().map(Demo::getId).toList());
         Map<Long, User> authors = userRepository.findAllById(
