@@ -19,8 +19,12 @@ async function EventDetail({ params }: { params: Promise<{ eventId: string }> })
 
   return (
     <article className={`${kit.card} ${styles.detail}`} aria-labelledby="event-title">
+      {event.imageUrl && (
+        // 상세에서는 포스터 글씨가 잘리지 않게 이미지 전체를 보여 준다
+        <img src={event.imageUrl} alt={`${event.title} 이벤트 이미지`} className={styles.heroImage} />
+      )}
       <div className={`${styles.hero} ${styles[event.status]}`}>
-        <span className={styles.heroEmoji} aria-hidden="true">{event.emoji}</span>
+        {!event.imageUrl && <span className={styles.heroEmoji} aria-hidden="true">{event.emoji}</span>}
         <span className={kit.pill}>{statusLabels[event.status]}</span>
         <h2 id="event-title" className={styles.heroTitle}>{event.title}</h2>
         <p>{event.summary}</p>
@@ -35,9 +39,15 @@ async function EventDetail({ params }: { params: Promise<{ eventId: string }> })
           <p key={line}>{line}</p>
         ))}
       </div>
-      <Link href={event.ctaHref} className={`${kit.btnPrimary} ${styles.cta}`}>
-        {event.ctaLabel}
-      </Link>
+      {event.status === "ongoing" ? (
+        <Link href={event.ctaHref} className={`${kit.btnPrimary} ${styles.cta}`}>
+          {event.ctaLabel}
+        </Link>
+      ) : (
+        <button type="button" className={`${kit.btnGhost} ${styles.cta}`} disabled>
+          {event.status === "upcoming" ? `${formatCalendarDate(event.startAt)}에 시작해요` : "종료된 이벤트예요"}
+        </button>
+      )}
     </article>
   );
 }

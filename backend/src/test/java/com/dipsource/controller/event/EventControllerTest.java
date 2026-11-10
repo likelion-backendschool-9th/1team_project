@@ -75,7 +75,8 @@ class EventControllerTest {
                 "1등 300칩",
                 "🎉",
                 0,
-                "데모 둘러보기",
-                "/demos");
+                "이벤트 참여하기",
+                "/demos",
+                null);
     }
 }

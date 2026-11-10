@@ -53,9 +53,16 @@ async function EventList({ searchParams }: { searchParams: Promise<Record<string
           {events.map((event) => (
             <li key={event.id}>
               <Link href={`/events/${event.id}`} className={`${styles.card} ${event.status === "ended" ? styles.ended : ""}`}>
-                <span className={`${styles.banner} ${styles[event.status]}`} aria-hidden="true">
-                  {event.emoji}
-                </span>
+                {event.imageUrl ? (
+                  // 대표 이미지는 카드 비율에 맞춰 가운데 부분만 미리 보여 준다
+                  <span className={`${styles.banner} ${styles.bannerImage}`} aria-hidden="true">
+                    <img src={event.imageUrl} alt="" loading="lazy" />
+                  </span>
+                ) : (
+                  <span className={`${styles.banner} ${styles[event.status]}`} aria-hidden="true">
+                    {event.emoji}
+                  </span>
+                )}
                 <span className={styles.body}>
                   <span className={event.status === "ongoing" ? kit.pillSuccess : event.status === "upcoming" ? kit.pillWarn : kit.pill}>
                     {statusLabels[event.status]}

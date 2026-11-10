@@ -14,8 +14,9 @@ export const mockEvents: DevEvent[] = [
     reward: "1등 300칩 · 2등 150칩 · 3등 50칩",
     emoji: "🎮",
     participantCount: 128,
-    ctaLabel: "데모 올리고 참가하기",
+    ctaLabel: "이벤트 참여하기",
     ctaHref: "/demos/upload",
+    imageUrl: null,
   },
   {
     id: 2,
@@ -29,8 +30,9 @@ export const mockEvents: DevEvent[] = [
     reward: "한정 배지 ✍️ 연재러",
     emoji: "✍️",
     participantCount: 57,
-    ctaLabel: "글쓰기",
+    ctaLabel: "이벤트 참여하기",
     ctaHref: "/blog/write",
+    imageUrl: null,
   },
   {
     id: 3,
@@ -43,8 +45,9 @@ export const mockEvents: DevEvent[] = [
     reward: "딥소스 플러스 3개월 이용권",
     emoji: "🎄",
     participantCount: 0,
-    ctaLabel: "알림 받기",
+    ctaLabel: "이벤트 참여하기",
     ctaHref: "/my/settings",
+    imageUrl: null,
   },
   {
     id: 4,
@@ -57,7 +60,8 @@ export const mockEvents: DevEvent[] = [
     reward: "1등 300칩 · 2등 150칩 · 3등 50칩",
     emoji: "🎨",
     participantCount: 214,
-    ctaLabel: "수상작 보기",
+    ctaLabel: "이벤트 참여하기",
     ctaHref: "/demos/12",
+    imageUrl: null,
   },
 ];
