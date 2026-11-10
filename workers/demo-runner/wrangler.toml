@@ -1,0 +1,16 @@
+# 찍먹 데모 실행 Worker. 비공개 R2 버킷의 정적 파일을 공개 포인터 기준으로 내려 준다.
+# 계정 ID·시크릿은 여기에 적지 않는다 (배포 절차: docs/데모-플랫폼-배포.md)
+name = "dipsource-demo-runner"
+main = "src/index.js"
+compatibility_date = "2026-10-01"
+workers_dev = true
+
+[[r2_buckets]]
+binding = "DEMO_BUCKET"
+bucket_name = "dsp"
+
+[vars]
+# 데모 iframe을 띄울 수 있는 사이트 출처. 공백으로 구분한다
+ALLOWED_FRAME_ANCESTORS = "https://dipsource.newlecture.com http://localhost:3000"
+
+# 미리보기 서명 키는 시크릿으로 넣는다: npx wrangler secret put DEMO_SIGNING_SECRET

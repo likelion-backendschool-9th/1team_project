@@ -8,7 +8,7 @@
 
 | 영역 | 포함 테이블 | 결정 |
 | --- | --- | --- |
-| 회원·인증 | users, social_accounts | 소셜 로그인만 지원한다 (GitHub, 카카오, 구글). 이메일·비밀번호 가입은 없다. 한 계정에 여러 소셜을 연동할 수 있다. `(provider, provider_id)` 유니크로 중복 연동을 막는다. |
+| 회원·인증 | users, social_accounts, refresh_tokens | 소셜 로그인만 지원한다 (GitHub, 카카오, 구글). 이메일·비밀번호 가입은 없다. 한 계정에 여러 소셜을 연동할 수 있다. `(provider, provider_id)` 유니크로 중복 연동을 막는다. Refresh Token은 SHA-256 해시로 저장하고 갱신마다 교체한다(Rotation). Access Token은 stateless JWT다. |
 | 미니홈피 | mini_homes, guestbooks | 회원 생성 시 미니홈피를 함께 만든다 (1:1). `today_count`는 매일 자정 리셋한다 (스케줄러). 같은 사람은 하루 1회만 집계한다 (서비스 로직). |
 | 데모 | demos, tags, demo_tags | zip 업로드, 확장자/용량 검사 후 저장. `file_path`는 파일 저장소 경로다. `like_count`, `play_count`는 비정규화 — 좋아요/체험 시 트랜잭션으로 함께 갱신한다. 태그는 정규화해서 `tags` + `demo_tags` 중간 테이블로 관리한다. |
 | 블로그 | posts | 데모와 연결 가능 (`demo_id` nullable FK). 유료 글은 `is_paid=true`이고 구독자 또는 도토리 결제자만 조회 가능하다 (서비스 로직). |
@@ -76,6 +76,8 @@ PK, UNIQUE, FK 인덱스 외에 추가로 필요한 인덱스다.
 | `dm_messages` | `(sender_id, receiver_id, created_at DESC)` | DM 대화 내역 조회 |
 | `reports` | `(status, created_at DESC)` | 관리자 신고 목록 (대기 우선) |
 | `subscriptions` | `(subscriber_id, target_user_id)` | 구독 여부 확인 |
+| `refresh_tokens` | `(token_hash)` UNIQUE, `(jti)` UNIQUE | 쿠키 해시·JWT id로 현역 토큰 조회 |
+| `refresh_tokens` | `(user_id)`, `(family_id)`, `(expires_at)` | 탈퇴 시 일괄 폐기, 로그인 줄 폐기, 만료 정리 |
 
 ---
 
@@ -90,6 +92,7 @@ PK, UNIQUE, FK 인덱스 외에 추가로 필요한 인덱스다.
 | 방문자 카운트 | 하루 1회 제한은 서비스 레이어에서 캐시(Redis) 또는 별도 방문 기록 테이블로 처리한다. `today_count`와 `total_count`는 원자적으로 증가시킨다. |
 | 구독 | 구독 생성 시 `subscriptions` INSERT + `coin_transactions` INSERT + `users.coin_balance` 차감을 한 트랜잭션으로 처리한다. |
 | 신고 처리 | 관리자가 신고를 처리할 때 `reports.status`를 변경한다. 두 관리자가 동시에 같은 신고를 처리하는 것을 막으려면 `status='PENDING'` 조건 UPDATE를 사용한다. |
+| Refresh Token 갱신 | `family_id`에 `pg_advisory_xact_lock`을 걸어 같은 로그인 줄의 갱신·폐기를 직렬화한다. 첫 요청이 교체하고, 30초 안 재요청은 체인 끝(현역 토큰)을 다시 준다. 30초가 지난 재사용은 그 `family_id`만 폐기한다. |
 
 ---
 

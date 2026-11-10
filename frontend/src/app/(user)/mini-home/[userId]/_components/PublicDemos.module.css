@@ -1,0 +1,134 @@
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 19px;
+  font-weight: 800;
+}
+
+.more {
+  user-select: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--ink-soft);
+  font-size: 15px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 20px;
+}
+
+.card {
+  color: var(--ink);
+  display: flex;
+  height: 100%;
+  flex-direction: column;
+  padding: 18px;
+  border: 1px solid #e1e5ec;
+  border-radius: 20px;
+  background: var(--surface);
+  box-shadow: 0 1px 2px rgb(30 40 60 / 4%), 0 6px 18px rgb(30 40 60 / 6%);
+}
+
+.thumbWrap {
+  position: relative;
+}
+
+.thumb {
+  aspect-ratio: 2 / 1;
+  border-radius: 10px;
+}
+
+.featured {
+  user-select: none;
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  padding: 2px 10px;
+  border-radius: var(--radius-pill);
+  background: #ffc21a;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.name {
+  margin-top: 16px;
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.desc {
+  display: -webkit-box;
+  margin-top: 6px;
+  overflow: hidden;
+  color: var(--ink-faint);
+  font-size: 14px;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding-top: 14px;
+  margin-top: auto;
+  border-top: 1px solid #e1e5ec;
+}
+
+.desc {
+  margin-bottom: 20px;
+}
+
+.meta {
+  user-select: none;
+  color: var(--ink-faint);
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.play {
+  user-select: none;
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 4px;
+  padding: 7px 12px;
+  border-radius: 10px;
+  background: #ffc21a;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.play:hover {
+  background: #ffb800;
+}
+
+.empty {
+  padding: 32px 0;
+  color: var(--ink-soft);
+  text-align: center;
+}
+
+@media (max-width: 1280px) {
+  .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 600px) {
+  .grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

@@ -1,11 +1,26 @@
 spring:
+  config:
+    # 로컬 실행 시 루트 .env 값을 읽는다. 파일이 없으면 건너뛰고, 같은 이름의 환경변수가 있으면 환경변수가 우선한다.
+    import: optional:file:../.env[.properties]
+
   application:
     name: dipsource
 
   datasource:
-    url: jdbc:postgresql://localhost:5432/dipsource
-    username: dipsource
-    password: dipsource
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/dipsource}
+    username: ${SPRING_DATASOURCE_USERNAME:dipsource}
+    password: ${SPRING_DATASOURCE_PASSWORD:dipsource}
+
+  servlet:
+    multipart:
+      # 데모 ZIP 10MB + 여유. 정확한 제한은 demo.limits에서 검사한다
+      max-file-size: 11MB
+      max-request-size: 12MB
+
+  sql:
+    init:
+      # schema.sql로 PostgreSQL 확장(pg_trgm, fuzzystrmatch)을 만든다. 내장 DB가 아니어도 실행하려면 always가 필요하다
+      mode: always
 
   jpa:
     hibernate:
@@ -18,5 +33,134 @@ spring:
   jackson:
     default-property-inclusion: non_null
 
+  elasticsearch:
+    uris: ${SPRING_ELASTICSEARCH_URIS:http://localhost:9200}
+    username: ${SPRING_ELASTICSEARCH_USERNAME:}
+    password: ${SPRING_ELASTICSEARCH_PASSWORD:}
+    connection-timeout: 1s
+    socket-timeout: 3s
+
+  data:
+    elasticsearch:
+      repositories:
+        # 공식 클라이언트로 직접 쿼리를 만든다. 문서 Repository를 쓰지 않으므로 스캔하지 않는다
+        enabled: false
+
+  security:
+    oauth2:
+      client:
+        registration:
+          github:
+            client-id: ${GITHUB_CLIENT_ID}
+            client-secret: ${GITHUB_CLIENT_SECRET}
+            scope:
+              - read:user
+              - user:email
+          google:
+            client-id: ${GOOGLE_CLIENT_ID:not-configured}
+            client-secret: ${GOOGLE_CLIENT_SECRET:not-configured}
+            scope:
+              - profile
+              - email
+          kakao:
+            client-id: ${KAKAO_CLIENT_ID:not-configured}
+            client-secret: ${KAKAO_CLIENT_SECRET:not-configured}
+            client-authentication-method: client_secret_post
+            authorization-grant-type: authorization_code
+            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
+            scope:
+              - profile_nickname
+              - profile_image
+              - account_email
+            client-name: Kakao
+        provider:
+          github:
+            user-name-attribute: id
+          kakao:
+            authorization-uri: https://kauth.kakao.com/oauth/authorize
+            token-uri: https://kauth.kakao.com/oauth/token
+            user-info-uri: https://kapi.kakao.com/v2/user/me
+            user-name-attribute: id
+
+r2:
+  enabled: ${R2_ENABLED:false}
+  endpoint: ${R2_ENDPOINT:https://placeholder.r2.cloudflarestorage.com}
+  access-key: ${R2_ACCESS_KEY:placeholder}
+  secret-key: ${R2_SECRET_KEY:placeholder}
+  bucket: ${R2_BUCKET:placeholder}
+  public-url: ${R2_PUBLIC_URL:https://placeholder.example.com}
+
+# 데모 플랫폼. 파일은 비공개 버킷에 두고 Worker만 읽는다 (docs/데모-플랫폼-배포.md)
+demo:
+  bucket: ${R2_DEMO_BUCKET:dipsource-demos}
+  worker-base-url: ${DEMO_WORKER_BASE_URL:http://localhost:8787}
+  signing-secret: ${DEMO_SIGNING_SECRET:}
+  limits:
+    max-zip-bytes: 10485760
+    max-total-bytes: 31457280
+    max-file-bytes: 10485760
+    max-files: 200
+  quota:
+    max-demos: ${DEMO_QUOTA_MAX_DEMOS:20}
+    max-storage-bytes: ${DEMO_QUOTA_MAX_STORAGE_BYTES:209715200}
+    max-versions-per-demo: ${DEMO_QUOTA_MAX_VERSIONS:10}
+  preview:
+    ttl-minutes: ${DEMO_PREVIEW_TTL_MINUTES:30}
+    max-active-per-user: 3
+  thumbnail:
+    enabled: ${DEMO_THUMBNAIL_ENABLED:false}
+    account-id: ${CLOUDFLARE_ACCOUNT_ID:}
+    api-token: ${CLOUDFLARE_BROWSER_API_TOKEN:}
+  # 외부 백엔드 상태 확인. 켜면 서버가 업로더가 입력한 도메인으로 요청을 보내므로 기본은 끈다 (docs/데모-플랫폼-배포.md)
+  backend:
+    health-check-enabled: ${DEMO_BACKEND_HEALTH_ENABLED:false}
+    health-cooldown-seconds: 60
+    health-fresh-minutes: 30
+    health-max-concurrent: 4
+    health-timeout-ms: 5000
+
+management:
+  endpoints:
+    web:
+      exposure:
+        # 기본은 health만 연다. 로컬 부하 측정 때만 MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE=health,metrics로 metrics를 연다
+        include: health
+  endpoint:
+    health:
+      show-details: never
+  health:
+    elasticsearch:
+      # 검색 엔진이 죽어도 PostgreSQL로 대체되므로 서버 전체를 DOWN으로 표시하지 않는다
+      enabled: false
+  observations:
+    annotations:
+      # @Timed가 붙은 메서드의 실행 시간을 잰다 (검색 기능 서비스, search.query)
+      enabled: true
+
+# 통합 검색. elasticsearch.enabled는 색인·동기화를 켜고, engine은 읽기 경로를 고른다.
+# 전환 순서: enabled=true로 띄움 → 재색인 → engine=elasticsearch (docs/search-eval/README.md)
+search:
+  engine: ${SEARCH_ENGINE:postgres}
+  fallback-to-postgres: true
+  elasticsearch:
+    enabled: ${SEARCH_ES_ENABLED:false}
+
 server:
   port: 8080
+  forward-headers-strategy: framework
+  servlet:
+    context-path: /api/v1
+
+app:
+  dev-login-enabled: ${DEV_LOGIN_ENABLED:false}
+  cookie:
+    secure: ${COOKIE_SECURE:false}
+  # 로그인 성공 후 리다이렉트할 프론트 주소
+  frontend-base-url: ${FRONTEND_BASE_URL:http://localhost:3000}
+  # 미니홈피 GitHub API rate limit용 (선택). 로그인 OAuth secret과 별개
+  github:
+    token: ${GITHUB_TOKEN:}
+  jwt:
+    secret: ${JWT_SECRET}
+    access-token-validity: 1800
+    refresh-token-validity: 1209600

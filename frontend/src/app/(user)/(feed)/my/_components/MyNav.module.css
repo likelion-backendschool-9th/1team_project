@@ -1,0 +1,30 @@
+.list {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  overflow-x: auto;
+  border-radius: 16px;
+  background: var(--surface-muted);
+  scrollbar-width: none;
+}
+
+.tab {
+  display: block;
+  padding: 9px 18px;
+  border-radius: 12px;
+  color: var(--ink-soft);
+  font-size: 15px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.tab:hover {
+  color: var(--ink);
+}
+
+.active,
+.active:hover {
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: 0 1px 3px rgb(60 40 10 / 10%);
+}

@@ -1,0 +1,114 @@
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.title {
+  color: var(--ink-soft);
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.more {
+  user-select: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  color: var(--ink-soft);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+/* 한 번에 4명만 보이고 나머지는 목록 안에서 스크롤한다. */
+.list {
+  --row: 50px;
+  display: flex;
+  max-height: calc(var(--row) * 4 + 8px);
+  flex-direction: column;
+  padding-right: 4px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-color: #e3dccd transparent;
+  scrollbar-width: thin;
+}
+
+.item {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 2px;
+}
+
+.row {
+  display: flex;
+  min-width: 0;
+  height: var(--row);
+  flex: 1;
+  align-items: center;
+  gap: 10px;
+  padding: 0 6px;
+  border-radius: 12px;
+}
+
+.row:hover {
+  background: var(--surface-muted);
+}
+
+.info {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.name {
+  overflow: hidden;
+  font-size: 13px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  flex: none;
+  border-radius: 50%;
+  background: #d5d6d8;
+}
+
+.online {
+  background: var(--online);
+}
+
+/* 팔로잉 옆 DM 버튼. 줄에 마우스를 올리거나 키보드로 포커스하면 진하게 보인다. */
+.dm {
+  display: inline-flex;
+  width: 32px;
+  height: 32px;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--ink-faint);
+  cursor: pointer;
+}
+
+.dm svg {
+  width: 16px;
+  height: 16px;
+}
+
+.item:hover .dm,
+.dm:focus-visible {
+  color: var(--ink);
+}
+
+.dm:hover {
+  background: var(--surface-muted);
+}

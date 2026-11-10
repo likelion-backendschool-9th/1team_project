@@ -1,0 +1,6 @@
+body { margin: 0; padding: 20px; background: #f4f1ea; font-family: system-ui, sans-serif; }
+.board { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.column { min-height: 220px; padding: 12px; border-radius: 12px; background: #fff; }
+.column.over { outline: 2px dashed #e0a100; }
+ul { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+li { padding: 10px; border-radius: 8px; background: #ffd04d; cursor: grab; }

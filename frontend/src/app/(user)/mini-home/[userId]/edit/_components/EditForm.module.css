@@ -1,0 +1,122 @@
+.skins {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.skin {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.skin:has(input:checked) {
+  border-color: #f5b72a;
+  background: #fffaeb;
+  box-shadow: 0 0 0 2px rgb(255 194 26 / 35%);
+}
+
+.skin input {
+  position: absolute;
+  opacity: 0;
+}
+
+.skin:has(input:focus-visible) {
+  outline: 2px solid var(--accent-ink);
+  outline-offset: 2px;
+}
+
+.swatch {
+  height: 56px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+.demos {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.demo {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  cursor: pointer;
+}
+
+.demo:has(input[type="checkbox"]:checked) {
+  border-color: #f5b72a;
+  background: #fffaeb;
+}
+
+.demoCheck {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+}
+
+.demoCheck input {
+  position: static;
+  width: 18px;
+  height: 18px;
+  flex: none;
+  opacity: 1;
+  accent-color: var(--accent-ink);
+}
+
+.featuredPick {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  user-select: none;
+}
+
+.featuredPick input {
+  position: static;
+  opacity: 1;
+  accent-color: var(--accent-ink);
+}
+
+.featuredPick:has(input:checked) {
+  border-color: #f5b72a;
+  background: #ffc21a;
+}
+
+.lock {
+  margin-left: 6px;
+  color: var(--ink-faint);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+fieldset:disabled .skin {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+@media (max-width: 760px) {
+  .skins {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

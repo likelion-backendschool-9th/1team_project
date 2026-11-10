@@ -1,0 +1,95 @@
+.dialog {
+  width: min(420px, calc(100vw - 32px));
+  padding: 28px;
+  margin: auto;
+  border: 0;
+  border-radius: 24px;
+  background: var(--surface);
+  box-shadow: 0 24px 60px rgb(30 20 5 / 25%);
+}
+
+.dialog::backdrop {
+  background: rgb(31 27 23 / 45%);
+}
+
+.title {
+  font-size: 19px;
+  font-weight: 800;
+}
+
+.section {
+  margin-top: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.sectionLabel {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.radioList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 0;
+  border: 0;
+  margin: 0;
+}
+
+.radioItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.radioItem input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--accent-ink);
+  cursor: pointer;
+}
+
+.textarea {
+  width: 100%;
+  padding: 11px 14px;
+  border: 1px solid #e6dfd3;
+  border-radius: 12px;
+  background: #fbfaf7;
+  font-size: 15px;
+  min-height: 100px;
+  line-height: 1.6;
+  resize: vertical;
+  box-sizing: border-box;
+}
+
+.textarea:focus {
+  border-color: var(--accent-ink);
+  outline: none;
+  box-shadow: 0 0 0 3px rgb(232 135 10 / 15%);
+}
+
+.charCount {
+  text-align: right;
+  color: var(--ink-faint);
+  font-size: 13px;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 24px;
+}
+
+.result {
+  color: var(--ink-soft);
+  font-size: 13px;
+}
+
+.result:empty {
+  display: none;
+}

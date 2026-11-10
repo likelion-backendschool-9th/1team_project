@@ -1,0 +1,209 @@
+/* 스킨 팔레트. 파도타기로 다른 홈피에 가면 배경·틀·탭 색이 함께 바뀐다. */
+.wrap {
+  /* 기본 스킨: 바깥은 서비스 기본 배경(--bg)과 같고, 틀은 아주 연한 회색이라 안의 흰 카드가 떠 보인다. */
+  --page: var(--bg);
+  --frame: #f1f3f7;
+  --frame-border: #dde1e8;
+  --frame-ink: var(--ink);
+  --accent-tab: #ffc21a;
+  --accent-tab-border: #f5b72a;
+  position: relative;
+  max-width: 1440px;
+  margin: 0 auto;
+}
+
+.wrap::before {
+  position: fixed;
+  z-index: -1;
+  inset: 0;
+  background: var(--page);
+  content: "";
+  transition: background 0.3s ease;
+}
+
+.wrap[data-skin="mint"] {
+  --page: #dcf3e8;
+  --frame: #f2fcf7;
+  --frame-border: #bfe8d3;
+  --accent-tab: #5fd6a0;
+  --accent-tab-border: #3fbf86;
+}
+
+.wrap[data-skin="cherry"] {
+  --page: #fde3ec;
+  --frame: #fff5f9;
+  --frame-border: #f6c6d8;
+  --accent-tab: #ff9cc2;
+  --accent-tab-border: #f57aa9;
+}
+
+.wrap[data-skin="sky"] {
+  --page: #dcecfb;
+  --frame: #f4f9ff;
+  --frame-border: #c3dcf5;
+  --accent-tab: #7cbcff;
+  --accent-tab-border: #4f9ff2;
+}
+
+.wrap[data-skin="lavender"] {
+  --page: #e9e2fb;
+  --frame: #f8f5ff;
+  --frame-border: #d6cbf5;
+  --accent-tab: #b39cff;
+  --accent-tab-border: #9a7ef5;
+}
+
+.wrap[data-skin="peach"] {
+  --page: #fde6d8;
+  --frame: #fff7f1;
+  --frame-border: #f6cdb5;
+  --accent-tab: #ffaa7a;
+  --accent-tab-border: #f58c52;
+}
+
+.wrap[data-skin="forest"] {
+  --page: #cfe3d6;
+  --frame: #f1f8f3;
+  --frame-border: #b3d4bf;
+  --accent-tab: #5fae7e;
+  --accent-tab-border: #418f61;
+}
+
+.wrap[data-skin="sunset"] {
+  --page: #ffd9c7;
+  --frame: #fff4ee;
+  --frame-border: #f8c3aa;
+  --accent-tab: #ff8a65;
+  --accent-tab-border: #f26b43;
+}
+
+.wrap[data-skin="midnight"] {
+  --page: #14110d;
+  --frame: #1f1b17;
+  --frame-border: #3a332b;
+  --frame-ink: #f5efe3;
+  --accent-tab: #ffc21a;
+  --accent-tab-border: #f5b72a;
+}
+
+.frame {
+  padding: 32px;
+  border: 1px solid var(--frame-border);
+  border-radius: 36px;
+  background: var(--frame);
+  color: var(--frame-ink);
+  transition: background 0.3s ease, border-color 0.3s ease;
+  box-shadow: 0 2px 4px rgb(60 40 10 / 4%), 0 16px 40px rgb(60 40 10 / 6%);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 324px minmax(0, 1fr);
+  align-items: start;
+  gap: 24px;
+  margin-top: 24px;
+}
+
+.content {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.boards {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px;
+}
+
+/* 싸이월드 책갈피처럼 틀 오른쪽 테두리에 붙은 탭. 틀과 같은 색이라 이어져 보이고, 지금 탭만 노랗게 튀어나온다. */
+.tabs {
+  position: absolute;
+  top: 56px;
+  left: 100%;
+  margin-left: -1px;
+}
+
+.tabs ul {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.tab {
+  display: block;
+  width: 72px;
+  padding: 10px 14px;
+  border: 1px solid var(--frame-border);
+  border-left: 0;
+  border-radius: 0 12px 12px 0;
+  background: var(--frame);
+  color: var(--ink-soft);
+  font-size: 14px;
+  font-weight: 700;
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+
+.tab:hover {
+  background: var(--surface);
+  color: var(--ink);
+}
+
+.activeTab,
+.activeTab:hover {
+  border-color: var(--accent-tab-border);
+  background: var(--accent-tab);
+  color: #1f1b17;
+  transform: translateX(6px);
+}
+
+@media (max-width: 1280px) {
+  .grid {
+    grid-template-columns: 280px minmax(0, 1fr);
+  }
+
+  .boards {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 1100px) {
+  .wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .tabs {
+    position: static;
+    margin: 0;
+  }
+
+  .tabs ul {
+    flex-direction: row;
+    overflow-x: auto;
+  }
+
+  .tab {
+    width: auto;
+    border-left: 1px solid var(--frame-border);
+    border-radius: 12px;
+  }
+
+  .activeTab,
+  .activeTab:hover {
+    transform: none;
+  }
+}
+
+@media (max-width: 900px) {
+  .frame {
+    padding: 20px;
+    border-radius: 24px;
+  }
+
+  .grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

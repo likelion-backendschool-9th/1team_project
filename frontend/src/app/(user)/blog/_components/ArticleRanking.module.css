@@ -1,0 +1,99 @@
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.title {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.more {
+  user-select: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  color: var(--ink-faint);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.tabs {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
+  gap: 4px;
+  padding: 4px;
+  margin: 16px 0 12px;
+  border-radius: 12px;
+  background: #f1f3f7;
+}
+
+.tab {
+  padding: 7px 0;
+  border-radius: 9px;
+  color: var(--ink-soft);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.activeTab {
+  background: var(--surface);
+  color: var(--ink);
+  font-weight: 700;
+  box-shadow: 0 1px 2px rgb(30 40 60 / 8%);
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 6px;
+  border-radius: 10px;
+  font-size: 13px;
+}
+
+.row:hover {
+  background: var(--surface-muted);
+}
+
+.rank {
+  width: 12px;
+  color: var(--ink-soft);
+  font-weight: 700;
+  text-align: center;
+}
+
+.first {
+  color: var(--accent-ink);
+}
+
+.name {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.score {
+  user-select: none;
+  color: var(--ink-faint);
+  font-family: ui-monospace, "SFMono-Regular", Menlo, monospace;
+  font-size: 12px;
+}
+
+.empty {
+  padding: 20px 0 8px;
+  color: var(--ink-faint);
+  font-size: 13px;
+  text-align: center;
+}

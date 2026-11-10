@@ -1,0 +1,142 @@
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px;
+  border-radius: var(--radius-card);
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
+}
+
+.profile {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.who {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.who form {
+  margin-inline-start: 0;
+}
+
+.name {
+  max-width: 100%;
+  overflow: hidden;
+  font-size: 17px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+  text-align: center;
+}
+
+.stats > div + div {
+  border-inline-start: 1px solid var(--border);
+}
+
+.stats dd {
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.stats dt {
+  order: 2;
+  color: var(--ink-faint);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.stats > div {
+  display: flex;
+  flex-direction: column;
+}
+
+/* 칩도 다른 통계와 같은 색·정렬로 두고, 아이콘은 라벨 앞에 작게 둔다. 누르면 충전 화면이라 마우스를 올리면 노랗게 표시한다. */
+.chip dt {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+}
+
+.chip {
+  border-radius: 12px;
+  transition: background 0.15s ease;
+}
+
+.chip:has(.statLink:hover) {
+  background: #fff8e1;
+}
+
+.home {
+  user-select: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.home:hover,
+.action:hover {
+  background: var(--surface-muted);
+}
+
+.actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.action {
+  user-select: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 11px 8px;
+  border-radius: 12px;
+  background: var(--surface-muted);
+  font-size: 14px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+
+/* 숫자 링크가 칸 전체를 덮어 팔로워·팔로잉·칩 칸 어디를 눌러도 해당 화면으로 간다. */
+.stats > div {
+  position: relative;
+}
+
+.statLink {
+  color: inherit;
+}
+
+.statLink::after {
+  position: absolute;
+  inset: 0;
+  content: "";
+}
+
+.stats > div:has(.statLink:hover) dt,
+.stats > div:has(.statLink:hover) dd,
+.statLink:focus-visible {
+  text-decoration: underline;
+}

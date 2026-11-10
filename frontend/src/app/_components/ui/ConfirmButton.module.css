@@ -1,0 +1,41 @@
+.dialog {
+  width: min(420px, calc(100vw - 32px));
+  padding: 28px;
+  margin: auto;
+  border: 0;
+  border-radius: 24px;
+  background: var(--surface);
+  box-shadow: 0 24px 60px rgb(30 20 5 / 25%);
+}
+
+.dialog::backdrop {
+  background: rgb(31 27 23 / 45%);
+}
+
+.title {
+  font-size: 19px;
+  font-weight: 800;
+}
+
+.description {
+  margin-top: 8px;
+  color: var(--ink-soft);
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 24px;
+}
+
+.result {
+  color: var(--ink-soft);
+  font-size: 13px;
+}
+
+.result:empty {
+  display: none;
+}

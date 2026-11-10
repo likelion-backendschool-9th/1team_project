@@ -1,0 +1,15 @@
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.empty {
+  padding: 48px 0;
+  color: var(--ink-soft);
+  text-align: center;
+}
+
+.tabs {
+  margin-bottom: 16px;
+}

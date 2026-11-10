@@ -1,0 +1,460 @@
+/* DM 창. 오른쪽 아래 DM 버튼 위에 떠 있고, 버튼 쪽에서 커지며 열린다. */
+.layout {
+  position: fixed;
+  right: 32px;
+  bottom: 100px;
+  z-index: 30;
+  display: grid;
+  width: min(820px, calc(100vw - 64px));
+  height: min(640px, calc(100vh - 132px));
+  grid-template-columns: 260px minmax(0, 1fr);
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  background: var(--surface);
+  box-shadow: 0 12px 40px rgb(60 40 10 / 18%);
+  transform-origin: bottom right;
+  animation: dmOpen 0.18s ease-out;
+}
+
+@keyframes dmOpen {
+  from {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .layout {
+    animation: none;
+  }
+}
+
+.loading {
+  padding: 20px;
+  color: var(--ink-faint);
+  font-size: 14px;
+}
+
+/* 왼쪽 열: 제목·사람 찾기는 고정, 대화 목록만 스크롤한다. */
+.side {
+  display: flex;
+  min-height: 0;
+  flex-direction: column;
+  border-right: 1px solid var(--border);
+}
+
+.sideHeader {
+  flex: none;
+  padding: 20px 16px 10px;
+}
+
+.rooms {
+  min-height: 0;
+  flex: 1;
+  overflow-y: auto;
+}
+
+.roomsTitle {
+  padding: 0 4px 10px;
+  font-size: 18px;
+  font-weight: 800;
+}
+
+/* 사람 찾기. 후보 목록은 대화 목록 위에 겹쳐 뜨는 작은 드롭다운이다. */
+.search {
+  position: relative;
+}
+
+.searchField {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+  border-radius: 12px;
+  background: var(--surface-muted);
+}
+
+.searchField:focus-within {
+  outline: 2px solid var(--accent-ink);
+}
+
+.searchIcon {
+  flex: none;
+  color: var(--ink-soft);
+  font-size: 16px;
+}
+
+.searchInput {
+  min-width: 0;
+  flex: 1;
+  padding: 9px 0;
+  border: 0;
+  background: none;
+  font-size: 14px;
+}
+
+.searchInput:focus {
+  outline: none;
+}
+
+.searchInput::placeholder {
+  color: var(--ink-faint);
+}
+
+.searchDropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  left: 0;
+  z-index: 5;
+  /* 한 번에 4명(한 줄 40px = 아바타 28px + 위아래 6px)만 보이고 나머지는 스크롤한다. 8px은 위아래 여백 */
+  max-height: calc(4 * 40px + 8px);
+  padding: 4px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
+}
+
+.searchDropdown[hidden] {
+  display: none;
+}
+
+.searchOption {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.searchOption:hover,
+.searchOptionActive {
+  background: var(--surface-muted);
+}
+
+.searchName {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  font-size: 13px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.searchTag {
+  flex: none;
+  padding: 1px 6px;
+  border-radius: var(--radius-pill);
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+  font-size: 11px;
+}
+
+.searchStatus {
+  padding: 6px 8px;
+  color: var(--ink-faint);
+  font-size: 12px;
+}
+
+.searchStatus:empty {
+  display: none;
+}
+
+.searchMore {
+  display: block;
+  width: 100%;
+  padding: 6px 8px;
+  border-radius: 8px;
+  color: var(--ink-soft);
+  font-size: 12px;
+}
+
+.searchMore:hover {
+  background: var(--surface-muted);
+}
+
+.room {
+  display: flex;
+  width: 100%;
+  text-align: start;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+}
+
+.room:hover {
+  background: #fdfbf6;
+}
+
+.activeRoom,
+.activeRoom:hover {
+  background: var(--accent-soft);
+}
+
+.avatarWrap {
+  position: relative;
+  flex: none;
+}
+
+.online {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 12px;
+  height: 12px;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  background: var(--online);
+}
+
+.roomBody {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+}
+
+.roomTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 14px;
+}
+
+.roomTop time {
+  color: var(--ink-faint);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.preview {
+  overflow: hidden;
+  color: var(--ink-soft);
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.unread {
+  display: inline-flex;
+  min-width: 20px;
+  height: 20px;
+  align-items: center;
+  justify-content: center;
+  padding: 0 6px;
+  border-radius: var(--radius-pill);
+  background: var(--danger);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.panel {
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+  flex-direction: column;
+}
+
+.placeholder {
+  display: flex;
+  height: 100%;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 24px;
+  color: var(--ink-soft);
+  text-align: center;
+}
+
+.placeholderIcon {
+  font-size: 44px;
+}
+
+.placeholderTitle {
+  color: var(--ink);
+  font-size: 20px;
+  font-weight: 800;
+}
+
+.chatHeader {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+.chatName {
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.chatSub {
+  color: var(--ink-faint);
+  font-size: 12px;
+}
+
+.homeLink {
+  margin-inline-start: auto;
+  padding: 6px 12px;
+  border-radius: 10px;
+  background: var(--surface-muted);
+  font-size: 13px;
+  font-weight: 700;
+  user-select: none;
+}
+
+.connection {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 6px;
+  background: #f3fbf6;
+  color: #18794e;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.connectionDot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--online);
+}
+
+.messages {
+  display: flex;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 10px;
+  padding: 20px;
+  overflow-y: auto;
+  background: #fdfcf9;
+}
+
+.message {
+  display: flex;
+  max-width: 75%;
+  align-items: flex-end;
+  gap: 6px;
+}
+
+.mine {
+  flex-direction: row-reverse;
+  align-self: flex-end;
+}
+
+.bubble {
+  padding: 10px 14px;
+  border-radius: 16px 16px 16px 4px;
+  background: var(--surface);
+  box-shadow: 0 1px 2px rgb(60 40 10 / 8%);
+  font-size: 15px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.mine .bubble {
+  border-radius: 16px 16px 4px;
+  background: #ffd75e;
+}
+
+.messageMeta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  color: var(--ink-faint);
+  font-size: 11px;
+  white-space: nowrap;
+  user-select: none;
+}
+
+.mine .messageMeta {
+  align-items: flex-start;
+}
+
+.unreadMark {
+  color: var(--accent-ink);
+  font-weight: 800;
+}
+
+.composer {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  padding: 14px 16px;
+  border-top: 1px solid var(--border);
+}
+
+.input {
+  min-width: 0;
+  max-height: 120px;
+  flex: 1;
+  padding: 11px 14px;
+  border: 1px solid #e6dfd3;
+  border-radius: 14px;
+  background: #fbfaf7;
+  font-size: 15px;
+  resize: none;
+}
+
+.input:focus {
+  border-color: var(--accent-ink);
+  outline: none;
+}
+
+.send {
+  padding: 11px 18px;
+  border-radius: 14px;
+  background: #ffc21a;
+  font-weight: 700;
+}
+
+.send:disabled {
+  opacity: 0.5;
+}
+
+.socketError {
+  padding: 0 16px 8px;
+  color: var(--danger);
+  font-size: 13px;
+}
+
+.socketError:empty {
+  display: none;
+}
+
+@media (max-width: 760px) {
+  .layout {
+    right: 8px;
+    bottom: 84px;
+    width: calc(100vw - 16px);
+    height: calc(100dvh - 100px);
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+
+  .side {
+    border-right: 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .sideHeader {
+    padding: 14px 12px 8px;
+  }
+
+  .rooms {
+    max-height: 140px;
+  }
+}

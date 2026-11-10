@@ -1,0 +1,78 @@
+.title {
+  font-size: 19px;
+  font-weight: 700;
+}
+
+.modes {
+  display: inline-flex;
+  padding: 3px;
+  border-radius: 10px;
+  background: var(--surface-muted);
+}
+
+.modes button {
+  padding: 5px 12px;
+  border-radius: 8px;
+  color: var(--ink-soft);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.modes button[aria-pressed="true"] {
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: 0 1px 2px rgb(60 40 10 / 10%);
+}
+
+.content {
+  min-height: 360px;
+  font-family: ui-monospace, "SFMono-Regular", Menlo, monospace;
+  font-size: 14px;
+}
+
+.preview {
+  min-height: 360px;
+  padding: 20px;
+  border: 1px solid #e6dfd3;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.paidRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.priceRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.price {
+  width: 110px;
+}
+
+.draftBanner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1px solid #ffc21a;
+  border-radius: 12px;
+  background: rgb(255 194 26 / 12%);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* 유료 글인데 본문이 최소 길이보다 짧을 때 */
+.lengthShort {
+  color: var(--accent-ink);
+  font-size: 14px;
+  font-weight: 600;
+}

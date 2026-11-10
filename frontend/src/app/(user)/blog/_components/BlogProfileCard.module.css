@@ -1,0 +1,147 @@
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
+}
+
+.profile {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.who {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.who form {
+  margin-inline-start: 0;
+}
+
+.name {
+  max-width: 100%;
+  overflow: hidden;
+  font-size: 17px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+
+
+
+
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  padding-block: 16px;
+  border-block: 1px solid var(--border);
+  text-align: center;
+}
+
+.stats > div {
+  display: flex;
+  flex-direction: column;
+}
+
+.stats > div + div {
+  border-inline-start: 1px solid var(--border);
+}
+
+.stats dd {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.stats dt {
+  order: 2;
+  color: var(--ink-faint);
+  font-size: 12px;
+}
+
+.chip dt {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+}
+
+.write {
+  user-select: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 13px 12px;
+  border-radius: 16px;
+  background: #ffc21a;
+  font-size: 14px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.write:hover {
+  background: #ffb800;
+}
+
+.writeRow {
+  display: grid;
+  grid-template-columns: 1fr 1.4fr;
+  gap: 10px;
+}
+
+.actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.action {
+  user-select: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 11px 8px;
+  border-radius: 14px;
+  background: #f1f4f9;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.action:hover {
+  background: #e6ebf3;
+}
+
+
+/* 숫자 링크가 칸 전체를 덮어 팔로워·팔로잉·칩 칸 어디를 눌러도 해당 화면으로 간다. */
+.stats > div {
+  position: relative;
+}
+
+.statLink {
+  color: inherit;
+}
+
+.statLink::after {
+  position: absolute;
+  inset: 0;
+  content: "";
+}
+
+.stats > div:has(.statLink:hover) dt,
+.stats > div:has(.statLink:hover) dd,
+.statLink:focus-visible {
+  text-decoration: underline;
+}

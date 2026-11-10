@@ -27,64 +27,51 @@
 
 ## 2. 패키지 구조
 
-3계층 아키텍처 + 도메인별 패키지.
+3계층을 먼저 나누고, 그 안에 기능(도메인)별 폴더를 둔다. 루트 패키지는 `com.dipsource`다. 기능 목록과 담당 테이블은 [백엔드-청사진.md](./백엔드-청사진.md) 5장을 따른다.
 
 ```text
-com.dipsource.backend/
+com/dipsource
 ├─ DipSourceApplication.java
-├─ global/                    전역 설정·공통 코드
-│  ├─ config/                 SecurityConfig, WebSocketConfig, CorsConfig 등
-│  ├─ exception/              GlobalExceptionHandler, ErrorCode, ErrorResponse
-│  ├─ auth/                   JWT 필터, OAuth2 핸들러, SecurityUtil
-│  └─ common/                 BaseEntity, PageResponse 등 공통 클래스
+├─ global/                    전역 설정·공통 코드 (도메인 로직 금지)
+│  ├─ config/                 Security, Cors, WebSocket, JpaAuditing
+│  ├─ auth/                   JWT 필터, OAuth2 핸들러
+│  ├─ exception/              BusinessException, ErrorCode, GlobalExceptionHandler
+│  └─ common/                 BaseEntity, ApiResponse, PageResponse
 │
-├─ domain/
-│  ├─ user/
-│  │  ├─ entity/              User, SocialAccount
-│  │  ├─ repository/          UserRepository, SocialAccountRepository
-│  │  ├─ service/             UserService
-│  │  ├─ controller/          UserController, AuthController
-│  │  └─ dto/                 요청·응답 DTO
-│  │
-│  ├─ minihome/
-│  │  ├─ entity/              MiniHome, Guestbook
-│  │  ├─ repository/
-│  │  ├─ service/
-│  │  ├─ controller/          MiniHomeController
-│  │  └─ dto/
-│  │
-│  ├─ demo/
-│  │  ├─ entity/              Demo, Tag, DemoTag
-│  │  ├─ repository/
-│  │  ├─ service/
-│  │  ├─ controller/          DemoController
-│  │  └─ dto/
-│  │
-│  ├─ post/                   블로그 글
-│  ├─ feed/                   피드, FeedVote, Repost
-│  ├─ comment/                댓글 (다형성)
-│  ├─ like/                   좋아요 (다형성)
-│  ├─ bookmark/               북마크
-│  ├─ follow/                 팔로우
-│  ├─ block/                  차단
-│  ├─ subscription/           구독
-│  ├─ coin/                   도토리 (CoinTransaction)
-│  ├─ settlement/             정산
-│  ├─ notification/           알림
-│  ├─ dm/                     DM 메시지
-│  ├─ report/                 신고
-│  └─ admin/                  관리자 전용 컨트롤러·서비스
-│     ├─ controller/          AdminUserController, AdminDemoController 등
-│     ├─ service/
-│     └─ dto/
+├─ controller/<기능>/         [1층] 요청 파싱, 응답 포장만
+├─ service/<기능>/            [2층] 서비스 인터페이스
+│  └─ impl/                   서비스 구현체 (비즈니스 로직, @Transactional)
+├─ repository/<기능>/         [3층] 데이터 접근
+├─ entity/<기능>/             [3층] JPA 엔티티
+└─ dto/<기능>/                요청·응답 record
 ```
+
+기능 폴더는 5개 층 폴더에 같은 이름으로 만든다. 예를 들어 회원은 `controller/user`, `service/user`, `repository/user`, `entity/user`, `dto/user`다.
+
+| 기능 | 설명 |
+|------|------|
+| `user` | users, social_accounts, 관심 태그, 제재 (+ 인증 컨트롤러) |
+| `badge` | 뱃지, 회원 뱃지 |
+| `follow` · `block` | 팔로우, 차단 |
+| `feed` | 피드, 좋아요·댓글·리포스트·투표 |
+| `tag` | 태그 |
+| `demo` | 데모, 피드백, 북마크 |
+| `post` | 블로그 글, 댓글·좋아요 |
+| `minihome` | 미니홈피, 방명록 |
+| `dm` | DM 방·멤버·메시지 |
+| `notification` | 알림 |
+| `coin` · `subscription` | 칩, 구독 |
+| `settlement` | 정산 |
+| `report` | 신고 |
+| `admin` | 관리자 |
+| `search` · `ranking` · `news` | 집계·외부 API. `entity`, `repository` 폴더는 없다 |
 
 ### 규칙
 
-- 도메인 패키지 안에서 `entity → repository → service → controller → dto` 계층을 유지한다.
-- 다른 도메인의 `entity`나 `repository`를 직접 참조하지 않는다. 필요하면 해당 도메인의 `service`를 통해 접근한다.
-- `global/`에는 도메인 로직을 넣지 않는다.
-- 패키지가 너무 작으면 (엔티티 1개, 서비스 1개) 관련 도메인에 합친다.
+- 호출 방향은 `controller → service → repository → entity`이고, `dto`는 controller와 service 사이에서 쓴다.
+- 다른 기능의 `entity`나 `repository`를 직접 참조하지 않는다. 필요하면 해당 기능의 `service`를 통해 접근한다.
+- `global/`에는 기능 로직을 넣지 않는다.
+- 빈 폴더는 `.gitkeep`으로 유지한다. 첫 파일을 만들 때 해당 `.gitkeep`을 지운다.
 
 ---
 
@@ -190,7 +177,8 @@ public abstract class BaseEntity {
 | 테이블 | 복수형 snake_case | `users`, `demos`, `mini_homes` |
 | 컬럼 | snake_case | `user_id`, `like_count`, `is_paid` |
 | Repository | `엔티티명 + Repository` | `UserRepository`, `DemoRepository` |
-| Service | `엔티티명 + Service` | `UserService`, `DemoService` |
+| Service | `엔티티명 + Service` (인터페이스) | `UserService`, `DemoService` |
+| Service 구현체 | `Service명 + Impl`, `service/<기능>/impl/`에 둔다 | `UserServiceImpl`, `DemoServiceImpl` |
 | Controller | `엔티티명 + Controller` | `UserController`, `DemoController` |
 | DTO | `동작 + 엔티티명 + Request/Response` | `CreateDemoRequest`, `DemoResponse` |
 
@@ -231,14 +219,18 @@ private Long targetId;
 ```
 소셜 로그인 요청 → OAuth2 제공자 (GitHub/카카오/구글)
     → 백엔드 콜백에서 사용자 확인/생성
-    → Access Token + Refresh Token 발급
+    → Access Token + Refresh Token 발급, Refresh는 DB(해시)에 저장
     → httpOnly 쿠키로 응답
     → 이후 요청마다 쿠키 → JwtAuthenticationFilter → SecurityContext
+    → Access 만료 시 POST /auth/refresh 가 Refresh를 검증·교체(Rotation)
 ```
 
 ### 구현 규칙
 
 - Access Token은 짧은 만료 (15~30분), Refresh Token은 긴 만료 (7~14일).
+- Access는 stateless JWT다. Refresh는 `refresh_tokens`에 SHA-256 해시로 저장하고, 갱신마다 기존 토큰을 교체한다.
+- 로그아웃은 해당 로그인 줄(`family_id`)을 폐기한 뒤 쿠키를 지운다. 탈퇴는 그 회원의 Refresh를 모두 폐기한다.
+- 교체 후 30초 안 재요청은 탭 경합으로 보고 같은 다음 토큰을 다시 준다. 30초가 지난 재사용은 탈취로 보고 그 줄만 폐기한다.
 - 토큰은 httpOnly + Secure + SameSite=Lax 쿠키에 저장한다.
 - `JwtAuthenticationFilter`는 `OncePerRequestFilter`를 상속해 Security Filter Chain에 등록한다.
 - 권한 검사는 `@PreAuthorize` 또는 SecurityConfig에서 URL 패턴으로 설정한다.

@@ -1,0 +1,331 @@
+package com.dipsource.service.search.engine;
+
+import co.elastic.clients.elasticsearch._types.FieldValue;
+import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
+import co.elastic.clients.elasticsearch._types.query_dsl.Operator;
+import co.elastic.clients.elasticsearch._types.query_dsl.Query;
+import com.dipsource.dto.search.SearchOperator;
+import com.dipsource.dto.search.SearchType;
+import com.dipsource.global.config.SearchProperties;
+import com.dipsource.global.config.SearchProperties.TypePolicy;
+import com.dipsource.service.search.query.ParsedQuery;
+import com.dipsource.service.search.query.TechTermDictionary;
+import com.dipsource.service.search.query.TextNormalizer;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Component;
+
+/**
+ * 검색어를 Elasticsearch 쿼리로 바꾼다. 단어 하나마다 필드별 BM25를 묶고(dis_max), 단어끼리 and/or를 적용한다.
+ * 필드를 통째로 묶지 않고 단어별로 묶기 때문에 제목에 spring, 본문에 jpa가 있어도 and로 찾힌다.
+ */
+@Component
+@RequiredArgsConstructor
+public class ElasticsearchQueryFactory {
+
+    /** 정확 일치 쿼리 이름. 응답의 matched_queries로 정확 일치 여부를 받는다 */
+    static final String EXACT_QUERY_NAME = "exact";
+    /** 사전에서 찾을 수 있는 여러 단어 표기의 최대 단어 수 */
+    private static final int MAX_TERM_WORDS = 3;
+
+    /** 검색 의도만 나타내는 단어. 문서에 없어도 되지만 있으면 점수를 받는다. 부정 표현은 넣지 않는다 */
+    private static final List<String> OPTIONAL_WORDS = List.of(
+            "방법", "방법은", "어떻게", "하는법", "how", "to", "the", "a", "an", "of", "in", "for", "with");
+
+    private final SearchProperties properties;
+    private final TechTermDictionary dictionary;
+
+    public Query build(SearchPort.Request request) {
+        boolean flat = properties.getRanking().isFlat();
+        TypePolicy policy = properties.getRanking().policy(request.type().name().toLowerCase(Locale.ROOT));
+        ParsedQuery query = request.query();
+
+        BoolQuery.Builder bool = new BoolQuery.Builder();
+        applyHashtags(bool, policy, query, request.operator());
+        applyExclusions(bool, request);
+        if (request.createdBefore() != null) {
+            String before = request.createdBefore().toString();
+            bool.filter(f -> f.range(r -> r.date(d -> d.field("created_at").lte(before))));
+        }
+
+        TechTermDictionary.SingleCharTerm singleChar = singleCharTerm(query);
+        if (query.prefix()) {
+            bool.must(prefixQuery(policy, query.keywords().get(0), flat));
+        } else if (singleChar != null) {
+            bool.must(singleCharQuery(policy, singleChar, query.phrase()));
+            if (!flat) {
+                applyPhraseAndExact(bool, policy, query);
+            }
+        } else if (query.hasText()) {
+            applyKeywords(bool, policy, query, request.operator(), flat);
+            if (!flat) {
+                applyPhraseAndExact(bool, policy, query);
+            }
+        } else {
+            bool.must(m -> m.matchAll(a -> a));
+        }
+        Query scored = Query.of(q -> q.bool(bool.build()));
+        return wrapQuality(scored, flat);
+    }
+
+    /** 검색어로 시작하는 단어를 필드별로 찾는다. 점수는 일치 횟수와 무관한 필드 가중치만 쓴다 */
+    private Query prefixQuery(TypePolicy policy, String word, boolean flat) {
+        List<Query> clauses = new ArrayList<>();
+        for (Map.Entry<String, Float> field : policy.getFields().entrySet()) {
+            if (!field.getKey().contains(".")) {
+                float boost = flat ? 1f : field.getValue();
+                clauses.add(Query.of(q -> q.prefix(p -> p.field(field.getKey()).value(word).boost(boost))));
+            }
+        }
+        String tagPrefix = TextNormalizer.tagKey(word);
+        float tagBoost = flat ? 1f : policy.getKeywordBoost();
+        clauses.add(Query.of(q -> q.prefix(p -> p.field(policy.getKeywordField()).value(tagPrefix).boost(tagBoost))));
+        return Query.of(q -> q.disMax(d -> d.queries(clauses)));
+    }
+
+    private TechTermDictionary.SingleCharTerm singleCharTerm(ParsedQuery query) {
+        return query.keywords().size() == 1 ? dictionary.singleCharacterTerm(query.keywords().get(0)) : null;
+    }
+
+    /**
+     * 한 글자 검색. 형태소 분석을 거친 전문 검색은 "C 레벨", "웹사이트"까지 잡으므로 쓰지 않고,
+     * 태그·기술 스택 정확 일치, 제목의 독립 단어, 정의된 구문, 제목·닉네임 전체 일치로만 찾는다.
+     */
+    private Query singleCharQuery(TypePolicy policy, TechTermDictionary.SingleCharTerm term, String exact) {
+        List<Query> clauses = new ArrayList<>();
+        for (String tag : term.tags()) {
+            clauses.add(keywordField(policy, tag, policy.getKeywordBoost()));
+        }
+        if (policy.getExactField() != null) {
+            clauses.add(Query.of(q -> q.term(t -> t.field(policy.getExactField()).value(exact))));
+            String titleField = policy.getPhraseField();
+            term.titleWords().forEach(word -> clauses.add(Query.of(q -> q.match(m -> m.field(titleField).query(word)))));
+        }
+        for (String phrase : term.phrases()) {
+            for (String field : policy.getFields().keySet()) {
+                if (!field.contains(".") && !field.endsWith("_text")) {
+                    clauses.add(Query.of(q -> q.matchPhrase(p -> p.field(field + ".ko").query(phrase))));
+                }
+            }
+        }
+        return Query.of(q -> q.disMax(d -> d.queries(clauses)));
+    }
+
+    private Query wrapQuality(Query scored, boolean flat) {
+        if (flat) {
+            return scored;
+        }
+        return Query.of(q -> q.functionScore(fs -> fs
+                .query(scored)
+                .functions(f -> f.fieldValueFactor(v -> v.field("quality").missing(1.0)))
+                .boostMode(co.elastic.clients.elasticsearch._types.query_dsl.FunctionBoostMode.Multiply)));
+    }
+
+    /** 명시적 해시태그는 필수 조건이다. 여러 개면 op=or일 때만 하나라도 일치하면 되고, 기본은 모두 일치다 */
+    private void applyHashtags(BoolQuery.Builder bool, TypePolicy policy, ParsedQuery query, SearchOperator operator) {
+        if (query.hashtags().isEmpty()) {
+            return;
+        }
+        if (operator == SearchOperator.OR) {
+            List<FieldValue> values = query.hashtags().stream().map(FieldValue::of).toList();
+            bool.filter(f -> f.terms(t -> t.field(policy.getKeywordField()).terms(v -> v.value(values))));
+            return;
+        }
+        for (String tag : query.hashtags()) {
+            bool.filter(f -> f.term(t -> t.field(policy.getKeywordField()).value(tag)));
+        }
+    }
+
+    private void applyExclusions(BoolQuery.Builder bool, SearchPort.Request request) {
+        if (!request.excludedIds().isEmpty()) {
+            bool.mustNot(m -> m.ids(i -> i.values(request.excludedIds().stream().map(String::valueOf).toList())));
+        }
+        if (!request.excludedAuthors().isEmpty()) {
+            if (request.type() == SearchType.USER) {
+                bool.mustNot(m -> m.ids(i -> i.values(request.excludedAuthors().stream().map(String::valueOf).toList())));
+            } else {
+                List<FieldValue> authors = request.excludedAuthors().stream().map(FieldValue::of).toList();
+                bool.mustNot(m -> m.terms(t -> t.field("author_id").terms(v -> v.value(authors))));
+            }
+        }
+    }
+
+    private void applyKeywords(BoolQuery.Builder bool, TypePolicy policy, ParsedQuery query, SearchOperator operator,
+                               boolean flat) {
+        List<Unit> required = new ArrayList<>();
+        List<Unit> optional = new ArrayList<>();
+        for (Unit unit : units(query.keywords())) {
+            boolean droppable = operator == SearchOperator.AUTO && unit.words().size() == 1
+                    && OPTIONAL_WORDS.contains(unit.words().get(0)) && query.keywords().size() > 1;
+            (droppable ? optional : required).add(unit);
+        }
+        if (required.isEmpty()) {
+            required.addAll(optional);
+            optional.clear();
+        }
+        boolean natural = operator == SearchOperator.AUTO
+                && required.size() >= properties.getRanking().getNaturalMinKeywords();
+        Context context = new Context(policy, flat, natural);
+        List<Query> groups = required.stream().map(unit -> unitQuery(context, unit)).toList();
+        if (operator == SearchOperator.OR || natural) {
+            // 일치 조건만 따로 묶는다. 가산용 should(구문·정확 일치)가 minimum_should_match 분모에 들어가면 안 된다
+            String minimum = natural ? properties.getRanking().getNaturalMinimumShouldMatch() : "1";
+            bool.must(m -> m.bool(b -> b.should(groups).minimumShouldMatch(minimum)));
+        } else {
+            groups.forEach(bool::must);
+        }
+        optional.forEach(unit -> bool.should(unitQuery(context, unit)));
+    }
+
+    /** @param natural 문장 검색. 활용형의 일부 형태소("만료됐을"의 "되")가 없어도 단어가 맞은 것으로 본다 */
+    private record Context(TypePolicy policy, boolean flat, boolean natural) {
+    }
+
+    /** 검색 단위. 사전에 있는 여러 단어 표기(스프링 부트)는 한 단위로 묶어서 동의어로 넓힌다 */
+    private record Unit(List<String> words) {
+    }
+
+    private List<Unit> units(List<String> keywords) {
+        List<Unit> units = new ArrayList<>();
+        int index = 0;
+        while (index < keywords.size()) {
+            int span = dictionarySpan(keywords, index);
+            units.add(new Unit(keywords.subList(index, index + span)));
+            index += span;
+        }
+        return units;
+    }
+
+    private int dictionarySpan(List<String> keywords, int start) {
+        if (properties.getAnalysis().isSynonyms()) {
+            for (int span = Math.min(MAX_TERM_WORDS, keywords.size() - start); span > 1; span--) {
+                if (dictionary.contains(String.join(" ", keywords.subList(start, start + span)))) {
+                    return span;
+                }
+            }
+        }
+        return 1;
+    }
+
+    private Query unitQuery(Context context, Unit unit) {
+        TypePolicy policy = context.policy();
+        if (unit.words().size() == 1) {
+            return keywordGroup(context, unit.words().get(0));
+        }
+        String form = String.join(" ", unit.words());
+        List<Query> alternatives = new ArrayList<>();
+        // 사전 표기 그대로: 단어가 모두 있어야 한다. 동의어보다 높은 점수다
+        alternatives.add(Query.of(q -> q.bool(b -> {
+            unit.words().forEach(word -> b.must(keywordGroup(context, word)));
+            return b;
+        })));
+        float weight = properties.getRanking().getSynonymBoost();
+        for (String synonym : dictionary.synonymsOf(form)) {
+            for (Map.Entry<String, Float> field : policy.getFields().entrySet()) {
+                alternatives.add(fieldMatch(field.getKey(), synonym, field.getValue() * weight, context.natural()));
+            }
+            alternatives.add(keywordField(policy, synonym, policy.getKeywordBoost() * weight));
+        }
+        return Query.of(q -> q.disMax(d -> d.queries(alternatives)));
+    }
+
+    /** 단어 하나를 찾는 필드별 쿼리 묶음. 가장 잘 맞는 필드의 점수를 쓰고 나머지는 tie_breaker만큼만 더한다 */
+    private Query keywordGroup(Context context, String keyword) {
+        TypePolicy policy = context.policy();
+        boolean flat = context.flat();
+        List<Query> clauses = new ArrayList<>();
+        for (Map.Entry<String, Float> field : policy.getFields().entrySet()) {
+            float boost = flat ? 1f : field.getValue();
+            clauses.add(fieldMatch(field.getKey(), keyword, boost, context.natural()));
+        }
+        clauses.add(keywordField(policy, keyword, flat ? 1f : policy.getKeywordBoost()));
+        addSynonyms(clauses, context, keyword);
+        return Query.of(q -> q.disMax(d -> d.queries(clauses).tieBreaker((double) properties.getRanking().getTieBreaker())));
+    }
+
+    private void addSynonyms(List<Query> clauses, Context context, String keyword) {
+        TypePolicy policy = context.policy();
+        if (context.flat() || !properties.getAnalysis().isSynonyms()) {
+            return;
+        }
+        float weight = properties.getRanking().getSynonymBoost();
+        for (String synonym : dictionary.synonymsOf(keyword)) {
+            for (Map.Entry<String, Float> field : policy.getFields().entrySet()) {
+                clauses.add(fieldMatch(field.getKey(), synonym, field.getValue() * weight, context.natural()));
+            }
+            clauses.add(keywordField(policy, synonym, policy.getKeywordBoost() * weight));
+        }
+    }
+
+    private Query keywordField(TypePolicy policy, String word, float boost) {
+        String key = TextNormalizer.tagKey(word);
+        return Query.of(q -> q.term(t -> t.field(policy.getKeywordField()).value(key).boost(boost)));
+    }
+
+    /** 원문 필드와, 단어에 쓰인 문자에 맞는 언어 서브필드에서 찾는다 */
+    private Query fieldMatch(String field, String word, float boost, boolean natural) {
+        List<Query> languages = new ArrayList<>();
+        languages.add(match(field, word, false));
+        if (!field.endsWith(".ngram") && properties.getAnalysis().isLanguageFields()) {
+            for (String language : languagesOf(word)) {
+                languages.add(match(field + "." + language, word, natural && language.equals("ko")));
+            }
+        }
+        if (languages.size() == 1) {
+            return Query.of(q -> q.match(m -> m.field(field).query(word).operator(Operator.And).boost(boost)));
+        }
+        return Query.of(q -> q.disMax(d -> d.queries(languages).boost(boost)));
+    }
+
+    private static Query match(String field, String word, boolean anyToken) {
+        Operator operator = anyToken ? Operator.Or : Operator.And;
+        return Query.of(q -> q.match(m -> m.field(field).query(word).operator(operator)));
+    }
+
+    /** 일본어·중국어는 한자를 같이 쓰므로 가나가 없는 한자 단어는 두 분석기를 모두 본다 */
+    static List<String> languagesOf(String word) {
+        boolean hangul = false;
+        boolean latin = false;
+        boolean kana = false;
+        boolean han = false;
+        for (int codePoint : word.codePoints().toArray()) {
+            Character.UnicodeScript script = Character.UnicodeScript.of(codePoint);
+            hangul |= script == Character.UnicodeScript.HANGUL;
+            latin |= script == Character.UnicodeScript.LATIN;
+            kana |= script == Character.UnicodeScript.HIRAGANA || script == Character.UnicodeScript.KATAKANA;
+            han |= script == Character.UnicodeScript.HAN;
+        }
+        List<String> languages = new ArrayList<>();
+        if (hangul) {
+            languages.add("ko");
+        }
+        if (latin) {
+            languages.add("en");
+        }
+        if (kana) {
+            languages.add("ja");
+        } else if (han) {
+            languages.add("zh");
+            languages.add("ja");
+        }
+        return languages;
+    }
+
+    /** 제목·닉네임 전체 일치와 구문 일치. 후보 안에서 위로 올리는 가산점이고, 일치 조건에는 영향을 주지 않는다 */
+    private void applyPhraseAndExact(BoolQuery.Builder bool, TypePolicy policy, ParsedQuery query) {
+        if (policy.getExactField() != null) {
+            String exact = query.phrase();
+            bool.should(s -> s.constantScore(c -> c
+                    .queryName(EXACT_QUERY_NAME)
+                    .filter(f -> f.term(t -> t.field(policy.getExactField()).value(exact)))
+                    .boost(policy.getExactBoost())));
+        }
+        if (query.keywords().size() > 1) {
+            String field = policy.getPhraseField();
+            bool.should(s -> s.matchPhrase(p -> p.field(field).query(query.phrase()).boost(policy.getPhraseBoost())));
+        }
+    }
+}

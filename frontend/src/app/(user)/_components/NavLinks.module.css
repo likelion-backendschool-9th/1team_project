@@ -1,0 +1,54 @@
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  color: var(--ink);
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.item:hover {
+  background: var(--surface-muted);
+}
+
+.icon {
+  font-size: 22px;
+}
+
+.active,
+.active:hover {
+  background: var(--accent-soft);
+}
+
+/* 오른쪽 사이드가 옆에 있는 넓은 화면에서는 숨긴다. (프로필 카드에 같은 바로가기가 있다) */
+@media (min-width: 1101px) {
+  .narrowOnly {
+    display: none;
+  }
+}
+
+
+
+@media (max-width: 760px) {
+  .list {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
+  .item {
+    padding: 8px 12px;
+    font-size: 14px;
+  }
+
+  .icon {
+    font-size: 19px;
+  }
+}

@@ -1,0 +1,106 @@
+services:
+  db:
+    image: postgres:16
+    container_name: dipsource-db
+    restart: always
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # 켜는 법: 서버 .env에 COMPOSE_PROFILES=search, IMAGE_ELASTICSEARCH, ELASTIC_PASSWORD, SEARCH_ES_ENABLED=true를 넣고 올린다.
+  # 초기 색인이 끝나면 SEARCH_ENGINE=elasticsearch로 읽기를 전환한다. 포트를 열지 않아 내부 네트워크에서만 접근한다
+  elasticsearch:
+    image: ${IMAGE_ELASTICSEARCH:-dipsource-elasticsearch:8.15.5}
+    profiles: ["search"]
+    container_name: dipsource-elasticsearch
+    restart: always
+    environment:
+      discovery.type: single-node
+      xpack.security.enabled: "true"
+      xpack.security.http.ssl.enabled: "false"
+      ELASTIC_PASSWORD: ${ELASTIC_PASSWORD:-}
+      ES_JAVA_OPTS: -Xms1g -Xmx1g
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+
+  backend:
+    image: ${IMAGE_BACKEND}
+    container_name: dipsource-backend
+    restart: always
+    environment:
+      SPRING_ELASTICSEARCH_URIS: http://elasticsearch:9200
+      SPRING_ELASTICSEARCH_USERNAME: ${ELASTIC_USERNAME:-elastic}
+      SPRING_ELASTICSEARCH_PASSWORD: ${ELASTIC_PASSWORD:-}
+      SEARCH_ES_ENABLED: ${SEARCH_ES_ENABLED:-false}
+      SEARCH_ENGINE: ${SEARCH_ENGINE:-postgres}
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/${POSTGRES_DB}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+      GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID}
+      GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET}
+      # 미니홈피 잔디(GitHub GraphQL)용 토큰. 없으면 잔디가 비어 보인다. (로그인 OAuth와 별개)
+      GITHUB_TOKEN: ${GITHUB_TOKEN:-}
+      # 최고 관리자(MASTER)로 지정할 회원 이메일. 이 이메일로 가입한 뒤 서버를 다시 띄우면 적용된다
+      MASTER_EMAIL: ${MASTER_EMAIL:-}
+      # OAuth 로그인 후 돌아갈 프론트 주소. 비어 있으면 localhost:3000으로 튕기므로 필수로 둔다.
+      FRONTEND_BASE_URL: ${FRONTEND_BASE_URL:?FRONTEND_BASE_URL을 서버 .env에 설정해야 합니다}
+      COOKIE_SECURE: "true"
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:?GOOGLE_CLIENT_ID를 서버 .env에 설정해야 합니다}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:?GOOGLE_CLIENT_SECRET을 서버 .env에 설정해야 합니다}
+      KAKAO_CLIENT_ID: ${KAKAO_CLIENT_ID:?KAKAO_CLIENT_ID를 서버 .env에 설정해야 합니다}
+      KAKAO_CLIENT_SECRET: ${KAKAO_CLIENT_SECRET:?KAKAO_CLIENT_SECRET을 서버 .env에 설정해야 합니다}
+      # 데모·이미지 저장소. 값을 넣지 않으면 파일 업로드만 꺼진다 (docs/데모-플랫폼-배포.md)
+      R2_ENABLED: ${R2_ENABLED:-false}
+      R2_ENDPOINT: ${R2_ENDPOINT:-}
+      R2_ACCESS_KEY: ${R2_ACCESS_KEY:-}
+      R2_SECRET_KEY: ${R2_SECRET_KEY:-}
+      R2_BUCKET: ${R2_BUCKET:-}
+      R2_PUBLIC_URL: ${R2_PUBLIC_URL:-}
+      R2_DEMO_BUCKET: ${R2_DEMO_BUCKET:-dipsource-demos}
+      DEMO_WORKER_BASE_URL: ${DEMO_WORKER_BASE_URL:-}
+      DEMO_SIGNING_SECRET: ${DEMO_SIGNING_SECRET:-}
+      DEMO_QUOTA_MAX_DEMOS: ${DEMO_QUOTA_MAX_DEMOS:-20}
+      DEMO_QUOTA_MAX_STORAGE_BYTES: ${DEMO_QUOTA_MAX_STORAGE_BYTES:-209715200}
+      DEMO_QUOTA_MAX_VERSIONS: ${DEMO_QUOTA_MAX_VERSIONS:-10}
+      DEMO_THUMBNAIL_ENABLED: ${DEMO_THUMBNAIL_ENABLED:-false}
+      DEMO_BACKEND_HEALTH_ENABLED: ${DEMO_BACKEND_HEALTH_ENABLED:-false}
+      CLOUDFLARE_ACCOUNT_ID: ${CLOUDFLARE_ACCOUNT_ID:-}
+      CLOUDFLARE_BROWSER_API_TOKEN: ${CLOUDFLARE_BROWSER_API_TOKEN:-}
+    depends_on:
+      db:
+        condition: service_healthy
+
+  frontend:
+    image: ${IMAGE_FRONTEND}
+    container_name: dipsource-frontend
+    restart: always
+    environment:
+      API_ORIGIN: http://backend:8080
+      BROWSER_API_ORIGIN: ""
+    depends_on:
+      - backend
+
+  proxy:
+    image: nginx:1.27
+    container_name: dipsource-proxy
+    restart: always
+    ports:
+      - "127.0.0.1:3001:80"
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - frontend
+      - backend
+
+volumes:
+  postgres_data:
+  elasticsearch_data:

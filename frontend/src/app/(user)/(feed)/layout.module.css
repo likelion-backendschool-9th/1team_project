@@ -1,0 +1,58 @@
+.shell {
+  display: grid;
+  grid-template-columns: var(--aside-left) minmax(0, 1fr) var(--aside-right);
+  grid-template-areas: "nav center right";
+  max-width: var(--shell-max);
+  min-height: 100vh;
+  margin: 0 auto;
+}
+
+.center {
+  grid-area: center;
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 20px;
+  padding: 20px 24px 120px;
+  border-inline: 1px solid var(--border);
+}
+
+.main {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.main:focus {
+  outline: none;
+}
+
+@media (max-width: 1100px) {
+  .shell {
+    grid-template-columns: 220px minmax(0, 1fr);
+    grid-template-areas:
+      "nav center"
+      "nav right";
+  }
+
+  .center {
+    padding-bottom: 24px;
+    border-inline-end: 0;
+  }
+}
+
+@media (max-width: 760px) {
+  .shell {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      "nav"
+      "center"
+      "right";
+  }
+
+  .center {
+    padding: 16px 16px 24px;
+    border-inline: 0;
+  }
+}

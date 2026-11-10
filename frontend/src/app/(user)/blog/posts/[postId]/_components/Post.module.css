@@ -1,0 +1,111 @@
+.article {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 32px;
+}
+
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+.title {
+  font-size: 28px;
+  font-weight: 800;
+  line-height: 1.35;
+  letter-spacing: -0.02em;
+}
+
+.byline {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.author {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.report {
+  color: var(--ink-faint);
+  font-size: 13px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.lockedBody {
+  position: relative;
+  max-height: 360px;
+  overflow: hidden;
+}
+
+.lockedBody::after {
+  position: absolute;
+  inset: auto 0 0;
+  height: 140px;
+  background: linear-gradient(transparent, var(--surface));
+  content: "";
+}
+
+.paywall {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 28px 20px;
+  border: 1px solid #f5d27a;
+  border-radius: 20px;
+  background: #fffaeb;
+  text-align: center;
+}
+
+.lock {
+  font-size: 32px;
+}
+
+.paywallTitle {
+  font-size: 19px;
+  font-weight: 800;
+}
+
+.source {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px;
+  padding: 18px 20px;
+  border: 1px solid #fbe6ad;
+  border-radius: 18px;
+  background: #fffbea;
+}
+
+.source > span {
+  display: inline-flex;
+  width: 48px;
+  height: 48px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  background: #ffefc2;
+  color: #b45f06;
+  font-family: ui-monospace, "SFMono-Regular", Menlo, monospace;
+  font-weight: 700;
+}
+
+@media (max-width: 760px) {
+  .article {
+    padding: 20px;
+  }
+
+  .title {
+    font-size: 23px;
+  }
+}

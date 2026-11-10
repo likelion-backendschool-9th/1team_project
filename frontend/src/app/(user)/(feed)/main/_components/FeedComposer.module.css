@@ -1,0 +1,232 @@
+.composer {
+  position: sticky;
+  top: 12px;
+  z-index: 5;
+  scroll-margin-top: 24px;
+  transition: box-shadow 0.2s ease;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: var(--surface);
+  /* 피드 카드보다 한 단계 위: 글쓰기 창은 그림자로 떠 보이게 둔다. */
+  box-shadow: var(--shadow-card);
+}
+
+.stuck {
+  box-shadow: 0 2px 6px rgb(60 40 10 / 8%), 0 12px 32px rgb(60 40 10 / 14%);
+}
+
+.form {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 14px 14px 14px 18px;
+}
+
+.input {
+  min-width: 0;
+  flex: 1;
+  border: 0;
+  background: none;
+  font-size: 16px;
+}
+
+.input:focus {
+  outline: none;
+}
+
+.input::placeholder {
+  color: var(--ink-faint);
+}
+
+.form:focus-within {
+  border-radius: 18px;
+  outline: 2px solid var(--accent-ink);
+}
+
+.count {
+  color: var(--ink-faint);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.tool {
+  display: inline-flex;
+  padding: 6px;
+  color: var(--ink-soft);
+  font-size: 21px;
+}
+
+.tool:disabled {
+  opacity: 0.5;
+}
+
+.toolActive {
+  color: var(--accent-ink);
+}
+
+.submit {
+  padding: 10px 22px;
+  border-radius: 12px;
+  font-size: 15px;
+  background: var(--accent);
+  font-weight: 700;
+}
+
+.submit:hover:not(:disabled) {
+  background: #ffc42b;
+}
+
+.submit:disabled {
+  opacity: 0.6;
+}
+
+/* 링크 입력 + 이미지 미리보기 영역 */
+.extras {
+  flex: 0 0 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 4px;
+  padding-bottom: 4px;
+}
+
+.linkRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--ink-soft);
+  font-size: 20px;
+}
+
+.linkInput {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  background: none;
+  font-size: 14px;
+  padding: 4px 2px;
+}
+
+.linkInput:focus {
+  outline: none;
+  border-bottom-color: var(--accent-ink);
+}
+
+.linkInput::placeholder {
+  color: var(--ink-faint);
+}
+
+/* 작성 중 미리보기. 피드 카드와 같은 장수별 배치. */
+.thumbGrid {
+  display: grid;
+  gap: 6px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.thumb {
+  position: relative;
+  width: auto;
+  height: auto;
+  aspect-ratio: 1;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.thumbImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.count1 {
+  grid-template-columns: 1fr;
+}
+
+.count1 .thumb {
+  width: min(100%, 420px);
+  aspect-ratio: auto;
+}
+
+.count1 .thumbImg {
+  width: 100%;
+  height: auto;
+  max-height: 240px;
+  object-fit: contain;
+  background: var(--surface-muted, #f3ede2);
+}
+
+.count2,
+.count4 {
+  grid-template-columns: 1fr 1fr;
+}
+
+.count3 {
+  grid-template-columns: 1fr 1fr;
+}
+
+.count3 .thumb:first-child {
+  grid-column: 1 / -1;
+  aspect-ratio: 16 / 9;
+}
+
+.count5 {
+  grid-template-columns: repeat(6, 1fr);
+}
+
+.count5 .thumb:nth-child(-n + 2) {
+  grid-column: span 3;
+}
+
+.count5 .thumb:nth-child(n + 3) {
+  grid-column: span 2;
+}
+
+.thumbRemove {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  display: flex;
+  padding: 2px;
+  border-radius: 50%;
+  background: rgb(0 0 0 / 50%);
+  color: #fff;
+  font-size: 14px;
+  line-height: 1;
+}
+
+/* linkRow의 제거 버튼은 absolute가 아님 */
+.linkRow .thumbRemove {
+  position: static;
+  background: none;
+  color: var(--ink-soft);
+  font-size: 18px;
+}
+
+.error,
+.status {
+  padding: 0 20px 14px;
+  font-size: 14px;
+}
+
+.error {
+  color: var(--danger);
+}
+
+.status {
+  color: var(--ink-soft);
+}
+
+.error:empty,
+.status:empty {
+  display: none;
+}
+
+@media (max-width: 760px) {
+  .count {
+    display: none;
+  }
+}

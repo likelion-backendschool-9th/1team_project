@@ -1,0 +1,393 @@
+"use client";
+
+import { useActionState, useRef, useState, useSyncExternalStore } from "react";
+import { FormMessage } from "@/app/_components/ui/FormMessage";
+import kit from "@/app/_components/ui/kit.module.css";
+import { initialFormState, type FormState } from "@/app/_lib/formState";
+import { categories, PAID_MIN_LENGTH } from "../_lib/query";
+import { Markdown } from "./Markdown";
+import styles from "./PostEditor.module.css";
+
+type Initial = {
+  title: string;
+  category: string;
+  tags: string;
+  content: string;
+  demoId: string;
+  price: string;
+  paid: boolean;
+  /** 넣을 내 시리즈 ID. 없으면 "" */
+  seriesId: string;
+};
+
+type Props = {
+  action: (previous: FormState, formData: FormData) => Promise<FormState>;
+  demos: { id: number; title: string }[];
+  /** 글을 넣을 수 있는 내 시리즈 */
+  series: { id: number; title: string; price: number }[];
+  initial?: Initial;
+  submitLabel: string;
+  /** 임시저장 구분값. 새 글은 "new", 수정은 "edit-{글 ID}". 없으면 임시저장 버튼을 숨긴다 */
+  draftKey?: string;
+};
+
+// 예전 임시저장본에는 seriesId가 없을 수 있다.
+type Draft = Omit<Initial, "paid" | "seriesId"> & { paid: boolean; seriesId?: string; savedAt: number };
+
+// 임시저장은 아직 서버 API가 없어 이 브라우저(localStorage)에만 보관한다.
+const DRAFT_EVENT = "dipsource:post-draft";
+
+function readDraft(storageKey: string): string | null {
+  try {
+    return window.localStorage.getItem(storageKey);
+  } catch {
+    return null;
+  }
+}
+
+function parseDraft(raw: string | null): Draft | null {
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw) as Draft;
+  } catch {
+    return null;
+  }
+}
+
+function subscribeDraft(onChange: () => void) {
+  window.addEventListener("storage", onChange);
+  window.addEventListener(DRAFT_EVENT, onChange);
+  return () => {
+    window.removeEventListener("storage", onChange);
+    window.removeEventListener(DRAFT_EVENT, onChange);
+  };
+}
+
+// 이벤트 핸들러(임시저장 버튼)에서만 부르는 현재 시각.
+function currentTime(): number {
+  return Date.now();
+}
+
+function formatSavedAt(savedAt: number): string {
+  return new Date(savedAt).toLocaleString("ko-KR", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" });
+}
+
+const empty: Initial = { title: "", category: "", tags: "", content: "", demoId: "", price: "10", paid: false, seriesId: "" };
+
+export function PostEditor({ action, demos, series, initial = empty, submitLabel, draftKey }: Props) {
+  const [state, formAction, pending] = useActionState(action, initialFormState);
+  const value = (key: keyof Initial) => state.values[key] ?? String(initial[key]);
+  const [content, setContent] = useState(initial.content);
+  // 폼 액션이 끝나면 React가 폼을 초기화하는데, defaultValue만 둔 select는 첫 옵션으로 돌아가 버린다.
+  // 그래서 select 두 개는 상태로 들고 있어 검사에 걸려도 고른 값이 남게 한다.
+  const [category, setCategory] = useState(initial.category);
+  const [demoId, setDemoId] = useState(initial.demoId);
+  const [seriesId, setSeriesId] = useState(initial.seriesId);
+  // 시리즈 안 유료 글은 칩 가격 없이 시리즈를 산 사람만 읽는다. 무료 시리즈에는 유료 회차를 둘 수 없다.
+  const selectedSeries = series.find((item) => String(item.id) === seriesId) ?? null;
+  const [preview, setPreview] = useState(false);
+  const [paid, setPaid] = useState(initial.paid);
+  // 유료 글 최소 길이 안내용. 서버 검사와 같이 앞뒤 공백은 세지 않는다.
+  const length = content.trim().length;
+  const formRef = useRef<HTMLFormElement>(null);
+  const storageKey = draftKey ? `dipsource:post-draft:${draftKey}` : null;
+  const savedRaw = useSyncExternalStore(
+    subscribeDraft,
+    () => (storageKey ? readDraft(storageKey) : null),
+    () => null,
+  );
+  const savedDraft = parseDraft(savedRaw);
+  const [draftMessage, setDraftMessage] = useState<string | null>(null);
+  const [restored, setRestored] = useState(false);
+  const [priceOverride, setPriceOverride] = useState<string | null>(null);
+
+  function writeDraft(next: Draft | null) {
+    if (!storageKey) return;
+    try {
+      if (next) window.localStorage.setItem(storageKey, JSON.stringify(next));
+      else window.localStorage.removeItem(storageKey);
+    } catch {
+      setDraftMessage("이 브라우저에서는 임시저장을 쓸 수 없어요.");
+      return;
+    }
+    window.dispatchEvent(new Event(DRAFT_EVENT));
+  }
+
+  function saveDraft() {
+    const form = formRef.current;
+    if (!form) return;
+    const data = new FormData(form);
+    const text = (key: string) => String(data.get(key) ?? "");
+    const savedAt = currentTime();
+    writeDraft({
+      title: text("title"),
+      category: text("category"),
+      tags: text("tags"),
+      content,
+      demoId: text("demoId"),
+      price: text("price") || "10",
+      paid,
+      seriesId,
+      savedAt,
+    });
+    setRestored(true);
+    setDraftMessage(`임시저장했어요 · ${formatSavedAt(savedAt)}`);
+  }
+
+  function restoreDraft() {
+    const form = formRef.current;
+    if (!form || !savedDraft) return;
+    for (const key of ["title", "tags"] as const) {
+      const field = form.elements.namedItem(key);
+      if (field instanceof HTMLInputElement) field.value = savedDraft[key];
+    }
+    setContent(savedDraft.content);
+    setCategory(savedDraft.category);
+    setDemoId(savedDraft.demoId);
+    setSeriesId(savedDraft.seriesId ?? "");
+    setPaid(savedDraft.paid);
+    setPriceOverride(savedDraft.price);
+    setRestored(true);
+    setDraftMessage(`${formatSavedAt(savedDraft.savedAt)}에 임시저장한 글을 불러왔어요.`);
+  }
+
+  function discardDraft() {
+    writeDraft(null);
+    setRestored(true);
+    setDraftMessage("임시저장한 글을 지웠어요.");
+  }
+
+  const invalid = (key: string) =>
+    state.errors[key] ? { "aria-invalid": true as const, "aria-describedby": `post-${key}-error` } : {};
+
+  return (
+    <form
+      ref={formRef}
+      action={formAction}
+      // 발행·수정 요청을 보내면 임시저장본은 지운다. (실패해도 작성 중인 내용은 화면에 남아 있다)
+      onSubmit={() => writeDraft(null)}
+      className={`${kit.card} ${kit.form}`}
+    >
+      {savedDraft && !restored && (
+        <div className={styles.draftBanner} role="status">
+          <span>{formatSavedAt(savedDraft.savedAt)}에 임시저장한 글이 있어요.</span>
+          <span className={kit.row}>
+            <button type="button" className={`${kit.btn} ${kit.sm}`} onClick={restoreDraft}>
+              불러오기
+            </button>
+            <button type="button" className={`${kit.btnGhost} ${kit.sm}`} onClick={discardDraft}>
+              지우기
+            </button>
+          </span>
+        </div>
+      )}
+      <div className={kit.field}>
+        <label htmlFor="post-title" className={kit.label}>
+          제목
+        </label>
+        <input
+          id="post-title"
+          name="title"
+          maxLength={80}
+          defaultValue={value("title")}
+          placeholder="예: JPA N+1 문제를 3가지 방법으로 해결하기"
+          className={`${kit.input} ${styles.title}`}
+          {...invalid("title")}
+        />
+        <p id="post-title-error" className={kit.error}>
+          {state.errors.title}
+        </p>
+      </div>
+
+      <div className={kit.grid2}>
+        <div className={kit.field}>
+          <label htmlFor="post-category" className={kit.label}>
+            분류
+          </label>
+          <select
+            id="post-category"
+            name="category"
+            value={category}
+            onChange={(event) => setCategory(event.target.value)}
+            className={kit.select}
+            {...invalid("category")}
+          >
+            <option value="">분류 선택</option>
+            {categories.map((item) => (
+              <option key={item.value} value={item.value}>
+                {item.label}
+              </option>
+            ))}
+          </select>
+          <p id="post-category-error" className={kit.error}>
+            {state.errors.category}
+          </p>
+        </div>
+        <div className={kit.field}>
+          <label htmlFor="post-tags" className={kit.label}>
+            태그
+          </label>
+          <input
+            id="post-tags"
+            name="tags"
+            defaultValue={value("tags")}
+            placeholder="Spring, JPA, 성능"
+            className={kit.input}
+          />
+        </div>
+      </div>
+
+      <div className={kit.field}>
+        <div className={kit.between}>
+          <label htmlFor="post-content" className={kit.label}>
+            본문 (마크다운)
+          </label>
+          <div className={styles.modes} role="group" aria-label="보기 방식">
+            <button type="button" aria-pressed={!preview} onClick={() => setPreview(false)}>
+              편집
+            </button>
+            <button type="button" aria-pressed={preview} onClick={() => setPreview(true)}>
+              미리보기
+            </button>
+          </div>
+        </div>
+        <textarea
+          id="post-content"
+          name="content"
+          value={content}
+          onChange={(event) => setContent(event.target.value)}
+          placeholder={"## 소제목\n\n본문을 마크다운으로 작성해요.\n\n- 목록\n\n```java\n코드 블록\n```"}
+          className={`${kit.textarea} ${styles.content}`}
+          hidden={preview}
+          {...invalid("content")}
+        />
+        {preview && (
+          <div className={styles.preview} aria-live="polite">
+            {content.trim() ? <Markdown source={content} /> : <p className={kit.faint}>작성한 내용이 없어요.</p>}
+          </div>
+        )}
+        {paid && !selectedSeries && (
+          <p className={length < PAID_MIN_LENGTH ? styles.lengthShort : kit.faint}>
+            본문 {length.toLocaleString()} / {PAID_MIN_LENGTH.toLocaleString()}자 · 유료 글은{" "}
+            {PAID_MIN_LENGTH.toLocaleString()}자 이상 써야 발행할 수 있어요
+          </p>
+        )}
+        <p id="post-content-error" className={kit.error}>
+          {state.errors.content}
+        </p>
+      </div>
+
+      <div className={kit.field}>
+        <label htmlFor="post-series" className={kit.label}>
+          시리즈 (선택)
+        </label>
+        <select
+          id="post-series"
+          name="seriesId"
+          value={seriesId}
+          onChange={(event) => setSeriesId(event.target.value)}
+          className={kit.select}
+          aria-describedby="post-series-hint"
+        >
+          <option value="">시리즈에 넣지 않음</option>
+          {series.map((item) => (
+            <option key={item.id} value={item.id}>
+              {item.title}
+            </option>
+          ))}
+        </select>
+        <p id="post-series-hint" className={kit.faint}>
+          {series.length === 0
+            ? "시리즈는 내 블로그에서 만들 수 있어요."
+            : "고른 시리즈의 마지막 회차 뒤에 붙어요. 시리즈를 바꾸면 새 시리즈의 마지막 회차가 돼요."}
+        </p>
+      </div>
+
+      <div className={kit.grid2}>
+        <div className={kit.field}>
+          <label htmlFor="post-demo" className={kit.label}>
+            데모 연결 (선택)
+          </label>
+          <select
+            id="post-demo"
+            name="demoId"
+            value={demoId}
+            onChange={(event) => setDemoId(event.target.value)}
+            className={kit.select}
+          >
+            <option value="">연결하지 않음</option>
+            {demos.map((demo) => (
+              <option key={demo.id} value={demo.id}>
+                {demo.title}
+              </option>
+            ))}
+          </select>
+        </div>
+        <fieldset className={kit.fieldset}>
+          <legend className={kit.label}>공개 방식</legend>
+          <label className={styles.paidRow}>
+            <input
+              type="checkbox"
+              role="switch"
+              name="paid"
+              checked={paid}
+              onChange={(event) => setPaid(event.target.checked)}
+              className={kit.switch}
+            />
+            {selectedSeries ? (paid ? "시리즈 구매자 전용" : "무료 회차") : paid ? "유료 글" : "무료 공개"}
+          </label>
+          {selectedSeries && (
+            <p className={kit.faint}>
+              {selectedSeries.price > 0
+                ? "유료로 두면 이 시리즈를 산 사람만 읽어요. 회차는 한 편씩 팔지 않아요."
+                : "무료 시리즈라 유료 회차를 넣을 수 없어요. 시리즈 가격을 먼저 정해 주세요."}
+            </p>
+          )}
+          {paid && !selectedSeries && (
+            <div className={styles.priceRow}>
+              <label htmlFor="post-price" className="sr-only">
+                열람 가격 (칩)
+              </label>
+              <input
+                key={priceOverride ?? "initial"}
+                id="post-price"
+                name="price"
+                type="number"
+                min={1}
+                max={100}
+                defaultValue={priceOverride ?? value("price")}
+                className={`${kit.input} ${styles.price}`}
+                {...invalid("price")}
+              />
+              <span className={kit.muted}>칩</span>
+            </div>
+          )}
+          <p id="post-price-error" className={kit.error}>
+            {state.errors.price}
+          </p>
+        </fieldset>
+      </div>
+
+      <div className={kit.between}>
+        <div>
+          <FormMessage ok={state.ok} message={state.message} />
+          {draftMessage && (
+            <p className={kit.faint} role="status">
+              {draftMessage}
+            </p>
+          )}
+        </div>
+        <div className={kit.row}>
+          {storageKey && (
+            <button type="button" className={kit.btn} onClick={saveDraft} disabled={pending}>
+              임시저장
+            </button>
+          )}
+          <button type="submit" className={kit.btnPrimary} disabled={pending}>
+            {pending ? "저장 중…" : submitLabel}
+          </button>
+        </div>
+      </div>
+    </form>
+  );
+}

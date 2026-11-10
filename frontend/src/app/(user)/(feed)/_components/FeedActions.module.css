@@ -1,0 +1,178 @@
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 20px;
+}
+
+/* 버튼마다 눌린 색(--on)과 그보다 연한 호버 색(--hover)을 둔다. */
+.action {
+  --on: var(--ink);
+  --hover: var(--ink);
+  user-select: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 4px;
+  border-radius: 10px;
+  color: var(--ink-soft);
+  font-size: 13px;
+  transition: color 0.15s ease;
+}
+
+.action:hover:not(:disabled) {
+  color: var(--hover);
+}
+
+.icon {
+  position: relative;
+  display: inline-flex;
+  font-size: 17px;
+  transition: transform 0.15s ease;
+}
+
+.action:hover:not(:disabled) .icon {
+  transform: scale(1.08);
+}
+
+.action:active:not(:disabled) .icon {
+  transform: scale(0.88);
+}
+
+.like {
+  --on: var(--danger);
+  --hover: #f78fa3;
+}
+
+.comment {
+  --on: #3b8beb;
+  --hover: #82b6f3;
+}
+
+.comment:active {
+  color: var(--on);
+}
+
+.repost {
+  --on: var(--online);
+  --hover: #80d9a4;
+}
+
+.bookmark {
+  --on: var(--accent-ink);
+  --hover: #f3b462;
+  margin-inline-start: auto;
+}
+
+.liked,
+.reposted,
+.saved,
+.liked:hover:not(:disabled),
+.reposted:hover:not(:disabled),
+.saved:hover:not(:disabled) {
+  color: var(--on);
+}
+
+/* 좋아요: 하트가 커졌다 돌아오고 둘레로 고리가 퍼진다. */
+.pop {
+  animation: pop 0.45s cubic-bezier(0.2, 0.9, 0.3, 1.4);
+}
+
+.pop::after {
+  position: absolute;
+  inset: -6px;
+  border: 2px solid var(--on);
+  border-radius: 50%;
+  animation: ring 0.5s ease-out forwards;
+  content: "";
+  pointer-events: none;
+}
+
+/* 리포스트: 화살표 방향(시계 방향)으로 한 바퀴 돈다. */
+.spin {
+  animation: spin 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* 북마크: 위로 살짝 떴다가 내려앉는다. */
+.drop {
+  animation: drop 0.45s ease-out;
+}
+
+/* 취소할 때는 짧게 눌리는 느낌만 준다. */
+.press {
+  animation: press 0.2s ease-out;
+}
+
+@keyframes pop {
+  0% {
+    transform: scale(1);
+  }
+  30% {
+    transform: scale(1.35);
+  }
+  60% {
+    transform: scale(0.9);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes ring {
+  from {
+    opacity: 0.8;
+    transform: scale(0.4);
+  }
+  to {
+    opacity: 0;
+    transform: scale(1.3);
+  }
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes drop {
+  0% {
+    transform: translateY(0) scale(1);
+  }
+  35% {
+    transform: translateY(-6px) scale(1.15);
+  }
+  70% {
+    transform: translateY(1px) scale(0.95);
+  }
+  100% {
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes press {
+  50% {
+    transform: scale(0.85);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .icon,
+  .icon::after {
+    animation: none !important;
+    transition: none;
+  }
+}
+
+.error {
+  flex-basis: 100%;
+  color: var(--danger);
+  font-size: 14px;
+}
+
+.error:empty {
+  display: none;
+}

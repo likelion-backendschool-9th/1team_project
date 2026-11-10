@@ -1,0 +1,87 @@
+.aside {
+  font-size: 15px;
+  position: relative;
+  z-index: 20;
+  grid-area: right;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 20px 20px 64px;
+}
+
+.loading {
+  color: var(--ink-faint);
+  font-size: 13px;
+}
+
+.guarantee {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 24px;
+  border: 1px solid #f7dc9a;
+  border-radius: var(--radius-card);
+  background: #fffaeb;
+}
+
+.guaranteeTitle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #8a4b08;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.guaranteeText {
+  color: #a0611a;
+  font-size: 12px;
+  line-height: 1.7;
+}
+
+.guaranteeLink {
+  user-select: none;
+  display: inline-flex;
+  align-self: flex-start;
+  align-items: center;
+  gap: 4px;
+  color: #8a4b08;
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.settings {
+  user-select: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface);
+  color: var(--ink-soft);
+  font-weight: 500;
+}
+
+.settings:hover {
+  background: var(--surface-muted);
+}
+
+.settingsIcon {
+  font-size: 16px;
+}
+
+@media (max-width: 1100px) {
+  .aside {
+    padding: 0 28px 64px;
+  }
+}
+
+@media (max-width: 760px) {
+  .aside {
+    padding-inline: 0;
+  }
+}

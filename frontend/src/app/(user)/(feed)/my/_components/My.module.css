@@ -1,0 +1,154 @@
+.summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 20px;
+}
+
+.name {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+  font-size: 22px;
+  font-weight: 800;
+}
+
+.plusTag {
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: #1f1b17;
+  color: #ffc21a;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  user-select: none;
+}
+
+.stats {
+  display: flex;
+  gap: 24px;
+  text-align: center;
+}
+
+.stats > div {
+  display: flex;
+  flex-direction: column-reverse;
+}
+
+.stats dt {
+  color: var(--ink-faint);
+  font-size: 13px;
+}
+
+.stats dd {
+  font-size: 22px;
+  font-weight: 800;
+}
+
+/* 보유 칩도 다른 통계와 같은 색으로 두고, 아이콘은 라벨 앞에 작게 둔다. */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.shortcut {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 18px 12px;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: var(--surface);
+  font-weight: 700;
+  user-select: none;
+  transition: transform 0.15s ease;
+}
+
+.shortcut span {
+  font-size: 26px;
+}
+
+.shortcut:hover {
+  background: #fffaeb;
+  transform: translateY(-2px);
+}
+
+.person {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  align-items: center;
+  gap: 12px;
+}
+
+.package {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 22px 14px;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: var(--surface);
+  text-align: center;
+}
+
+.packageChips {
+  font-size: 22px;
+  font-weight: 800;
+}
+
+.balance {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 28px;
+  border: 1px solid #f7cf66;
+  border-radius: var(--radius-card);
+  /* 쨍한 단색 대신, 밝은 노랑에서 따뜻한 귤빛으로 번지는 그라데이션 + 왼쪽 위 하이라이트 */
+  background:
+    radial-gradient(circle at 12% 0%, rgb(255 255 255 / 55%), transparent 50%),
+    linear-gradient(135deg, #ffe9a8 0%, #ffd45e 55%, #ffbb3a 100%);
+  box-shadow: 0 10px 30px rgb(232 135 10 / 18%);
+}
+
+.balance > p {
+  color: var(--ink-soft);
+}
+
+.balanceValue {
+  font-size: 34px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.plus {
+  color: #18794e;
+  font-weight: 700;
+}
+
+.minus {
+  color: var(--danger);
+  font-weight: 700;
+}
+
+.historyFooter {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding-top: 16px;
+}
+
+.avatarEdit {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}

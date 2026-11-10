@@ -19,6 +19,9 @@ configurations {
     }
 }
 
+// Docker Engine 29 이상과 호환되는 버전 (Boot 3.4.1 기본값 1.20.4는 Docker API 협상에 실패한다)
+ext['testcontainers.version'] = '1.21.4'
+
 repositories {
     mavenCentral()
 }
@@ -27,7 +30,22 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
     implementation 'org.springframework.boot:spring-boot-starter-security'
+    implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
     implementation 'org.springframework.boot:spring-boot-starter-validation'
+    implementation 'org.springframework.boot:spring-boot-starter-cache'
+    implementation 'org.springframework.boot:spring-boot-starter-data-elasticsearch'
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    implementation 'com.github.ben-manes.caffeine:caffeine'
+
+    implementation 'com.rometools:rome:2.1.0'
+    implementation 'org.springframework.boot:spring-boot-starter-websocket'
+
+    implementation 'software.amazon.awssdk:s3:2.25.27'
+    implementation 'net.coobird:thumbnailator:0.4.20'
+
+    implementation 'io.jsonwebtoken:jjwt-api:0.12.6'
+    runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.12.6'
+    runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.12.6'
 
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
@@ -36,8 +54,39 @@ dependencies {
 
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.springframework.security:spring-security-test'
+    testImplementation 'org.springframework.boot:spring-boot-testcontainers'
+    testImplementation 'org.testcontainers:junit-jupiter'
+    testImplementation 'org.testcontainers:postgresql'
+    testImplementation 'org.testcontainers:elasticsearch'
+}
+
+// 테스트 결과가 개발자의 루트 .env에 따라 달라지지 않게 한다. ES 테스트는 @SpringBootTest 속성으로 직접 켠다
+def isolateSearchEnv = { Test task ->
+    task.environment 'SEARCH_ENGINE', 'postgres'
+    task.environment 'SEARCH_ES_ENABLED', 'false'
 }
 
 tasks.named('test') {
-    useJUnitPlatform()
+    useJUnitPlatform {
+        excludeTags 'search-eval'
+    }
+    isolateSearchEnv(it)
+    // 테스트 JVM 기본 힙(512MB)으로는 서로 다른 @SpringBootTest 컨텍스트가 캐시에 쌓이면서 OutOfMemoryError가 난다
+    maxHeapSize = '2g'
+}
+
+// 검색 품질 평가. 결과는 docs/search-eval/results/에 남는다: ./gradlew searchEval
+tasks.register('searchEval', Test) {
+    description = '고정 평가셋으로 검색 품질(MRR, NDCG@10)을 측정한다'
+    group = 'verification'
+    isolateSearchEnv(it)
+    testClassesDirs = sourceSets.test.output.classesDirs
+    classpath = sourceSets.test.runtimeClasspath
+    useJUnitPlatform {
+        includeTags 'search-eval'
+    }
+    systemProperty 'search.eval.output', "${rootDir}/../docs/search-eval/results"
+    systemProperty 'search.eval.label', project.findProperty('evalLabel') ?: 'es'
+    outputs.upToDateWhen { false }
+    testLogging.showStandardStreams = true
 }

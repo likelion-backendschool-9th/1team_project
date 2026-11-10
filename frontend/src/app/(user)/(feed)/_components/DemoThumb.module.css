@@ -1,0 +1,55 @@
+.thumb {
+  position: relative;
+  background-position: center;
+  background-size: cover;
+}
+
+.tone0 {
+  background-color: #efe9e1;
+}
+
+.tone1 {
+  background-color: #cfe3fb;
+}
+
+.tone2 {
+  background-color: #2b3138;
+}
+
+.tone3 {
+  background-color: #1f2328;
+}
+
+.label {
+  user-select: none;
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  padding: 4px 12px;
+  border-radius: var(--radius-pill);
+  background: rgb(255 255 255 / 92%);
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+/* 썸네일이 없을 때 가운데 깔리는 코드 기호와 은은한 빛 */
+.glyph {
+  user-select: none;
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: radial-gradient(circle at 30% 25%, rgb(255 255 255 / 35%), transparent 55%);
+  color: rgb(31 35 40 / 22%);
+  font-family: ui-monospace, "SFMono-Regular", Menlo, monospace;
+  font-size: 44px;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+}
+
+.tone2 .glyph,
+.tone3 .glyph {
+  background: radial-gradient(circle at 30% 25%, rgb(255 255 255 / 10%), transparent 55%);
+  color: rgb(255 255 255 / 22%);
+}

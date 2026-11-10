@@ -1,0 +1,574 @@
+package com.dipsource.service.post;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import com.dipsource.dto.post.PostDetailResponse;
+import com.dipsource.dto.post.WritePostRequest;
+import com.dipsource.dto.user.UserSummaryResponse;
+import com.dipsource.entity.post.Post;
+import com.dipsource.entity.post.PostCategory;
+import com.dipsource.entity.post.PostStatus;
+import com.dipsource.entity.post.PostTag;
+import com.dipsource.entity.tag.Tag;
+import com.dipsource.global.exception.BusinessException;
+import com.dipsource.global.exception.ErrorCode;
+import com.dipsource.repository.block.BlockRepository;
+import com.dipsource.repository.post.BlogSubscriptionRepository;
+import com.dipsource.repository.post.PostBookmarkRepository;
+import com.dipsource.repository.post.PostPurchaseRepository;
+import com.dipsource.repository.post.PostRepository;
+import com.dipsource.repository.post.PostTagRepository;
+import com.dipsource.repository.tag.TagRepository;
+import com.dipsource.service.coin.CoinService;
+import com.dipsource.service.post.impl.PostServiceImpl;
+import com.dipsource.service.post.impl.PostViewCounter;
+import com.dipsource.service.user.UserService;
+import java.util.EnumSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.test.util.ReflectionTestUtils;
+
+@ExtendWith(MockitoExtension.class)
+class PostServiceImplTest {
+
+    private static final Long AUTHOR = 1L;
+    private static final Long OTHER = 2L;
+    /** 유료 글 최소 길이(1000자)를 딱 채운 본문 */
+    private static final String LONG_BODY = "가".repeat(1000);
+    private static final String BODY = "첫 문단입니다.\n\n둘째 문단입니다.\n\n셋째 문단입니다.\n\n넷째 문단은 잠겨야 합니다.";
+
+    @Mock private PostRepository postRepository;
+    @Mock private com.dipsource.repository.post.PostLikeRepository postLikeRepository;
+    @Mock private PostBookmarkRepository postBookmarkRepository;
+    @Mock private PostTagRepository postTagRepository;
+    @Mock private PostPurchaseRepository postPurchaseRepository;
+    @Mock private BlogSubscriptionRepository blogSubscriptionRepository;
+    @Mock private com.dipsource.repository.post.PostSeriesRepository postSeriesRepository;
+    @Mock private com.dipsource.repository.post.SeriesPurchaseRepository seriesPurchaseRepository;
+    @Mock private TagRepository tagRepository;
+    @Mock private UserService userService;
+    @Mock private BlockRepository blockRepository;
+    @Mock private CoinService coinService;
+    @Mock private com.dipsource.repository.user.UserRepository userRepository;
+
+    private PostServiceImpl service;
+
+    @BeforeEach
+    void setUp() {
+        service = new PostServiceImpl(postRepository, postLikeRepository, postBookmarkRepository, postTagRepository,
+                postPurchaseRepository, blogSubscriptionRepository, postSeriesRepository, seriesPurchaseRepository,
+                tagRepository, userService,
+                org.mockito.Mockito.mock(org.springframework.context.ApplicationEventPublisher.class),
+                blockRepository, new PostViewCounter(), coinService, userRepository);
+    }
+
+    @Nested
+    class Create {
+
+        @Test
+        void savesPostWithCategoryPriceAndNormalizedTags() {
+            when(userService.isActiveUser(AUTHOR)).thenReturn(true);
+            when(postRepository.save(any(Post.class))).thenAnswer(inv -> withId(inv.getArgument(0), 10L));
+            when(tagRepository.findByName("spring")).thenReturn(Optional.of(tag(5L, "spring")));
+            when(tagRepository.findByName("jpa")).thenReturn(Optional.empty());
+            when(tagRepository.save(any(Tag.class))).thenAnswer(inv -> withId(inv.getArgument(0), 6L));
+
+            var response = service.create(AUTHOR, request("backend", List.of(" Spring ", "spring", "JPA"), 30));
+
+            ArgumentCaptor<Post> saved = ArgumentCaptor.forClass(Post.class);
+            verify(postRepository).save(saved.capture());
+            assertThat(response.id()).isEqualTo(10L);
+            assertThat(saved.getValue().getCategory()).isEqualTo(PostCategory.BACKEND);
+            assertThat(saved.getValue().isPaid()).isTrue();
+            assertThat(saved.getValue().getPriceChips()).isEqualTo(30);
+            // " Spring "과 "spring"은 같은 태그로 한 번만 붙는다.
+            verify(postTagRepository, times(2)).save(any(PostTag.class));
+        }
+
+        @Test
+        void paidPostNeedsAtLeast1000Chars() {
+            when(userService.isActiveUser(AUTHOR)).thenReturn(true);
+            // 앞뒤 공백은 세지 않는다
+            var shortPaid = new WritePostRequest("제목", "backend", List.of(), "  " + "가".repeat(999) + "  ", null, 10, null, null);
+
+            assertThatThrownBy(() -> service.create(AUTHOR, shortPaid))
+                    .isInstanceOf(BusinessException.class)
+                    .extracting(e -> ((BusinessException) e).getErrorCode())
+                    .isEqualTo(ErrorCode.BAD_REQUEST);
+            verify(postRepository, never()).save(any());
+        }
+
+        @Test
+        void shortFreePostIsAllowed() {
+            when(userService.isActiveUser(AUTHOR)).thenReturn(true);
+            when(postRepository.save(any(Post.class))).thenAnswer(inv -> withId(inv.getArgument(0), 11L));
+
+            assertThat(service.create(AUTHOR, request("backend", List.of(), 0)).id()).isEqualTo(11L);
+        }
+
+        @Test
+        void unknownCategoryIsRejected() {
+            when(userService.isActiveUser(AUTHOR)).thenReturn(true);
+
+            assertThatThrownBy(() -> service.create(AUTHOR, request("cooking", List.of(), 0)))
+                    .isInstanceOf(BusinessException.class)
+                    .extracting(e -> ((BusinessException) e).getErrorCode())
+                    .isEqualTo(ErrorCode.BAD_REQUEST);
+            verify(postRepository, never()).save(any());
+        }
+
+        @Test
+        void inactiveUserCannotWrite() {
+            when(userService.isActiveUser(AUTHOR)).thenReturn(false);
+
+            assertThatThrownBy(() -> service.create(AUTHOR, request("backend", List.of(), 0)))
+                    .isInstanceOf(BusinessException.class)
+                    .extracting(e -> ((BusinessException) e).getErrorCode())
+                    .isEqualTo(ErrorCode.FORBIDDEN);
+        }
+    }
+
+    @Nested
+    class UpdateAndDelete {
+
+        @Test
+        void onlyAuthorCanUpdate() {
+            when(postRepository.findById(10L)).thenReturn(Optional.of(post(AUTHOR, 0)));
+
+            assertThatThrownBy(() -> service.update(OTHER, 10L, request("ai", List.of(), 0)))
+                    .isInstanceOf(BusinessException.class)
+                    .extracting(e -> ((BusinessException) e).getErrorCode())
+                    .isEqualTo(ErrorCode.FORBIDDEN);
+            verify(postTagRepository, never()).deleteByPostId(anyLong());
+        }
+
+        @Test
+        void cannotTurnShortPostIntoPaid() {
+            when(postRepository.findById(10L)).thenReturn(Optional.of(post(AUTHOR, 0)));
+            var shortPaid = new WritePostRequest("제목", "backend", List.of(), BODY, null, 10, null, null);
+
+            assertThatThrownBy(() -> service.update(AUTHOR, 10L, shortPaid))
+                    .isInstanceOf(BusinessException.class)
+                    .extracting(e -> ((BusinessException) e).getErrorCode())
+                    .isEqualTo(ErrorCode.BAD_REQUEST);
+            verify(postTagRepository, never()).deleteByPostId(anyLong());
+        }
+
+        @Test
+        void authorUpdateReplacesFieldsAndTags() {
+            Post post = post(AUTHOR, 0);
+            when(postRepository.findById(10L)).thenReturn(Optional.of(post));
+            when(postRepository.getReferenceById(10L)).thenReturn(post);
+            when(tagRepository.findByName("react")).thenReturn(Optional.of(tag(7L, "react")));
+
+            service.update(AUTHOR, 10L, request("frontend", List.of("react"), 0));
+
+            assertThat(post.getCategory()).isEqualTo(PostCategory.FRONTEND);
+            verify(postTagRepository).deleteByPostId(10L);
+            verify(postTagRepository).save(any(PostTag.class));
+        }
+
+        @Test
+        void deleteIsSoftAndOnlyByAuthor() {
+            Post post = post(AUTHOR, 0);
+            when(postRepository.findById(10L)).thenReturn(Optional.of(post));
+
+            assertThatThrownBy(() -> service.delete(OTHER, 10L)).isInstanceOf(BusinessException.class);
+            service.delete(AUTHOR, 10L);
+
+            assertThat(post.getStatus()).isEqualTo(PostStatus.DELETED);
+            assertThat(post.getDeletedAt()).isNotNull();
+        }
+
+        @Test
+        void deletedPostIsNotFound() {
+            Post post = post(AUTHOR, 0);
+            post.delete();
+            when(postRepository.findById(10L)).thenReturn(Optional.of(post));
+
+            assertThatThrownBy(() -> service.getPost(10L, OTHER))
+                    .isInstanceOf(BusinessException.class)
+                    .extracting(e -> ((BusinessException) e).getErrorCode())
+                    .isEqualTo(ErrorCode.NOT_FOUND);
+        }
+    }
+
+    @Nested
+    class Detail {
+
+        @Test
+        void paidPostIsLockedForGuest() {
+            stubDetail(post(AUTHOR, 30));
+
+            PostDetailResponse detail = service.getPost(10L, null);
+
+            assertThat(detail.purchased()).isFalse();
+            assertThat(detail.price()).isEqualTo(30);
+            assertThat(detail.content()).contains("셋째 문단").doesNotContain("넷째 문단");
+            verify(postRepository).incrementViewCount(10L);
+        }
+
+        @Test
+        void paidPostIsOpenForSubscriber() {
+            stubDetail(post(AUTHOR, 30));
+            when(blogSubscriptionRepository.existsReadable(eq(OTHER), eq(AUTHOR), any())).thenReturn(true);
+
+            PostDetailResponse detail = service.getPost(10L, OTHER);
+
+            assertThat(detail.purchased()).isTrue();
+            assertThat(detail.content()).contains("넷째 문단");
+        }
+
+        @Test
+        void authorSeesAllWithoutCountingView() {
+            stubDetail(post(AUTHOR, 30));
+
+            PostDetailResponse detail = service.getPost(10L, AUTHOR);
+
+            assertThat(detail.purchased()).isTrue();
+            assertThat(detail.content()).contains("넷째 문단");
+            verify(postRepository, never()).incrementViewCount(anyLong());
+        }
+
+        @Test
+        void memberViewIsCountedOncePerWindow() {
+            stubDetail(post(AUTHOR, 0));
+
+            service.getPost(10L, OTHER);
+            service.getPost(10L, OTHER);
+
+            verify(postRepository, times(1)).incrementViewCount(10L);
+        }
+
+        @Test
+        void guestViewIsCountedEveryTime() {
+            stubDetail(post(AUTHOR, 0));
+
+            service.getPost(10L, null);
+            service.getPost(10L, null);
+
+            verify(postRepository, times(2)).incrementViewCount(10L);
+        }
+
+        private void stubDetail(Post post) {
+            when(postRepository.findById(10L)).thenReturn(Optional.of(post));
+            when(userService.getSummaries(List.of(AUTHOR))).thenReturn(Map.of(AUTHOR, author()));
+            when(postTagRepository.findTagNames(10L)).thenReturn(List.of("spring"));
+        }
+    }
+
+    @Nested
+    class Lists {
+
+        @Test
+        void categoryAndQueryAreTurnedIntoFilters() {
+            when(postRepository.findList(eq(PostStatus.ACTIVE), eq(EnumSet.of(PostCategory.GAME)), eq("%unity\\_3d%"), eq(null), any(Pageable.class)))
+                    .thenReturn(new PageImpl<>(List.of(post(AUTHOR, 0)), PageRequest.of(0, 20), 1));
+            when(userService.getSummaries(List.of(AUTHOR))).thenReturn(Map.of(AUTHOR, author()));
+
+            var page = service.getPosts("game", " Unity_3D ", "latest", null, PageRequest.of(0, 20));
+
+            // 분류·검색어가 위 조건(GAME, "%unity\\_3d%")으로 넘어가야 결과가 나온다.
+            assertThat(page.content()).hasSize(1);
+            // 응답 분류는 소문자 코드로 나간다 (목 글은 BACKEND).
+            assertThat(page.content().get(0).category()).isEqualTo("backend");
+        }
+
+        @Test
+        void noCategoryMeansAllCategories() {
+            when(postRepository.findList(eq(PostStatus.ACTIVE), eq(EnumSet.allOf(PostCategory.class)), eq("%"), eq(null), any(Pageable.class)))
+                    .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 20), 0));
+            when(userService.getSummaries(List.of())).thenReturn(Map.of());
+
+            assertThat(service.getPosts(null, null, "popular", null, PageRequest.of(0, 20)).content()).isEmpty();
+        }
+    }
+
+    @Nested
+    class Bookmark {
+
+        @Test
+        void bookmarkAndUnbookmarkUseIdempotentQueries() {
+            when(postRepository.findById(10L)).thenReturn(Optional.of(post(AUTHOR, 0)));
+
+            service.bookmark(OTHER, 10L);
+            service.unbookmark(OTHER, 10L);
+
+            verify(postBookmarkRepository).insertIgnore(OTHER, 10L);
+            verify(postBookmarkRepository).deleteByUserIdAndPostId(OTHER, 10L);
+        }
+
+        @Test
+        void deletedPostCannotBeBookmarked() {
+            Post post = post(AUTHOR, 0);
+            post.delete();
+            when(postRepository.findById(10L)).thenReturn(Optional.of(post));
+
+            assertThatThrownBy(() -> service.bookmark(OTHER, 10L))
+                    .isInstanceOf(BusinessException.class)
+                    .extracting(e -> ((BusinessException) e).getErrorCode())
+                    .isEqualTo(ErrorCode.NOT_FOUND);
+            verify(postBookmarkRepository, never()).insertIgnore(anyLong(), anyLong());
+        }
+
+        @Test
+        void blockedAuthorsPostCannotBeBookmarked() {
+            when(postRepository.findById(10L)).thenReturn(Optional.of(post(AUTHOR, 0)));
+            when(blockRepository.existsBetween(OTHER, AUTHOR)).thenReturn(true);
+
+            assertThatThrownBy(() -> service.bookmark(OTHER, 10L))
+                    .isInstanceOf(BusinessException.class)
+                    .extracting(e -> ((BusinessException) e).getErrorCode())
+                    .isEqualTo(ErrorCode.NOT_FOUND);
+            verify(postBookmarkRepository, never()).insertIgnore(anyLong(), anyLong());
+        }
+
+        @Test
+        void detailShowsMyBookmark() {
+            when(postRepository.findById(10L)).thenReturn(Optional.of(post(AUTHOR, 0)));
+            when(userService.getSummaries(List.of(AUTHOR))).thenReturn(Map.of(AUTHOR, author()));
+            when(postTagRepository.findTagNames(10L)).thenReturn(List.of());
+            when(postBookmarkRepository.existsById(any())).thenReturn(true);
+
+            assertThat(service.getPost(10L, OTHER).bookmarked()).isTrue();
+        }
+    }
+
+    /** 유료 글은 본문이 1000자 이상이어야 해서 가격이 있으면 긴 본문을 넣는다. */
+    private static WritePostRequest request(String category, List<String> tags, int price) {
+        return new WritePostRequest("제목", category, tags, price > 0 ? LONG_BODY : BODY, null, price, null, null);
+    }
+
+    @Nested
+    class Purchase {
+
+        @Test
+        void purchaseSavesRecordAndPaysAuthor() {
+            when(postRepository.findById(10L)).thenReturn(Optional.of(post(AUTHOR, 30)));
+            when(postPurchaseRepository.insertIgnore(OTHER, 10L, 30)).thenReturn(1);
+
+            service.purchase(OTHER, 10L);
+
+            verify(coinService).payForPost(OTHER, AUTHOR, 10L, "제목", 30);
+        }
+
+        @Test
+        void alreadyPurchasedDoesNotChargeAgain() {
+            when(postRepository.findById(10L)).thenReturn(Optional.of(post(AUTHOR, 30)));
+            when(postPurchaseRepository.insertIgnore(OTHER, 10L, 30)).thenReturn(0);
+
+            service.purchase(OTHER, 10L);
+
+            verify(coinService, never()).payForPost(anyLong(), anyLong(), anyLong(), any(), org.mockito.ArgumentMatchers.anyInt());
+        }
+
+        @Test
+        void freePostOwnPostAndSubscriberCannotPurchase() {
+            when(postRepository.findById(10L)).thenReturn(Optional.of(post(AUTHOR, 0)));
+            assertBadRequest(() -> service.purchase(OTHER, 10L));
+
+            when(postRepository.findById(10L)).thenReturn(Optional.of(post(AUTHOR, 30)));
+            assertBadRequest(() -> service.purchase(AUTHOR, 10L));
+
+            when(blogSubscriptionRepository.existsReadable(eq(OTHER), eq(AUTHOR), any())).thenReturn(true);
+            assertBadRequest(() -> service.purchase(OTHER, 10L));
+
+            verify(postPurchaseRepository, never()).insertIgnore(anyLong(), anyLong(), org.mockito.ArgumentMatchers.anyInt());
+        }
+
+        @Test
+        void blockedAuthorsPostIsNotFound() {
+            when(postRepository.findById(10L)).thenReturn(Optional.of(post(AUTHOR, 30)));
+            when(blockRepository.existsBetween(OTHER, AUTHOR)).thenReturn(true);
+
+            assertThatThrownBy(() -> service.purchase(OTHER, 10L))
+                    .isInstanceOf(BusinessException.class)
+                    .extracting(e -> ((BusinessException) e).getErrorCode())
+                    .isEqualTo(ErrorCode.NOT_FOUND);
+        }
+
+        private void assertBadRequest(org.assertj.core.api.ThrowableAssert.ThrowingCallable call) {
+            assertThatThrownBy(call)
+                    .isInstanceOf(BusinessException.class)
+                    .extracting(e -> ((BusinessException) e).getErrorCode())
+                    .isEqualTo(ErrorCode.BAD_REQUEST);
+        }
+    }
+
+    @Nested
+    class Series {
+
+        private static final Long SERIES = 3L;
+
+        @Test
+        void newEpisodeGoesAfterLastAndHasNoChipPrice() {
+            when(userService.isActiveUser(AUTHOR)).thenReturn(true);
+            when(postSeriesRepository.findById(SERIES)).thenReturn(Optional.of(series(AUTHOR, 9900)));
+            when(postRepository.findMaxSeriesOrder(SERIES)).thenReturn(4);
+            when(postRepository.save(any(Post.class))).thenAnswer(inv -> withId(inv.getArgument(0), 11L));
+
+            service.create(AUTHOR, new WritePostRequest("5화", "backend", List.of(), LONG_BODY, null, 30, SERIES, true));
+
+            ArgumentCaptor<Post> saved = ArgumentCaptor.forClass(Post.class);
+            verify(postRepository).save(saved.capture());
+            assertThat(saved.getValue().getSeriesId()).isEqualTo(SERIES);
+            assertThat(saved.getValue().getSeriesOrder()).isEqualTo(5);
+            assertThat(saved.getValue().isPaid()).isTrue();
+            assertThat(saved.getValue().getPriceChips()).isZero();
+        }
+
+        @Test
+        void cannotWriteIntoOthersSeriesOrPaidEpisodeIntoFreeSeries() {
+            when(userService.isActiveUser(AUTHOR)).thenReturn(true);
+            when(postSeriesRepository.findById(SERIES)).thenReturn(Optional.of(series(OTHER, 9900)));
+            assertThatThrownBy(() -> service.create(AUTHOR,
+                    new WritePostRequest("1화", "backend", List.of(), BODY, null, 0, SERIES, false)))
+                    .isInstanceOf(BusinessException.class);
+
+            when(postSeriesRepository.findById(SERIES)).thenReturn(Optional.of(series(AUTHOR, 0)));
+            assertThatThrownBy(() -> service.create(AUTHOR,
+                    new WritePostRequest("1화", "backend", List.of(), LONG_BODY, null, 0, SERIES, true)))
+                    .isInstanceOf(BusinessException.class)
+                    .extracting(e -> ((BusinessException) e).getErrorCode())
+                    .isEqualTo(ErrorCode.BAD_REQUEST);
+            verify(postRepository, never()).save(any());
+        }
+
+        @Test
+        void seriesEpisodeOpensOnlyForSeriesBuyer() {
+            when(postRepository.findById(10L)).thenReturn(Optional.of(episode()));
+            when(userService.getSummaries(List.of(AUTHOR))).thenReturn(Map.of(AUTHOR, author()));
+            when(postSeriesRepository.findById(SERIES)).thenReturn(Optional.of(series(AUTHOR, 9900)));
+            // 블로그 구독자여도 시리즈 회차는 열리지 않는다 (구독 여부를 아예 보지 않는다)
+            org.mockito.Mockito.lenient().when(blogSubscriptionRepository.existsReadable(eq(OTHER), eq(AUTHOR), any()))
+                    .thenReturn(true);
+
+            PostDetailResponse locked = service.getPost(10L, OTHER);
+            assertThat(locked.purchased()).isFalse();
+            assertThat(locked.paid()).isTrue();
+            assertThat(locked.seriesTitle()).isEqualTo("스프링 정복");
+
+            when(seriesPurchaseRepository.existsByUserIdAndSeriesId(OTHER, SERIES)).thenReturn(true);
+            assertThat(service.getPost(10L, OTHER).purchased()).isTrue();
+        }
+
+        @Test
+        void shortPaidEpisodeIsAllowedInSeries() {
+            when(userService.isActiveUser(AUTHOR)).thenReturn(true);
+            when(postSeriesRepository.findById(SERIES)).thenReturn(Optional.of(series(AUTHOR, 9900)));
+            when(postRepository.save(any(Post.class))).thenAnswer(inv -> withId(inv.getArgument(0), 12L));
+
+            // 시리즈 회차는 1000자 최소 길이가 없다
+            service.create(AUTHOR, new WritePostRequest("짧은 회차", "backend", List.of(), BODY, null, 0, SERIES, true));
+
+            verify(postRepository).save(any(Post.class));
+        }
+
+        @Test
+        void seriesEpisodeIsNotSoldOneByOne() {
+            when(postRepository.findById(10L)).thenReturn(Optional.of(episode()));
+
+            assertThatThrownBy(() -> service.purchase(OTHER, 10L))
+                    .isInstanceOf(BusinessException.class)
+                    .hasMessageContaining("시리즈");
+            verify(coinService, never()).payForPost(anyLong(), anyLong(), anyLong(), any(), org.mockito.ArgumentMatchers.anyInt());
+        }
+
+        private Post episode() {
+            Post post = post(AUTHOR, 30);
+            post.placeInSeries(SERIES, 1);
+            return post;
+        }
+
+        private static com.dipsource.entity.post.PostSeries series(Long owner, int price) {
+            return withId(com.dipsource.entity.post.PostSeries.builder()
+                    .userId(owner).title("스프링 정복").description("").priceKrw(price).build(), SERIES);
+        }
+    }
+
+    @Nested
+    class BlogStatsAndViews {
+
+        @Test
+        void viewsSortOrdersByViewCount() {
+            when(postRepository.findList(any(), any(), any(), any(), any())).thenReturn(new PageImpl<>(List.of()));
+
+            service.getPosts(null, null, "views", null, PageRequest.of(0, 5));
+
+            ArgumentCaptor<Pageable> pageable = ArgumentCaptor.forClass(Pageable.class);
+            verify(postRepository).findList(any(), any(), any(), any(), pageable.capture());
+            assertThat(pageable.getValue().getSort().iterator().next().getProperty()).isEqualTo("viewCount");
+        }
+
+        @Test
+        void blogStatsSumsActivePosts() {
+            com.dipsource.entity.user.User owner = com.dipsource.entity.user.User.builder()
+                    .email("a@test.local").nickname("작가").bio("백엔드 개발자").build();
+            when(userRepository.findById(AUTHOR)).thenReturn(Optional.of(owner));
+            when(postRepository.countByUserIdAndStatus(AUTHOR, PostStatus.ACTIVE)).thenReturn(3L);
+            when(postRepository.sumViewCountByUserIdAndStatus(AUTHOR, PostStatus.ACTIVE)).thenReturn(120L);
+
+            var stats = service.getBlogStats(AUTHOR, null);
+
+            assertThat(stats.bio()).isEqualTo("백엔드 개발자");
+            assertThat(stats.postCount()).isEqualTo(3);
+            assertThat(stats.totalViews()).isEqualTo(120);
+        }
+
+        @Test
+        void blockedOrInactiveBlogIsNotFound() {
+            com.dipsource.entity.user.User owner = com.dipsource.entity.user.User.builder()
+                    .email("a@test.local").nickname("작가").build();
+            when(userRepository.findById(AUTHOR)).thenReturn(Optional.of(owner));
+            when(blockRepository.existsBetween(OTHER, AUTHOR)).thenReturn(true);
+            assertThatThrownBy(() -> service.getBlogStats(AUTHOR, OTHER))
+                    .isInstanceOf(BusinessException.class)
+                    .extracting(e -> ((BusinessException) e).getErrorCode())
+                    .isEqualTo(ErrorCode.NOT_FOUND);
+
+            owner.suspend();
+            assertThatThrownBy(() -> service.getBlogStats(AUTHOR, null))
+                    .isInstanceOf(BusinessException.class)
+                    .extracting(e -> ((BusinessException) e).getErrorCode())
+                    .isEqualTo(ErrorCode.NOT_FOUND);
+        }
+    }
+
+    private static Post post(Long userId, int price) {
+        Post post = Post.builder().userId(userId).title("제목").category(PostCategory.BACKEND)
+                .content(BODY).paid(price > 0).priceChips(price).build();
+        return withId(post, 10L);
+    }
+
+    private static Tag tag(Long id, String name) {
+        return withId(Tag.builder().name(name).build(), id);
+    }
+
+    private static <T> T withId(T entity, Long id) {
+        ReflectionTestUtils.setField(entity, "id", id);
+        return entity;
+    }
+
+    private static UserSummaryResponse author() {
+        return new UserSummaryResponse(AUTHOR, "작성자", null, List.of());
+    }
+}

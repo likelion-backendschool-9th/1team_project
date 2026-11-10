@@ -1,0 +1,305 @@
+.shell {
+  min-height: 100vh;
+}
+
+/* 관리자 헤더 메뉴바 (WBS 12.2) */
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: #1f1b17;
+  color: #f5efe3;
+  box-shadow: 0 2px 10px rgb(0 0 0 / 15%);
+}
+
+.headerTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  max-width: 1400px;
+  padding: 14px 36px 6px;
+  margin: 0 auto;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 19px;
+}
+
+.logoSub {
+  color: #ffc21a;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+}
+
+.back {
+  color: #9a8f7f;
+  font-size: 13px;
+}
+
+.back:hover {
+  color: #fff;
+}
+
+.nav {
+  display: flex;
+  gap: 4px;
+  max-width: 1400px;
+  padding: 6px 28px 10px;
+  margin: 0 auto;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.monthInput {
+  max-width: 220px;
+}
+
+.group {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 2px;
+}
+
+.group + .group {
+  padding-left: 10px;
+  margin-left: 6px;
+  border-left: 1px solid rgb(255 255 255 / 12%);
+}
+
+.group ul {
+  display: flex;
+  gap: 2px;
+}
+
+.groupTitle {
+  padding: 0 6px;
+  color: #9a8f7f;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.navItem {
+  display: block;
+  padding: 7px 10px;
+  border-radius: 9px;
+  color: #d9d0c1;
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.navItem:hover {
+  background: rgb(255 255 255 / 8%);
+  color: #fff;
+}
+
+.navActive,
+.navActive:hover {
+  background: #ffc21a;
+  color: #1f1b17;
+}
+
+.main {
+  display: flex;
+  max-width: 1400px;
+  min-width: 0;
+  flex-direction: column;
+  gap: 20px;
+  padding: 28px 36px 64px;
+  margin: 0 auto;
+}
+
+.main:focus {
+  outline: none;
+}
+
+.chart {
+  display: flex;
+  height: 180px;
+  align-items: flex-end;
+  gap: 12px;
+  padding-top: 12px;
+}
+
+.bar {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  height: 100%;
+  font-size: 12px;
+}
+
+.barFill {
+  width: 100%;
+  max-width: 46px;
+  border-radius: 8px 8px 0 0;
+  background: linear-gradient(180deg, #ffd04d, #ffb020);
+}
+
+.stack {
+  display: flex;
+  width: 100%;
+  max-width: 46px;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: 8px 8px 0 0;
+}
+
+.stack .barFill {
+  max-width: none;
+  border-radius: 0;
+}
+
+.barFillAlt {
+  background: linear-gradient(180deg, #4b4239, #1f1b17);
+}
+
+.barValue {
+  color: var(--ink-soft);
+  font-weight: 700;
+}
+
+.legend {
+  display: flex;
+  gap: 14px;
+  color: var(--ink-soft);
+  font-size: 13px;
+}
+
+.legend span::before {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin-right: 6px;
+  border-radius: 3px;
+  background: #ffc21a;
+  content: "";
+}
+
+.legend span + span::before {
+  background: #1f1b17;
+}
+
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 10px;
+}
+
+.filters .field {
+  min-width: 180px;
+}
+
+.detail {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px 24px;
+}
+
+.detail dt {
+  color: var(--ink-faint);
+  font-size: 13px;
+}
+
+.detail dd {
+  font-weight: 700;
+}
+
+@media (max-width: 900px) {
+  .headerTop {
+    padding-inline: 16px;
+  }
+
+  .nav {
+    padding-inline: 12px;
+  }
+
+  .main {
+    padding: 20px 16px 48px;
+  }
+}
+
+/* 데스크톱: 관리 메뉴를 왼쪽 사이드바로 세운다. 좁은 화면은 위쪽 가로 메뉴(스크롤) 그대로. */
+@media (min-width: 901px) {
+  .shell {
+    display: grid;
+    grid-template-columns: 236px minmax(0, 1fr);
+  }
+
+  .header {
+    position: sticky;
+    top: 0;
+    display: flex;
+    height: 100vh;
+    flex-direction: column;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    box-shadow: none;
+  }
+
+  /* 로고와 "서비스로 돌아가기"를 사이드바의 맨 위·맨 아래로 나눠 놓는다. */
+  .headerTop {
+    display: contents;
+  }
+
+  .logo {
+    padding: 20px 22px 12px;
+  }
+
+  .back {
+    order: 3;
+    padding: 12px 22px 20px;
+    margin-top: auto;
+  }
+
+  .nav {
+    order: 2;
+    flex-direction: column;
+    gap: 8px;
+    max-width: none;
+    padding: 4px 12px 16px;
+    margin: 0;
+    overflow: visible;
+  }
+
+  .group {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 2px;
+  }
+
+  .group + .group {
+    padding-top: 8px;
+    padding-left: 0;
+    margin-left: 0;
+    border-top: 1px solid rgb(255 255 255 / 10%);
+    border-left: 0;
+  }
+
+  .group ul {
+    flex-direction: column;
+  }
+
+  .groupTitle {
+    padding: 0 10px 2px;
+  }
+
+  .navItem {
+    padding: 6px 12px;
+  }
+
+  .main {
+    width: 100%;
+  }
+}

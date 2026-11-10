@@ -1,0 +1,232 @@
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px 20px 12px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.author {
+  min-width: 0;
+  flex: 1;
+}
+
+.name {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.meta {
+  color: var(--ink-faint);
+  font-size: 13px;
+  font-weight: 400;
+}
+
+.more {
+  display: inline-flex;
+  padding: 6px;
+  color: var(--ink-faint);
+  font-size: 18px;
+}
+
+.more:disabled {
+  opacity: 0.6;
+}
+
+.content {
+  font-size: 15px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.demo {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px;
+  border-radius: 14px;
+  background: #fbf3dc;
+}
+
+.demoThumb {
+  flex: none;
+  width: 112px;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  border-radius: 10px;
+}
+
+.demoInfo {
+  min-width: 0;
+  flex: 1;
+}
+
+.demoTitle {
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.demoDesc {
+  margin-top: 2px;
+  color: var(--ink-soft);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.tags li {
+  user-select: none;
+  padding: 2px 10px;
+  border-radius: var(--radius-pill);
+  background: rgb(255 255 255 / 70%);
+  color: var(--ink-soft);
+  font-size: 13px;
+}
+
+.play {
+  user-select: none;
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 18px;
+  border-radius: 12px;
+  background: var(--accent);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.play:hover {
+  background: #ffc42b;
+}
+
+@media (max-width: 760px) {
+  .card {
+    padding: 16px;
+  }
+
+  .demo {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .demoThumb {
+    width: 100%;
+  }
+
+  .play {
+    justify-content: center;
+  }
+}
+
+/* 첨부 이미지. 1장은 원본 비율, 2·4장은 짝, 3장은 위 1 + 아래 2, 5장은 위 2 + 아래 3. */
+.images {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  border-radius: 14px;
+}
+
+.imageLink {
+  display: block;
+  height: 100%;
+  overflow: hidden;
+  background: var(--surface-muted, #f3ede2);
+}
+
+.image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.count1 {
+  grid-template-columns: 1fr;
+}
+
+.count1 .imageLink {
+  display: flex;
+  justify-content: center;
+  height: auto;
+  background: transparent;
+}
+
+.count1 .image {
+  width: auto;
+  max-width: 100%;
+  height: auto;
+  max-height: 480px;
+  object-fit: contain;
+}
+
+.count2,
+.count4 {
+  grid-template-columns: 1fr 1fr;
+}
+
+.count2 .imageLink,
+.count4 .imageLink {
+  aspect-ratio: 1;
+}
+
+.count3 {
+  grid-template-columns: 1fr 1fr;
+}
+
+.count3 li:first-child {
+  grid-column: 1 / -1;
+}
+
+.count3 li:first-child .imageLink {
+  aspect-ratio: 16 / 9;
+}
+
+.count3 li:not(:first-child) .imageLink {
+  aspect-ratio: 4 / 3;
+}
+
+.count5 {
+  grid-template-columns: repeat(6, 1fr);
+}
+
+.count5 li:nth-child(-n + 2) {
+  grid-column: span 3;
+}
+
+.count5 li:nth-child(n + 3) {
+  grid-column: span 2;
+}
+
+.count5 .imageLink {
+  aspect-ratio: 1;
+}
+
+.link {
+  display: block;
+  overflow: hidden;
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  color: var(--ink-soft, inherit);
+  font-size: 14px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

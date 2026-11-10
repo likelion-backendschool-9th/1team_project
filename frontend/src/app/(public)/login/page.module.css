@@ -1,0 +1,99 @@
+.page {
+  display: flex;
+  min-height: 100vh;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px;
+}
+
+.page:focus {
+  outline: none;
+}
+
+.card {
+  display: flex;
+  width: 100%;
+  max-width: 420px;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 40px 32px;
+  border-radius: var(--radius-card);
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
+}
+
+.title {
+  margin-top: 8px;
+  font-size: 22px;
+  font-weight: 800;
+  text-align: center;
+}
+
+.desc {
+  color: var(--ink-soft);
+  font-size: 14px;
+  text-align: center;
+}
+
+.list {
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 8px;
+  list-style: none;
+}
+
+.button {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 14px 16px;
+  border: 1px solid transparent;
+  border-radius: 14px;
+  font-weight: 700;
+}
+
+.button:hover {
+  filter: brightness(0.96);
+}
+
+.button:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+
+.github {
+  background: #1f2328;
+  color: #ffffff;
+}
+
+.kakao {
+  background: #fee500;
+  color: #191919;
+}
+
+.google {
+  border-color: var(--border);
+  background: #ffffff;
+  color: var(--ink);
+}
+
+.terms {
+  color: var(--ink-faint);
+  font-size: 12px;
+  text-align: center;
+}
+
+.error {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--danger) 10%, transparent);
+  color: var(--danger);
+  font-size: 14px;
+  text-align: center;
+}

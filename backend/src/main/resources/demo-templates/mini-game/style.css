@@ -1,0 +1,6 @@
+body { display: grid; place-items: center; min-height: 100vh; margin: 0; background: #20242c; color: #fff; font-family: system-ui, sans-serif; }
+main { display: grid; gap: 12px; width: min(480px, 92vw); }
+header { display: flex; justify-content: space-between; }
+#field { position: relative; height: 280px; border-radius: 14px; background: #2d333f; overflow: hidden; }
+#target { position: absolute; border: 0; border-radius: 50%; background: #ffd04d; cursor: pointer; }
+#start { padding: 12px; border: 0; border-radius: 10px; background: #ffd04d; font-size: 16px; cursor: pointer; }

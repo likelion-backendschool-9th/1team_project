@@ -1,0 +1,120 @@
+.art {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  overflow: hidden;
+}
+
+.dark {
+  background: #1f1b17;
+}
+
+.tone0 {
+  background-color: #efe9e1;
+}
+
+.tone1 {
+  background-color: #cfe3fb;
+}
+
+.tone2 {
+  background-color: #2b3138;
+}
+
+.tone3 {
+  background-color: #1f2328;
+}
+
+/* 대표 데모 칸의 .canvas(display:block)보다 우선해 </>가 왼쪽 위로 밀리지 않게 한다. */
+.art.tone0,
+.art.tone1,
+.art.tone2,
+.art.tone3 {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.label {
+  user-select: none;
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  padding: 4px 12px;
+  border-radius: var(--radius-pill);
+  background: rgb(255 255 255 / 92%);
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+/* 썸네일이 없을 때 가운데 코드 글리프 (피드 썸네일과 같은 표시) */
+.glyph {
+  user-select: none;
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: radial-gradient(circle at 30% 25%, rgb(255 255 255 / 35%), transparent 55%);
+  color: rgb(31 35 40 / 22%);
+  font-family: ui-monospace, "SFMono-Regular", Menlo, monospace;
+  font-size: 44px;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+}
+
+.tone2 .glyph,
+.tone3 .glyph {
+  background: radial-gradient(circle at 30% 25%, rgb(255 255 255 / 10%), transparent 55%);
+  color: rgb(255 255 255 / 22%);
+}
+
+.bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  height: 60px;
+}
+
+.bars span {
+  width: 12px;
+  border-radius: 3px 3px 0 0;
+  background: #ffc21a;
+}
+
+.caption {
+  user-select: none;
+  color: #b9b2a8;
+  font-family: ui-monospace, "SFMono-Regular", Menlo, monospace;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+}
+
+.network {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.network line {
+  stroke: rgb(255 196 60 / 55%);
+  stroke-width: 0.4;
+}
+
+.network circle {
+  fill: #ffd04d;
+}
+
+.network + .caption {
+  position: absolute;
+  bottom: 14px;
+}
+
+.image {
+  background-position: center;
+  background-size: cover;
+}

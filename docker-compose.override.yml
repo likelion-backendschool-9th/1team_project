@@ -1,0 +1,33 @@
+services:
+  db:
+    # 쿼리별 실행 통계(pg_stat_statements). 검색 부하 측정용이며 로컬 개발에서만 켠다 (backend/scripts/search-check/pg-stat.sql)
+    command: postgres -c shared_preload_libraries=pg_stat_statements
+
+  elasticsearch:
+    ports:
+      - "127.0.0.1:9200:9200"
+
+  frontend:
+    build:
+      context: ./frontend
+      target: dev
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+      - /app/.next
+    environment:
+      NODE_ENV: development
+    command: npm run dev
+
+  backend:
+    build:
+      context: ./backend
+      target: build
+    entrypoint: []
+    volumes:
+      - ./backend:/app
+      - gradle_cache:/root/.gradle
+    command: ./gradlew bootRun
+
+volumes:
+  gradle_cache:

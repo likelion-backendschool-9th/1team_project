@@ -2,8 +2,8 @@
 
 > 프론트엔드 작업의 기준 문서다.
 >
-> - **데이터·API:** [기획서](./기획서.md) 5장 API 명세와 백엔드 DTO 코드가 기준
-> - **DB 구조:** [테이블정의서](./테이블정의서.md)가 기준
+> - **데이터·API:** 백엔드 실제 API/DTO 코드가 기준. [wbs.md](./wbs.md)는 작업 초안
+> - **DB 구조:** [database-design.md](./database-design.md), [테이블정의서](./테이블정의서.md) 참조
 > - **Git 규칙:** [AGENTS.md](../AGENTS.md)를 따른다
 
 ## 1. 개요
@@ -32,6 +32,9 @@
 | --- | --- | --- |
 | `/` | 추천 피드, 인기 데모, 순위, 뉴스 | 통합 타임라인 |
 | `/login` | `POST auth/login/{provider}` | 소셜 로그인 (GitHub, 카카오, 구글) |
+| `/onboarding` | 명세 없음 (목) | 소셜 가입 직후 4단계 입력의 입구. 끝나지 않은 첫 단계로 리다이렉트 |
+| `/onboarding/profile` | 명세 없음 (목) | 1단계 기본 정보 (닉네임 필수) |
+| `/onboarding/stack` · `/fields` · `/topics` | 명세 없음 (목) | 2~4단계 고정 태그 선택 (기술 스택 10개, 관심분야 10개, 관심주제 7개 이하, 각각 2개 이상). API·태그 목록은 백엔드와 합의 후 기획서에 반영 |
 | `/feeds` | `GET feeds`, `POST feeds` | 피드 전용 페이지 |
 | `/home/[userId]` | `GET mini-home/{userId}` | 미니홈피 |
 | `/home/[userId]/edit` | `PUT mini-home/{userId}` | 미니홈피 수정 (본인만) |
@@ -39,22 +42,25 @@
 | `/home/[userId]/demos` | `GET mini-home/{userId}/demos` | 미니홈피 내 데모 목록 |
 | `/home/[userId]/blog` | `GET users/{userId}/posts` | 미니홈피 내 블로그 목록 |
 | `/demos` | `GET demos` | 데모 탐색 (태그 필터, 정렬) |
-| `/demos/upload` | `POST demos` | 데모 업로드 |
-| `/demos/[id]` | `GET demos/{id}`, 댓글/좋아요/북마크 | 데모 상세·실행 |
+| `/demos/upload` | `POST demos`, `PUT demos/{id}/backend`, `POST demos/{id}/versions`, `POST demos/{id}/publish` | 데모 업로드. zip만 브라우저에서 API로 바로 보낸다 (Server Action 용량 제한) |
+| `/demos/[demoId]/manage` | `PUT·DELETE demos/{id}`, `POST demos/{id}/versions`, `publish`, `unpublish`, `GET demos/{id}/versions`, `restore`, `PUT·DELETE demos/{id}/backend` | 데모 관리 (본인만) |
+| `/demos/studio` | `GET demo-templates`, `POST demos/{id}/versions/editor`, `GET·POST demos/{id}/versions/{vid}/config` | 코드 편집·Mock API·템플릿 |
+| `/mini-home/[userId]/demos/[demoId]` | `GET demos/{id}`, 댓글/좋아요/북마크, `POST demos/{id}/backend/health-check` | 데모 상세·실행 (작성자 미니홈피 틀 안) |
+| `/demos/[id]` | `GET demos/{id}` | 작성자의 미니홈피 데모 상세로 리다이렉트 |
 | `/blog/write` | `POST posts` | 글 작성 |
 | `/blog/[id]` | `GET posts/{id}`, 댓글 | 글 상세 |
 | `/blog/[id]/edit` | `PUT posts/{id}` | 글 수정 |
 | `/search` | `GET search` | 통합 검색 |
 | `/news` | `GET search/news` | IT/개발 기사 (네이버 뉴스 API) |
 | `/rankings` | `GET rankings` | 순위 (데모/블로그/팔로워/홈피) |
-| `/dm/[userId]` | `GET/POST dm/{userId}`, WebSocket | DM 대화 |
+| (페이지 없음) DM 창 | `GET dm/rooms`, `GET dm/{userId}`, WebSocket | 오른쪽 아래 DM 버튼으로 여닫는 창 (`(user)/_components/DmWidget.tsx`) |
 | `/my` | `GET users/{id}` | 마이페이지 |
 | `/my/edit` | `PUT users/{id}` | 프로필 수정 |
 | `/my/followings` | `GET follows/followings` | 팔로잉 목록 |
 | `/my/followers` | `GET follows/followers` | 팔로워 목록 |
 | `/my/bookmarks` | `GET users/me/bookmarks` | 북마크 목록 |
 | `/my/subscriptions` | `GET subscriptions/me` | 내 구독 목록 |
-| `/my/coins` | `GET coins/balance`, `POST coins/purchase` | 도토리 충전/잔액 |
+| `/my/coins` | `GET coins/balance`, `POST coins/purchase` | 칩 충전/잔액 |
 | `/notifications` | `GET notifications` | 알림 |
 | `/settings` | `GET/PUT users/me/settings` | 설정 |
 | `/admin` | `GET admin/dashboard` | 관리자 대시보드 |
@@ -301,7 +307,22 @@ DM과 알림은 WebSocket + STOMP + SockJS로 실시간 통신한다.
 
 ---
 
-## 11. 기타
+## 11. 스타일 (CSS)
+
+- **CSS Modules를 쓴다.** `globals.css`에 스타일을 몰아넣지 않고, 컴포넌트(페이지) 단위로 `*.module.css` 파일을 만든다.
+- **`globals.css`에는 전역 스타일만 둔다.** CSS 변수(`:root`), 리셋(`*`, `body`), 공통 타이포그래피, 공통 유틸리티 클래스 등.
+- **파일 위치:** 해당 컴포넌트 옆에 둔다. 예) `page.tsx` → `page.module.css`, `DemoCard.tsx` → `DemoCard.module.css`.
+- **네이밍:** 클래스명은 camelCase로 쓴다. `styles.feedCard`, `styles.demoGrid` 등.
+- **사용법:**
+  ```tsx
+  import styles from "./page.module.css";
+  <div className={styles.feedCard}>...</div>
+  ```
+- **여러 클래스 조합:** 템플릿 리터럴을 쓴다. `` className={`${styles.btn} ${styles.active}`} ``
+
+---
+
+## 12. 기타
 
 - 이미지는 `next/image`, 폰트는 `next/font`, 무거운 라이브러리는 `dynamic import`를 쓴다.
 - 리스트 `key`에 index를 쓰지 않는다. `any`는 금지하고, 외부 입력은 검증한다.
@@ -310,7 +331,7 @@ DM과 알림은 WebSocket + STOMP + SockJS로 실시간 통신한다.
 
 ---
 
-## 12. PR 체크리스트
+## 13. PR 체크리스트
 
 - [ ] **매핑:** PR이 하나의 페이지-API 쌍을 다루고, 엔드포인트가 2장과 일치한다
 - [ ] **URL 변경:** URL을 바꿨다면 라우트 목록과 기획서 API 명세를 함께 고쳤다
