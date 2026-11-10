@@ -44,7 +44,7 @@ export function MiniHomeHeader({ profile, visitors, isOwner, chipBalance }: Prop
       <div className={styles.right}>
         {isOwner ? (
           <Link href={`/mini-home/${profile.id}/edit`} className={styles.button}>
-            ✏️ 홈피 꾸미기
+            ✏️ 홈피 설정
           </Link>
         ) : (
           <>
