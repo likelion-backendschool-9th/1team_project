@@ -43,7 +43,7 @@ export async function SeriesView({ params }: Props) {
         </h2>
         {series.description && <p className={kit.muted}>{series.description}</p>}
         <Link href={`/blog/${series.author.id}`} className={styles.author}>
-          <Avatar name={series.author.nickname} size={32} />
+          <Avatar name={series.author.nickname} src={series.author.profileImage} size={32} />
           <span>{series.author.nickname}</span>
         </Link>
 

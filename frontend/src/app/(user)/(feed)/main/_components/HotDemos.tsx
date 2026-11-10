@@ -15,7 +15,7 @@ type Props = {
   demos: DemoSummary[];
 };
 
-function DemoCard({ demo }: { demo: DemoSummary }) {
+function DemoCard({ demo, clone = false }: { demo: DemoSummary; clone?: boolean }) {
   return (
     <>
       <DemoThumb
@@ -25,7 +25,7 @@ function DemoCard({ demo }: { demo: DemoSummary }) {
         className={styles.thumb}
       />
       <div className={styles.body}>
-        <h3 className={styles.name}>{demo.title}</h3>
+        <h3 className={styles.name} title={demo.title}>{demo.title}</h3>
         <p className={styles.meta}>
           <span>@{demo.author.nickname}</span>
           <span className={styles.likes}>
@@ -34,7 +34,8 @@ function DemoCard({ demo }: { demo: DemoSummary }) {
             {demo.likeCount}
           </span>
         </p>
-        <Link href={`/mini-home/${demo.author.id}/demos/${demo.id}`} className={styles.play}>
+        <Link href={`/mini-home/${demo.author.id}/demos/${demo.id}`} className={styles.play}
+        tabIndex={clone ? -1 : undefined}>
           찍먹하기
           <ArrowRightIcon />
         </Link>
@@ -89,8 +90,8 @@ export function HotDemos({ demos }: Props) {
           </li>
         ))}
         {clones.map((demo) => (
-          <li key={`clone-${demo.id}`} className={styles.card} aria-hidden="true" inert>
-            <DemoCard demo={demo} />
+          <li key={`clone-${demo.id}`} className={styles.card} aria-hidden="true">
+            <DemoCard demo={demo} clone />
           </li>
         ))}
       </DemoCarousel>

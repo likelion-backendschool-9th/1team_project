@@ -53,13 +53,14 @@ function ComposerField({ defaultValue, error }: FieldProps) {
 
 type Props = {
   nickname: string;
+  profileImage: string | null;
   myDemos: DemoSummary[];
 };
 
 // FeedComposer.module.css의 .composer top 값과 맞춘다.
 const STICKY_TOP = 12;
 
-export function FeedComposer({ nickname, myDemos }: Props) {
+export function FeedComposer({ nickname, profileImage, myDemos }: Props) {
   const [state, formAction, pending] = useActionState(
     createFeed,
     initialComposerState,
@@ -145,7 +146,7 @@ export function FeedComposer({ nickname, myDemos }: Props) {
       className={`${styles.composer} ${stuck ? styles.stuck : ""}`}
     >
       <form action={formAction} className={styles.form}>
-        <Avatar name={nickname} size={42} />
+        <Avatar name={nickname} src={profileImage} size={42} />
         <ComposerField
           key={`field-${state.attempt}`}
           defaultValue={state.values.content}
