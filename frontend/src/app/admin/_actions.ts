@@ -143,8 +143,8 @@ export async function saveEvent(eventId: number | null, previous: FormState, for
   const { values, errors } = validateEvent(formData);
   const state = await runForm(previous, values, errors, () =>
     eventId
-      ? mutate(`/api/v1/admin/events/${eventId}`, "PUT", values, "이벤트를 수정했어요.")
-      : mutate("/api/v1/admin/events", "POST", values, "이벤트를 등록했어요."),
+      ? mutate(`/api/v1/admin/events/${eventId}`, "PUT", values, "이벤트를 수정했어요.", !hasBackend)
+      : mutate("/api/v1/admin/events", "POST", values, "이벤트를 등록했어요.", !hasBackend),
   );
   if (state.ok) revalidatePath("/admin/events");
   return state;
@@ -152,7 +152,7 @@ export async function saveEvent(eventId: number | null, previous: FormState, for
 
 export async function deleteEvent(eventId: number) {
   if (!isId(eventId)) return { ok: false, message: "잘못된 요청이에요." };
-  return mutate(`/api/v1/admin/events/${eventId}`, "DELETE", undefined, "이벤트를 삭제했어요.");
+  return mutate(`/api/v1/admin/events/${eventId}`, "DELETE", undefined, "이벤트를 삭제했어요.", !hasBackend);
 }
 
 // 최고 관리자(MASTER)만 쓸 수 있다. 실제 권한 검사는 백엔드(/admin/roles/** hasRole MASTER)가 한다.
