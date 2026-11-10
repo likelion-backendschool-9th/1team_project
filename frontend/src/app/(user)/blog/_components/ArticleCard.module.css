@@ -80,13 +80,6 @@
   color: var(--ink-soft);
 }
 
-.more {
-  display: inline-flex;
-  padding: 6px;
-  color: var(--ink-faint);
-  font-size: 18px;
-}
-
 .title {
   font-size: 18px;
   font-weight: 800;
