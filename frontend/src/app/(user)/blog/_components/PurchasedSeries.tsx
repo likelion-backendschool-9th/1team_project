@@ -26,7 +26,7 @@ export function PurchasedSeries({ purchases }: Props) {
         {purchases.slice(0, 5).map(({ series }) => (
           <li key={series.id}>
             <Link href={`/blog/series/${series.id}`} className={styles.row}>
-              <Avatar name={series.author.nickname} size={40} tone="light" />
+              <Avatar name={series.author.nickname} src={series.author.profileImage} size={40} tone="light" />
               <span className={styles.info}>
                 <span className={styles.name}>{series.title}</span>
                 <span className={styles.series}>

@@ -55,7 +55,7 @@ export async function MainContent({ searchParams }: Props) {
       <TagChips tags={tags} activeTag={activeTag} />
       <HotDemos demos={demos} />
       {!me?.plus && <PlusBanner />}
-      {me && <FeedComposer nickname={me.nickname} myDemos={myDemos} />}
+      {me && <FeedComposer nickname={me.nickname} profileImage={me.profileImage} myDemos={myDemos} />}
       <section aria-labelledby="feed-list-title">
         <h2 id="feed-list-title" className="sr-only">
           피드 목록

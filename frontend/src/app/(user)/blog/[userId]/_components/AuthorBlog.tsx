@@ -34,7 +34,7 @@ export async function AuthorBlog({ params }: Props) {
   return (
     <div className={kit.stack}>
       <section className={`${kit.card} ${styles.hero}`} aria-labelledby="blog-owner">
-        <Avatar name={owner.user.nickname} size={80} />
+        <Avatar name={owner.user.nickname} src={owner.user.profileImage} size={80} />
         <div className={kit.grow}>
           <h2 id="blog-owner" className={styles.name}>
             {owner.user.nickname}의 개발 블로그

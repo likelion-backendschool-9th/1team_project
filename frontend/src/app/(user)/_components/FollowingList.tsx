@@ -26,7 +26,7 @@ export function FollowingList({ followings }: Props) {
         {followings.map((user) => (
           <li key={user.id} className={styles.item}>
             <Link href={`/mini-home/${user.id}`} className={styles.row}>
-              <Avatar name={user.nickname} size={32} tone="light" />
+              <Avatar name={user.nickname} src={user.profileImage} size={32} tone="light" />
               <div className={styles.info}>
                 <span className={styles.name}>@{user.nickname}</span>
                 <UserBadges badges={user.badges} size="sm" />
