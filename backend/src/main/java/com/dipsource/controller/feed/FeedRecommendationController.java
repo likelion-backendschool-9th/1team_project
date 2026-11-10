@@ -53,6 +53,8 @@ public class FeedRecommendationController {
             response = recommendationService.getFollowingFeeds(userId, cursor, safeSize);
         } else if ("recommended".equals(type)) {
             response = recommendationService.getRecommendedFeeds(userId, cursor, safeSize);
+        } else if ("latest".equals(type)) {
+            response = recommendationService.getLatestFeeds(userId, cursor, safeSize);
         } else {
             throw new BusinessException(ErrorCode.BAD_REQUEST, "지원하지 않는 피드 타입입니다: " + type);
         }
