@@ -48,7 +48,8 @@
 
 .stage {
   position: relative;
-  aspect-ratio: 16 / 9;
+  /* 홈에서는 정사각형으로 보여 준다. 큰 화면 모드(.expanded)는 아래에서 가로형으로 바꾼다. */
+  aspect-ratio: 1 / 1;
   overflow: hidden;
   border-radius: 16px;
   background: #050505;
@@ -380,6 +381,13 @@
 @media (max-width: 1280px) {
   .body {
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  /* 한 줄로 쌓일 때 정사각형이 화면을 다 차지하지 않도록 폭을 묶는다. */
+  .body:not(.expanded) .stage {
+    width: 100%;
+    max-width: 520px;
+    margin-inline: auto;
   }
 }
 

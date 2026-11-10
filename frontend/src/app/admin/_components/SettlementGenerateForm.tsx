@@ -5,6 +5,7 @@ import { FormMessage } from "@/app/_components/ui/FormMessage";
 import kit from "@/app/_components/ui/kit.module.css";
 import { initialFormState } from "@/app/_lib/formState";
 import { generateSettlements } from "../_actions";
+import styles from "./Admin.module.css";
 
 type Props = {
   /** 기본으로 고를 달 (지난달). 예: 2026-10 */
@@ -31,7 +32,7 @@ export function SettlementGenerateForm({ defaultPeriod, maxPeriod }: Props) {
             type="month"
             max={maxPeriod}
             defaultValue={state.values.period ?? defaultPeriod}
-            className={kit.input}
+            className={`${kit.input} ${styles.monthInput}`}
             aria-invalid={error ? true : undefined}
             aria-describedby={error ? "settlement-period-error" : undefined}
           />

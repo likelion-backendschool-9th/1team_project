@@ -15,7 +15,7 @@ async function DashboardContent() {
   const max = Math.max(1, ...stats.signups);
   const cards = [
     { label: "전체 회원", value: `${formatCount(stats.userCount)}명`, delta: `오늘 +${stats.newUsersToday}` },
-    { label: "이번 주 데모 업로드", value: `${formatCount(stats.demoUploadsWeek)}개`, delta: "지난주 대비 +12%" },
+    { label: "이번 주 데모 업로드", value: `${formatCount(stats.demoUploadsWeek)}개`, delta: "월요일부터 지금까지" },
     { label: "처리 대기 신고", value: `${stats.pendingReports}건`, delta: "대기 우선 처리" },
     { label: "지난달 매출", value: formatWon(stats.revenueMonth), delta: "블로그 구독 + 플러스 + 칩 충전" },
   ];
@@ -59,6 +59,7 @@ async function DashboardContent() {
               전체 보기 →
             </Link>
           </div>
+          {reports.content.length === 0 && <p className={kit.empty}>처리할 신고가 없어요.</p>}
           <ul className={kit.list}>
             {reports.content.map((report) => (
               <li key={report.id}>

@@ -58,6 +58,7 @@ async function CoinsContent() {
             </tbody>
           </table>
         </div>
+        {rows.length === 0 && <p className={kit.empty}>아직 충전·환불 내역이 없어요.</p>}
       </section>
     </>
   );

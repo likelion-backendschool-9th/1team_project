@@ -73,6 +73,7 @@ async function EventsContent({ searchParams }: { searchParams: Promise<Record<st
             </tbody>
           </table>
         </div>
+        {events.length === 0 && <p className={kit.empty}>아직 등록한 이벤트가 없어요. 위에서 새 이벤트를 등록해 보세요.</p>}
       </section>
     </>
   );

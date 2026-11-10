@@ -237,7 +237,7 @@ export function EditForm({ profile, demos, posts }: Props) {
           aria-describedby="edit-tags-hint"
         />
         <p id="edit-tags-hint" className={kit.hint}>
-          쉼표로 구분해요. 예: React, TypeScript, WebGL
+          쉼표로 구분해요. 최대 10개. 예: React, TypeScript, WebGL
         </p>
       </div>
 

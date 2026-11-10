@@ -26,6 +26,8 @@ import org.springframework.transaction.annotation.Transactional;
 public class MiniHomeServiceImpl implements MiniHomeService {
 
     private static final String DEFAULT_SKIN = "cream";
+    /** 기술 스택 최대 개수. 데모·피드 태그와 같은 10개로 맞춘다. */
+    private static final int MAX_STACK_TAGS = 10;
     /** 프론트 MiniHomeSkin과 같은 9종. 스킨을 추가하면 양쪽을 같이 바꾼다. */
     private static final Set<String> SKINS = Set.of(
             "cream", "midnight", "mint", "cherry", "sky", "lavender", "peach", "forest", "sunset");
@@ -183,8 +185,8 @@ public class MiniHomeServiceImpl implements MiniHomeService {
             }
             tags.add(tag);
         }
-        if (tags.size() > 5) {
-            throw new BusinessException(ErrorCode.BAD_REQUEST, "기술 스택은 5개까지만 적을 수 있어요.");
+        if (tags.size() > MAX_STACK_TAGS) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "기술 스택은 " + MAX_STACK_TAGS + "개까지만 적을 수 있어요.");
         }
         return List.copyOf(tags);
     }
