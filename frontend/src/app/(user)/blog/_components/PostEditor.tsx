@@ -266,7 +266,7 @@ export function PostEditor({ action, demos, series, initial = empty, submitLabel
             {content.trim() ? <Markdown source={content} /> : <p className={kit.faint}>작성한 내용이 없어요.</p>}
           </div>
         )}
-        {paid && (
+        {paid && !selectedSeries && (
           <p className={length < PAID_MIN_LENGTH ? styles.lengthShort : kit.faint}>
             본문 {length.toLocaleString()} / {PAID_MIN_LENGTH.toLocaleString()}자 · 유료 글은{" "}
             {PAID_MIN_LENGTH.toLocaleString()}자 이상 써야 발행할 수 있어요

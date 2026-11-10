@@ -10,7 +10,7 @@ export const categories: { value: PostCategory; label: string }[] = [
   { value: "uxui", label: "UX/UI" },
 ];
 
-/** 유료 글 본문 최소 글자 수 (앞뒤 공백 제외). 백엔드 PostServiceImpl과 같은 값 */
+/** 칩으로 파는 유료 글 본문 최소 글자 수 (앞뒤 공백 제외, 시리즈 회차는 제외). 백엔드 PostServiceImpl과 같은 값 */
 export const PAID_MIN_LENGTH = 1000;
 
 /** 잠긴 글인지. 백엔드는 paid를 주고, 목업은 칩 가격으로 판단한다. 시리즈 회차는 칩 가격 없이 잠긴다 */
