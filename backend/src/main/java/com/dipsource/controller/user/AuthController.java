@@ -2,7 +2,10 @@ package com.dipsource.controller.user;
 
 import com.dipsource.global.auth.AuthCookieNames;
 import com.dipsource.global.auth.AuthCookieWriter;
+import com.dipsource.global.auth.OAuth2SuccessHandler;
+import com.dipsource.global.auth.UserPrincipal;
 import com.dipsource.global.exception.BusinessException;
+import com.dipsource.global.exception.ErrorCode;
 import com.dipsource.service.user.AuthService;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -11,6 +14,7 @@ import java.io.IOException;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -67,6 +71,23 @@ public class AuthController {
             throw e;
         }
         
+    }
+
+    /**
+     * 소셜 계정 연동을 시작한다. 로그인한 상태여야 한다.
+     * 예: GET /auth/link/kakao → 카카오 로그인 → 지금 회원에 카카오 계정이 연결된다
+     */
+    @GetMapping("/link/{provider}")
+    public void link(
+            @PathVariable String provider,
+            @AuthenticationPrincipal UserPrincipal principal,
+            HttpServletRequest request,
+            HttpServletResponse response) throws IOException {
+        if (principal == null) {
+            throw new BusinessException(ErrorCode.UNAUTHORIZED);
+        }
+        request.getSession(true).setAttribute(OAuth2SuccessHandler.LINK_USER_ID, principal.getUserId());
+        response.sendRedirect(request.getContextPath() + "/oauth2/authorization/" + provider);
     }
     
 }

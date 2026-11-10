@@ -1,4 +1,5 @@
 import "server-only";
+import type { OAuthProvider } from "@/app/_lib/types/auth";
 import { apiFetch, hasBackend, isMockMode, type ApiResponse, type PageResponse } from "@/app/_lib/api/client";
 import {
   mockAccount,
@@ -126,4 +127,11 @@ export async function getBookmarks(type: BookmarkType | undefined): Promise<Book
   const query = type ? `?${new URLSearchParams({ type })}` : "";
   const { data } = await apiFetch<ApiResponse<PageResponse<Bookmark>>>(`/api/v1/users/me/bookmarks${query}`);
   return data.content;
+}
+
+// 연결된 소셜 계정 목록. 예: ["github", "kakao"]
+export async function getSocialAccounts() : Promise<OAuthProvider[]> {
+  if (!hasBackend) return [mockAccount.provider];
+  const {data} = await apiFetch<ApiResponse<OAuthProvider[]>>("/api/v1/users/me/social-accounts");
+  return data;
 }

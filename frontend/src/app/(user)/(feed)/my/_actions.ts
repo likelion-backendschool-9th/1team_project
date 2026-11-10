@@ -7,6 +7,7 @@ import { runForm } from "@/app/_lib/api/formAction";
 import { mutate } from "@/app/_lib/api/mutate";
 import { readValues, type FormState } from "@/app/_lib/formState";
 import { endSession } from "@/app/(user)/_lib/session";
+import { isOAuthProvider, type OAuthProvider } from "@/app/_lib/types/auth";
 
 function isId(value: number) {
   return Number.isSafeInteger(value) && value > 0;
@@ -92,4 +93,17 @@ export async function withdraw() {
   if (!result.ok) return result;
   await endSession();
   redirect("/goodbye");
+}
+
+export async function unlinkSocialAccount(provider: OAuthProvider) {
+  if (!isOAuthProvider(provider)) return { ok: false, message: "잘못된 요청이에요." };
+  const result = await mutate(
+    `/api/v1/users/me/social-accounts/${provider}`,
+    "DELETE",
+    undefined,
+    "연동을 해제했어요.",
+    !hasBackend,
+  );
+  if (result.ok) revalidatePath("/my");
+  return result;
 }
