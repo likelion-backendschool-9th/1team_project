@@ -73,6 +73,10 @@ export function PostEditor({ action, demos, initial = empty, submitLabel, draftK
   const [state, formAction, pending] = useActionState(action, initialFormState);
   const value = (key: keyof Initial) => state.values[key] ?? String(initial[key]);
   const [content, setContent] = useState(initial.content);
+  // 폼 액션이 끝나면 React가 폼을 초기화하는데, defaultValue만 둔 select는 첫 옵션으로 돌아가 버린다.
+  // 그래서 select 두 개는 상태로 들고 있어 검사에 걸려도 고른 값이 남게 한다.
+  const [category, setCategory] = useState(initial.category);
+  const [demoId, setDemoId] = useState(initial.demoId);
   const [preview, setPreview] = useState(false);
   const [paid, setPaid] = useState(initial.paid);
   // 유료 글 최소 길이 안내용. 서버 검사와 같이 앞뒤 공백은 세지 않는다.
@@ -124,11 +128,13 @@ export function PostEditor({ action, demos, initial = empty, submitLabel, draftK
   function restoreDraft() {
     const form = formRef.current;
     if (!form || !savedDraft) return;
-    for (const key of ["title", "category", "tags", "demoId"] as const) {
+    for (const key of ["title", "tags"] as const) {
       const field = form.elements.namedItem(key);
-      if (field instanceof HTMLInputElement || field instanceof HTMLSelectElement) field.value = savedDraft[key];
+      if (field instanceof HTMLInputElement) field.value = savedDraft[key];
     }
     setContent(savedDraft.content);
+    setCategory(savedDraft.category);
+    setDemoId(savedDraft.demoId);
     setPaid(savedDraft.paid);
     setPriceOverride(savedDraft.price);
     setRestored(true);
@@ -191,7 +197,8 @@ export function PostEditor({ action, demos, initial = empty, submitLabel, draftK
           <select
             id="post-category"
             name="category"
-            defaultValue={value("category")}
+            value={category}
+            onChange={(event) => setCategory(event.target.value)}
             className={kit.select}
             {...invalid("category")}
           >
@@ -265,7 +272,13 @@ export function PostEditor({ action, demos, initial = empty, submitLabel, draftK
           <label htmlFor="post-demo" className={kit.label}>
             데모 연결 (선택)
           </label>
-          <select id="post-demo" name="demoId" defaultValue={value("demoId")} className={kit.select}>
+          <select
+            id="post-demo"
+            name="demoId"
+            value={demoId}
+            onChange={(event) => setDemoId(event.target.value)}
+            className={kit.select}
+          >
             <option value="">연결하지 않음</option>
             {demos.map((demo) => (
               <option key={demo.id} value={demo.id}>
