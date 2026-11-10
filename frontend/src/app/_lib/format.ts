@@ -31,6 +31,13 @@ export function formatCount(value: number): string {
 
 const pad = (value: number) => String(value).padStart(2, "0");
 
+/** ISO 문자열의 달력 날짜만 2026.11.01 로 보여 준다. 시간대 변환은 하지 않는다. */
+export function formatCalendarDate(iso: string): string {
+  const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso);
+  if (!match) return iso;
+  return `${match[1]}.${match[2]}.${match[3]}`;
+}
+
 export function formatDate(iso: string): string {
   const date = new Date(iso);
   return `${date.getFullYear()}.${pad(date.getMonth() + 1)}.${pad(date.getDate())}`;

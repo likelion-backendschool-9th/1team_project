@@ -12,6 +12,7 @@ import com.dipsource.dto.search.SearchType;
 import com.dipsource.dto.user.UserSearchItemResponse;
 import com.dipsource.global.config.SearchProperties;
 import com.dipsource.global.exception.BusinessException;
+import com.dipsource.service.search.PopularSearchService;
 import com.dipsource.service.search.SearchService;
 import com.dipsource.service.search.query.ParsedQuery;
 import com.dipsource.service.search.query.SearchQueryParser;
@@ -41,34 +42,51 @@ public class SearchRouter implements SearchService {
     private final SearchProperties properties;
     private final MeterRegistry meterRegistry;
     private final SearchQueryParser queryParser;
+    private final PopularSearchService popularSearchService;
     private volatile long circuitOpenUntil = 0;
 
     public SearchRouter(@Qualifier("postgresSearchService") SearchService postgres,
                         ObjectProvider<EngineSearchService> engine,
                         SearchProperties properties,
                         MeterRegistry meterRegistry,
-                        SearchQueryParser queryParser) {
+                        SearchQueryParser queryParser,
+                        PopularSearchService popularSearchService) {
         this.postgres = postgres;
         this.engine = engine;
         this.properties = properties;
         this.meterRegistry = meterRegistry;
         this.queryParser = queryParser;
+        this.popularSearchService = popularSearchService;
     }
 
     @Override
     public SearchAllResponse searchAll(String query, SearchOperator operator, SearchSort sort, Long viewerId) {
-        return route(query, service -> service.searchAll(query, operator, sort, viewerId),
+        SearchAllResponse result = route(query, service -> service.searchAll(query, operator, sort, viewerId),
                 () -> postgres.searchAll(query, operator, sort, viewerId),
                 SearchRouter::emptyAll);
+        remember(query, viewerId);
+        return result;
     }
 
     @Override
     public SearchPageResponse<?> search(String query, SearchType type, SearchOperator operator, SearchSort sort,
                                         Pageable pageable, Long viewerId, String searchId) {
-        return route(query, service -> service.search(query, type, operator, sort, pageable, viewerId, searchId),
+        SearchPageResponse<?> result = route(query,
+                service -> service.search(query, type, operator, sort, pageable, viewerId, searchId),
                 () -> postgres.search(query, type, operator, sort, pageable, viewerId, searchId),
                 () -> new SearchPageResponse<>(List.of(), pageable.getPageNumber(), pageable.getPageSize(), 0, 0,
                         null, null, null, null, null));
+        remember(query, viewerId);
+        return result;
+    }
+
+    /** 기록 저장이 실패해도 검색 결과는 그대로 돌려준다. */
+    private void remember(String query, Long viewerId) {
+        try {
+            popularSearchService.record(query, viewerId);
+        } catch (RuntimeException exception) {
+            log.warn("검색 기록을 남기지 못했습니다: {}", exception.toString());
+        }
     }
 
     private static SearchAllResponse emptyAll() {
