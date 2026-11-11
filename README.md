@@ -356,7 +356,7 @@ npm run dev
   <tr>
     <td align="center">
       <a href="https://github.com/afterfrost999">
-        <img src="https://github.com/afterfrost.png" width="100" alt="김승조" /><br />
+        <img src="https://github.com/afterfrost999.png" width="100" alt="김승조" /><br />
         <b>김승조</b>
       </a><br />
       검색, 데모, 기획
