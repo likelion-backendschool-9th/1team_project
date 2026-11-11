@@ -383,8 +383,8 @@ npm run dev
       블로그, DM, 팔로우
     </td>
     <td align="center">
-      <a href="https://github.com/Emse">
-        <img src="https://github.com/Emse.png" width="100" alt="차재인" /><br />
+      <a href="https://github.com/Eamse">
+        <img src="https://github.com/Eamse.png" width="100" alt="차재인" /><br />
         <b>차재인</b>
       </a><br />
       피드, 알고리즘, 서버
