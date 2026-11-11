@@ -46,6 +46,31 @@ export async function getDemos(
   return { items: data.content, nextCursor: data.nextCursor ?? null };
 }
 
+/** 데모 탐색 한 페이지에 보여 줄 수 (백엔드 GET demos/pages 기본값과 같다) */
+export const DEMO_PAGE_SIZE = 12;
+
+export type DemoNumberedPage = { items: DemoDetail[]; page: number; totalPages: number; total: number };
+
+/** 데모 탐색용 페이지 번호 목록. page는 1부터 */
+export async function getDemoPage(tag: string | undefined, sort: DemoSort, page: number): Promise<DemoNumberedPage> {
+  if (!hasBackend) {
+    const { items } = await getDemos(tag, sort);
+    const totalPages = Math.max(1, Math.ceil(items.length / DEMO_PAGE_SIZE));
+    return {
+      items: items.slice((page - 1) * DEMO_PAGE_SIZE, page * DEMO_PAGE_SIZE),
+      page,
+      totalPages,
+      total: items.length,
+    };
+  }
+  const query = new URLSearchParams({ sort, page: String(page - 1), size: String(DEMO_PAGE_SIZE) });
+  if (tag) query.set("tag", tag);
+  const { data } = await apiFetch<
+    ApiResponse<{ content: DemoDetail[]; totalPages: number; totalElements: number }>
+  >(`/api/v1/demos/pages?${query}`);
+  return { items: data.content, page, totalPages: data.totalPages, total: data.totalElements };
+}
+
 /** 내 데모 수. 초안까지 포함한다. */
 export async function countMyDemos(userId: number): Promise<number> {
   if (!hasBackend) return mockDemos.filter((demo) => demo.author.id === userId).length;
