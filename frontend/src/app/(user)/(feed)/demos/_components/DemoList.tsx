@@ -1,9 +1,9 @@
-import Link from "next/link";
 import { connection } from "next/server";
 import kit from "@/app/_components/ui/kit.module.css";
 import { LinkTabs } from "@/app/_components/ui/LinkTabs";
+import { Pagination } from "@/app/_components/ui/Pagination";
 import type { DemoSort } from "@/app/_lib/types/demo";
-import { getDemos, getDemoTags } from "../_lib/api";
+import { getDemoPage, getDemoTags } from "../_lib/api";
 import { DemoCard } from "./DemoCard";
 import styles from "./DemoList.module.css";
 
@@ -21,10 +21,11 @@ function first(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value;
 }
 
-function href(tag: string | undefined, sort: DemoSort) {
+function href(tag: string | undefined, sort: DemoSort, page = 1) {
   const query = new URLSearchParams();
   if (tag) query.set("tag", tag);
   if (sort !== "trending") query.set("sort", sort);
+  if (page > 1) query.set("page", String(page));
   const search = query.toString();
   return search ? `/demos?${search}` : "/demos";
 }
@@ -36,7 +37,8 @@ export async function DemoList({ searchParams }: Props) {
   const rawTag = first(params.tag);
   const tag = rawTag && tags.includes(rawTag) ? rawTag : undefined;
   const sort = sorts.find((item) => item.value === first(params.sort))?.value ?? "trending";
-  const { items: demos, nextCursor } = await getDemos(tag, sort, first(params.cursor));
+  const requested = Math.max(1, Math.floor(Number(first(params.page))) || 1);
+  const { items: demos, page, totalPages, total } = await getDemoPage(tag, sort, requested);
 
   return (
     <div className={kit.stack}>
@@ -57,7 +59,7 @@ export async function DemoList({ searchParams }: Props) {
         ]}
       />
       <p className={kit.faint} role="status">
-        데모 {demos.length}개
+        데모 {total}개{totalPages > 1 && ` · ${page}/${totalPages} 페이지`}
       </p>
       {demos.length === 0 ? (
         <p className={kit.empty}>{tag ? "이 태그의 데모가 아직 없어요." : "아직 올라온 데모가 없어요. 첫 데모를 올려 보세요."}</p>
@@ -70,11 +72,8 @@ export async function DemoList({ searchParams }: Props) {
           ))}
         </ul>
       )}
-      {nextCursor && (
-        <Link href={`${href(tag, sort)}${href(tag, sort).includes("?") ? "&" : "?"}cursor=${encodeURIComponent(nextCursor)}`} className={kit.more}>
-          다음 데모 보기 →
-        </Link>
-      )}
+      {/* 정렬·태그는 유지한 채 페이지 번호만 바꾼다 */}
+      <Pagination page={page} totalPages={totalPages} hrefFor={(target) => href(tag, sort, target)} />
     </div>
   );
 }
