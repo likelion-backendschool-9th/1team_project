@@ -1,7 +1,7 @@
 <div align="center">
 
 ![찍먹 메인 화면](docs/images/logo.png)
-# 찍먹 (Dip Source)
+
 
 </div>
 <div align="center">
