@@ -1,6 +1,14 @@
+<div align="center">
+
+![찍먹 메인 화면](docs/images/logo.png)
 # 찍먹 (Dip Source)
 
+</div>
+<div align="center">
+
 **코드를 읽기 전에, 서비스를 먼저 경험하는 개발자 SNS**
+
+</div>
 
 개발자는 자신의 프로젝트에서 보여주고 싶은 핵심 기능을 데모로 올리고, 다른 개발자는 설치 없이 브라우저에서 바로 체험합니다. 데모를 중심으로 미니홈피, 피드, 블로그가 연결되어 결과물을 발견하고, 경험하고, 만든 사람과 소통하는 흐름을 만듭니다.
 
@@ -8,7 +16,33 @@
 
 ![찍먹 메인 화면](docs/images/readme-index.png)
 
+## 목차
+
+- [프로젝트 소개](#프로젝트-소개)
+    - [기획 배경](#기획-배경)
+- [핵심 이용 흐름](#핵심-이용-흐름)
+- [주요 기능](#주요-기능)
+    - [데모](#데모)
+    - [피드](#피드)
+    - [미니홈피](#미니홈피)
+    - [블로그](#블로그)
+    - [소통](#소통)
+    - [탐색과 기타](#탐색과-기타)
+    - [관리자](#관리자)
+- [칩과 결제](#칩과-결제)
+    - [결제 수단](#결제-수단)
+    - [블로그 유료 콘텐츠](#블로그-유료-콘텐츠)
+    - [딥소스 플러스](#딥소스-플러스)
+    - [정산](#정산)
+- [시스템 설계](#시스템-설계)
+- [기술 스택](#기술-스택)
+- [실행 방법](#실행-방법)
+- [만든 사람들](#만든-사람들)
+
+
 ## 프로젝트 소개
+
+<div align="center">
 
 | 항목 | 내용 |
 | --- | --- |
@@ -18,6 +52,8 @@
 | 핵심 가치 | 설치하는 번거로움은 줄이고, 경험하는 즐거움은 높인다 |
 | 핵심 기능 | 데모 체험 |
 | 연결 기능 | 미니홈피, 피드, 블로그, DM, 알림 |
+
+</div>
 
 ### 기획 배경
 
@@ -64,6 +100,8 @@
 
 ### 피드
 
+![피트 화면](docs/images/readme-feed.gif)
+
 | 기능 | 내용 |
 | --- | --- |
 | 글쓰기 | 최대 500자 짧은 글, 이미지·링크·데모 첨부, `#태그`로 태그 피드에 모입니다. |
@@ -73,7 +111,7 @@
 
 ### 미니홈피
 
-![미니홈피 화면](docs/images/readme-mini-home.png)
+![미니홈피 화면](docs/images/readme-minihome.gif)
 
 | 기능 | 내용 |
 | --- | --- |
@@ -84,6 +122,8 @@
 | 꾸미기 | 스킨, BGM (플러스), TODAY/TOTAL 방문자 수 |
 
 ### 블로그
+
+![블로그 화면](docs/images/readme-blog.gif)
 
 | 기능 | 내용 |
 | --- | --- |
@@ -111,6 +151,8 @@
 | 이벤트 | 운영자가 여는 이벤트 |
 
 ### 관리자
+
+![관리자페이지](docs/images/readme-admin.gif)
 
 회원·권한 관리, 피드·블로그 글·댓글·데모 관리, 신고 처리, 칩 거래와 환불, 매출·정산, 이상 거래 확인, 이벤트 관리를 제공합니다.
 
@@ -306,12 +348,47 @@ npm run dev
 | [AGENTS.md](AGENTS.md) | Git 협업 규칙 (브랜치, 커밋, PR) |
 | [docs/README.md](docs/README.md) | 전체 문서 안내 |
 
-## 팀원
 
-| 이름 | 역할 |
-| --- | --- |
-| 승조 | |
-| 다윗 | |
-| 진엽 | |
-| 준하 | DM, 블로그, 팔로우 |
-| 재인 | |
+## 만든 사람들
+
+<div align="center">
+<table>
+  <tr>
+    <td align="center">
+      <a href="https://github.com/afterfrost999">
+        <img src="https://github.com/afterfrost.png" width="100" alt="김승조" /><br />
+        <b>김승조</b>
+      </a><br />
+      검색, 데모, 기획
+    </td>
+    <td align="center">
+      <a href="https://github.com/lakesole">
+        <img src="https://github.com/lakesole.png" width="100" alt="곽다윗" /><br />
+        <b>곽다윗</b>
+      </a><br />
+      회원, 로그인, 관리자
+    </td>
+    <td align="center">
+      <a href="https://github.com/kjy-ux">
+        <img src="https://github.com/kjy-ux.png" width="100" alt="김진엽" /><br />
+        <b>김진엽</b>
+      </a><br />
+      미니홈피, 뉴스, 디자인
+    </td>
+    <td align="center">
+      <a href="https://github.com/jh09-13">
+        <img src="https://github.com/jh09-13.png" width="100" alt="박준하" /><br />
+        <b>박준하</b>
+      </a><br />
+      블로그, DM, 팔로우
+    </td>
+    <td align="center">
+      <a href="https://github.com/Emse">
+        <img src="https://github.com/Emse.png" width="100" alt="차재인" /><br />
+        <b>차재인</b>
+      </a><br />
+      피드, 알고리즘, 서버
+    </td>
+  </tr>
+</table>
+</div>
