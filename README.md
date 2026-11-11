@@ -302,16 +302,7 @@ DB 구조는 [docs/테이블정의서.md](docs/테이블정의서.md)와 [docs/d
 
 ## 기술 스택
 
-| 구분 | 스택 |
-| --- | --- |
-| Backend | Java 21, Spring Boot 3.4, Spring Security, Spring Data JPA, JWT |
-| Frontend | Next.js 16 (App Router), React 19, TypeScript |
-| Database | PostgreSQL 16 |
-| 검색 | Elasticsearch 8 |
-| 실시간 | WebSocket + STOMP (DM, 알림) |
-| 인증 | 소셜 로그인 (GitHub, 카카오, 구글) |
-| 파일 저장·데모 실행 | Cloudflare R2, Cloudflare Workers |
-| Infra | Docker Compose, Nginx, GitHub Actions |
+![기술스택](docs/images/readme-stack.png)
 
 ## 실행 방법
 
