@@ -55,6 +55,50 @@ public interface DemoRepository extends JpaRepository<Demo, Long> {
             @Param("cursorId") Long cursorId,
             @Param("size") int size);
 
+    /**
+     * 데모 목록 (페이지 번호). 데모 탐색 화면에서 1, 2, 3… 으로 넘길 때 쓴다.
+     * 조건·정렬은 커서 목록(findPage)과 같고, 커서 대신 OFFSET으로 건너뛴다.
+     */
+    @Query(value = """
+            SELECT d.* FROM demos d
+            WHERE d.deleted_at IS NULL
+              AND (d.status = 'ACTIVE'
+                   OR (d.status = 'DRAFT' AND d.user_id = CAST(:viewerId AS bigint) AND d.user_id = CAST(:userId AS bigint)))
+              AND (CAST(:userId AS bigint) IS NULL OR d.user_id = :userId)
+              AND d.user_id <> ALL(CAST(:hiddenUserIds AS bigint[]))
+              AND (CAST(:tag AS text) IS NULL OR EXISTS (
+                    SELECT 1 FROM demo_tags dt JOIN tags t ON t.id = dt.tag_id
+                    WHERE dt.demo_id = d.id AND t.name = :tag))
+            ORDER BY CASE CAST(:sort AS text) WHEN 'latest' THEN d.id WHEN 'popular' THEN d.like_count ELSE d.play_count END DESC, d.id DESC
+            LIMIT :size OFFSET :offset
+            """, nativeQuery = true)
+    List<Demo> findPageByOffset(
+            @Param("viewerId") Long viewerId,
+            @Param("userId") Long userId,
+            @Param("hiddenUserIds") Long[] hiddenUserIds,
+            @Param("tag") String tag,
+            @Param("sort") String sort,
+            @Param("size") int size,
+            @Param("offset") long offset);
+
+    /** findPageByOffset과 같은 조건의 전체 개수 (전체 페이지 수 계산용) */
+    @Query(value = """
+            SELECT COUNT(*) FROM demos d
+            WHERE d.deleted_at IS NULL
+              AND (d.status = 'ACTIVE'
+                   OR (d.status = 'DRAFT' AND d.user_id = CAST(:viewerId AS bigint) AND d.user_id = CAST(:userId AS bigint)))
+              AND (CAST(:userId AS bigint) IS NULL OR d.user_id = :userId)
+              AND d.user_id <> ALL(CAST(:hiddenUserIds AS bigint[]))
+              AND (CAST(:tag AS text) IS NULL OR EXISTS (
+                    SELECT 1 FROM demo_tags dt JOIN tags t ON t.id = dt.tag_id
+                    WHERE dt.demo_id = d.id AND t.name = :tag))
+            """, nativeQuery = true)
+    long countVisible(
+            @Param("viewerId") Long viewerId,
+            @Param("userId") Long userId,
+            @Param("hiddenUserIds") Long[] hiddenUserIds,
+            @Param("tag") String tag);
+
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("UPDATE Demo d SET d.likeCount = d.likeCount + 1 WHERE d.id = :id")
     int incrementLikeCount(@Param("id") Long id);

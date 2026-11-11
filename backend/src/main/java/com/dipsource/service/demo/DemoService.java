@@ -19,6 +19,7 @@ import com.dipsource.repository.demo.DemoTagRepository;
 import com.dipsource.repository.tag.TagRepository;
 import com.dipsource.service.user.UserService;
 import java.util.LinkedHashSet;
+import com.dipsource.global.common.PageResponse;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
@@ -63,6 +64,27 @@ public class DemoService {
                 .build());
         attachTags(demo, request.tags());
         return assembler.toResponse(demo, userId);
+    }
+
+    /**
+     * 페이지 번호 목록 (데모 탐색 화면). 조건·정렬은 커서 목록과 같다.
+     *
+     * @param page 0부터 시작
+     */
+    @Transactional(readOnly = true)
+    public PageResponse<DemoResponse> listPage(Long viewerId, String tag, String sort, int page, int size) {
+        String safeSort = sort != null && SORTS.contains(sort) ? sort : "trending";
+        int safeSize = Math.min(Math.max(size, 1), MAX_PAGE_SIZE);
+        int safePage = Math.max(page, 0);
+        Long[] hidden = viewerId == null
+                ? new Long[0] : blockRepository.findHiddenUserIds(viewerId).toArray(Long[]::new);
+        String safeTag = tag == null || tag.isBlank() ? null : tag.strip().toLowerCase(Locale.ROOT);
+
+        long total = demoRepository.countVisible(viewerId, null, hidden, safeTag);
+        List<Demo> content = demoRepository.findPageByOffset(viewerId, null, hidden, safeTag, safeSort,
+                safeSize, (long) safePage * safeSize);
+        int totalPages = (int) ((total + safeSize - 1) / safeSize);
+        return new PageResponse<>(assembler.toResponses(content, viewerId), safePage, safeSize, total, totalPages);
     }
 
     /**

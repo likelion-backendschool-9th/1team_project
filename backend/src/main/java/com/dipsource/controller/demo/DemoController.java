@@ -8,6 +8,7 @@ import com.dipsource.dto.demo.DemoEditorSaveRequest;
 import com.dipsource.dto.demo.DemoPreviewResponse;
 import com.dipsource.dto.demo.DemoPublishRequest;
 import com.dipsource.dto.demo.DemoResponse;
+import com.dipsource.global.common.PageResponse;
 import com.dipsource.dto.demo.DemoUsageResponse;
 import com.dipsource.dto.demo.DemoVersionConfigRequest;
 import com.dipsource.dto.demo.DemoVersionConfigResponse;
@@ -91,6 +92,20 @@ public class DemoController {
             @RequestParam(defaultValue = "20") int size) {
         return ResponseEntity.ok(ApiResponse.of(
                 demoService.list(viewerId(principal), userId, tag, sort, cursor, size)));
+    }
+
+    /**
+     * 데모 탐색 화면용 페이지 번호 목록. ?tag=&sort=&page=(0부터)&size=
+     * 홈·미니홈피는 기존 커서 목록(GET /demos)을 그대로 쓴다.
+     */
+    @GetMapping("/pages")
+    public ResponseEntity<ApiResponse<PageResponse<DemoResponse>>> listPage(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @RequestParam(required = false) String tag,
+            @RequestParam(required = false) String sort,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "12") int size) {
+        return ResponseEntity.ok(ApiResponse.of(demoService.listPage(viewerId(principal), tag, sort, page, size)));
     }
 
     @PostMapping
